@@ -382,6 +382,12 @@ entry is still true is the reading.
   `airflow:` allow was told *"no identity-based policy allows the airflow:CreateEnvironment action"* under a
   root SCP denying it. Where: `log-stage-01c-preventive-policies.md`, 2026-08-13 (7.6, 7.7);
   `log-stage-10-orchestration-promotion.md`, 2026-10-23; `runbooks/scp-battery.md`.
+  On 2026-11-22 in Sandbox (Stage 6h's 5.3) a SageMaker project role was told *"no identity-based policy
+  allows the redshift-serverless:UpdateWorkgroup action"* and the same for `DeleteUsageLimit` under
+  `DenyRedshiftCostGuardTamperingExceptInfrastructure`; `simulate-principal-policy` read `explicitDeny`,
+  `AllowedByOrganizations` `false`, for `UpdateWorkgroup` on the workgroup's ARN and on `*` and for
+  `DeleteUsageLimit` on `*`, and `implicitDeny`, `AllowedByOrganizations` `null`, for `DeleteUsageLimit` on a
+  usage limit's ARN and on the workgroup's. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-021` **Control Tower packs a control enablement into its `aws-guardrails-*` SCPs inconsistently
   across OUs, so a document's id does not say what it holds** (read 2026-08-13 and 2026-08-14 with
@@ -1620,6 +1626,20 @@ entry is still true is the reading.
   through S3; three `Decrypt` follow in that session. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-22 (4.12's consumer read).
 
+- `SUP-461` **Redshift reads a subscribed table as the session's IAM principal with no DataZone context, and a
+  refused read leaves no error in the trail** (measured 2026-11-22 in Sandbox and Production, Stage 19's 5.2).
+  The access role's session, chained from a space, ran `SELECT ... FROM awsdatacatalog.<subscription
+  database>.<link>` on a DataZone subscription whose grant is Production's `SELECT` to Sandbox's
+  `IAMPrincipals` under `context.datazone.projectId`. Redshift answered *"AwsClientException:
+  AccessDeniedException from glue - Insufficient Lake Formation permission(s) on trades_notional"*. The trail
+  holds three `BatchGetTable`, none with an `errorCode`, and no `GetDataAccess`: Sandbox's on the link,
+  invoked by `redshift-serverless.amazonaws.com`, with the access role as `lakeFormationPrincipal` and
+  `querySessionContext.additionalContext` `{}`; Sandbox's and Production's on the target, invoked by Glue.
+  `DESCRIBE` and `SELECT` on the table and `DESCRIBE` on the link, named to the access role, admitted the next
+  read; its `GetDataAccess` in Production carries `permissions` `[]` and `requesterService` `REDSHIFT`, where
+  Athena's for the same table the same day carried `["SELECT"]` (`SUP-416`). Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## Athena
 
 - `SUP-117` **Athena Spark's PrivateLink release moves only the client's path to a session, and the session
@@ -2075,6 +2095,23 @@ entry is still true is the reading.
   connection and pricing pages say nothing of the workgroup's own endpoint. Over the 63 days the bill
   reads 1761 h against 1901 user-made, and a day's residual reaches 35 h, both unexplained. Where:
   `log-stage-12-observability-finops.md`, 2026-11-22; `docs/PRICING.md` §5; `SUP-128`.
+
+- `SUP-458` **Redshift Serverless writes a refused call to CloudTrail with its message hidden** (measured
+  2026-11-22 in Sandbox, Stage 6h's 5.3). `UpdateWorkgroup` at 18:59:07Z and `DeleteUsageLimit` at 19:00:33Z,
+  refused to a SageMaker project role, carry `errorCode` `AccessDenied`, `errorMessage`
+  `HIDDEN_DUE_TO_SECURITY_REASONS` and `requestParameters` `null`, while the client printed IAM's full
+  wording; Secrets Manager's `GetSecretValue`, refused to the same session at 19:01:21Z, carries the wording
+  in full. The trail answers who was refused and when; the resource and the policy are read from the client's
+  output or the policy simulator. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+
+- `SUP-459` **Redshift refuses a materialized view that names the auto-mounted `awsdatacatalog`** (measured
+  2026-11-22 in Sandbox, Stage 19's 5.2). `CREATE MATERIALIZED VIEW lab.trades_hot_mv AS SELECT desk,
+  count(*), sum(notional) FROM awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional GROUP BY desk` answered
+  *"The MV references an unsupported database: awsdatacatalog"* (SQLSTATE `0A000`) to a database user holding
+  `USAGE ON DATABASE awsdatacatalog`, whose `SELECT` and `CREATE TABLE ... AS SELECT` over the same table
+  succeeded within the minute. The table is a DataZone subscription's resource link to an Iceberg table in
+  another account. Nothing reached the Glue Data Catalog. A view over an external schema mapped to the Glue
+  database is unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -3637,6 +3674,10 @@ entry is still true is the reading.
   auto-created user the next run deleted 30 rows and inserted 10. That name is per project and known
   before the first connection, so it can be created ahead. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-16.
+  A fourth door, read 2026-11-22 in Sandbox (Stage 6h's 5.1 after half): the Data API from a space,
+  `redshift-data execute-statement` as a project role's `SageMaker` session, connected as `IAMR:user-<Identity
+  Center user id>@<project id>`, which the call created holding nothing, and failed *"ERROR: permission denied
+  for schema lab"*, as the direct door does. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-206` **`RedshiftDbUser` decides the database user, and Redshift prefixes its value with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session ran
@@ -3936,6 +3977,17 @@ entry is still true is the reading.
   AWS's pages were not read for this behaviour. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-22.
 
+- `SUP-460` **A Redshift data source is validated at creation by the connection's access role, which needs
+  `redshift-data:ListDatabases`** (measured 2026-11-22 in Sandbox and Data Governance, Stage 19's 5.3). The
+  portal's *Create data source* on a project's Redshift connection wrote `CreateDataSource` by the domain
+  execution role in Data Governance at 19:47:23Z, with the project role as `dataAccessRole`. In Sandbox at
+  19:47:25Z the project role's session `SYSTEM@<Tooling environment id>` assumed the connection's access role
+  into a session of the same name, which called `redshift-data:ListDatabases` on the workgroup with
+  `requestParameters` `{}` and was refused. The source stands `FAILED_CREATION`, `errorType`
+  `VALIDATION_EXCEPTION`, IAM's wording in `errorDetail`, with no run. The access role's policy, written for
+  the Data page and the query editor, holds no `redshift-data:` action. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
@@ -4140,6 +4192,12 @@ entry is still true is the reading.
   *"You cannot delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated
   the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its
   app. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+  The portal's *JupyterLab* link under *IDEs* creates the space where none exists (measured 2026-11-22 in
+  Sandbox, the warehouse sitting): a click at 18:55:52 UTC in `eighth-experimentation` created `default-<user
+  id>` in its `Tooling` domain at 18:55:54 and its app at 18:55:59, `ml.t3.medium` on
+  `sagemaker-distribution-cpu` 4.7, not the house image, while opening a named space through *Code Spaces*
+  left `test-experimentation`'s `Tooling` domain empty (read 19:20:52). Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-450` **A SageMaker Unified Studio JupyterLab app calls `cognito-identity.us-east-1.amazonaws.com`
   and `client-telemetry.us-east-1.amazonaws.com` every few seconds while it runs, and the idle shutdown does

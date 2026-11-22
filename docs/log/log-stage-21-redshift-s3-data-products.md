@@ -703,3 +703,23 @@ with `-input=false`, Terraform 1.17.2, from 06:26 to 06:32 UTC. Nothing was save
   destroy."*; with the tag alone, 7, 2 and 0. The difference is `aws_iam_role.data_transfer[0]` and
   `aws_iam_role_policy.data_transfer[0]`, so 4.5's plan after 6h's step 7 reads 2 to add by difference, the
   count the stage file called unmeasured.
+
+## 2026-11-22 — 2.2 attempted as Stage 19's step 6 on §N.10's day 1, and what day 2 finds
+
+*Claude, in the session of `promotion.md` §N.10's day 1: the portal's wizard filled in the Data Scientist
+User's Chrome session on the user's word in that session's chat (*"Cópia, view e Publish"*, 19:16:35 UTC);
+reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`)
+and `Data Governance Account` (`awsds-infra-data`). Times UTC. Stage 19's log holds the full reading.*
+
+- **[Claude] 2.2's source**, Stage 19 pass 5's step 6: `sandbox-lab-trades-hot` on `eighth-experimentation`'s
+  connection `redshift-serverless.redshift`, database `sandbox`, schema `lab`, *Include: trades_hot\**,
+  *Publish assets to the Catalog* No, *Import data lineage* not enabled. Created at 19:47:23 as
+  `c4n05wth04ll3k` and `FAILED_CREATION` at once: the connection's access role, in the session
+  `SYSTEM@5hkjdsy3umpi1c` the project role opens, holds no `redshift-data:ListDatabases` (`SUP-460`). No
+  run, no asset, so 2.3 has nothing to publish.
+- **[Claude] What 2.1 finds on day 2**: `lab.trades_hot`, Stage 19 5.2's copy of
+  `trades_notional`, made at 19:42:15 by `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, 10 rows,
+  `AUTO(EVEN)`. No materialized view exists over the link: Redshift refuses one naming `awsdatacatalog`
+  (`SUP-459`).
+- **Left for day 2**: 2.2 again after the access role's `redshift-data` permission, the user's decision, or
+  pass 2 starts at 2.1 without an asset; `c4n05wth04ll3k` stands until then.

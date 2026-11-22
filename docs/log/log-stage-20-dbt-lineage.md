@@ -2299,3 +2299,110 @@ Times UTC.*
 - **Left**: 5.2 and 5.3 on `promotion.md` §N.10's day 1, `$HOME/tmp/stage20/app-dbt.tar` checked in the
   space against the digest above in place of 2.0's. The link's inventory asset, imported at the source's
   next run (2026-11-23, 02:43), and pass 5's table asset leave `app-dbt-dev` before R2's tag (8.6).
+
+## 2026-11-22 — 5.2 and 5.3: the model over the subscription, its run, and one graph across the accounts
+
+*Claude, in the session running `promotion.md` §N.10's day 1, started by the orchestrating session, on the
+user's *"Sim, deploy e run"*. The space's acts ran in the user's Chrome session as the Data Scientist User,
+through Claude in Chrome; the space's terminal runs as `app-dbt-dev`'s project role. Claude's reads as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and
+`awsds-infra-prod` (Production). The account ids the trails and the nodes carry were compared by script and
+are not copied. Times UTC.*
+
+- **[Claude, in the user's session] The space**: `jup-app-dbt-dev` in `app-dbt-dev`'s blueprint domain
+  `d-nt4ujzbdpeqm`, JupyterLab on `ml.t3.medium`, `awsds-sandbox-dev-env` version 12, idle timeout 120
+  minutes, created 18:50:53 through the portal on the user's *"Autorizo tudo"* (6h's log of the same day).
+- **[Claude, in the user's session] The tar**: `$HOME/tmp/stage20/app-dbt.tar` uploaded through the file
+  browser in three parts of 8,789, 8,789 and 8,336 KB, since the upload tool takes no file over 10 MB, and
+  joined at 19:51:37; 5.2's `sha256sum -c` passed and the tar extracted to `~/app-dbt`. `awsds-workflows`
+  cloned at 19:51:55, its head `4401f91`, the pin; `space_values.py`'s values exported with
+  `DEV_PROJECT_NAME=app-dbt-dev` and 2.2's lineage variables, `LINEAGE_NAMESPACE=app-dbt-dev` and
+  `LINEAGE_NAMES=as-built`.
+- **[Claude, in the user's session] The deploy** at 19:52:41, `scripts/dev-cli.sh deploy --manifest
+  manifest.yaml --targets dev --skip-validation --no-events`, *"aws-smus-cicd-cli 1.0.9 on
+  /opt/awsds/venv/bin/python"*: `app-dbt.zip`, `load.py` and `trades.csv` synced from 19:53:09, the two
+  definitions rewritten with the values the CLI resolved at 19:53:46 and 19:54:01; *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try
+  the IAM connection fallback"*, then the Tooling configuration resolved to the project's two subnets and
+  Sandbox's project key `a81b1ef3-…`; the operator code uploaded once per `workflow.create`; *"Workflow
+  already existed, updated"* for `app_dbt_app_dbt_dev_app_dbt` and `app_dbt_app_dbt_dev_app_dbt_probe`, each
+  `READY`; *"Deployment completed successfully!"*
+- **[Claude, in the user's session] The run** at 19:54:58, `scripts/dev-cli.sh run --manifest manifest.yaml
+  --targets dev --workflow app-dbt`: *"Successfully started workflow run: aDQs9e9XhwPTr1j"*, `run exit=0`,
+  after the `ListTagsForResource` refusals on other projects' workflows 2.2 read.
+- **[Claude] The copies and the workflow**: under `shared/app-dbt/`, `code/app-dbt.zip` 26,130,142 bytes,
+  5.1's archive; `glue/load.py` 2,859; `inbox/trades.csv` 362; `workflows/app-dbt.yaml` 3,794 and
+  `workflows/app-dbt-probe.yaml` 7,390. Under `shared/operatorFiles/`, two copies of 26,130,142 bytes at
+  19:53:39 and 19:53:54. The workflow `READY`, `manual_only`, `CUSTOMER_MANAGED_KEY`, version `98492eda…`,
+  modified 19:53:48.
+- **[Claude] The run**: `aDQs9e9XhwPTr1j`, `ON_DEMAND`, `SUCCESS` from 19:55:19 to 19:59:20 (240 s). `load`,
+  `GlueJobOperator`, `SUCCESS` in 110 s, the Glue job's run `SUCCEEDED` from 19:56:06 to 19:57:43 (78 s of
+  execution, Glue 6.0, two `G.1X`); `transform`, `BashOperator`, `SUCCESS` in 58 s. The task log:
+  *"Running with dbt=1.11.16"*, *"Registered adapter: athena=1.11.1"*, `notional_by_desk_prod` *"OK"*,
+  *"Done. PASS=4 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=4"*, ten *"Successfully posted a LineageEvent"*,
+  *"Emitted 10 OpenLineage events"*, *"Underlying dbt execution returned 0"*, *"run-dbt.sh: peak memory
+  316152 kB, exit code 0"*.
+- **[Claude] The table**: `notional_by_desk_prod` in `app_dbt`, `EXTERNAL_TABLE`, `table_type` `ICEBERG`,
+  created 19:59:09 and updated 19:59:12 by `persist_docs`, its description *"The notional each desk traded
+  in Production, summed over the trades of Production's app_etl.trades_notional, read through the
+  project's subscription."* Its create, the statement `8aa2fda4-…`, `DDL`, 193 bytes scanned, from 19:59:07
+  to 19:59:09 in `workgroup-dnl3l158mbhrio-55hp9teamegf4g`, Athena engine version 3.
+- **[Claude] The read under the subscription's grant**: Production's trail holds, at 19:59:08,
+  `GetDataAccess` on `arn:aws:glue:us-west-2:<Production>:table/app_etl/trades_notional`, `SELECT`, invoked
+  by `glue.amazonaws.com` for `requesterService` `ATHENA`, `LakeFormationTrustedCallerInvocation` `true`,
+  `userIdentity.type` `AWSAccount` from Sandbox, its principal `app-dbt-dev`'s project role in the session
+  `AmazonMWAAServerless`, no error. With it, under the create's query id, a `BatchGetTable` at 19:59:07 and
+  two `GetTable` at 19:59:08; and a `GetTable` at 19:58:53 for `requesterService` `UNKNOWN`. Sandbox's
+  trail holds the link's `GetTable` at 19:59:08, invoked by `athena.amazonaws.com` and by
+  `glue.amazonaws.com`; `CreateTable` and `UpdateTable` of `notional_by_desk_prod`; `StartQueryExecution`
+  through `athena`'s endpoint and ten `PostLineageEvent` through `datazone`'s, from one private address in
+  Sandbox's VPC. No refusal:
+  two `GetTable` on `notional_by_desk_prod` answered `EntityNotFoundException` before its create.
+- **[Claude] The events**, each `SUCCESS`, each created by `8af0750c-…`, saved to
+  `$HOME/tmp/stage20/events-5.2/`: ten under the namespace `app-dbt-dev`, the parent `dbt-run-app_dbt` and
+  each model's `build.run` and `build.test`. `notional_by_desk_prod`'s `build.run` reads
+  `awsdatacatalog.app_dbt.trades_notional`, its `symlinks` facet naming `table/app_dbt/trades_notional`
+  under Sandbox's catalog: the link's name in Sandbox's catalog, as 5.2 expected, where the listing's asset
+  carries Production's table ARN.
+- **[Claude] The graph**, by `get-lineage-node` and `list-lineage-node-history`, from the dbt run back:
+  - the run `4j4wmws3dx28wg` (`…notional_by_desk_prod.build.run/01a204d7-6e57-763d-…`, 19:59:12), its job
+    `d49qt21fttenps`, upstream `degibg9msuotn4` and downstream `aha80rzgv86gpc`,
+    `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk_prod`, from which the test's run
+    `64oxhbt2ru9q8g` hangs;
+  - `degibg9msuotn4` is `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/trades_notional`, the link. Its
+    first version, created by `SYSTEM` at 14:05:21 with the grant's completion, carries
+    `SubscriptionTargetLineageForm` under the name `create-datalake-database-env-app_dbt-…-default-target`,
+    its upstream `chg3sfn08jn9xs`; its version at 19:59:12, dbt's, reads both edges;
+  - `chg3sfn08jn9xs` is the listing's node, `amazon.datazone.listing/5hpftif3nnoj2o`, `ListingLineageForm`.
+    Downstream, the two subscription targets: the link, and `cfn1fxmbtecdg0`,
+    `eighth-experimentation-lakehouse-default-target` on `glue_db_blerpkhn9nj7o0.trades_notional` at
+    14:05:12, 4.12's. Upstream, `b2eaaney9hlus0`, the asset `da1fycta6l71n4` (05:03:24);
+  - upstream of the asset, `6i4aaj4f895ixc`, `arn:aws:glue:us-west-2:<Production>:table/app_etl/trades_notional`
+    (04:52:00), from the Spark job run `ccbq2oraclodcg`
+    (`default.app_etl_d7qcazihvr3s7k.atomic_replace_table_as_select.app_etl_trades_notional/01a20198-…`,
+    R1's), itself from `6vxboppwovk0eo`, Production's `shared/app-etl/inbox`.
+- **[Claude] xiv's first half: yes.** The graph joins Production's job, its table, the asset, the listing,
+  the subscription target and the dbt job. The join is the subscription target's node, which the grant
+  writes under the link's ARN, the name dbt's symlink resolves to (`SUP-391`). The transformer 5.2 held in
+  reserve is not needed, and the run did not repeat.
+- **[Claude, in the user's session] 5.3**, read at 20:09 as the Data Scientist User in
+  `eighth-experimentation`, a subscriber of the listing through 4.12; reads and view toggles only. The
+  listing `trades_notional`, *"Subscription approved"*, *Lineage* at graph depth 5: 11 nodes and 11 edges.
+  Production's `shared/app-etl/inbox` (Amazon S3, 5 columns); the two Spark job runs
+  `overwrite_by_expression…` and `atomic_replace_table_as_select…`, `COMPLETE`, 01:51 and 01:52 UTC-03:00;
+  Production's Glue table, named `dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/data/catalogs/trades_notional`;
+  the asset, *Asset / Inventory*, 02:03; the listing, *Base* *Asset / Published*, 11:05;
+  `eighth-experimentation-lakehouse-default-target`, drawn as a *Subscription target* with *Grant status:
+  Granted*; the link, drawn as a Glue table named `awsdatacatalog.app_dbt.trades_notional`, 16:59; the dbt
+  model's job with its latest run `COMPLETE`; `awsdatacatalog.app_dbt.notional_by_desk_prod`, 2 columns;
+  the test's job with its latest run.
+- **[Claude] xiv's second half, with a limit**: a member of a consuming project sees the producer's job
+  runs, its table, the asset, the listing, every subscription target, and another consuming project's dbt
+  job downstream. The portal names `app-dbt-dev`'s subscription target by its latest version, dbt's, so it
+  draws a table and not a *Subscription target* (3.4's reading of a node's name). The Data Scientist User
+  owns `app-dbt-dev` as well as `eighth-experimentation`, so the reading does not separate a member of
+  another project from a member of the consuming one. The Governance Manager, a contributor of
+  `eighth-experimentation` and no member of `app-dbt-dev`, had no browser connected to the extension.
+- **Left of pass 5**: 5.0's revocation with 4.12's, after §N.10's day 2. `notional_by_desk_prod`'s asset,
+  if the source over `app_dbt` imports it at 02:43 on 2026-11-23, leaves `app-dbt-dev` with the link's
+  before R2's tag (8.6). `jup-app-dbt-dev` was left `InService` under its idle timeout, with `~/app-dbt`
+  and the tar in its home; its JupyterLab tab was closed at 20:14.
