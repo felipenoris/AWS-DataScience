@@ -2406,8 +2406,8 @@ knowledge base node in the existing flow on the user's word, after Agents Classi
 (`SUP-446`); the closing reads at 05:03 UTC and Sandbox's lowering from 05:08 to 05:15. Step 3 did not run,
 the user's choice at 04:59 UTC, and rides day 3 (N.9.5) with verification xxiv's `Retrieve` from `jup`. 3.2
 created the group at 00:18 UTC, so 3.3 reads `eighth-experimentation`'s source run of about 17:38 UTC on
-2026-11-22. The owners' six *Update project* presses, 05:14 to 05:29 UTC, gave 6d 2.4's after half and 2.7's
-step 8, read by the coordinating session (6d's log).
+2026-11-22. The owners' six *Update project* presses, 05:14 to 05:21 UTC, their stacks done by 05:29, gave 6d 2.4's
+after half and 2.7's step 8, read by the coordinating session (6d's log).
 
 #### N.9.5 Day 3: 6e 6.4, Stage 17's sitting C and its pass 5, and 6d's remainder
 
