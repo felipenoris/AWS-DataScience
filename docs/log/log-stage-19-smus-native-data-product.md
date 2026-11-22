@@ -4733,3 +4733,14 @@ and Sandbox Account 1 (`awsds-infra-sandbox-1`), 14:07 to 14:25, nothing up. Tim
 - **Left of 4.12**: the consumer's read from `eighth-experimentation`'s query editor with no space, then
   xxiv's `GetDataAccess` in Production's trail; the revocation, with Stage 20 5.0's, after `promotion.md`
   §N.10's day 2 (2.5).
+
+## 2026-11-22 — The Governance Manager's Playground subscriptions kept, the user's decision
+
+*The user answered in the chat of the side session that guides the Governance Manager's acts, which relayed
+the answer to this session; Claude read the objects as the infrastructure user with `InfrastructureAccess`
+in Data Governance (`awsds-infra-data`), no AWS write. Times UTC.*
+
+- **[user] The decision**, answering *"Mantenho as duas assinaturas automáticas ao Haiku 4.5?"*: *"Manter"*.
+- **[Claude] The objects**, read at 14:30: the subscriptions `3x9t8oblwdwwpc` and `c8euiy78k0c368` on
+  `6wxl6t4zdypvkg`, `APPROVED`, unchanged since 13:44:38 and 13:44:39 (`SUP-452`). Nothing changes in AWS,
+  and the waiting list's row goes.
