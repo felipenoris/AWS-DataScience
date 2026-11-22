@@ -1265,7 +1265,10 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
     specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
     creation role *"must be provided when using repository tags and/or KMS in the template"*;
     `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
-    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A session's
+    brief forks the same way: the brief for Stage 21's 4.5 asked for *"the stage's recommendation"*, and
+    the stage file held none; its one sentence on the item framed the narrower option as a reading in
+    itself, while the user's rule for that stage's recommendations pointed at the wider one (2026-11-22).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data

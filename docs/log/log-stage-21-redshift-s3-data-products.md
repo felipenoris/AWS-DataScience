@@ -618,3 +618,7 @@ the user's answer is quoted as given. Account ids are replaced by `<Sandbox Acco
   rollback, decision 4 and the `Consumes` row; `sandbox/warehouse/`'s `iam.tf` comment and README row;
   `consumer-data`'s README rows; `promotion.md` §N.10.1 and §N.10.4; the row in `waiting-on-the-user.md`
   removed.
+- **[Claude] The template object**, about 02:20: `s3api head-object` on the `templateUrl`'s object through its
+  access point alias reads `LastModified` 2026-11-21T01:19:23Z, `ContentLength` 10532 and `ETag`
+  `"d516acd3183d361cf3b92a12ec19dd95"`, where 1.3 read `LastModified` 2026-11-13T19:43:40Z and 10,532 bytes on
+  2026-11-18; the blueprint's `updatedAt` stays 2026-05-13T21:31:31Z (`SUP-361`).
