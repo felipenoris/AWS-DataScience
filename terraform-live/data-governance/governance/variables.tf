@@ -87,7 +87,7 @@ variable "max_ebs_volume_size_gb" {
 variable "sandbox_dev_env_version" {
   description = "The house image version the SageMakerAIDomain blueprint pins in Sandbox's profile (6d decision due 15): terraform-live/sandbox/dev-env/'s awsds-sandbox-dev-env, whose versions the release pipeline registers (dev-env.md §B). Moved at a release, with an Update project per project."
   type        = number
-  default     = 11
+  default     = 12
 }
 
 variable "form_type_owners" {
