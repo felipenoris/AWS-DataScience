@@ -2595,3 +2595,19 @@ Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are U
   synced with `origin/main` at `1980abb2` by merge before it opened; `terraform fmt -check` clean, `make
   check` *"check: OK"*, every pre-commit hook passed or skipped, `./scripts/check-aws-supplement.py` OK on
   the synced tree.
+
+## 2026-11-22 — pull request #363 merged, and the records it left stale
+
+*Claude, in a session the orchestrating session started to write the rows of the sessions that finished
+on 2026-11-22, in a worktree of its own. No AWS call: `git` and `gh` reads of the repository. Times are
+UTC.*
+
+- **[user] The merge** of [pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363),
+  2026-11-22 at 03:24:00, squashed as `5771d272` on `main`.
+- **[Claude] Read on `main`**: `terraform-live/sandbox/warehouse/variables.tf` holds `"4gqfau9xuo6e4w"` in
+  `projects` and `default = true` for `all_projects_tag_enabled`. The change is not applied: the warehouse
+  sitting's step 7 applies it, and until then `WH-7` and `WH-11` fail, as `AWS_STATE.md` §C records.
+- **[Claude] The records the merge left stale**, in
+  [pull request #367](https://github.com/felipenoris/AWS-DataScience/pull/367): the stage file's `Status`
+  and the sitting's "Before it" step 2; `promotion.md` §N.10.1, §N.12.1's calendar and §N.12.4; `waiting-on-the-user.md`'s row for the
+  standing change, removed, since its user part was the merge.
