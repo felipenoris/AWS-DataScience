@@ -693,6 +693,16 @@ workflow a person authored in the portal on 2026-08-27.
   Studio artifact executor. A scheduled flow is therefore expected to meet the boundary a notebook task
   meets. What reaches a deployment target is the generated script, as a Glue job of the application (D28
   class (2c), Stage 10 step 2.2).
+- **A SageMaker pipeline enters a workflow as a one-time copy, in an IAM-based domain alone** (released
+  2026-06-04, read 2026-11-21; unmeasured). *Create Workflow → Import SageMaker Pipeline* lists the
+  account's pipelines and converts the latest version of the one chosen into a workflow's YAML and its
+  visual DAG. A later change to the pipeline does not reach the workflow, no schedule comes across, and a
+  model evaluation step followed by a condition step is not supported. The page names no operator for the
+  converted tasks, so whether each keeps its step's network, key and tags, which the D13 boundary requires
+  of a job, is unread. `awsds-studio` is an Identity Center domain (`IAM_IDC`), and its portal shows
+  Feature Store, which AWS documents for IAM-based domains alone (Stage 17 verification xxvii), so whether
+  *Create Workflow* offers the import is read in the portal. A workflow that keeps the pipeline starts it
+  with `SageMakerStartPipelineOperator` instead (Stage 17 decision 19 (b)).
 - **`update-workflow` is a full replace** (Lesson 60), and the portal injects domain and project state
   no field of that API restores, so an update authored outside the portal severs it.
 - **A workflow's name and key are fixed at creation**: `AWS::MWAAServerless::Workflow` marks `Name` and
