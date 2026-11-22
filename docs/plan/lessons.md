@@ -695,6 +695,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
    promises a policy control names the condition key it writes, read from the service reference, before
    the card is offered.
+   Stage 6e's decision 13, taken on 2026-09-12, left the `bedrock` endpoint's policy unscoped on the premise
+   that SageMaker Unified Studio's blueprints call Bedrock's control plane through it, and wrote the premise
+   down as unexercised. Once Stage 17 had used the features, ten weeks of trail read on 2026-11-22 showed
+   none of their calls through the endpoint (`SUP-426`), and the user kept the decision on another ground,
+   the layer an endpoint policy binds. A decision that names its premise as unexercised can be re-read
+   against it; this one was, three times.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -1265,7 +1271,11 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
     specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
     creation role *"must be provided when using repository tags and/or KMS in the template"*;
     `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
-    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A lesson forks
+    the same way. On 2026-11-22 a peer session carried Lesson 79 as a rule that applies come from `main`,
+    which would have merged PR #108 before decision 17's SCP apply and its invocations, putting model ARNs
+    no invocation had proven on `main` for another session to apply (Lesson 69). The lesson says to plan
+    from the tree that applied, or after the merge; its text settled it (Stage 6e).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1966,7 +1976,9 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 - `"$M:examples/app-etl"` applied zsh's `:e` modifier, and `git ls-tree` received `xamples/app-etl`
   (2026-11-16);
-- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15);
+- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15), and `aws … $P`
+  received `--region us-west-2 --profile …` as one word and answered *"Unknown options"* (Stage 6e,
+  2026-11-22);
 - `echo ======` failed with *"===== not found"*, since `=word` expands to the path of the command `word`
   (2026-11-16);
 - a glob that matched nothing refused the whole line: `terraform-modules/sagemaker-app*` (2026-11-16), and
@@ -1975,8 +1987,10 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 it refused
 `(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, and inside `$(…)` behind
-`2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
-runs as `grep -F` or in Python, with its exit code read.
+`2>/dev/null` the count read empty, the same silence from another cause. On 2026-11-22 it refused two
+bounded repeats, `[^"]{0,40}` and `[^"]{0,80}`, in one pattern over a session transcript with *"exceeds
+complexity limits"* (Stage 6e). A search whose absence is evidence runs as `grep -F` or in Python, with its
+exit code read.
 
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such

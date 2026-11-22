@@ -1854,3 +1854,24 @@ id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
   right after. `./aws/bedrock-scope.py` on the branch's SCP: `BS-1` to `BS-7` pass, `BS-5` with six models
   `AVAILABLE`; `BS-8` notes Sonnet 4.5 `LEGACY`. No invocation yet: decision 15's `NotResource` in AWS
   still refuses the 5.5 ids until the `identity/org-policies` apply.
+
+### The trail re-read for the supplement
+
+- **[Claude] The 2,939 events with a `vpcEndpointId`, re-read from the lookup saved at 02:00**: every one
+  `InvokeModel` at eventVersion 1.11, in the project role's session, with `invokedBy`, `sourceIPAddress` and
+  `userAgent` `bedrock.amazonaws.com`, and none with a `vpcEndpointAccountId`, which no event of the window
+  carries. By endpoint id and session name: `vpce-0d75040e827258f9d` 1,479 in one `EmbeddingTask-<id>`
+  session, 01:33:37 to 01:33:52; `vpce-046f1b5f53e3e98c7` 1,457 in another, 01:34:19 to 01:34:37;
+  `vpce-021c8cd79f64c2f84` three, each in a session named `BKB-CP-<knowledge base id>-<suffix>`, at 01:33:18,
+  01:33:30 and 01:34:13. Beside them: `CreateKnowledgeBase` at 01:33:19 and `StartIngestionJob` at 01:33:30,
+  both by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, and `StartIngestionJob` at
+  01:34:13 by the project role from the browser.
+- **[Claude] The portal's calls from a public address, by role and action**: the project role
+  `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
+  `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered;
+  `awsds-sandbox-bedrock-model-consumption` `ListFoundationModels` 15 and `ConverseStream` 2 answered, 4
+  `AccessDenied` (2026-10-19 to 2026-10-30).
+- **[Claude] CloudTrail's record reference read** through a fetching agent: for events AWS originates
+  through a service's VPC, `vpcEndpointId` is usually `AWS Internal` or the service name, and
+  `vpcEndpointAccountId`, the owner's account, exists since 1.09. Written: `SUP-426`; readings appended to
+  `SUP-293`, `SUP-294` and `SUP-300`; instances appended to Lessons 34, 57 and 84.

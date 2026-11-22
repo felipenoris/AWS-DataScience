@@ -3708,6 +3708,12 @@
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-cli.html>,
   <https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_LookupAttribute.html>.
 
+- CloudTrail record contents (read 2026-11-22, Stage 6e decision 13): `vpcEndpointId` since 1.04 and
+  `vpcEndpointAccountId`, the endpoint owner's account, since 1.09, both optional; for events AWS originates
+  through a service's VPC the page gives `AWS Internal` or the service name, and the current version is
+  1.11 (`AWS_SUPPLEMENT.md` `SUP-426`):
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>.
+
 - A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
   `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works
   by adding a route to your VPC's route table", with the bucket in the event's `resources` (read

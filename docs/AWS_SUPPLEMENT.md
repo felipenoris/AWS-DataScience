@@ -4731,7 +4731,13 @@ entry is still true is the reading.
   `agreementAvailability.status: NOT_AVAILABLE` means no agreement has been created, not *no agreement is
   needed*, and reading it the second way is what hid the omission through three separate readings. The
   agreement is account-wide: created in one Region it reads `AVAILABLE` in the others before the creating
-  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4.
+  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4. Read again
+  2026-11-22 (Stage 6e decision 17): the agreements for Opus, Sonnet and Haiku 5.5, created through
+  `us-west-2`, read one status in all three routed Regions at each reading. Opus 5.5 read `AVAILABLE`
+  everywhere at the first reading, 02:13:31, 49 seconds after its CloudTrail event; Sonnet and Haiku 5.5 read
+  `PENDING` everywhere at 02:13:31 and `AVAILABLE` everywhere by 02:14:13. The other Regions leading the
+  creating one did not recur, so the order of the Regions is not a property. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-294` **A Bedrock model can be gated commercially with every readable instrument reporting it
   available** (measured 2026-09-12). `anthropic.claude-sonnet-5`: agreement `AVAILABLE`,
@@ -4745,7 +4751,8 @@ entry is still true is the reading.
   `claude-fable-5`, `claude-fable-5-1`) did not. `agreementAvailability: NOT_AVAILABLE` means no agreement
   has been created, not that none is needed: a live offer existed for each model. An agreement is per model
   and account-wide: Sonnet 5's went `PENDING` to `AVAILABLE` within seconds, `us-east-1` and `us-east-2`
-  reading `AVAILABLE` before the creating Region left `PENDING`, while Sonnet 4.5's took minutes;
+  reading `AVAILABLE` before the creating Region left `PENDING` (not repeated on 2026-11-22, `SUP-293`),
+  while Sonnet 4.5's took minutes;
   `amazon.nova-lite-v1:0` needed none. The grant, the endpoint policy, the SCP and the use-case form were
   each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12.
 
@@ -4819,7 +4826,13 @@ entry is still true is the reading.
   policy. A ceiling that refuses the profile pass therefore hides whether the model pass holds. The browser
   called `bedrock-runtime` directly, with no `vpcEndpointId`, as the consumption role in a session named
   `<DataZone user>@<environment>`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-10-19;
-  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`.
+  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`. Read again over 2026-10-17 21:07 to
+  2026-11-22 01:56 in Sandbox's trail (Stage 6e decision 13): the portal's Bedrock pages call the control
+  plane from the browser too, as the project role from a public address with no `vpcEndpointId`:
+  `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
+  `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered. The consumption
+  role's 15 `ListFoundationModels` came the same way. Where: `log-stage-06e-claude-code-bedrock.md`,
+  2026-11-22.
 
 - `SUP-301` **CloudWatch publishes a Bedrock call through an application inference profile under the
   profile's id, which names no model** (measured 2026-10-19 in Sandbox, Stage 17 7.3). Haiku 4.5's
@@ -4831,6 +4844,27 @@ entry is still true is the reading.
   returned 96 profiles, all `SYSTEM_DEFINED`. In the console's code a playground disable deletes the
   profile, so a later enable gives a new id and an old series no longer resolves to a model. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-10-19; `aws/bedrock-usage.py`.
+
+- `SUP-426` **A knowledge base's calls to its embedding model are recorded with the `vpcEndpointId` of an
+  endpoint this account does not own, and with no `vpcEndpointAccountId`** (read 2026-11-22 in Sandbox's
+  trail, Stage 6e decision 13). A SageMaker Unified Studio knowledge base, created at 01:33:19 on 2026-11-22
+  by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, ran two ingestion jobs. Its 2,939
+  `InvokeModel` calls on the application inference profile `p391nstyc81c`, 01:33:18 to 01:34:37, are the
+  only Bedrock events from 2026-10-17 21:07 to 2026-11-22 01:56 that carry a `vpcEndpointId`. Each is
+  recorded in the project role's session, with `invokedBy`, `sourceIPAddress` and `userAgent`
+  `bedrock.amazonaws.com`. Each ingestion job's calls came in one session named `EmbeddingTask-<id>` through
+  one endpoint id: 1,479 through `vpce-0d75040e827258f9d` and 1,457 through `vpce-046f1b5f53e3e98c7`. One
+  call at the knowledge base's creation and one at each `StartIngestionJob`, in sessions named
+  `BKB-CP-<knowledge base id>-<suffix>`, came through a third, `vpce-021c8cd79f64c2f84`.
+  `describe-vpc-endpoints` finds none of the three in the account, whose four Bedrock endpoints carried no
+  event. CloudTrail's record reference, at eventVersion 1.11, says that for events AWS originates through a
+  service's VPC the field is *"usually `AWS Internal` or the service name"*, and it defines
+  `vpcEndpointAccountId` (since 1.09) as the endpoint owner's account. These 1.11 records carried a `vpce-`
+  id and no owner, as did every other event of the window. A count of calls through the account's endpoints
+  therefore matches its own endpoint ids, never a non-null `vpcEndpointId`. With the portal's calls from the
+  browser (`SUP-300`) and the blueprint's creates from `datazone.amazonaws.com`, no Unified Studio Bedrock
+  feature reached Bedrock through this account's endpoints in those ten weeks, and an endpoint policy binds
+  none of them. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22; Stage 6e decision 13.
 
 ## Terraform
 
