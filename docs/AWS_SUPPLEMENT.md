@@ -3621,6 +3621,27 @@ entry is still true is the reading.
   Nova Lite, share that name, and the domain's two from the playground share `<domain id>` (`SUP-187`). Nova
   Lite's was created at the evaluation's submit, 4 s before its environment.
 
+- `SUP-446` **The Bedrock IDE's chat agent app is an Agents Classic agent: its preview calls `InvokeInlineAgent`
+  and its deploy `CreateAgent`, both refused for an account with no prior agent use, and the portal shows
+  neither refusal's wording** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). *Save* writes the app's
+  definition to the project's bucket, `amazon-bedrock/builder/apps/chatApp/<uuid>-definition.json`, and creates
+  no environment and no agent. The definition names the model by a catalog listing revision, `<listing id>:2`,
+  whose `BedrockModelAssetType` asset has the `us.` system profile as its base, names the knowledge base and the
+  guardrail by component uuid, and holds `temperature`, `topK` and `maxTokens` with no `topP`. Each *Preview*
+  message sent `POST bedrock-agent-runtime.us-west-2.amazonaws.com/agents/<session id>` from the browser,
+  answered 403 with *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts
+  without prior service usage."*; the portal read *"Failed to run application Amazon Bedrock encountered an
+  error when invoking the Bedrock runtime API. Try again later."* and *"Something went wrong."*. *Deploy*
+  created a DataZone environment `<uuid>-shared` of the `AmazonBedrockChatAgent` blueprint, and its stack's
+  `CreateAgent`, as the provisioning role from `datazone.amazonaws.com`, on the project's application inference
+  profile with the project key and the guardrail's `DRAFT`, was refused `AccessDenied` with no error message
+  in the trail and no KMS call; the environment read `CREATE_FAILED` with *"Access denied for operation
+  'AWS::Bedrock::Agent'."*. The IAM simulator, with resource `*`, reads `bedrock:CreateAgent` allowed for that
+  role by `SageMakerStudioProjectProvisioningRolePolicy` and the SCPs under the request's tags, so the refusal
+  is Bedrock's own, and its wording reaches the browser on `InvokeInlineAgent` alone. The builder's banner
+  dates Agents Classic's closing to new customers, July 30, 2026, and names no refusal of its own calls.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions

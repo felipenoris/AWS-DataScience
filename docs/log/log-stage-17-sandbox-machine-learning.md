@@ -4525,3 +4525,51 @@ UTC.
   one per model: Claude Opus 4.5 (2026-10-30), Titan Text Embeddings V2 (01:02:39), Claude Haiku 4.5
   (01:48:19) and Nova Lite (02:51:21). The domain's two, named `dzd-d8yrvx1ko7im6o`, hold Haiku 4.5 and Nova
   Lite (2026-10-19, `SUP-187`).
+
+## 2026-11-22 — Day 2's sitting B: 7.4's evaluation read, and 7.4b's chat agent refused by Agents Classic
+
+- **[Claude] The evaluation's result.** `31epl34t77s3` read `Completed` at 03:02:11, ten minutes after its
+  create, with no failure message. Its one output file, under `…/evaluations/output/avhvbqn37ty7m8ml-demo-eval-nova-lite/31epl34t77s3/models/w9u1ufr8ji2z/taskTypes/QuestionAndAnswer/datasets/evaluation-dataset.jsonl/`,
+  holds 20 records, each with the prompt, the reference response, Nova Lite's answer and `Builtin.Toxicity`:
+  from 0.00035 to 0.00123, mean 0.00053, every answer `END_TURN`. The object is under the project key
+  (`aws:kms`, bucket key on), by the bucket's default. The Haiku 4.5 attempt's output prefix holds
+  `amazon-bedrock-evaluations-permission-check` alone, 0 bytes, written at 02:07:54.
+- **[Claude] The chat agent, built.** *Build* → *Chat agent*. The *Model* list offers Nova Lite, Claude Haiku
+  4.5, Claude Opus 4.5 and Claude Sonnet 4.5, the three Claude models marked *Cross-region*, each *"Supports
+  Guardrails, Data, Functions"* (verification xxv). Claude Haiku 4.5, the system prompt *"You answer questions
+  about this project's runbooks using only the documents in the knowledge base. If the documents do not
+  contain the answer, say that you do not know."*; *Inference parameters* read Temperature 1, Top P 0.5,
+  Maximum length 4096 and the stop sequences `</invoke>`, `</answer>` and `</error>`. *Data*: `ml-demo-runbooks`,
+  *Override default search* on, which selects *Hybrid search (semantic & text)*, and 5 source chunks.
+  *Guardrails*: `ml-demo-guardrail`. *Save* asked for no name, kept `Untitled App - cer31`, and wrote
+  `amazon-bedrock/builder/apps/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json` at 03:01:39,
+  creating no environment and no agent. The definition names the model `6vwrjnya013a8g:2`, a catalog listing
+  of Claude Haiku 4.5 whose asset has `us.anthropic.claude-haiku-4-5-20251001-v1:0` as its base, and holds
+  `temperature` 1, `topK` 250, `maxTokens` 4096, no `topP`, `ragSearchType` `HYBRID` and `ragNumberOfResults`
+  5 (`SUP-446`). The project's Haiku 4.5 profile, `ljl42zoh6e4v`, routes to `us-east-1`, `us-east-2` and
+  `us-west-2`.
+- **[Claude] The preview, refused.** *"When is using the Management account root justified?"*, sent three
+  times from 03:02 to 03:03:54, each answered *"Something went wrong."* under the banner *"Failed to run
+  application Amazon Bedrock encountered an error when invoking the Bedrock runtime API. Try again later."*.
+  A logging wrapper installed on the page's `fetch` read the call: `POST
+  bedrock-agent-runtime.us-west-2.amazonaws.com/agents/<session id>`, `InvokeInlineAgent`, answered 403 with
+  *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior
+  service usage. To learn more visit
+  https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html."*. The other six
+  questions were not sent.
+- **[Claude] The deploy, refused.** *Deploy* with a new alias, `ml-demo-v1`. At 03:05:19 the portal created
+  the environment `502a9c64-70fd-4dab-afea-a1a5a98146d4-shared` (`b343orq3qka5n4`, blueprint
+  `AmazonBedrockChatAgent`), whose stack `DataZone-Env-b343orq3qka5n4` was created at 03:05:33. At 03:05:39
+  `CreateAgent`, as the provisioning role from `datazone.amazonaws.com`, was refused `AccessDenied` with no
+  error message; its request named the project's service role, the project key, the application inference
+  profile `ljl42zoh6e4v` and the guardrail `razikgicppzy` at `DRAFT`. No KMS call by the role or by Bedrock
+  falls between 03:05:30 and 03:08:30. The environment read `CREATE_FAILED` at 03:08:18, and the portal *"…
+  failed to deploy: Environment b343orq3qka5n4 failed to stabilize after create/update: 1: [Resource handler
+  returned message: "Access denied for operation 'AWS::Bedrock::Agent'." (… HandlerErrorCode:
+  AccessDenied)]"*. The IAM simulator reads `bedrock:CreateAgent` `allowed` for the provisioning role, by
+  `SageMakerStudioProjectProvisioningRolePolicy` (`v86`, statement `BRMng`) and the SCPs, with resource `*`
+  under the request's tags; with `agent/*` as the resource it reads `implicitDeny`, the action taking no
+  resource type. `list-agents` reads none. Verification xxxiv: the app is Agents Classic, `InvokeInlineAgent`
+  for the preview and `CreateAgent` for the deploy, and Agents Classic refuses this account.
+- **[Claude] What waits on the user**: 7.4b's fallback, a flow app over the knowledge base with the preview's
+  questions and the one *Share*, and the deletion of the failed chat agent's environment.
