@@ -5574,3 +5574,170 @@ through `awsds-infra-sandbox-1`, the third of *"Autorizo os três applies."*. Ti
   `mn3wavwk9jx7` (`app-genai-dev`'s) and `razikgicppzy`.
 - **Left for later**: the probe run once with `EXPECT_UNGUARDED` back on `answered` (line 55 of
   `app-genai-dev`'s working copy), and `MODEL_SOURCE` back on `prefix` (line 80 of `app-ml-dev`'s).
+
+## 2026-11-22 — Day 3's sitting C: the probe without the deny, and the working copies restored
+
+*Claude writes this entry from the output the user pasted at 21:42 and from the run's task log, read as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The edits and the run are the
+user's, from `jup-app-genai-dev` and `jup-ml-dev`. Times UTC.*
+
+- **`app-genai-dev`'s working copy**: `EXPECT_UNGUARDED` back on `answered` at line 55 of the manifest, the
+  `dev` stage; lines 84 and 113 keep `refused`.
+- **The probe's run `oIak5MKc0ZlrMj6`**, workflow `probe-anvonKMpvI`: `SUCCESS` from 21:42:11.7 to
+  21:42:48.4. The task `unguarded` took 7 s and logged at 21:42:47.5 *"the request without a guardrail:
+  answered, answered expected"*: 6 characters, 8 input and 3 output tokens, `end_turn`, `passed` true,
+  the model `application-inference-profile/ciceumyodl7y`.
+- The CLI printed its `ListTagsForResource` warnings on 15 other workflows, as on every run since Stage 19
+  (`sagemaker-application.md` §D).
+- Reading 4's after-control reads yes: with the deny's statement removed at 21:27:37, a request naming no
+  guardrail answers again. `probe-report.json` holds the run (`ML-11`, 22:56).
+- **`app-ml-dev`'s working copy**: `MODEL_SOURCE` back on `prefix` at line 80, the `dev` stage; lines 123 and
+  167 keep `registry`.
+
+## 2026-11-22 — Day 3's sitting C: pass 5, the pipeline from the SDK (5.1, 5.2, 5.4)
+
+*Claude writes this entry from the output the user pasted, the SageMaker API and the trail, read as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The `upsert`s and `start`s
+are the user's, from `jup` in `eighth-experimentation`; the three fixes are Claude's commits. Times UTC.*
+
+- **The space**: `jup`'s clone at `b3b900b`; `extra_values.json` names the XGBoost tag `3.0-5` and the MLflow
+  App. `awsds-workflows values --project avhvbqn37ty7m8` filled `JOB_IMAGE_URI` with the house image by its
+  digest in Production's `awsds-prod-ecr-dev-env`, `sha256:a6f9b5ab…`.
+- **The first `upsert`**, pasted at 21:56: `prepare.py` uploaded to `shared/ml-demo/pipeline/code/`, then
+  `DescribePipeline` of the free name refused at 21:56:03 through `vpce-0dc0f341029459864`, *"no
+  identity-based policy allows"*. The blueprint grants it on a pipeline tagged with the caller's project
+  alone (`SUP-267`, read again). `fc6bb0e0` makes `upsert` look the name up with `ListPipelines`.
+- **The second `upsert`**, pasted at 22:04: `CreatePipeline` refused, *"ValidationException: Unable to parse
+  pipeline definition. Model Validation failed: string '…' with length=262 cannot be greater than max=256.0
+  defined for ContainerArgument."* The 256-character limit per item is the API's documented one. `93e136ee`
+  shortens `Prepare`'s command to 191 characters with a `chown -R` of the output's parent.
+- **The third `upsert` and the first `start`**, pasted at 22:12: the pipeline created at 22:12:23, as the
+  project role in the space's session `SageMaker` through `vpce-0dc0f341029459864`. Its tags: the script's
+  `AmazonDataZoneProject` and the six others of `SUP-408`'s seven, which the space adds.
+  - The execution `epycqlyvfigz` started at 22:12:29. `Prepare` failed from 22:12:29.8 to 22:12:30.9:
+    *"ClientError: Reserved tag key prefix found for 'AmazonDataZoneProject' in Step: Prepare"*. No
+    `CreateProcessingJob` followed. The README's "What the first run decides" had named this reading.
+  - `49dde59a` removes `Tags` from the three job steps (`SUP-467`).
+- **The fourth `upsert` and the second `start`**, pasted at 22:16: the pipeline updated at 22:15:55, its
+  version 2, and the execution `w8qa46pmftoy` started at 22:15:56. `ListPipelineVersions` reads version 1
+  with `epycqlyvfigz` and version 2 with `w8qa46pmftoy`: an `UpdatePipeline` with a changed definition adds a
+  version. Whether an unchanged one does stays verification lxi's.
+  - `Prepare`, 22:15:56.8 to 22:25:59.8: `CreateProcessingJob` at 22:15:57 as the project role in the
+    session `sagemaker-pipeline-w8qa46pmftoy-Prepare`, invoked by `pipelines.sagemaker.amazonaws.com`, no
+    `vpcEndpointId`. The job `pipelines-w8qa46pmftoy-Prepare-kiB0JNeozt`: isolation and inter-container
+    encryption true, `sg-0fee1c059b82e3562` with the two private subnets, `ml.t3.medium`, the volume and the
+    output under the project key `a81b1ef3-…`. Its container log at 22:23:57: Python 3.12.14, pandas 2.3.3,
+    7032 rows split 4922, 1054 and 1056.
+  - The request's eight tags: the pipeline's seven less `AmazonDataZoneUser`, plus
+    `sagemaker:pipeline-step-name` and `sagemaker:pipeline-execution-arn`. The job reads the same eight
+    (`SUP-467`).
+  - `Train`, 22:26:00.7 to 22:28:14.7: `pipelines-w8qa46pmftoy-Train-3Qrj5R3Zrm` completed from 22:26:50.6
+    to 22:28:14.3, 84 s billed on `ml.m5.xlarge`, `validation:auc` 0.82091 and `train:auc` 0.95127, the
+    four settings, the project key and the same eight tag keys; the image `sagemaker-xgboost:3.0-5`.
+  - `CheckAuc`, 22:28:15.1 to 22:28:15.4, outcome `True`.
+  - `Register`, 22:28:16.1 to 22:28:18.0: `ml-demo-xgboost/2`, `PendingManualApproval`, created at
+    22:28:17.9 with the description *"from the pipeline ml-demo-pipeline"*. The registry held version 1
+    alone, `Approved`, so the pipeline's version is the second where 5.2 expects the third.
+- Verification xi's pipeline half reads yes: `CreatePipeline` with the project role as `RoleArn` was
+  admitted, so the role passes itself to SageMaker for a pipeline, and each step's job runs as that role
+  in the session `sagemaker-pipeline-<execution id>-<step name>`. The endpoint half is pass 4's.
+- **5.2's portal reading**, from about 22:28, through Claude in Chrome in the Data Scientist User's portal
+  session, on the user's *"faça a leitura na sessão no chrome"* (22:27:45). The *ML pipelines* page read
+  *"No pipelines"* with *"Results are cached"* until *Refresh* listed `ml-demo-pipeline`. The pipeline's
+  page has the tabs *Executions*, *Graph*, *Parameters* and *Information*, and the buttons *Execute*,
+  *Visual editor* and a menu. *Executions* lists `execution-1795385756381`, `Succeeded` in 12m 22s, and
+  `execution-1795385549186`, `Failed` in 2s: the portal names an execution by its creation time in
+  milliseconds, not by its id. The graph: `Prepare` → `Train` → `CheckAuc` → `Register` on true or
+  `AucBelowThreshold` on false, the run's four green.
+- **A download without the user's yes**, at about 22:31: Claude's click meant for *Visual editor* landed on
+  the menu's *Download pipeline definition (JSON)*, which Escape had not closed. Chrome saved
+  `execution-1795385756381_definition.json`, 13,316 bytes, to the laptop's Downloads folder. Claude told the
+  user at once. The file stays until the user decides.
+- Verification xvi reads yes: the downloaded definition equals the live `DescribePipeline` definition, and
+  `pipeline.py compare` read the live one equal to `definition.json` with its 12 placeholders filled.
+- **5.4**: `ML-6` at 22:56:05 passes `ml-demo-pipeline`: the project role, the four settings, `Succeeded`,
+  5 steps as in the committed source.
+
+## 2026-11-22 — Day 3's sitting C: verification xxiv's `Retrieve`, and pass 4 deferred
+
+*The `Retrieve` is the user's, from a notebook in `jup`; Claude writes this entry from the output the user
+pasted at 22:19 and from CloudWatch and the trail, read as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`. Times UTC.*
+
+- **The call**: `Retrieve` on the knowledge base `QWDNVYXADH` (`ACTIVE`, its data source `JXKIPOER3T`
+  holding `break-glass.md` and `buildbox.md`), the question *"Who receives the alarm when the root user
+  signs in?"*, `numberOfResults` 3. Three results, all from `break-glass.md`, scored 0.507, 0.474 and 0.465.
+- **The door**: `bedrock-agent-runtime`'s endpoint `vpce-0915f48c2198cb60b` (private DNS on, in
+  `subnet-016b5a3a62c739894` alone). Its PrivateLink counters hold one datapoint since the endpoint's
+  creation at 18:14:07, read at 22:23:53: at 22:19, `NewConnections` 1 and `BytesProcessed` 14,870.
+  `Retrieve` is a data event, absent from `lookup-events`.
+- The query's embedding: `InvokeModel` at 22:18:57 as the project role in the session
+  `BKB-Retrieve-QWDNVYXADH-<uuid>`, invoked by `bedrock.amazonaws.com` through the service's own endpoint id
+  `vpce-0cf920938fc4d8fc6` (`SUP-426`).
+- Verification xxiv's `Retrieve` half reads yes: the project role reaches the knowledge base from a space
+  through the `bedrock-agent-runtime` endpoint. Its catalog half has no object (`SUP-446`, `SUP-448`).
+- **About 22:25, the user's decision on pass 4**: *"Não, fica para depois"*. §N.10's day 1 had not run it,
+  and the orchestrating session had offered it to this sitting after xxiv. The endpoint, the transform and
+  the negatives wait for a later sitting.
+
+## 2026-11-22 — Day 3's sitting C: 5.3, the visual editor, and `ML-7`
+
+*The pipeline is Claude's, built, saved and run twice through Claude in Chrome in the Data Scientist User's
+portal session, on the user's *"Pode fazer"* at about 22:38, answering whether Claude should build 5.3's
+one-step pipeline. Claude reads the SageMaker API and the trail as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`. Times UTC.*
+
+- **`ML-7` before the editor**: two MLflow Apps at 21:30:38, `app-ml-dev-mlflow` and `ml-demo-mlflow`. The
+  same two after the list, executions and graph pages (22:27:53, 22:30:09) and after the editor's first
+  entry (22:32:19, 22:32:41, 22:33:02).
+- **The editor over `ml-demo-pipeline`**, opened at about 22:32 (`…/pipelines/view/ml-demo-pipeline/edit`):
+  the palette holds *Code* (*Run notebook or code*, *Run callback*, *Run lambda function*), *Data
+  Preparation* (*Process data*), *Model Development* (*Train model*, *Fine tune model*), *Deployment &
+  Inference* (*Register model*, *Create model*, *Deploy model (endpoint)*, *Deploy model (batch
+  inference)*) and *Logic* (*Condition*, *Fail*).
+  - `Prepare`'s form: inputs, outputs, the image, entry point and arguments, the instance, the stopping
+    condition, and under *Advanced settings* *Caching*, *Retry* and *Security*.
+  - *Security* shows the project role, `vpc-00dca74a35159b11c`, the two subnets, `sg-0fee1c059b82e3562` and
+    the project key, greyed. No field sets network isolation or inter-container encryption.
+  - `Train`'s form is the same shape, with the algorithm's image and input mode, metrics, hyperparameters
+    and a checkpoint.
+- **A new pipeline with one *Train model* step**: the channel `train` (`…/pipeline/w8qa46pmftoy/train`,
+  `text/csv`); the output `…/shared/ml-demo/pipeline/editor/model`; `sagemaker-xgboost:3.0-5`, `File`,
+  `ml.m5.xlarge`, 30 GB; `objective` `binary:logistic`, `eval_metric` `auc`, `num_round` 20; 600 s.
+  *File* → *Save* asked for no name. `CreatePipeline` at 22:45:27 named it `Pipeline-1795387181754`, the
+  create page's opening time in milliseconds. The caller was the project role in the person's session, from
+  the laptop's browser with no `vpcEndpointId`.
+  - The pipeline's tags are the portal's four: `AmazonDataZoneProject`, `AmazonDataZoneDomain`,
+    `AmazonDataZoneScopeName` `dev` and `AmazonDataZoneUser`.
+  - The definition at 22:46:40 holds the step `Training_1C268` (display name *Train model*) with the role,
+    the algorithm, the instance, the stopping condition, the channel, the hyperparameters and the output's
+    `KmsKeyId`. It holds no `VpcConfig`, no `VolumeKmsKeyId` and neither isolation flag: *Security*'s
+    network fields and its key reach the output alone.
+- **The execution `ml-demo-editor-1`, `buk3zbhzkw6s`**, started at 22:46:10. `Training_1C268` failed from
+  22:46:11.3 to 22:46:12.5: *"ClientError: Failed to invoke sagemaker:CreateTrainingJob. Error Details: 1
+  validation error detected: Value null at 'inputDataConfig.1.member.dataSource.s3DataSource.s3DataType'
+  failed to satisfy constraint: Member must not be null"*. The channel's form showed *S3 data type*
+  `S3Prefix`, its default, without writing it. `lookup-events` holds no `CreateTrainingJob` for it.
+- **The type chosen by hand**: `ManifestFile` and back to `S3Prefix`, then *Save*. `UpdatePipeline` at
+  22:48:34 wrote version 2 with `S3DataType` `S3Prefix`.
+- **The execution `ml-demo-editor-2`, `rl26r4j8ychr`**, started at 22:49:20. `Training_1C268` failed from
+  22:49:20.9 to 22:49:22.7: *"ClientError: Failed to invoke sagemaker:CreateTrainingJob. Error Details: User:
+  arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/sagemaker-pipeline-rl26r4j8ychr-Training_1C268
+  is not authorized to perform: sagemaker:CreateTrainingJob on resource:
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/pipelines-rl26r4j8ychr-Training-1C268-TomRXvYbLk
+  with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"*.
+  - The trail's `CreateTrainingJob` at 22:49:22: `AccessDenied` with the same text, `requestParameters`
+    null, invoked by `pipelines.sagemaker.amazonaws.com`.
+  - The request lacked `VpcConfig`, the volume key and both flags, so four of the boundary's statements
+    match it: `DenySageMakerJobsOffVpc`, `DenySageMakerJobsWithoutVolumeEncryption`,
+    `DenySageMakerJobsWithoutNetworkIsolation` and `DenySageMakerJobsWithoutInterContainerEncryption`. The
+    wording names the policy, never the statement (Lesson 20).
+- Verification xii's 5.3 half: the pipeline-step forms set none of the four settings. They show the
+  project's network and key greyed, write the key into the output alone, and offer no field for either flag.
+  The portal's pipeline create is admitted, and its training job refused by the boundary.
+- **`ML-7` after**: two apps at 22:50:08, and no `CreateMlflowApp` since 22:30. The guide's sentence that
+  *"A default MLflow application will be created when you enter the pipeline visual editor."* did not hold
+  in this project's domain.
+- **`ML-6` at 22:56:05** fails on `Pipeline-1795387181754`: no `VpcConfig`, no isolation, no inter-container
+  encryption, no volume key, the latest execution `Failed`, 1 step unlike the committed source. The pipeline
+  stands until the user decides on it.

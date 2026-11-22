@@ -4585,6 +4585,29 @@ entry is still true is the reading.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/*/ml/training-image.tf`.
 
+- `SUP-467` **A SageMaker pipeline fails a step whose arguments name an `AmazonDataZone*` tag key when the
+  step starts, after `CreatePipeline` accepted the definition, and gives each step's job the pipeline's tags
+  but `AmazonDataZoneUser`, with `sagemaker:pipeline-step-name` and `sagemaker:pipeline-execution-arn`
+  added** (measured 2026-11-22 in Sandbox, Stage 17 5.1 and 5.2: `ml-demo-pipeline`, created from a space in
+  `eighth-experimentation` as its project role, which is also the pipeline's `RoleArn`).
+  - The refusal: the definition's three job steps each named `Tags` with `AmazonDataZoneProject`.
+    `CreatePipeline` accepted it at 22:12:23. The execution `epycqlyvfigz`, started at 22:12:29, failed its
+    first step in about a second: *"ClientError: Reserved tag key prefix found for 'AmazonDataZoneProject'
+    in Step: Prepare"*. The trail holds no `CreateProcessingJob` for that execution, so the step stopped
+    before any job request.
+  - The tags a job gets: with no step naming `Tags` (the pipeline's version 2), the execution
+    `w8qa46pmftoy`'s `CreateProcessingJob` at 22:15:57 and `CreateTrainingJob` at 22:26:01 ran as the
+    pipeline's role in the session `sagemaker-pipeline-<execution id>-<step name>`, invoked by
+    `pipelines.sagemaker.amazonaws.com`, with no `vpcEndpointId`. Each request carried eight tags: the
+    pipeline's seven, `SUP-408`'s set, less `AmazonDataZoneUser`, plus `sagemaker:pipeline-step-name` and
+    `sagemaker:pipeline-execution-arn`. Each job reads the same eight.
+  - The documentation: a search of AWS's pages on 2026-11-22 found none naming a reserved prefix in a step's
+    arguments or the tags a step's job receives.
+  - So a pipeline gives its jobs the project's tag through its own tags, and its steps name none. A step tag
+    passes `CreatePipeline` and fails only when the pipeline runs.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/sandbox-ml/pipeline/definition.json`.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API

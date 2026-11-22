@@ -15,8 +15,9 @@ pipeline API moved between major versions (README.md): Prepare runs prepare.py i
 on ml.t3.medium; Train is train.py's admitted request; CheckAuc compares validation:auc with the
 AucThreshold parameter (0.75); Register adds a PendingManualApproval version to ml-demo-xgboost,
 and AucBelowThreshold fails the execution with the threshold in its message. Every job carries
-the boundary's four settings, the project key and the project tag. It prints names, statuses and
-ARNs, never a row.
+the boundary's four settings and the project key. No step names a tag: a step naming an
+AmazonDataZone key fails when it starts, and each job takes the project tag from the pipeline's
+(SUP-467). It prints names, statuses and ARNs, never a row.
 
     /opt/awsds/venv/bin/python pipeline.py upsert
 """

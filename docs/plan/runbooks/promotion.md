@@ -1228,7 +1228,10 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; Stage 17's sitting C and its pass 5 on day 3,
    from which the user took 6e 6.4's window on 2026-11-22, owed to a later sitting. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
    verification xxiv's `Retrieve` to day 3, which raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`.
-   **Day 3 runs 2026-11-22**: sitting C's 9.6 and 10.4's readings 1 to 5 done (Stage 17's log).
+   **Day 3 runs 2026-11-22** (Stage 17's log): sitting C's 9.6, 10.4's readings 1 to 5, pass 5 and xxiv's
+   `Retrieve` done. 10.4's reading 6 rides with 6e 6.4's window, after the account guardrail's configuration
+   is redesigned with nothing up (`SUP-466`), and Stage 17's pass 4 waits for a later sitting, both the
+   user's choices.
    Day 3 depends on no other sitting, and its prerequisites, `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova
    Lite profile and the two tars, were done 2026-11-22 (N.12.5).
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
@@ -2451,11 +2454,12 @@ is owed to a later sitting with `bedrock-base` raised.
    `bedrock-agent` is step 4's alone.
 2. 6e 6.4's window, not run on 2026-11-22 (the user's decision) and kept here for the sitting that takes
    it, about an hour: one Claude Code session in a space on the default model, a task of
-   real length over several turns, and no other Bedrock call in the account. 9.6's workflow (step 3),
-   which calls none, starts just before the window and trains through it.
+   real length over several turns, and no other Bedrock call in the account.
    Claude marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after
    the channels' publication lag. The token volume goes to Stage 12 decision due 2's ceiling, where 6e
-   decision 6, taken 2026-11-17, leaves it.
+   decision 6, taken 2026-11-17, leaves it. Stage 17's 10.4 reading 6, which the user deferred on
+   2026-11-22, rides the same sitting outside the window, after the account guardrail's configuration is
+   redesigned with nothing up (`SUP-466`).
 3. Stage 17's sitting C: each tar and its `.env` file from `$HOME/tmp/stage17-day3/` uploaded into its
    project's space and unpacked there, the file sourced before the deploy; 9.6, `app-ml` trained,
    registered and scored in `app-ml-dev` (verification lx); then 10.4's deploy and its readings 1 to 6,
@@ -2469,6 +2473,14 @@ is owed to a later sitting with `bedrock-base` raised.
    portal step.
 6. Stage 17's closing reads, `./aws/sandbox-ml.py` and `./aws/catalog.py`, after 7.7; the spaces stopped
    and the portal tabs closed, 6d's step 12 with them; then the lowering (N.9.6).
+
+**Day 3 ran on 2026-11-22 to step 4** (Stage 17's log), on one raise with N.10's day 1 (N.10.3): steps 1
+and 4, and step 3 but 10.4's reading 6, which the user deferred at about 21:26 UTC to step 2's sitting
+(`SUP-466`), both switches back to `false` at 21:27:37. Pass 5's pipeline from the SDK ran to the
+registry's second version; the visual editor's two executions were refused by the project boundary, its
+definition writing none of the boundary's four settings (Stage 17 verification xii). Step 2 did not run,
+the user's decision. Stage 17's pass 4, offered after step 4, waits for a later sitting, the user's word at
+about 22:25 UTC.
 
 #### N.9.6 The lowering, each day
 
@@ -2787,7 +2799,8 @@ bound it stay N.6's.
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
 | 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
-| 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
+| 2026-11-22, ran | N.9's day 3 beside N.10's day 1, to N.9.5's step 4: 10.4's reading 6 and 6e 6.4 left to a later sitting (N.6 item 7) | one raise with N.10's day 1 (the next row) | nothing: its prerequisites done 2026-11-22 (N.12.5) |
+| 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
