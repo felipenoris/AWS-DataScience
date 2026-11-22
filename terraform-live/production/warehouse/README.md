@@ -52,4 +52,6 @@ creates; 9.3 reads each database's ACL first, since Sandbox's readings disagree 
 AWS says a rotation attempted with no workgroup attached fails and is not retried. Sandbox's first
 scheduled rotation ran on 2026-10-20 with no workgroup and succeeded (`EXC-13`); this secret rotates on
 the same 30-day schedule, so `EXC-13` gains a Production row at step 9.8, and whether the database took
-the new password is read with the compute up, through the Data API.
+the new password is read with the compute up, through the Data API. Its first rotation, on 2026-11-22 at
+01:17 UTC with no workgroup, succeeded, and the database took the new password, read through the Data API
+the same day (`promotion.md` §N.8.3, Stage 19's log).

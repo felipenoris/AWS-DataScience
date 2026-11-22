@@ -22,7 +22,7 @@ through the VPC endpoint — which is what every section below was written to pr
 **§M is done**: M0, M2, M4 and M5; M1 in all 17 enabled Regions and M3 attached, both 2026-09-12.
 **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
 2026-09-12, and the settings file shipped in the house image since `default-v0.4.0` (image version 4,
-2026-09-12), unchanged in version 11, `default-v0.10.0`. **§U is exercised**: the first session ran on
+2026-09-12), unchanged in versions 11 and 12, `default-v0.10.0` and `default-v0.10.1`. **§U is exercised**: the first session ran on
 settings edited by hand inside the container, and a session the same evening on the image's own pins
 read the picker as §I declares it.
 
@@ -753,7 +753,7 @@ change; §U is the other half.
 | the private path | [`terraform-live/sandbox/egress/`](../../../terraform-live/sandbox/egress), the `bedrock-base` group of `vpc-egress-v0.19.0` (the pin read 2026-11-17) | applied as always-on 2026-09-12, step 4.2; an optional group since 2026-10-09 |
 | the endpoint policy | `endpoint_action_scopes`, in the same caller | applied with it, step 4.4 |
 | the grant | [`terraform-live/sandbox/bedrock/`](../../../terraform-live/sandbox/bedrock), rank 52, `[P]` | applied 2026-09-11, step 3 |
-| the client's configuration | [`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json) | shipped since `default-v0.4.0`, image version 4, 2026-09-12, and unchanged in version 11, `default-v0.10.0` — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
+| the client's configuration | [`gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json`](../../../gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json) | shipped since `default-v0.4.0`, image version 4, 2026-09-12, and unchanged in versions 11 and 12, `default-v0.10.0` and `default-v0.10.1` — `v0.3.0` shipped the same file pinning `claude-opus-5` and `claude-sonnet-5`, which AWS refuses for this account |
 
 ### The private path
 

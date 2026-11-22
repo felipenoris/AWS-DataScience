@@ -75,6 +75,15 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    refused. `make status` prices `runners/` at 0.0376 USD/h, and at 0.2493 `with aws_instance.runner`
    while the state holds the build runner.
 
+   **Before a tag, read the build runner running.** On 2026-11-22 an apply of `runners/` without the flag, at
+   02:41:40 UTC, terminated the build runner R1 had raised half an hour before, and release G's pipeline #138
+   held `build-image` until `make gitlab-up BUILD=1` raised it again at 04:01:22 (Stage 19's log). The read
+   prints the instance's id, or nothing when the runner is down:
+
+   ```bash
+   aws ec2 describe-instances --filters Name=tag:Name,Values=awsds-prod-runner Name=instance-state-name,Values=running --query 'Reservations[].Instances[].InstanceId' --output text --profile awsds-infra-prod --region us-west-2
+   ```
+
    Run it from a checkout at `origin/main`. On 2026-10-12 a project folder four merges behind ignored
    `RUNNERS=0`, since its Makefile predates the flag and make takes an unknown variable in silence, and
    applied that checkout's `egress/` and runner; a checkout from before `BUILD` raises the build runner

@@ -421,7 +421,8 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
   drop-box — the one bucket that ingests files from humans. Recommended off at lab scale; priced here so
   the "no" is a choice.
 - **4.6 — Decide ECR enhanced scanning in the same sitting** — Stage 7 decision 2 deferred it *to this
-  step by name*: basic scan-on-push (free) carries Stage 8's gate; enhanced is **Inspector** — OS *and*
+  step by name*: basic scan-on-push (free) carries Stage 8's gate, and since 2026-11-15 fails every image this
+  estate pushes (`SUP-437`); enhanced is **Inspector** — OS *and*
   language packages, continuous — measured at USD 0.09/image + 0.01 per re-scan, and continuous means a
   re-scan on **every new CVE**, which is the churn to price. If adopted: **[user]** standalone-enable
   Inspector for resource type ECR **in Production only** (the account that owns the registry) — no org
@@ -664,7 +665,10 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
    silence.
 9. **ECR enhanced scanning** (4.6, Stage 7 decision 2's deferral) — recommended: **stay on basic** until a
    Stage 8 gate reading misses a language-package CVE that mattered; if adopted, standalone Inspector in
-   Production only, and re-read the re-scan churn against the bill at Stage 12.
+   Production only, and re-read the re-scan churn against the bill at Stage 12. **Read 2026-11-22**
+   (`SUP-437`): basic scanning has failed every image pushed since 2026-11-15 on a vulnerability limit no AWS
+   page names, so "stay on basic" now leaves Stage 8's gate with no OS reading at all, the premise of the
+   recommendation gone; the decision is the user's again (the waiting list).
 10. **INT-16's choice** — closed by D39, which removed the requirement the portal's ingress deviated from;
     3.4 writes the premise that replaced it.
 11. **Bedrock model invocation logging** (5.6) — handed here by [Stage 6e](stage-06e-claude-code-bedrock.md)

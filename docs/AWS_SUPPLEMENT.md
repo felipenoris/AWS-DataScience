@@ -1164,6 +1164,33 @@ entry is still true is the reading.
   `log-stage-07-gitlab-runners-ecr.md`, 2026-10-12; `terraform-live/production/registry/cache.tf`;
   `AWS_STATE.md`.
 
+- `SUP-437` **ECR's basic scanning has failed every image of this estate pushed since 2026-11-15 with
+  *"Number of vulnerabilities for this image exceeds the maximum supported with Basic Scanning"*, where
+  images of the same base pushed until 2026-10-26 completed with up to 1,365 findings** (read 2026-11-22,
+  R1, `describe-image-scan-findings` as `awsds-infra-prod` on every image of Production's five scan-on-push
+  repositories). The registry's scanning configuration is `BASIC` with no rule. `awsds-prod-ecr-app-etl`'s
+  sixteen images pushed from 2026-10-12 to 2026-10-25 read `COMPLETE`, the 3.80 GB ones with 1,317 to 1,365
+  findings (from `v0.3.0` on, 113 `CRITICAL`, 612 `HIGH`, 158 `MEDIUM`, 16 `LOW` and 466 `UNDEFINED`); its six
+  pushed from 2026-11-15 20:25 to 2026-11-22 04:06 UTC, the same size, read `FAILED` with *"Number of
+  vulnerabilities for this image exceeds the maximum supported with Basic Scanning. Please upgrade to
+  Enhanced Scanning to cover all vulnerabilities in the image."*, no completion time and no finding.
+  `awsds-prod-ecr-base` and `awsds-prod-ecr-dev-env` split the same way: `default-v0.10.0`, pushed on
+  2026-10-26 at 21:51 and 22:02, `COMPLETE` with 1,337 findings each; `default-v0.10.1`, pushed on 2026-11-22
+  at 04:09 and 04:20 with ten packages' findings fixed in its lock (#365), `FAILED` with the same text.
+  `awsds-prod-ecr-deploy`'s three images of 0.21 to 0.26 GB, the last pushed 2026-10-25, read `COMPLETE` with
+  18 to 24 findings. The status is `FAILED`, not the `LIMIT_EXCEEDED` the API also lists. None of the pages
+  read on 2026-11-22 (basic scanning, scanning troubleshooting, image scanning, the `ImageScanStatus` and
+  `DescribeImageScanFindings` references, the service quotas) names a maximum number of vulnerabilities, a
+  scan failing on one, or this text; the quotas they give are 100,000 basic scans per registry per 24 hours
+  and one scan per image per 24 hours. So the service changed between 2026-10-26 22:07 and 2026-11-15 20:25
+  UTC. Whether an image with few findings pushed since completes is unread, no such image having been
+  pushed. Consequence: the release pipelines' `scan-gate` (Stage 8 1.4, informative by decision 1) has read
+  `FAILED` and no finding on every tag since `app-etl`'s `v0.4.7` of 2026-11-15, release G's pipeline #138 and
+  dev-env's #139 among them, so the gate's OS half reports nothing on these images and `pip-audit` is the
+  only scan that reads them; an earlier image's findings are no measure of a later one. The message's remedy
+  is enhanced scanning (Inspector), a cost the user decides. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-15 (`v0.5.0`'s `scan-gate`) and 2026-11-22; `stages/stage-08-cicd-pipelines.md` 1.4.
+
 ## S3
 
 - `SUP-088` **A denied `GetObject` on a key that does not exist names `s3:ListBucket` on the bucket in its
@@ -1745,8 +1772,8 @@ entry is still true is the reading.
   container's NAT and not a VPC address. Where: `log-stage-06h-redshift-connection.md`, 2026-10-10 (3.3
   attempted) and the entry headed 2026-10-11; `runbooks/redshift-connection.md` §V.
 
-- `SUP-129` **Redshift Serverless rotated a managed admin secret with no workgroup** (measured 2026-10-20,
-  Stage 5b). AWS's page *Managing Amazon Redshift admin passwords using AWS Secrets Manager* says such a
+- `SUP-129` **Redshift Serverless rotates a managed admin secret with no workgroup, and the database follows**
+  (measured 2026-10-20, Stage 5b; read again in Production 2026-11-22). AWS's page *Managing Amazon Redshift admin passwords using AWS Secrets Manager* says such a
   rotation fails and is never retried. Sandbox's first scheduled rotation ran on 2026-10-20 with no
   workgroup since 2026-10-16: Redshift's service-linked role wrote and promoted the new version, and
   `CompleteRotation` reported `Succeeded`. Whether the database followed is unread; the next
@@ -1755,16 +1782,31 @@ entry is still true is the reading.
   workgroup up, the Data API authenticated as `dbadmin` through the secret at 02:38 (`CREATE DATABASE
   governed_trades`) and at 06:04 (`GRANT TEMP`), a password user on the password the rotation of 2026-10-20
   wrote, and again twice on 2026-10-26. Where: `AWS_STATE.md` `EXC-13`;
-  `log-stage-09-deployment-targets.md`, 2026-10-25 and 2026-10-26.
+  `log-stage-09-deployment-targets.md`, 2026-10-25 and 2026-10-26. **Read again 2026-11-22 in Production**
+  (R1): `redshift!awsds-prod-warehouse-dbadmin`'s first scheduled rotation, with no workgroup since
+  2026-11-16 05:33 UTC, started at 01:11:55 and succeeded at 01:17:08, Redshift's service-linked role
+  writing `AWSPENDING` at 01:13:08 and promoting it to `AWSCURRENT` at 01:17:08; it started 48 minutes
+  before the `NextRotationDate` it replaced, 01:59:59. With a workgroup up from 05:41:41,
+  `./aws/warehouse.py awsds-infra-prod --sql` authenticated as `dbadmin` through the rotated secret eight
+  times from 05:42:19 to 05:42:43, no error. Where: `AWS_STATE.md` `EXC-13`;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
-- `SUP-130` **`DeleteWorkgroup` answers `ConflictException` for about ten seconds before it accepts, and the
-  Terraform provider retries through it** (read 2026-10-26 in Production's and Sandbox's trails, Stage 9).
+- `SUP-130` **`DeleteWorkgroup` answers `ConflictException` for up to seventeen seconds after the workgroup's
+  usage limit is deleted, and the Terraform provider retries through it** (read 2026-10-26 in Production's and Sandbox's trails, Stage 9).
   On three teardowns that day the trail shows `DeleteWorkgroup` refused four or five times with *"There is
   an operation running on the workgroup. Try to delete it later."*: in Production from 01:10:38 to 01:10:47,
   accepted at 01:10:55; in Sandbox from 01:37:26 to 01:37:30, accepted at 01:37:34, and from 22:10:35 to
   22:10:44, accepted at 22:10:52. Terraform 1.16.6's provider retried each time and the destroy completed. A
   trail read after a successful teardown therefore carries these refusals; the source does not identify the
-  running operation. Where: `log-stage-09-deployment-targets.md`, 2026-10-26 (three entries).
+  running operation. Where: `log-stage-09-deployment-targets.md`, 2026-10-26 (three entries). **Read again
+  2026-11-22** (R1, Production's and Sandbox's trails) with the two teardowns since, in Production: refused
+  at 05:33:18 and 05:33:19 and accepted at 05:33:20 on 2026-11-16, refused from 05:47:52 to 05:47:56 and
+  accepted at 05:48:01 on 2026-11-22, with the same message (Terraform 1.17.2; provider 6.68.0 in all five).
+  In each of the five, an accepted `DeleteUsageLimit` on the workgroup's limit came in the same second as
+  the first refusal or in the second before it, the provider destroying the limit first as the workgroup's
+  dependent, and `DeleteWorkgroup` was accepted 3 to 17 seconds after it. The running operation is
+  therefore probably the limit's deletion; the teardown of a workgroup with no usage limit, which would
+  settle it, has not been read. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 ### SQL, users and privileges
 
@@ -4343,12 +4385,17 @@ entry is still true is the reading.
   2026-09-10; `log-stage-10-orchestration-promotion.md`, 2026-10-22; `docs/SMUS.md`; `upstream-releases.md`,
   the MWAA Serverless table.
 
-- `SUP-251` **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
-  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares `RunType`
-  (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and each read
-  `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run whether one
-  fired or not, and that is Stage 10 verification (v)'s evidence. Where: `aws/orchestration.py` section 7,
-  `log-stage-06d`'s sixteenth sitting.
+- `SUP-251` **`list-workflow-runs` returned `RunType` null for every run on 2026-10-10 and carried it on
+  2026-11-22; `get-workflow-run` carries it** (measured 2026-10-10, on Sandbox's two portal-authored
+  workflows). The service model declares `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all
+  six listed runs read `null`, and each read `ON_DEMAND` one at a time. A check that takes the type from the
+  list sees no `SCHEDULED` run whether one fired or not, and that is Stage 10 verification (v)'s evidence.
+  Where: `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+  **Read again 2026-11-22** (R1): the list carried `RunType` on every run, 36 runs of 15 workflows in
+  Sandbox, Staging and Production, each `ON_DEMAND`, the portal-created `wfk-notebook`'s run among them.
+  `simple-s3-copy`, one of the workflows read on 2026-10-10, is no longer listed, so whether the service
+  changed or those runs differed is unread, and no `SCHEDULED` run was listed to show the list carries that
+  value. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 - `SUP-252` **The portal's save sends a code location the editor pre-fills, and an import cannot replace a
   saved workflow** (measured 2026-10-10/11, Stage 6i). A new workflow's *Settings → Storage* carries
@@ -4502,6 +4549,24 @@ entry is still true is the reading.
   that session at 20:01:18 with no error. A reader of run state needs `kms:Decrypt` on the workflow's key,
   and that `kms:ViaService` value admits it. `GetTaskInstance` was not called in the window. Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+
+- `SUP-436` **`list-workflow-runs` fills each page with the newest runs not yet listed and orders the runs
+  inside a page by no time, so only a page of one run is ordered** (measured 2026-11-22, R1, as
+  `awsds-infra-prod` and `awsds-infra-sandbox-1`, aws-cli 2.37.12). Production's
+  `app_etl_deploy_production_app_etl` holds three runs of 2026-11-16, created 02:32:15, 02:51:21 and 03:19:11
+  UTC. One page listed them 02:32:15, 03:19:11, 02:51:21, the same on two calls; pages of one run answered
+  03:19:11, 02:51:21 and 02:32:15, in that order; a page of two answered 03:19:11, 02:51:21. Sandbox's
+  `houseprice_etl_eighth_experimentation_houseprice_etl` holds seven runs of 2026-10-16: one page listed
+  02:13:11, 02:03:59, 15:21:53, 15:18:35, 03:28:31, 03:11:05, 02:25:55; pages of three answered the three
+  newest, then 02:13:11, 03:11:05, 02:25:55, then 02:03:59; pages of one answered all seven newest first. Of
+  the 15 workflows with runs in Sandbox, Staging and Production, a full list read in descending order for
+  six, ascending for one and in neither for three; five hold one run. The CLI's reference page says only
+  that the call lists all runs for a workflow, with optional pagination and filtering. Consequence:
+  `WorkflowRuns[0]` of a page holding more than one run is not the newest run, and `--max-results 1
+  --no-paginate --query 'WorkflowRuns[0].RunId'`, the runbooks' form, is. A reader of several runs sorts by
+  `RunDetailSummary.CreatedOn`, as `aws/sandbox-orchestration.py` does; `aws/orchestration.py`'s
+  `--max-results` returns the newest runs in no order. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-22.
 
 ### MWAA Serverless: workers, tasks and operators
 
@@ -5653,6 +5718,24 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `"$(cat <document>)"`, was read as one policy, the matched statement's `SourcePolicyId` being
   `PolicyInputList.1`. The parameter is a list of strings, and the file's content reaches it as one string
   the CLI iterates (inferred from the error). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+
+- `SUP-435` **The AWS CLI v2 prints a JSON-protocol service's timestamps in the machine's time zone and EC2's
+  in UTC, so a date read from its output is not always a UTC date** (measured 2026-11-22 with aws-cli 2.37.12
+  on a laptop at UTC-3, default configuration, R1). `aws secretsmanager describe-secret --query
+  LastRotatedDate --output text` printed `2026-11-21T22:17:08.980000-03:00`, and with `TZ=UTC` on the command
+  `2026-11-22T01:17:08.980000+00:00`; `cloudtrail lookup-events` printed every `EventTime` at `-03:00`; `ec2
+  describe-instances --query 'Reservations[0].Instances[0].LaunchTime'` printed `2026-11-22T01:15:54+00:00`
+  with and without `TZ=UTC`. The CLI's service models name the protocols: `json` for Secrets Manager and
+  CloudTrail, whose timestamps travel as epoch seconds, and `ec2` for EC2, which sends ISO 8601 text.
+  botocore's `parse_timestamp` turns a number into a `datetime` with `tzlocal()` and keeps a text's own offset
+  (read in botocore 1.43.114; the CLI v2's own copy is frozen into its binary and was not read). AWS's
+  configuration page gives `iso8601`'s form as `YYYY-MM-DDThh:mm:ssZ`, "including a `Z` after the time", and
+  names no zone; the v2 migration guide names none either; neither output carried a `Z`. Consequence: R1's
+  poll waiting for the warehouse admin secret's `LastRotatedDate` to contain `2026-11-22` read six times from
+  02:00:15Z to 02:05:27Z and never matched a rotation that had finished at 01:17:08Z, and `NextRotationDate`
+  read `2026-12-21T22:59:59-03:00`, a date one day before UTC's. A date that is compared or written down is
+  read with `TZ=UTC` on the command. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22;
+  `runbooks/promotion.md` §N.8.3.
 
 ## Clients and the egress proxy
 

@@ -4455,3 +4455,162 @@ down. The session the user opened in `awsds-workflows` was told before the write
   `USER_CREATED_DESIGNATION` with `userCreatedDesignationId` `ahjm1h20oujxqo`.
 - **Left of 4.12**: xxvi's portal half, read before the approval; after R1, `eighth-experimentation`'s
   request on the listing release G creates and the Governance Manager's approval in the portal.
+
+## 2026-11-22 — R1: the warehouse secret's first rotation in Production, and GitLab up for release G
+
+*Claude, in the session that drives R1 ([`runbooks/promotion.md`](../plan/runbooks/promotion.md) §N.11.1)
+on the user's word in chat, *"sim, o R1 vai ser hoje"*, reading as `awsds-infra-prod` (account
+Production, the infrastructure user with `InfrastructureAccess`), `awsds-infra-staging` and
+`awsds-infra-sandbox-1`, and §R's instruments over every `awsds-*` profile; the one write, `production/tooling/`'s
+apply, on the user's word naming it. The user's acts are named. Times are UTC.*
+
+- **[Claude] Step 1, the rotation with nothing up** (§N.8.3 step 1, `EXC-13`'s Production half).
+  Production's trail on `redshift!awsds-prod-warehouse-dbadmin`: `RotationStarted` at 01:11:55;
+  `PutSecretValue` into `AWSPENDING` by `AWSServiceRoleForRedshift` at 01:13:08; `UpdateSecretVersionStage`
+  to `AWSCURRENT` by the same role, `CompleteRotation` `Succeeded` with *"Rotation completed"* and
+  `RotationSucceeded` at 01:17:08; no `RotationFailed`. `describe-secret`, six reads from 02:00:15 to
+  02:05:27: `LastRotatedDate` 01:17:08.980, `NextRotationDate` 2026-12-22 01:59:59, rotation enabled.
+  Production held no workgroup: its last `DeleteWorkgroup` is of 2026-11-16 05:33, no `CreateWorkgroup`
+  follows it, and `list-workgroups` answers none. The rotation started 48 minutes before the 01:59:59 that
+  `NextRotationDate` named and succeeded with no workgroup, as Sandbox's first did on 2026-10-20; whether
+  the database took the new password is step 5's reading.
+- **[Claude] The poll that missed it**: a loop waiting for `LastRotatedDate` to contain `2026-11-22`
+  matched none of its six reads, the CLI printing `2026-11-21T22:17:08.980000-03:00` in the laptop's zone
+  (`SUP-435`). §N.8.3 step 1 now reads with `TZ=UTC`.
+- **[Claude] `make status`** at 02:07:11: `production/vpn` and `production/proxy` up, `production/tooling`
+  stopped, `sandbox/egress` up with 33 resources and `sandbox/probes` with 4, every other `[E]` slice down;
+  Sandbox's JupyterLab and Code Editor apps up since 2026-11-21 20:07 and 20:08 (N.9's day 2).
+- **[user] Step 2**: the tunnel up, the laptop's first handshake on the `t3.nano` tunnel host at 01:33:09
+  (Stage 12's log); `make gitlab-up BUILD=1`, GitLab's host started at 02:09:39 and running with both
+  status checks `ok` at 02:11:46, the deploy, test and build runners launched from 02:09:59 to 02:10:07.
+  **The build runner did not last**: at 02:41:40 an apply of `production/runners/` with `build_runner`
+  false, Terraform from the laptop as the infrastructure user, terminated it. The trail's calls from 02:41:20
+  to 02:42:41 are `make gitlab-up` without `BUILD=1`'s shape: the three runners refreshed, the build
+  runner's `TerminateInstances`, then the egress slice's endpoints read. It came from neither 6e's session,
+  which applied only `identity/org-policies` that night, nor N.9 day 2's, whose applies were `sandbox/`
+  slices, and the run is otherwise unidentified. Nothing read the runner
+  again before release G's tag: pipeline #138, created 03:56:35, held `build-image` with no runner until
+  `make gitlab-up BUILD=1` raised it again at 04:01:22 (`runners/` 7 added, 0 changed, 0 destroyed), and
+  it took `build-image` at 04:03:15.
+- **[Claude] `production/tooling/` applied** at 02:12:56 on the user's word, *"autorizo o apply do
+  tooling"*: Stage 12 2.2's alarm action, and `EXC-19` closed (Stage 12's log).
+- **[Claude] Production read before release G's leg**: `app_etl_deploy_production_app_etl`, `_train` and
+  `_warehouse` `READY`; `deploy-production` (`d7qcazihvr3s7k`) `ACTIVE`, a search for a data product it
+  owns answering none; `app_etl`'s newest run `wITFYNHoLyyEsev`, of 2026-11-16 03:19:11. Inside one page
+  `list-workflow-runs` orders runs by no time (`SUP-436`), and it carried `RunType` on every run in
+  Sandbox, Staging and Production (`SUP-251`, read again).
+- **[user] Step 3's backup by hand**, `sudo gitlab-backup create STRATEGY=copy` in a Session Manager
+  shell on the host. **[Claude] read** at 03:00 in `awsds-prod-gitlab-backup`:
+  `1795315677_2026_11_22_19.4.2_gitlab_backup.tar`, 15,708,160 bytes, uploaded at 02:48:08, `aws:kms`,
+  expiring 2026-12-23 by the rule `expire-current-versions`; its release, 19.4.2, is `gitlab_ce_version`'s.
+  The newest backup now leaves the bucket on 2026-12-23, where the one of 2026-11-16 leaves on 2026-12-17.
+  The timer's own followed with the host up, `1795316441_2026_11_22_19.4.2_gitlab_backup.tar`, 15,769,600
+  bytes at 03:00:50, `aws:kms`, expiring at the same midnight (read again at 06:20, `head-object`).
+- **[user] Step 3's projects** by `sagemaker-application.md` §L's steps 1 to 6, as GitLab's local
+  administrator: `awsds/app-ml` (id 7) at 02:50:58, `awsds/app-genai` (8) at 02:55:07 and `awsds/app-dbt`
+  (9) at 02:56:40. **[Claude] read** through GitLab's API in the user's browser session at about 03:10: each
+  private and empty; `main` protected, push and merge `Maintainers`, no force push; `v*` protected, create
+  `Maintainers`; `awsds/data-scientists` a Developer and `awsds/deployment-managers` a Maintainer, no direct
+  member; the runners 1 (`awsds-prod-runner`, untagged, `ref_protected`), 3 (`awsds-prod-runner-deploy`,
+  `awsds-deploy`, `ref_protected`) and 4 (`awsds-prod-runner-test`, `awsds-test`, `not_protected`) linked,
+  each still locked; `DOMAIN_ID` `dzd-d8yrvx1ko7im6o`, `DOMAIN_REGION` `us-west-2` and `DEV_PROJECT_NAME`
+  `app-ml-dev`, `app-genai-dev` or `app-dbt-dev`, each protected and unmasked. `awsds/infrastructure`'s
+  job-token allowlist, inbound enabled, holds the three beside `awsds/app-etl` and itself.
+- **[user] Step 3's `versions.py`** (6d 2.7 step 7): `awsds/dev-env`'s merge request !15, the header's
+  release procedure, merged as `9e64c6e2` with its `pip-audit` job failed on the lock's findings;
+  **[Claude]** the mirror (`gitlab/mirror.json` from `717d80b5`, the copy already holding the merge's 14
+  files). Pull request #365 (`a0aba76c`) moved the lock past ten packages' findings and drafted the pillow
+  pair for `gates-v0.7.0`. **[user]** On GitLab, `awsds/ci-gates`' tag `gates-v0.7.0` on `2dedd500`, the commit that
+  records the user's acceptance of the pillow pair as the Dev Env Steward, then `awsds/dev-env`'s merge request
+  !16, #365's lock, merged as `7f2623b6`, its `main` pipeline #137 green, `pip-audit` reading 454 of 454 pins
+  and none blocking for the first time since 2026-11-15. `gitlab/mirror.json` still names `9e64c6e2`: the
+  mirror moves past `7f2623b6` at R2's opening, after the README row's merge request (§N.11.2). Tag `default-v0.10.1` on
+  `7f2623b6`, release pipeline #139, its `pip-audit` 52 accepted and none blocking. **[pipeline]** the images pushed to
+  `awsds-prod-ecr-base` at 04:09:13 and `awsds-prod-ecr-dev-env` at 04:20:25 (`sha256:a6f9b5ab…`); `register`
+  created Sandbox's version 12 at 04:37:45 (`CreateImageVersion` by `awsds-deploy-devenv-sandbox`, alias
+  `0.10.1`); `retire` kept 12 and 11, the versions `list-image-versions` answers after it; both scans
+  failed, allowed to, each push's basic scan `FAILED` on *"Number of vulnerabilities for this image exceeds
+  the maximum supported with Basic Scanning"* where `default-v0.10.0`'s completed with 1,337 findings
+  (`SUP-437`). The pin (#366) applied at 05:07:48, the six projects'
+  *Update project* from 05:14:42 to 05:29:51 and `US-13` green at 05:32:20 are 6d 2.7 step 8's, in
+  6d's log (pull request #369).
+- **[user] Step 4, release G** (§N.8.5 step 4): the template's merge request on `awsds/app-etl`, eight
+  files, pulled as `07348ff..57f2fac` (490 insertions, 33 deletions); `make up ENV=staging ONLY=egress`, 18
+  added, nine interface endpoints; the tag `v0.6.0` on `57f2fac`. **[pipeline]** #138, created 03:56:35:
+  `test`, `pip-audit` and `build-task-code` green; `build-image` waited for the build runner (step 2) and
+  ran from 04:03:15 to 04:06:22, the image pushed at 04:06:04 (`sha256:532fca70…`); `bundle` from 04:06:24
+  to 04:06:51, 12 files, the guard reading *"assets: 1"* and *"dataProducts: 0"* (decision 26 (b): the
+  bundle carries no product, each target's `publish` creates it), SHA256 `bb02526f…`; `scan-gate` failed,
+  allowed to (Stage 8 decision 1), the push's basic scan `FAILED` with the same text, as on every
+  `app-etl` image since `v0.4.7` of 2026-11-15 (`SUP-437`); `store-bundle` and `release` green.
+- **[user] `staging-gate`** at 04:09:49. **[pipeline]** `staging-check` green; `staging-deploy` 0 created, 1
+  updated, 0 failed; `staging-test` from 04:12:41 to 04:37:30; `staging-catalog` from 04:37:48 to 04:37:57;
+  `staging-model` from 04:38:32 to 04:44:51; `production-check` from 04:44:54 to 04:45:11.
+- **[user] `make up ENV=production ONLY=workloads-egress`**, up at 04:12, the DNS Firewall's association
+  `COMPLETE` at 04:12:44; then `production-gate` at 04:45:36. **[pipeline]** `production-deploy` from
+  04:45:41 to 05:04:11 (1,109 s), holding the bootstrap run `8mk3eDojjVRHfO9` of
+  `app_etl_deploy_production_app_etl`, 04:47:58 to `SUCCESS` at 05:04:12: `transform` 220 s, `process`
+  489 s, `summarize` 7 s, `publish` 28 s, `write_result` 11 s (decision 14). `production-catalog` from
+  05:04:14 to 05:04:22. `production-register` stays `manual`, `production-approve` and
+  `production-transform` `created`, `production-warehouse-ddl` `manual`: the pipeline reads `manual`, and
+  with `--project` the model jobs would read release T's `app-etl-train-20261025T070126`.
+- **[Claude] §N.8.5 step 5, Production's leg read** at 05:05: the data product `trades-notional`
+  (`anph2bq7uigqa8`, revision 1) owned by `deploy-production`, its listing `dr8t27tte8ezdc` `ACTIVE` at
+  revision 1 since 05:03:33, carrying one item, Production's asset listing `5hpftif3nnoj2o` at revision 8,
+  the asset `da1fycta6l71n4`. Production's trail, each as `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`'s
+  session `AmazonMWAAServerless` through `vpce-05c6a3481d22606ba`, with no error: `CreateListingChangeSet`
+  on the asset (`PUBLISH`) at 05:03:24, answered revision 7; `CreateDataProduct` at 05:03:30, answered
+  `CREATED`; `CreateListingChangeSet` on the product at 05:03:30, answered revision 1 `IN_PROGRESS`. The
+  resource each event names is the domain's ARN: DataZone authorizes the product's creation and listing
+  against the domain. From Sandbox, `search-listings` as `awsds-infra-sandbox-1` finds the product's
+  listing and the asset's. The infrastructure user is refused `Search` and `GetDataProduct` on the
+  project's inventory (not a member), so the product is read through its listing and the trail.
+- **[user] `make down ENV=staging`** after `staging-catalog`: Staging's trail, `DisassociateFirewallRuleGroup`
+  at 05:02:38, nine `DeleteVpcEndpoints` at 05:03:16, `DeleteFirewallRuleGroup` at 05:03:33. Step 7 does
+  not run in R1, so `app-dbt`'s first release moves to R2.
+- **[user] Step 5's raise**, `make up ENV=production ONLY=workloads-egress,warehouse-compute
+  GROUPS=redshift`: `CreateWorkgroup` at 05:39:48, the workgroup `awsds-prod-warehouse` `AVAILABLE` at
+  05:41:41 (base 4, max 8 RPU). **[Claude] §N.8.3 step 3**, `./aws/warehouse.py awsds-infra-prod --sql`
+  from 05:42:02 to 05:42:44: 13 pass and 4 notes. Its SQL checks ran through the Data API as `dbadmin`
+  with the namespace's admin secret: `WH-6` (`governed` plus the inert `dev` and `warehouse`), `WH-12` (one
+  themed schema in `governed`, one role grant, four user-role grants) and `WH-14` (one relation, readable by
+  a role) pass, `WH-13` the known note. The secret's `AWSCURRENT` is the rotated version (`LastRotatedDate`
+  01:17:08.980, read again at 05:43): **the database took the rotated password**, as Sandbox's did on
+  2026-10-25, and `EXC-13`'s Production half closes.
+- **[user] Steps 6 and 7 moved to R2's opening**, the user's choice of 2026-11-22: pull request #321's merge
+  and the mirror's push, and `awsds/dev-env`'s README row for `default-v0.10.1` with its mirror; `app-dbt`'s
+  `v0.1.0` (step 7) with them. Whether GitLab's local user's password was rotated before the first push
+  (§N.8.2 step 3) is the user's to confirm before R2's first push.
+- **[user] Step 8's downs**, each read in Production's trail. `make gitlab-down` (`tooling`, `egress` and
+  `runners`): the three runners terminated at 05:37:27, GitLab's host stopped at 05:38:03 and
+  `production/egress/`'s endpoints deleted from 05:38:27 to 05:40:31, one call refused
+  `RequestLimitExceeded` and retried, the warehouse's raise overlapping its end. `make down ENV=production
+  ONLY=warehouse-compute`: `DeleteUsageLimit` at 05:47:52, `DeleteWorkgroup` refused four times from
+  05:47:52 to 05:47:56 with *"There is an operation running on the workgroup. Try to delete it later."* and
+  accepted at 05:48:01, then the workgroup's own endpoint deleted by `AWSServiceRoleForRedshift` at 05:48:20;
+  the namespace stays `AVAILABLE`. The compute was up from 05:41:41 to 05:48:01. Every teardown since
+  2026-10-26 pairs the refusals with the limit's deletion in the same second or the one before (`SUP-130`,
+  read again across the five). `make down ENV=production ONLY=workloads-egress`, up since 04:12:
+  `DisassociateFirewallRuleGroup` at 05:50:38, `DeleteFirewallRuleGroup` at 05:51:45, ten `DeleteVpcEndpoints`
+  at 05:51:46, the `redshift-serverless` endpoint that `GROUPS=redshift` added at 05:38:24 refused
+  `RequestLimitExceeded` four times and deleted at 05:52:12. The tunnel down, the user's; `make hub-down`, the
+  proxy stopped at 05:55:23 and the tunnel host at 05:55:26.
+- **[Claude] `make status`** from 06:01:50: `production/vpn`, `production/proxy` and `production/tooling`
+  stopped, every `[E]` slice down, no Studio app billing and no EMR Serverless application or OpenSearch
+  Serverless collection in the five accounts, an estimated burn of USD 0.0000/h. **§R**: `./aws/egress.py`
+  over Production, Staging and Sandbox at 06:08:04, all checks passed, 0 interface endpoints and 0 NAT gateways
+  in each; the loop over Sandbox's domains lists no app; `describe-alarms` at 06:09:53, the hub stopped for 14
+  minutes, Production's seven alarms `OK`, each with its action (Stage 12 2.2 step 7, Stage 12's log).
+  `./aws/cicd.py` at 06:08:40, 12 pass and 4 notes, `CI-6` reading one `dev-env` digest, `default-v0.10.1`'s;
+  `./aws/deploytargets.py` at 06:09:37, 45 pass; `./aws/orchestration.py` at 06:12:03, 66 pass and 5 fail,
+  the five `OR-2` groups `EXC-25` names. The three read every `awsds-*` profile and exit 1 on the eleven
+  persona profiles with no SSO session, their only failed calls.
+- **What R1 leaves**: R2's opening carries #321's merge and the mirror's push, `awsds/dev-env`'s README row
+  for `default-v0.10.1` with its mirror, and `app-dbt`'s `v0.1.0`; GitLab's local user's password is to be
+  confirmed rotated before R2's first push. N.6 item 6, which needs nothing up, is open for Stage 19 4.12's
+  request from `eighth-experimentation` on the listing `dr8t27tte8ezdc`, the Governance Manager in
+  `deploy-production` since 2026-11-21, and for Stage 20 5.0's from `app-dbt-dev`: pass 8 being R2's, the
+  link's asset waits on no `bundle` job, and R2's tag deletes it first (`SUP-197`, Stage 20 8.6). **[user]** Production's
+  free-trial balance after the last half-hour interval and again the next day. `production-register`,
+  `-approve`, `-transform` and `-warehouse-ddl` stay `manual` in #138, the model half being R2's (§N.11.2
+  step 3). Who ran the 02:41:40 apply stays unread.
