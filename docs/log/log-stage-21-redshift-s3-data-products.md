@@ -569,3 +569,52 @@ write. Times are UTC.*
   the drops name the view `lab.trades_hot_by_desk` first, then `lab.trades_hot_daily`,
   `lab.trades_hot_by_day`, `lab.trades_from_lake` and `lab.trades_hot`; 6h decision 3's sentence says it was
   done 2026-11-19.
+
+## 2026-11-22 — 4.5's write path taken, decision 4 (b), and 1.3's wizard half
+
+*Claude, in the session "Stage 21" started by the orchestrating session of `promotion.md` §N.9's day 2, in a
+worktree of its own, on the laptop with the environment up. Reads and plans as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1); AWS's prerequisites page
+through a fetcher. No apply and no AWS write. The question was asked in Portuguese and is translated here;
+the user's answer is quoted as given. Account ids are replaced by `<Sandbox Account 1>`. Times are UTC.*
+
+- **[Claude] The blueprint before the wizard**, 01:50:19: `get-environment-blueprint` on `dlyaabb17hano0`
+  reads `RedshiftServerless`, `createdAt` and `updatedAt` 2026-05-13T21:31:31Z, and the ten user parameters
+  1.3 recorded, each optional and not editable, with the same defaults. `get-environment-blueprint-configuration`
+  answers:
+
+  ```
+  aws: [ERROR]: An error occurred (ResourceNotFoundException) when calling the GetEnvironmentBlueprintConfiguration operation: EnvironmentBlueprintConfiguration for domainId dzd-d8yrvx1ko7im6o, accountId <Sandbox Account 1> and environmentBlueprintId dlyaabb17hano0 is not present
+  ```
+
+  `list-environment-blueprint-configurations` lists 14 configurations, `RedshiftServerless` not among them;
+  IAM lists 57 roles and 10 customer managed policies.
+- **[Claude] AWS's page**, `redshift-ns-prereqs.html`, read again: the key policy for *"a customer managed key
+  to encrypt the data in the Amazon Redshift cluster/namespace"* holds four statements,
+  `RedshiftAllowAccessPolicy`, `RedshiftServerlessAllowAccessPolicy`, `DirectMetadataAccess` and
+  `GenerateDataKeyDecryptDataTransferRole`. The last names the data transfer role directly, with
+  `kms:GenerateDataKey` and `kms:Decrypt` under `kms:ViaService` S3. The page shows no update date.
+- **[Claude] The question**, asked in the chat after the wizard's route: (a) reads alone, the key policy
+  unchanged, a write through S3 refused and its wording the reading, so 4.6's Athena read through data lake
+  access likely refused by this estate's key; (b) the key policy names the role for one sitting, AWS's
+  statement behind a switch off by default, applied after the role and removed before it, a fourth reader of
+  the account data key whose identity policy holds no S3 action. Recommended (b), the stage file holding no
+  explicit recommendation, by the rule of 2026-11-17, P1 and decision 3 (b)'s measured Athena read.
+- **[user] The answer**: *"Ampliar na sessão"*, decision 4 (b).
+- **[Claude] The code**: `sandbox/data/`'s `data_transfer_key_statement_enabled`, default false
+  (`variables.tf`), appends `GenerateDataKeyDecryptDataTransferRole` to `additional_data_key_policy_statements`
+  through `concat` (`main.tf`): the principal `awsds-<env>-warehouse-data-transfer`, derived from the
+  convention as `lake_access_role_arn` is, `kms:GenerateDataKey` and `kms:Decrypt`, `kms:ViaService`
+  `s3.<region>.amazonaws.com`. The `consumer-data` module is untouched.
+- **[Claude] The plans**, from the worktree after `init` (the lock file unchanged, `hashicorp/aws` 6.62.0),
+  each `-input=false` with a full refresh, saved to a scratch folder and not kept for the sitting:
+
+  | UTC | Variables | Plan |
+  |---|---|---|
+  | 02:13:27 to 02:13:44 | none | *"No changes. Your infrastructure matches the configuration."* |
+  | 02:13:50 to 02:14:02 | `data_transfer_key_statement_enabled=true` | *"Plan: 0 to add, 1 to change, 0 to destroy."*: `module.consumer_data.module.data_key.aws_kms_key.this` updated in place, its policy gaining the statement with the principal `arn:aws:iam::<Sandbox Account 1>:role/awsds-sandbox-warehouse-data-transfer`, the three statements before it unchanged |
+- **[Claude] The text that follows**: in the stage file, steps 4.5 and 4.8, pass 4's commands (the statement
+  planned and applied after the role's output, and off before the role at 4.8), the sitting's block, the
+  rollback, decision 4 and the `Consumes` row; `sandbox/warehouse/`'s `iam.tf` comment and README row;
+  `consumer-data`'s README rows; `promotion.md` §N.10.1 and §N.10.4; the row in `waiting-on-the-user.md`
+  removed.

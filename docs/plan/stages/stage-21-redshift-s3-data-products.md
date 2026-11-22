@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | **Pass 1 done 2026-11-18** ([log](../../log/log-stage-21-redshift-s3-data-products.md)). Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*; owed: the user's reading of the console's enable wizard before 2.4. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects. **Passes 2 to 4's rows written 2026-11-19, nothing up**, in "The Sandbox warehouse sitting: passes 2 to 4 in order": the four slices re-planned from `main` with the counts the commands carry, pass 2's raise corrected to one `make up`, and every plan of `sandbox/warehouse/` naming both switches |
+| **Status** | **Pass 1 done 2026-11-18** ([log](../../log/log-stage-21-redshift-s3-data-products.md)). Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*; owed: the user's reading of the console's enable wizard before 2.4. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects. **Passes 2 to 4's rows written 2026-11-19, nothing up**, in "The Sandbox warehouse sitting: passes 2 to 4 in order": the four slices re-planned from `main` with the counts the commands carry, pass 2's raise corrected to one `make up`, and every plan of `sandbox/warehouse/` naming both switches. **4.5's write path taken 2026-11-22, decision 4 (b)**: `sandbox/data/`'s key policy names the data transfer role for the sitting, AWS's `GenerateDataKeyDecryptDataTransferRole` behind `data_transfer_key_statement_enabled`, off by default; planned *"No changes."* off and *"Plan: 0 to add, 1 to change, 0 to destroy."* on, not applied |
 | **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). Nothing blocks pass 1 |
-| **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
+| **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; [D31](../decisions/D31-approver-read.md) for the data key's readers (decision 4); 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
 | **Proves** | — (no `INT-nn` row: everything runs in Sandbox, and the domain in Data Governance is reached through the doors Stage 19 measured). What it does prove: whether SageMaker Unified Studio's standard path carries a Redshift table, the namespace seen through the Glue Data Catalog, and an S3 prefix of images through publication, a data product and a subscription as it carries a Glue table; which engine and which compute the consumer needs for each; and what lineage the catalog draws for the warehouse |
 
 *Read with [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) §The catalog road and its paragraph on a data
@@ -663,9 +663,10 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
   off by default, creates `awsds-sandbox-warehouse-data-transfer`, whose ARN is the output
   `data_transfer_role_arn`; applied for the sitting from a `main` that holds it; the switch on. Two readings
   the code could not take: the data key's policy delegates to IAM only through Redshift Serverless, so a write
-  through S3 is refused until `sandbox/data/`'s key policy names the role (AWS's
-  `GenerateDataKeyDecryptDataTransferRole`, a D31 widening and the user's decision); and `update-catalog`
-  takes the whole `CatalogInput`, so `get-catalog` comes first (Lesson 60).
+  through S3 needs the key policy to name the role, AWS's `GenerateDataKeyDecryptDataTransferRole`, a D31
+  widening for the sitting (decision 4 (b)): `sandbox/data/`'s `data_transfer_key_statement_enabled`, applied
+  after the role exists and off again before the role goes; and `update-catalog` takes the whole
+  `CatalogInput`, so `get-catalog` comes first (Lesson 60).
   **[Claude] reads** what AWS Glue creates (a cluster or a Serverless workgroup, in Sandbox or out of it,
   its namespace, key and base capacity), the creation in CloudTrail under its caller, and whether
   `DenyRedshiftProvisionedClusters` refused it.
@@ -674,7 +675,8 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
   account shows it, and the bill by usage type the next day.
 - **4.7 An RMS catalog**: not run, since decision 3 took (b).
 - **4.8 [Claude⚡] Removed in the sitting**: data lake access off, the catalog deleted, the namespace's
-  registration withdrawn, `data_transfer_role_enabled` off and applied, each read back absent.
+  registration withdrawn, `data_transfer_key_statement_enabled` then `data_transfer_role_enabled` off and
+  applied, each read back absent.
 
 **The commands of pass 4**, in a shell that ran pass 2's first block. Every `$A` a colon follows is braced
 (`${A}:catalog`): zsh takes the colon after a bare parameter for a modifier (Lesson 84).
@@ -716,6 +718,12 @@ AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=fal
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
   "$HOME/tmp/s21-warehouse-transfer.tfplan"
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse output -raw data_transfer_role_arn
+# decision 4 (b) ⚡ the key statement naming the role, once the role exists: KMS refuses a principal that
+# does not. Never with -refresh=false or -minimal-refresh on this slice (OQ 24).
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data plan -input=false \
+  -var data_transfer_key_statement_enabled=true -out="$HOME/tmp/s21-data-key-on.tfplan"   # 1 to change
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data apply -input=false \
+  "$HOME/tmp/s21-data-key-on.tfplan"
 # The update passes the whole input get-catalog returned with DataLakeAccessProperties added: whether
 # UpdateCatalog drops what it is not passed is unread (Lesson 60).
 aws glue get-catalog --catalog-id "${A}:stage21_warehouse" --profile $S
@@ -736,6 +744,11 @@ aws lakeformation deregister-resource --resource-arn "$DS" --profile $S
 aws redshift disassociate-data-share-consumer --data-share-arn "$DS" \
   --consumer-arn "arn:aws:glue:us-west-2:${A}:catalog" --profile $S
 aws redshift deregister-namespace --namespace-identifier "$NSID" --consumer-identifiers "$A" --profile $S
+# then the key statement off, so the key policy never names a deleted role
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data plan -input=false \
+  -out="$HOME/tmp/s21-data-key-off.tfplan"                                              # 1 to change
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data apply -input=false \
+  "$HOME/tmp/s21-data-key-off.tfplan"
 # then sandbox/warehouse/ planned with the transfer switch off and applied: the role and its policy go
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
   -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=false \
@@ -847,9 +860,10 @@ was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the s
    decision 8 (a)'s tag shares the slice with 4.5's role (Lessons 51 and 69).
 2. **[user] 1.3's wizard half**: the console's enable wizard for the `RedshiftServerless` blueprint read,
    not submitted, before 2.4 ([`waiting-on-the-user.md`](../waiting-on-the-user.md)).
-3. **[user] 4.5's write path**: whether `sandbox/data/`'s key policy names the data transfer role
-   (`GenerateDataKeyDecryptDataTransferRole`, a D31 widening). Without it, 4.5's reads run and a write
-   through S3 is refused, which is itself a reading.
+3. **[user] 4.5's write path**: taken 2026-11-22, decision 4 (b): `sandbox/data/`'s key policy names the
+   data transfer role for the sitting (`GenerateDataKeyDecryptDataTransferRole`, a D31 widening);
+   `sandbox/data/` plans `No changes`, and `0 to add, 1 to change` (the data key's policy) with
+   `data_transfer_key_statement_enabled=true`.
 
 **In the sitting**, each slice initialised first in a tree on `main` (`./scripts/gen-backend-hcl.py
 <account folder> <slice>`, `./scripts/gen-tfvars.py <account folder> <slice>`, then `init
@@ -869,8 +883,8 @@ sessions told first:
 5. **Pass 3, lineage**: `lineage_reader`, its secret and the second connection, the data source with
    lineage, the statements, the graph, then 3.5's removal. About 45 minutes, the pull's five minutes
    included.
-6. **Pass 4, the namespace in the Glue Data Catalog**: 4.1 to 4.4, then 4.5 with the transfer role
-   applied, 4.6, and 4.8 at once. The managed compute's base capacity is unread, so 4.6's reads are the
+6. **Pass 4, the namespace in the Glue Data Catalog**: 4.1 to 4.4, then 4.5 with the transfer role and
+   then its key statement applied, 4.6, and 4.8 at once, the key statement removed before the role. The managed compute's base capacity is unread, so 4.6's reads are the
    only queries on it; at 128 RPUs, the blueprint template's own default (1.3), a query's 60-second
    minimum costs 0.77 USD. About 75 minutes.
 7. **[Claude] The closing reads**: the consumer's workgroup and the managed compute sit outside `make down`,
@@ -922,11 +936,12 @@ About 4 hours 30 minutes of passes 2 to 4, beside Stage 19's 5.3, which they sha
 
 ## Decisions due
 
-The user took the decisions below on 2026-11-17 in the cloud session's thread, one card at a time at the
+The user took decisions 1 to 3 on 2026-11-17 in the cloud session's thread, one card at a time at the
 user's request: decision 1 on its card at 21:55 UTC, decisions 2 and 3 in words at 21:55 UTC. At 21:50 UTC
 the user set the rule the recommendations follow: *"Revise as recomendações considerando que iremos
-exercitar o caminho sugerido pela AWS por padrão."* The log carries each question as it was asked and each
-answer in the user's words. Taken: 1 to 3.
+exercitar o caminho sugerido pela AWS por padrão."* Decision 4 on 2026-11-22, in this stage's session on
+the laptop. The log carries each question as it was asked and each answer in the user's words. Taken: 1
+to 4.
 
 1. **The consumer of a Redshift asset, and its subscription target** (2.4). **Taken 2026-11-17: (b)**, on
    the card whose option read *"Caminho documentado pela AWS: o consumidor ganha um workgroup só dele por
@@ -960,6 +975,19 @@ answer in the user's words. Taken: 1 to 3.
    its account nor its size, and only a creation answers; a refusal by `DenyRedshiftProvisionedClusters` is
    a reading too. Not taken: (a) data lake access left off; (c) an RMS catalog besides, so 4.7 and
    verification xiii do not run; (d) none of pass 4.
+4. **The data transfer role on the account data key** (4.5). **Taken 2026-11-22: (b)**, the user's
+   *"Ampliar na sessão"*: `sandbox/data/`'s key policy names `awsds-sandbox-warehouse-data-transfer` for the
+   sitting with AWS's `GenerateDataKeyDecryptDataTransferRole`, `kms:GenerateDataKey` and `kms:Decrypt`
+   under `kms:ViaService = s3.<region>.amazonaws.com`, behind `data_transfer_key_statement_enabled`, applied
+   after the role and removed before it at 4.8. AWS's prerequisites page asks for the statement when a
+   customer managed key encrypts the namespace, and the namespace's key is the account data key, whose root
+   holds no cryptographic action (D31). It amends D31 for the sitting: a fourth reader, a service's role
+   trusted by Glue and Redshift alone, whose identity policy holds no S3 action and which no bucket policy
+   names, so it reads no object of `awsds-sandbox-lake`. The recommendation followed the rule of
+   2026-11-17, P1 and decision 3 (b)'s measured Athena read; this file had left (a) open as a reading. Not
+   taken: (a) the key policy unchanged, 4.5's reads run and a write through S3 refused, so 4.6's read
+   through data lake access would likely be refused by this estate's key rather than measured on AWS's
+   path.
 
 ## Cost
 
@@ -986,7 +1014,8 @@ Each write is on the user's word, in this order, each object read before its del
 1. **[user] The subscriptions revoked** (2.7, 5.7), then **the listings unpublished and the data products
    deleted**, in the order [`catalog.md`](../runbooks/catalog.md) §A's deletion takes.
 2. **[Claude⚡] The federated catalog and data lake access** (4.8), if 4.8 did not run: the switch off, the
-   catalog deleted, the registration withdrawn, `data_transfer_role_enabled` off and applied.
+   catalog deleted, the registration withdrawn, `sandbox/data/`'s `data_transfer_key_statement_enabled` off
+   and applied, then `data_transfer_role_enabled` off and applied.
 3. **[Claude⚡] The lineage credentials** (3.5), if 3.5 did not run: the second connection by a member, the
    user dropped, the secret deleted with no recovery window.
 4. **[user] then [Claude⚡] The consumer's workgroup** (2.9), if 2.9 did not run: the compute removed in
@@ -1003,8 +1032,8 @@ Each write is on the user's word, in this order, each object read before its del
 
 - Promote a product, or touch Production's warehouse, its datashare or its federated database.
 - Build a SageMaker application: the tables come from SQL in the query editor and the files from a space.
-- Keep a federated catalog, data lake access, the consumer's workgroup, the `RedshiftServerless` blueprint
-  or `sys:operator` past its sitting.
+- Keep a federated catalog, data lake access, the data transfer role's key statement, the consumer's
+  workgroup, the `RedshiftServerless` blueprint or `sys:operator` past its sitting.
 - Grant the namespace's default role a policy (5b decision 5), even for 2.8.
 - Enable the `LakehouseCatalog` or `LakehouseAdmin` blueprints, or create an RMS catalog (decision 3 (b)).
 - Build S3 Metadata tables or an S3 table bucket: read, not built.
@@ -1025,7 +1054,8 @@ Each write is on the user's word, in this order, each object read before its del
   reading there, the question of its verification xxiii; its decision 5 holds in Production, where nothing
   changes.
 - **Stage 11**: 6.4's threat-model entries, `sys:operator` held by a project and an S3 Access Grants
-  credential that outlives its revocation.
+  credential that outlives its revocation; decision 4's fourth reader of the account data key, for the
+  sitting.
 - **Stage 20**: its pass 5 makes `eighth-experimentation` a consumer of Production's listing; this stage
   makes it the producer of two data products and, if 4.4 imports, a federated catalog's asset, each retired
   at the end.
