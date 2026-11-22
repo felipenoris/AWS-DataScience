@@ -47,7 +47,7 @@ SHELL := /bin/bash
 ifneq ($(strip $(auto)$(build)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
 $(error the flags are upper case - AUTO, BUILD, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
 endif
-.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
+.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env schedule
 
 help:
 	@printf 'make - the checks, and the D11 lifecycle. READ targets change nothing in AWS;\n'
@@ -91,6 +91,9 @@ help:
 	@printf '              deploy and test runners always, the build runner with BUILD=1\n'
 	@printf '  gitlab-down DESTROY the runners, STOP GitLab, DESTROY the SharedServices\n'
 	@printf '              endpoints; the hub keeps running for every other session\n'
+	@printf '\n'
+	@printf '  schedule    render schedule/out/schedule.pdf from schedule/build.py; reads\n'
+	@printf '              nothing in AWS\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
 	@printf '    DRY=1       print every command the target would run, and run none\n'
@@ -333,3 +336,8 @@ check-all:
 	printf '\n\033[1m--- make check-ou\033[0m\n'; \
 	$(MAKE) --no-print-directory check-ou  || fail=1; \
 	exit $$fail
+
+CHROME ?= /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+schedule:
+	@python3 -I schedule/build.py
+	@"$(CHROME)" --headless=new --disable-gpu --no-pdf-header-footer --user-data-dir="$$(mktemp -d)" --print-to-pdf="$(CURDIR)/schedule/out/schedule.pdf" "file://$(CURDIR)/schedule/out/report.html" 2>/dev/null
