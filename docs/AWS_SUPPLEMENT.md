@@ -1925,7 +1925,7 @@ entry is still true is the reading.
   did not: the statement kept running through the two minutes 5.1 held it breached, while that breach
   refused every query needing the compute. Where: `log-stage-05b` the third amendment and the entry of
   2026-10-18, and the comments on `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and
-  `layers.py`'s `usd_per_hour`.
+  `layers.py`'s `sandbox/warehouse-compute` row.
 
 - `SUP-138` **The Data API authorizes following, reading and cancelling a statement on no resource**
   (measured 2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and

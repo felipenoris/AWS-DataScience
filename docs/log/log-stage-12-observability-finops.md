@@ -1096,3 +1096,46 @@ apply do tooling"*, as `awsds-infra-prod` (account Production, the infrastructur
   2026-09-06 20:58:53, and `awsds-prod-gitlab-status-check` since 2026-11-10 01:59:20, through GitLab's stop
   at 05:38:03.
 - **Left of 2.2**: nothing. 2.4, provoking one alarm of each class once, is next.
+
+## 2026-11-22 — `make status` splits its burn: passive per hour, active per unit of use
+
+*Claude's sitting, in a session the orchestrating session started, read-only throughout: `make status`
+and one `describe-vpc-endpoints` as the `awsds-infra-*` profiles (the infrastructure user with
+`InfrastructureAccess`). Times are UTC.*
+
+### The change
+
+- **[Claude] `scripts/tfhygiene/layers.py`**: `UNIT_CLASS` gives a rate's class by its unit, `h` and
+  `GB-month` passive, `query-hour` and `GB processed` active (`docs/PRICING.md` 3, 5, 7 and 8). A row's
+  `per_use` holds its active rates. Both `warehouse-compute` rows move from `usd_per_hour=1.44` to 1.44 USD
+  per query-hour; `sandbox/egress`, `staging/egress`, `production/egress` and
+  `production/workloads-egress` gain 0.01 USD per GB processed. `slices.py check` fails on a `per_use`
+  unit `UNIT_CLASS` does not class active.
+- **[Claude] `scripts/slices.py status`**: each line prints its rates beside their class. The footer
+  prints the passive burn in USD/h and each distinct active rate once, with the slices that bill it; the
+  monthly notes read `passive, monthly`. With nothing up both totals read USD 0.0000.
+
+### The readings
+
+- **[Claude] Before**, `make status` from 18:31:51 to 18:34:48, exit 0: *"estimated burn: USD
+  1.7594/h"*. Of it, 1.44 was `sandbox/warehouse-compute`, up and serving no query, and 0.10 two
+  JupyterLab apps in Sandbox, `jup` and `jup-ml-dev` (pending since 18:30).
+- **[Claude] After**, from 18:43:10 to 18:45:12, exit 0: *"passive burn: USD 0.3194/h"*, and *"active
+  burn:  USD 1.4400/query-hour     sandbox/warehouse-compute"* with *"USD 0.0100/GB processed
+  sandbox/egress"*. 0.3194 + 1.44 = 1.7594, the single total; the per-GB rate was printed nowhere before.
+- **[Claude] Offline**, `cmd_status` on fabricated readings in a scratch script: everything down reads
+  `passive burn: USD 0.0000/h` and `active burn:  USD 0.0000`; two warehouses and three endpoint slices
+  up print each active rate once with its slices; one unreadable account exits 1, *"neither total is a
+  measurement"*.
+- **[Claude] `describe-vpc-endpoints`** in Sandbox at 18:52:44: 26 interface endpoints, against the 18
+  that `sandbox/egress`'s static 0.180 USD/h prices, so the passive burn read 0.080 USD/h low.
+
+### Owed
+
+- **[Claude] Rates `docs/PRICING.md` does not settle**, declared nowhere until the user decides: the
+  proxy's and the WireGuard host's traffic per GB (3: no per-GB processing charge on an EC2 proxy; 3 and
+  7: internet data transfer out 0.090 USD/GB, peering 0.01 USD/GB each way across Availability Zones);
+  the unlimited burstables' CPU credits (3: 0.04 USD per vCPU-hour on `t4g`, 0.05 on `t3a`, `t3`
+  unmeasured); DNS Firewall queries (7: 0.60 USD per million inspected).
+- **[Claude] Not seen by `make status`**: Stage 17 pass 4's inference endpoint, which would be passive.
+  The Studio apps' *"at most … so far"* (`SUP-229`) is unchanged.

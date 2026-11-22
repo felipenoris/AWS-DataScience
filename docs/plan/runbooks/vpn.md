@@ -230,7 +230,7 @@ AWS_PROFILE=awsds-infra-prod aws ec2 stop-instances --region us-west-2 --instanc
 **What bills while everything is stopped** is the monthly floor, not an hourly rate: the tunnel's
 Elastic IP (~USD 3.65), the host-key secret ~0.40, and the two 8 GB gp3 volumes. The proxy's address is
 its instance's own and bills only while it runs (6g decision 1).
-`make status` sums the hourly side; the floor is `docs/plan/cost-model.md`'s.
+`make status` sums the hourly side as its passive burn; the floor is `docs/plan/cost-model.md`'s.
 
 ### S6. Switch the host's shape — `instance_type` and `root_volume_size`
 
@@ -387,7 +387,7 @@ budget, with this table in hand.
 
 **The cost model stays written against `t3.nano` on 8 GiB.** `scripts/tfhygiene/layers.py` carries
 `0.0052` for the slice and `docs/PRICING.md` §3's WireGuard row prices the nano, and neither follows the
-parameter. While a larger host runs, `make status` understates the burn: a `t3.medium` is
+parameter. While a larger host runs, `make status` understates the passive burn: a `t3.medium` is
 **0.0416 USD/h**, eight times the figure quoted (measured 2026-08-20; `docs/PRICING.md` §8's `t3.medium`
 row is the same reading). One baseline in the cost tables beats a table that drifts with a knob.
 

@@ -65,14 +65,17 @@ help:
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
 	@printf '  check-all   check and check-ou\n'
 	@printf '  slices      the D11 layer table, offline - which slice is [P], [D] or [E]\n'
-	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3 and 8).\n'
-	@printf '              Reads the [D] power states from EC2, each [E] state file after a\n'
-	@printf '              local terraform init, and the Studio apps from SageMaker, each priced\n'
-	@printf '              by its instance type - a session per account read; a slice or an\n'
-	@printf '              account it cannot read is UNREADABLE and the total is then a floor.\n'
-	@printf '              The EMR Serverless applications started and the OpenSearch\n'
+	@printf '  status      what is up and its burn in two totals (static rates, docs/PRICING.md 3,\n'
+	@printf '              5, 7 and 8): passive, USD per hour billed while a resource is up, used\n'
+	@printf '              or not; active, the rates billed only by use, each in its unit - the\n'
+	@printf '              warehouse per query-hour, an endpoint per GB. Both read USD 0.0000 with\n'
+	@printf '              nothing up. Reads the [D] power states from EC2, each [E] state file\n'
+	@printf '              after a local terraform init, and the Studio apps from SageMaker, each\n'
+	@printf '              priced by its instance type - a session per account read; a slice or\n'
+	@printf '              an account it cannot read is UNREADABLE and neither total is then a\n'
+	@printf '              measurement. The EMR Serverless applications started and the OpenSearch\n'
 	@printf '              Serverless collections, which the portal deploys and down never\n'
-	@printf '              deletes, are listed unpriced, and each makes the total a floor\n'
+	@printf '              deletes, are listed unpriced, and each makes the passive total a floor\n'
 	@printf '  clean       LOCAL delete only: aws/output, .venv, .ruff_cache, every .terraform/.\n'
 	@printf '              Never secrets/, never anything in AWS\n'
 	@printf '\n'
@@ -136,7 +139,7 @@ help:
 	@printf '                  up = ec2 start-instances, down = ec2 stop-instances, by Name tag.\n'
 	@printf '                  status reads the power state from EC2, not the state file. A\n'
 	@printf '                  stopped host still bills its EBS volume and its [P] Elastic IP,\n'
-	@printf '                  monthly; the hourly total is silent about them\n'
+	@printf '                  monthly; the passive burn, an hourly total, is silent about them\n'
 	@printf '  [E] EPHEMERAL   destroyed at the end of a session, rebuilt from code in minutes:\n'
 	@printf '                  everything metered by the hour - the interface endpoints (egress/,\n'
 	@printf '                  workloads-egress/), the probes, the build runner, and the running\n'
@@ -284,7 +287,7 @@ hub-up:
 
 # `hub-down` stops, never destroys: [D] is a stop/start contract (D11), so the Elastic IPs, the host
 # key and both security groups survive. It is the last thing to run in a session and the easiest to
-# forget, which is why `make status` prices the two hosts.
+# forget, which is why `make status` prices the two hosts in its passive burn.
 hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 

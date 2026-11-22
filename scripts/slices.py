@@ -9,7 +9,8 @@
 #                                           by rank descending
 #   ./scripts/slices.py status [--env <env>] what is up, the Studio apps, the portal's EMR
 #                                           Serverless applications and OpenSearch Serverless
-#                                           collections, and the hourly burn
+#                                           collections, and the burn: passive per hour, active
+#                                           per unit of use
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
 #
@@ -444,6 +445,15 @@ def cmd_check(args) -> int:
             )
         if sl.layer not in layers.LAYER_NAMES:
             failures.append(f"{sl.path}: unknown layer '{sl.layer}'.")
+        # `status` prints every per_use rate in the active burn, so a unit UNIT_CLASS does not
+        # call active would land in the wrong total.
+        for _, unit in sl.per_use:
+            if layers.UNIT_CLASS.get(unit) != layers.ACTIVE:
+                failures.append(
+                    f"{sl.path}: per_use unit '{unit}' is not one layers.UNIT_CLASS classes "
+                    "active. An hourly rate goes in usd_per_hour; a new unit gets its row there, "
+                    "with the docs/PRICING.md section that says how it bills."
+                )
 
     print(f"{len(declared)} slice(s) declared, {len(on_disk)} on disk")
     if failures:
@@ -640,8 +650,8 @@ def managed_resources(module: dict) -> int:
 # A Studio app is started from the portal by a person, so no slice holds it and `terraform show`
 # never counts it: on 2026-11-18 a JupyterLab space billed 0.050 USD/h while `make status` read
 # 0.0000 (6d 2.7 step 5's log). `status` reads the apps from the API in every account it covers,
-# prices each from the table below and adds it to the burn. Deleting them stays `make down`'s,
-# through down-studio-apps.py.
+# prices each from the table below and adds it to the passive burn. Deleting them stays `make
+# down`'s, through down-studio-apps.py.
 #
 # The statuses that bill, with the word `status` prints: Pending and InService, and Deleting until
 # the delete finishes, which is why down-studio-apps.py waits on it. Failed and Deleted bill nothing.
@@ -654,8 +664,9 @@ def managed_resources(module: dict) -> int:
 BILLING_APP_STATUSES = {"Pending": "pending", "InService": "UP", "Deleting": "deleting"}
 
 # USD per hour by app type and instance type: the measured us-west-2 rows "SageMaker Studio
-# JupyterLab / CodeEditor" of docs/PRICING.md 3 and 8 (Lesson 6). An app on a pair with no row
-# prints "rate unmeasured" and makes the total a floor: a guessed rate is a reasoned price.
+# JupyterLab / CodeEditor" of docs/PRICING.md 3 and 8 (Lesson 6), billed per HOUR the app runs,
+# used or not, so passive (layers.UNIT_CLASS). An app on a pair with no row prints "rate
+# unmeasured" and makes the passive total a floor: a guessed rate is a reasoned price.
 STUDIO_APP_USD_PER_HOUR = {
     (app_type, instance): usd
     for app_type in ("JupyterLab", "CodeEditor")
@@ -731,12 +742,13 @@ def print_studio_app(env: str, app: dict, now: datetime, spaces: dict | None) ->
     space_created = (spaces or {}).get((app.get("DomainId"), app.get("SpaceName")))
     if space_created is not None and space_created > since:
         since = space_created
+    cls = layers.UNIT_CLASS[layers.HOUR]
     if rate is None:
-        cost = "rate unmeasured"
+        cost = f"{cls}, rate unmeasured"
     else:
         # The app bills from its start, Pending included; `since` is no later than that start.
         so_far = rate * (now - since).total_seconds() / 3600
-        cost = f"{rate:.4f} USD/h, at most {so_far:.2f} USD so far"
+        cost = f"{cls} {rate:.4f} USD/h, at most {so_far:.2f} USD so far"
     label = f"studio/{env}/{owner}"
     print(
         f"  {label:<40} {BILLING_APP_STATUSES[app['Status']]:<7} {app['AppType']} {instance}"
@@ -751,9 +763,11 @@ def print_studio_app(env: str, app: dict, now: datetime, spaces: dict | None) ->
 # Serverless collection from the portal (docs/SMUS.md §Resource blueprints). No slice declares
 # either, so `terraform show` never counts one, and `make down` deletes neither: each belongs to
 # the project that deployed it. `status` lists the ones that can bill in every account it covers.
-# Neither is priced: an application bills the workers it holds started and a classic collection
-# one OCU or more, and no listing gives those counts, so each one makes the total a floor
-# (docs/PRICING.md 5, Lesson 6).
+# Neither is priced: a started application holds at least one kernel worker until its autoStop,
+# and a classic collection one OCU or more from its creation, each billed per HOUR whether used or
+# not, so passive; no listing gives those counts, so each one makes the passive total a floor
+# (docs/PRICING.md 5, docs/SMUS.md's EmrServerless row, Lesson 6). An application's session
+# workers bill by use on top, per vCPU-hour and GB-hour, and are not printed.
 #
 # The states that can bill: an application while it starts, runs or stops; a collection in every
 # state but the two below.
@@ -819,8 +833,36 @@ def portal_standing(env: str, dry: bool) -> list | None:
     ]
 
 
+def charges(hourly: float, per_use: tuple) -> str:
+    """One line's rates, each beside its class from layers.UNIT_CLASS: the hourly, then per use."""
+    return ", ".join(
+        [f"{layers.UNIT_CLASS[layers.HOUR]} {hourly:.4f} USD/{layers.HOUR}"]
+        + [f"{layers.UNIT_CLASS[unit]} {usd:.4f} USD/{unit}" for usd, unit in per_use]
+    )
+
+
+def print_burn(passive: float, active: dict) -> None:
+    """The two totals: the passive burn per hour, and each active rate with the slices billing it.
+
+    An active rate is per unit of use and the same wherever the use lands, so several slices
+    billing one rate print it once, never a sum. With nothing up both totals read USD 0.0000.
+    """
+    print(
+        f"\n  passive burn: {f'USD {passive:.4f}/h':<24}  billed while a resource is up, used or not"
+    )
+    lead = "  active burn: "
+    if not active:
+        print(f"{lead} {'USD 0.0000':<24}  nothing up bills by use")
+    for (usd, unit), names in sorted(active.items(), key=lambda kv: -kv[0][0]):
+        print(f"{lead} {f'USD {usd:.4f}/{unit}':<24}  {', '.join(names)}")
+        lead = " " * len(lead)
+    if active:
+        print(f"{lead} billed only while used, nothing when nobody uses it")
+    print("  rates: docs/PRICING.md 3, 5, 7 and 8, static; classes: layers.UNIT_CLASS")
+
+
 def cmd_status(args) -> int:
-    """What is up, and the burn - rates from a static table, never a live pricing call (8.4)."""
+    """What is up, and the burn by class - static rates, never a live pricing call (8.4)."""
     envs = [args.env] if args.env else layers.environments()
     metered = [
         s for e in envs for s in layers.for_env(e) if s.layer in (layers.DORMANT, layers.EPHEMERAL)
@@ -834,14 +876,18 @@ def cmd_status(args) -> int:
         print("  hourly to be up. This is Stage 2: every slice on disk is [P]. The first")
         print("  metered slice is Stage 3's egress/, and it declares its own usd_per_hour")
         print("  in scripts/tfhygiene/layers.py from docs/PRICING.md 3.")
-        print("\n  estimated burn: USD 0.00/h - because the set is empty, not because it was read")
+        print_burn(0.0, {})
+        print("  both zero because the set is empty, not because it was read")
         return 0
 
-    total, unreadable = 0.0, 0
+    # The passive burn adds every hourly rate of what is up. `active` maps each (USD, unit) pair
+    # of a slice that is up to the slices billing it (layers.Slice.per_use).
+    passive, unreadable = 0.0, 0
+    active: dict[tuple[float, str], list[str]] = {}
     for sl in metered:
         # A [D] slice is not measured by its state file. `terraform show` reports the instance
         # as present whether it is running or stopped, which is what [D] means, so counting
-        # resources would add 0.0042/h to the burn forever and the 0.0000/h reading Stage 3
+        # resources would add 0.0042/h to the passive burn forever and the 0.0000/h reading Stage 3
         # closed on could never come back. What is metered by the hour here is the power state,
         # so it is read from EC2 by the same Name tag the dormant hook uses, and no
         # `terraform init` is needed to answer it.
@@ -854,11 +900,13 @@ def cmd_status(args) -> int:
                 unreadable += 1
                 continue
             running = [i for i, st in found if st in ("running", "pending")]
-            total += sl.usd_per_hour if running else 0.0
+            rate, per_use = (sl.usd_per_hour, sl.per_use) if running else (0.0, ())
+            passive += rate
+            for pair in per_use:
+                active.setdefault(pair, []).append(f"{sl.account}/{sl.name}")
             state = "UP" if running else ("stopped" if found else "absent")
             print(
-                f"  {sl.path:<40} {state:<7} {len(found):>3} instance(s)"
-                f"   {sl.usd_per_hour if running else 0.0:.4f} USD/h"
+                f"  {sl.path:<40} {state:<7} {len(found):>3} instance(s)   {charges(rate, per_use)}"
             )
             continue
         if not prepare(sl, args.dry_run):
@@ -889,10 +937,13 @@ def cmd_status(args) -> int:
         ]
         rate = sl.usd_per_hour + sum(usd * held.count(addr) for addr, usd in sl.optional_hosts)
         with_hosts = ", ".join(addr for addr, _ in sl.optional_hosts if addr in held)
-        total += rate if up else 0.0
+        if up:
+            passive += rate
+            for pair in sl.per_use:
+                active.setdefault(pair, []).append(f"{sl.account}/{sl.name}")
         print(
             f"  {sl.path:<40} {'UP' if up else 'down':<5} {n:>3} resource(s)"
-            f"   {rate:.4f} USD/h" + (f"   with {with_hosts}" if with_hosts else "")
+            f"   {charges(rate, sl.per_use)}" + (f"   with {with_hosts}" if with_hosts else "")
         )
 
     # The Studio apps, which no slice holds (BILLING_APP_STATUSES above).
@@ -915,7 +966,7 @@ def cmd_status(args) -> int:
             if rate is None:
                 unmeasured += 1
             else:
-                total += rate
+                passive += rate
     if quiet:
         print(f"  no Studio app billing in {', '.join(quiet)}")
 
@@ -932,7 +983,10 @@ def cmd_status(args) -> int:
         if not standing:
             portal_quiet.append(env)
         for label, state, detail in standing:
-            print(f"  {label:<40} {state:<7} {detail}   rate unmeasured")
+            print(
+                f"  {label:<40} {state:<7} {detail}"
+                f"   {layers.UNIT_CLASS[layers.HOUR]}, rate unmeasured"
+            )
         unpriced += len(standing)
     if portal_quiet:
         print(
@@ -940,32 +994,37 @@ def cmd_status(args) -> int:
             + ", ".join(portal_quiet)
         )
 
-    print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3 and 8, static)")
+    print_burn(passive, active)
+    monthly = f"{layers.UNIT_CLASS[layers.GB_MONTH]}, monthly"
     if any(s.layer == layers.DORMANT for s in metered):
         # 0.0000/h is not "free" once a [D] slice exists. A stopped host keeps its EBS volume
-        # and its [P] Elastic IP, both billed monthly, so the hourly total is silent about them
-        # by construction.
-        print("  a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
-        print("  monthly rather than hourly - the floor lines of docs/plan/cost-model.md.")
+        # and its [P] Elastic IP, both billed monthly, so the passive burn, an hourly total, is
+        # silent about them by construction.
+        print(f"  {monthly}: a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
+        print("  the floor lines of docs/plan/cost-model.md.")
     if apps_read:
         print(
-            f"  a space bills its volume with its app stopped, {SPACE_VOLUME_USD_PER_GB_MONTH} USD"
+            f"  {monthly}: a space bills its volume with its app stopped,"
+            f" {SPACE_VOLUME_USD_PER_GB_MONTH} USD per GB-month"
         )
-        print("  per GB-month (docs/PRICING.md 8), monthly rather than hourly.")
+        print("  (docs/PRICING.md 8).")
     if unmeasured:
         print(
             f"  {unmeasured} Studio app(s) on a rate docs/PRICING.md has not measured"
-            " - this total is a floor"
+            " - the passive burn is a floor"
         )
     if unpriced:
         print(
-            f"  {unpriced} portal resource(s) that no listing prices - this total is a floor:"
+            f"  {unpriced} portal resource(s) that no listing prices - the passive burn is a floor:"
             " an application bills\n  its started workers, a classic collection at least one"
             " OCU at 0.24 USD/h (docs/PRICING.md 5)"
         )
     if unreadable:
         # A slice or an account that could not be read is not one where nothing runs.
-        print(f"  {unreadable} reading(s) UNREADABLE - this total is a floor, not a measurement")
+        print(
+            f"  {unreadable} reading(s) UNREADABLE - neither total is a measurement: the passive"
+            " burn is a floor,\n  and an active rate may be missing"
+        )
         return 1
     return 0
 
