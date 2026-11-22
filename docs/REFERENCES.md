@@ -2790,6 +2790,17 @@
   5 s and exits 255 after 60 checks, shorter than the 442 s one `dev-env` scan took:
   <https://docs.aws.amazon.com/cli/latest/reference/ecr/wait/image-scan-complete.html>.
 
+- Amazon ECR basic scanning, its troubleshooting, the `ImageScanStatus` and `DescribeImageScanFindings`
+  references and the service quotas (read 2026-11-22, R1, for `SUP-437`): none names a maximum number of
+  vulnerabilities, a scan failing on one, or *"exceeds the maximum supported with Basic Scanning"*; basic
+  scanning *"uses AWS native technology"*; the quotas are 100,000 basic scans per registry per 24 hours and
+  one scan per image per 24 hours; `ImageScanStatus` lists `FAILED` and `LIMIT_EXCEEDED` without describing
+  either: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-basic.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-troubleshooting.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_ImageScanStatus.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_DescribeImageScanFindings.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html>.
+
 - The GitHub Actions the offline gates use (Stage 8 step 6.2, read 2026-10-12: each release's date and
   commit from the GitHub API, each `action.yml`'s inputs at that commit):
   <https://github.com/actions/checkout> (v7.0.1), <https://github.com/actions/cache> (v6.1.0),

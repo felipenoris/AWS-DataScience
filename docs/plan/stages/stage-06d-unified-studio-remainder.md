@@ -391,8 +391,8 @@ work at all* — is still open.
      version a domain names, so its place in the pipeline holds), §C6 as the `Tooling` domains' route
      and §V; `docs/SMUS.md` §Custom images; `remote-ide.md` §V; `AWS_STATE.md`'s `INV-23` and
      `EXC-26`; `terraform-live/README.md`'s paragraph; and `US-13`, which read 5 `pass` and 3 notes at
-     23:40 UTC. `versions.py`'s header is GitLab's copy (`gitlab/README.md`), so its change waits on a
-     GitLab sitting; `sagemaker-prereqs`'s roster comment, on the module's next tag.
+     23:40 UTC. `versions.py`'s header is GitLab's copy (`gitlab/README.md`), so its change waited on a
+     GitLab sitting, R1 of 2026-11-22 (merge request !15, `9e64c6e2`, and the mirror); `sagemaker-prereqs`'s roster comment, on the module's next tag.
   8. **The next image release exercises the procedure**: `register`, the pin's PR, the governance apply after
      the merge, *Update project* per project, `US-13` green. The owner's *Update project* moved all six
      projects' pins from 11 to 12 on 2026-11-22; each `SageMakerAIDomain` environment was created after the

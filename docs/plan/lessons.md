@@ -1885,6 +1885,16 @@ asked, before anything is applied.
 **What makes it expensive.** An apply from the older tree removes another session's applied work without an
 error, and that session learns it from its next reading.
 
+**A second instance, 2026-11-22** (Stage 12 2.2, in R1). The tree that applied a slice also holds the inputs
+Git does not carry. `production/tooling/` was last applied with
+`-var-file=<project folder>/secrets/saml.auto.tfvars`, as `CLAUDE.md` asks. Planned read-only from a worktree
+at `main`'s `030a3625` without that file, the slice read *0 to add, 2 to change, 0 to destroy*, where
+2026-11-21's plan had read *0 to add, 1 to change*: beside the alarm, `aws_s3_object.gitlab_rb` was to be
+updated in place, its SAML block, GitLab's sign-in through Identity Center, leaving the rendered
+`gitlab.rb`. With the var-file the plan read *0 to add, 1 to change*, and that plan was applied
+(`PutMetricAlarm` at 02:12:56 UTC). The count that grew against the slice's last recorded plan stopped it;
+the tree was `main`'s, and nothing in the plan named the missing file.
+
 ## Lesson 80 — a revocation that removes a name reads as "not found", never as "denied", and it lands with the last of its asynchronous writes, not with the call
 
 **What happened.** On 2026-11-14 Stage 19's Sandbox sitting revoked `test-experimentation`'s subscription

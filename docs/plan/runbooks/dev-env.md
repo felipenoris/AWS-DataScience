@@ -361,7 +361,9 @@ longer road, §E's chain, because the proxy environment is baked at build time.
 A release's tag pipeline runs on all three runners: `build-images` and the two scans on the build runner,
 `release-gate` on the test runner, `register` and `retire` on the deploy runner. Its GitLab session is
 therefore `make gitlab-up BUILD=1` ([`gitlab.md`](gitlab.md) §U), and without the flag the chain stops at
-`build-images`, *stuck* with no runner to take it.
+`build-images`, *stuck* with no runner to take it. Before the tag, read the build runner running
+([`gitlab.md`](gitlab.md) §U step 3): an apply of `runners/` without the flag terminates it, as one did on
+2026-11-22.
 
 ### The release, and the reading that ends it
 

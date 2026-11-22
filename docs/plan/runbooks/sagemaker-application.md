@@ -6,7 +6,7 @@
 | **Operator** | Three hands, named at each step. The **data scientist**, in a Sandbox project and in GitLab, a Developer of the project; the **deployment manager** (`awsds/deployment-managers`, a Maintainer of the project, `DeploymentManagerAccess` in AWS), who merges, tags, admits a release at the gates and approves a model; the **infrastructure user** (`InfrastructureAccess`, the `awsds-infra-*` profiles), who writes the application's infrastructure, applies the `[P]` slices and raises and lowers the shared slices. The **Governance Manager** approves a governed table's tags (§B). Which hand each act needs is §Q |
 | **The rules** | **The repository is the deployable unit** (D41): the image carries the dependencies, the code is a job's input, the workflow is the activation, and a chain's state machine starts the workflow in each target. **The pipeline is the only writer of Staging and Production** (D17, D26): no project, no portal and no person deploys there, and no pipeline identity raises a shared slice (Stage 8 decision 27); a worker's rewrite of the code a deploy wrote is `TM-32`, open (Stage 19 decision 28). **Governed data is read through Lake Formation, never through S3** (D13): every project role carries `awsds-<env>-project-boundary`, a target's with the fence (Stage 19 decision 21 (b)), and release F's project roles hold no lake grant, the governed read being item 32 (Stage 19 decision 22 (a)). **A name is a contract**: the application's name reaches workflows, Glue jobs, prefixes, the stage-variables parameter, chains, repositories and instruments, each listed in §S |
 | **The picture around it** | Why the unit is an application and why a chain layer exists: [D41](../decisions/D41-sagemaker-application.md); the deployment project in each target, the CLI's deploy there and the catalog's import: [Stage 19](../stages/stage-19-smus-native-data-product.md), decision 6 (b); what crosses the gate: [D28](../decisions/D28-workflow-contract.md); the template itself: [`examples/app-etl/README.md`](../../../examples/app-etl/README.md); the sittings that ran the first promotion: [`promotion.md`](promotion.md); a workflow's tasks inside a project: [`serverless-workflows.md`](serverless-workflows.md); GitLab's own procedures: [`gitlab.md`](gitlab.md); the governance cycle of a data product: [`docs/GOVERNANCE.md`](../../GOVERNANCE.md); every acronym: [`docs/GLOSSARY.md`](../../GLOSSARY.md) |
-| **Written** | 2026-10-26, from the template at `v0.4.6` (promoted 2026-10-25, pipeline #102) and from the slices, scripts and stage records of Stages 8, 9 and 10. The targets' half read 2026-11-17 from the template at `v0.5.2` (release F, in Production since 2026-11-16, pipeline #129), `scripts/deploy-application.py` and the `<env>/studio/`, `<env>/foundation/` and `<env>/chains/` slices; where `main` carries release G's code (Stage 19 decision 26 (b), tagged `v0.6.0` at its sitting), the sentence says so. One application exists: every step here ran for `app-etl` unless it says otherwise, and no second application has been created, so §S's checklist is read from the code and not measured (Lesson 37) |
+| **Written** | 2026-10-26, from the template at `v0.4.6` (promoted 2026-10-25, pipeline #102) and from the slices, scripts and stage records of Stages 8, 9 and 10. The targets' half read 2026-11-17 from the template at `v0.5.2` (release F, in Production since 2026-11-16, pipeline #129), `scripts/deploy-application.py` and the `<env>/studio/`, `<env>/foundation/` and `<env>/chains/` slices; where `main` carries release G's code (Stage 19 decision 26 (b), `v0.6.0`, in Production since 2026-11-22), the sentence says so. One application exists: every step here ran for `app-etl` unless it says otherwise, and no second application has released: R1 ran §L's steps 1 to 6 for `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt` on 2026-11-22, and the rest of §S's checklist is read from the code and not measured (Lesson 37) |
 
 | Section | Audience | What it holds |
 |---|---|---|
@@ -103,8 +103,8 @@ way to Production, once per account and each time into a project, and the first 
 of those deployments along the three axes of §A: where, by what, as whom. The `dev` project is in the
 Sandbox account, where people work; Staging and Production are accounts where only the pipeline writes
 and only workflows run, each holding one deployment project that the CLI deploys into as it does into
-`dev` ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b); release F, `v0.5.2`,
-in Production since 2026-11-16). Every promotion crosses an account: there is no Sandbox `test` stage
+`dev` ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b); release G, `v0.6.0`,
+in Production since 2026-11-22). Every promotion crosses an account: there is no Sandbox `test` stage
 (decision 19 (c)), and the release's first run is Staging's leg.
 
 | Stage | Where it runs | Deployed by | Identity of the tasks | Data |
@@ -309,14 +309,14 @@ is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G,
 ## D. The development cycle in Sandbox
 
 A data scientist works in a *space*, a JupyterLab or Code Editor instance inside the Sandbox project
-that is the manifest's `dev` stage, on the house image (`awsds-sandbox-dev-env` version 11, `default-v0.10.0`,
-the only version since 2026-11-03).
+that is the manifest's `dev` stage, on the house image (`awsds-sandbox-dev-env` version 12, `default-v0.10.1`,
+pinned since 2026-11-22; version 11 stays until the next release's `retire`).
 The space's `~/shared/` folder is the project's `shared/` S3 prefix, its house environment carries the
 CI/CD CLI (Stage 8 decision 22), and every command it runs holds the project role's credentials. The
 loop below ran end to end from a space on 2026-10-26 ([`promotion.md`](promotion.md) §N.3, Stage 10
 2.1). Steps 1 and 6 carry what the image and the CLI do not yet do for the developer: git's credential
 helpers, and the CLI's domain lookup, which the template's `scripts/dev-cli.sh` answers. Step 4 holds the
-MWAA Serverless API's names in `NO_PROXY`: version 11 carries the one the CLI needs, and a boto3 client
+MWAA Serverless API's names in `NO_PROXY`: versions 11 and 12 carry the one the CLI needs, and a boto3 client
 needs a second (`SUP-395`).
 
 **The session is the infrastructure user's.** `make hub-up`; `make gitlab-up RUNNERS=0` while the
@@ -373,7 +373,7 @@ settles, so the down runs again.
    export ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
    ```
 
-4. **The API's names in `NO_PROXY`**: version 11, `default-v0.10.0` (2026-10-26), carries the
+4. **The API's names in `NO_PROXY`**: version 11, `default-v0.10.0` (2026-10-26), and version 12 carry the
    endpoint's name, `airflow-serverless.us-west-2.api.aws`, which is all the CI/CD CLI needs, read from a
    space at [`promotion.md`](promotion.md) §N.7.3. A boto3 client or the AWS CLI also needs
    `airflow-serverless.us-west-2.amazonaws.com`, the name botocore decides the proxy against (`SUP-395`):
@@ -555,7 +555,7 @@ manifest:
 |---|---|
 | `applicationName` | `<app>`; the first part of every workflow's name in a project, the `Pipeline` tag by which two applications in one project differ, and the `<app>` of the stage-variables parameter |
 | `content.storage[]` | the folders the CLI copies, each a `name` with `include` and `exclude` lists: `code` (the zips, named one by one), `src`, `glue`, `samples`, `workflows`. An include names a file or a folder, never a glob: `deploy` expands one, `bundle` in 1.0.9 does not, and the lint refuses one. No item names a connection, no `git` or `notebooks` content: the lint refuses content taken from outside the tag, since a release must be reproducible from the tag alone, and the catalog is the next row's |
-| `content.catalog` | `enabled: true`, `connectionName: project.default_lakehouse`, `skipPublish: true`: `bundle` exports what the `dev` project owns in the catalog, the product's asset with its description, README and classification and any glossary term, and a deploy into a target imports it into that project and lists nothing; the workflow's `publish` task lists, where `PUBLISH_LISTING` is `"true"` (Stage 19 decisions 14, 18 (d) and 20 (b)). `product.json` declares what the export may carry and `scripts/check-catalog-export.py` fails a bundle that carries more or lacks the asset: at `v0.5.2` the asset `trades_notional` and the data product `trades-notional`; on `main`, release G's, the asset alone, since `publish` creates the data product in Production (decision 26 (b)). The lint's rule `manifest` admits the item from `awsds-workflows` `196acee` (2026-11-12) |
+| `content.catalog` | `enabled: true`, `connectionName: project.default_lakehouse`, `skipPublish: true`: `bundle` exports what the `dev` project owns in the catalog, the product's asset with its description, README and classification and any glossary term, and a deploy into a target imports it into that project and lists nothing; the workflow's `publish` task lists, where `PUBLISH_LISTING` is `"true"` (Stage 19 decisions 14, 18 (d) and 20 (b)). `product.json` declares what the export may carry and `scripts/check-catalog-export.py` fails a bundle that carries more or lacks the asset: at `v0.5.2` the asset `trades_notional` and the data product `trades-notional`; since release G's `v0.6.0`, the asset alone, since `publish` creates the data product in Production (decision 26 (b)). The lint's rule `manifest` admits the item from `awsds-workflows` `196acee` (2026-11-12) |
 | `content.workflows[]` | each workflow the CLI creates in a project: its `workflowName`, the file `workflows/<name>.yaml`; `connectionName: default.workflow_serverless`; `code: code/<name>.zip` when the workflow has a Python or Bash task. A workflow is created only in a stage whose bootstrap names it: `app-etl-warehouse` is in the list, and the `prod` stage alone creates it (Stage 19 decision 16 (b)) |
 | `stages.dev`, `stages.staging`, `stages.prod` | one stage per account, each a project and each naming the domain by `${DOMAIN_ID}` and `${DOMAIN_REGION}`: `dev` (`stage: DEV`), the Sandbox project `${DEV_PROJECT_NAME}`; `staging` (`STAGING`), `deploy-staging`; `prod` (`PROD`), `deploy-production`. `project.create` is never true, and there is no Sandbox `test` stage (Stage 19 decision 19 (c)) |
 | `stages.<s>.environment_variables` | the same names in every stage. `JOB_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`, `PROJECT_KEY_ARN`, `TRAINING_IMAGE_URI` and `ACCOUNT_ID` are each a `${VAR}` from the shell: in `dev` a space's exports (§D step 3); in a target, set by `deploy-application.py`, the network, key and account prefixed (`STAGING_*`, `PROD_*`) and read from the project, `JOB_IMAGE_URI` the release's image and `TRAINING_IMAGE_URI` the `<env>/sagemaker/` output. `PRODUCT_DATABASE` and `PUBLISH_LISTING` are literals: `app_etl`, the same name in every account's catalog, and `"true"` in `prod` alone, since Production alone lists a chain application's product (Stage 19 decision 20 (b)). `ACCOUNT_ID` is the account the Glue job's lineage names (decision 10). A workflow's `{env.VAR}` is one of these names, filled on a run the CLI starts and, in a target, by the chain's machine from the recorded variables. Every `${VAR}` of the file must be set and non-empty for any command, another stage's included (1.0.9's `find_missing_env_vars`, read in its code 2026-10-26) |
@@ -632,7 +632,8 @@ the dependencies change. The application image is therefore the lock's packages 
 - **The scan gate** compares the push's CRITICAL and HIGH findings with the lineage's baseline in
   `awsds/ci-gates`, `GATES_BASELINE_SAGEMAKER_DISTRIBUTION` for every `awsds-prod-ecr-app-*`, and
   informs: a red scan job stops nothing, and the operator reads its log before a deployment (Stage 8
-  decision 1, the user's amendment).
+  decision 1, the user's amendment). Since 2026-11-15 the log holds no finding: basic scanning fails every
+  image this estate pushes (`SUP-437`).
 - **Who pulls it**: the role of the project a job runs in, by digest. The repository's policy admits
   the Sandbox and Staging accounts (`APP_REGISTRY_CONSUMERS`, `production/registry/ecr.tf`), and
   Production's roles pull by identity; no statement this repository writes grants a project role the
@@ -708,10 +709,10 @@ account read, so each prints versions, counts, names and paths, never a value of
   `SageMakerStudioProjectRoleMachineLearningPolicy`'s, and `StartDataSourceRun` the house grant on
   Production's deployment project role alone (`<env>/studio/workflows.tf` under `project-roles.tf`'s
   `publishing_starts_the_source`, Stage 19 decision 17), the one stage whose `PUBLISH_LISTING` is true;
-  elsewhere the task returns before it. Release G's `publish`, on `main`, also creates, revises and
-  lists the data product, through `CreateDataProduct` and `CreateDataProductRevision` under
-  `publishing_creates_the_data_product` (decision 26 (b)), which `production/studio/`'s apply at release
-  G's sitting grants (`promotion.md` §N.8.5).
+  elsewhere the task returns before it. Release G's `publish`, in Production since 2026-11-22, also creates,
+  revises and lists the data product, through `CreateDataProduct` and `CreateDataProductRevision` under
+  `publishing_creates_the_data_product` (decision 26 (b)), which `production/studio/`'s apply of 2026-11-17
+  grants (`promotion.md` §N.8.5); its first run created `trades-notional` and its listing.
 
 ---
 
@@ -938,7 +939,8 @@ them, in [`gitlab.md`](gitlab.md) §U's order, and the mirror must carry `main`:
 
 1. `make hub-up`, `make gitlab-up BUILD=1`, the tunnel: the build runner takes the image and the
    untagged jobs, the deploy runner the bundle and the legs, the test runner the tests. Sandbox's
-   `egress/` stays down: no job reads it.
+   `egress/` stays down: no job reads it. The build runner is read running before the tag
+   ([`gitlab.md`](gitlab.md) §U step 3): an apply without `BUILD=1` terminates it.
 2. `git push gitlab main` from the project folder, once `main` carries every script the legs clone
    (`deploy-application.py`, `check-egress.py`, `model-chain.py` and `tfhygiene/`): a stale mirror runs
    yesterday's deploy.
@@ -968,8 +970,8 @@ version. A release that must not reach Production stops at the gate, and Staging
 pipeline destroys nothing there, and the project, its workflows and its product table stay, billing the
 table's storage (Stage 8 decision 27). Staging's leg is where a release first runs under a target's
 grants and network, on the sample, not real data, until item 32 brings the governed read (Stage 19
-decision 22 (a)). The release in Production is `v0.5.2`; release G's tag, `v0.6.0`, is cut at its
-sitting (`promotion.md` §N.8.5).
+decision 22 (a)). The release in Production is `v0.6.0`, release G's, since 2026-11-22
+(pipeline #138, `promotion.md` §N.8.5).
 
 ---
 
@@ -1227,9 +1229,9 @@ template writes no governed table: its Glue job writes the application's own pro
 `app_etl.trades_notional` in the project's database (Stage 19 decision 2). Stage 19 decision 6 (b)
 makes that table a second road, a product in the catalog: the template's `publish` task lists it where
 `PUBLISH_LISTING` is `true`, Production's deployment project alone (decision 20 (b), pass 4). At
-`v0.5.2` the task lists the asset Production's import carries with `dev`'s metadata (2026-11-16); on
-`main`, release G's task also creates the data product `trades-notional` over that asset and publishes
-it (decision 26 (b)), from the tag `v0.6.0` at its sitting. In `dev` the task returns at once, and the
+`v0.5.2` the task listed the asset Production's import carries with `dev`'s metadata (2026-11-16); since
+release G's `v0.6.0` (2026-11-22) the task also creates the data product `trades-notional` over that asset
+and publishes it (decision 26 (b)). In `dev` the task returns at once, and the
 asset stays in the project's inventory, where the scientist curates the description, the README and
 the classification the bundle carries to the targets (decision 18 (d)).
 

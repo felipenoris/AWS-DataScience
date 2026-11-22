@@ -1116,8 +1116,6 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   project's, a version per release.
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
   `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
-- **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22, read at the
-  first warehouse sitting after it (the waiting list's Dates).
 - **No step provokes them yet**: Stage 8 xxvii's retry (an apply that creates a role and its host
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
@@ -1211,8 +1209,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    the data product `anph2bq7uigqa8` and its listing `dr8t27tte8ezdc`; N.8.3's reading, which closed
    `EXC-13`'s Production half; the backup, which leaves the bucket on 2026-12-23; 6d 2.7's step 7; the
    three projects. Its steps 6 and 7 did not run, the user's choice, so R2 carries `app-dbt`'s first
-   release and opens with #321's merge and the mirror's push (item 10). Its merge requests and tags reached
-   GitLab with the local user's password rotation unconfirmed, which R2 settles first.
+   release, #321 merged before it and the mirror pushed at its opening (item 10). Its merge requests and
+   tags reached GitLab with the local user's password rotation unconfirmed, which R2 settles first.
 6. **With nothing up, now**: [user] Stage 19's xxvi portal half, then 4.12's request by
    `eighth-experimentation` and Stage 20 5.0's by `app-dbt-dev`, both on release G's listing, each
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
@@ -1234,8 +1232,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
    it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
    so either may come first, and R2 follows its day 1 (item 10).
-10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
-    orders before pass 8, opening with R1's steps 6 and 7 (N.11.2 step 1): `app-dbt`'s first release,
+10. **R2** (N.11.2), after item 7's day 3, item 8's applies, item 9's day 1, whose pass 5 Stage 20 orders
+    before pass 8, and #321's merge: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2016,12 +2014,16 @@ same hub start, each after its decision. **Read 2026-11-17**: the newest backup 
 current version after 30 days), so step 4's backup moves to any GitLab sitting before that date; the
 secret's `NextRotationDate` read 2026-11-22 01:59:59 UTC on 2026-11-16, never rotated. R1 (N.11.1)
 carries every step below on its own raises, after the rotation and before 2026-12-17: steps 2 and 3 on a
-Production raise after release G's leg, step 4's backup with GitLab already up.
+Production raise after release G's leg, step 4's backup with GitLab already up. **Run 2026-11-22 in R1**
+(Stage 19's log): the rotation with no workgroup, 01:11:55 to 01:17:08 UTC; `--sql` through the rotated secret
+at 05:42, 13 pass and 4 notes, so `EXC-13`'s Production half is read and the database follows; the backup by
+hand at 02:48:08 and the timer's at 03:00:50, both expiring 2026-12-23. The free trial's readings around it are the user's.
 
-1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
+1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22 UTC. `TZ=UTC` keeps
+   the CLI from printing the dates in the laptop's zone (`SUP-435`):
 
    ```bash
-   aws secretsmanager describe-secret --secret-id 'redshift!awsds-prod-warehouse-dbadmin' --query '[LastRotatedDate,NextRotationDate]' --output text --profile awsds-infra-prod --region us-west-2
+   TZ=UTC aws secretsmanager describe-secret --secret-id 'redshift!awsds-prod-warehouse-dbadmin' --query '[LastRotatedDate,NextRotationDate]' --output text --profile awsds-infra-prod --region us-west-2
    ```
 
 2. **[user]** the free trial's Production balance; `make hub-up`; then:
@@ -2211,7 +2213,10 @@ What it closes: Production's `publish` task owning the product's data product, t
 file's [§Release G as written](../stages/stage-19-smus-native-data-product.md). It runs after N.8.4's
 step 8, in R1 (N.11.1), with the hub and GitLab up with the build runner for its tag (`make gitlab-up
 BUILD=1`: a tag pipeline's untagged jobs run on the build runner alone, [`gitlab.md`](gitlab.md) §U), and
-each act below names its identity.
+each act below names its identity. **Run 2026-11-22 in R1** (Stage 19's log): steps 2, 4 and 5, `v0.6.0` on
+`57f2fac`, pipeline #138 through both targets, Production's `publish` creating `trades-notional`
+(`anph2bq7uigqa8`) and its listing `dr8t27tte8ezdc`; `production-register`, `-approve`, `-transform` and
+`-warehouse-ddl` left `manual`, the model half being R2's.
 
 1. **[user] `app-etl-dev`'s data product deleted**, `trades-notional` (`5070mjwdvjwp3k`), which was
    never published: in the portal as the project's owner (the project's data products, *Delete*), or
@@ -2229,7 +2234,8 @@ each act below names its identity.
    asset alone, which `product.json` requires. **Done 2026-11-16**, 06:03 UTC, through the CLI.
 2. **[user] This repository's pull request merged and the mirror pushed.** The leg's
    `deploy-application.py` reads a first import on the asset's conflict from then on, release F's
-   logs read as before. **PR #307 merged 2026-11-16** as `c5e1718e`; the mirror waits for GitLab.
+   logs read as before. **PR #307 merged 2026-11-16** as `c5e1718e`; the mirror waits for GitLab. **Pushed
+   2026-11-22 in R1**: step 4's template merge request carried it, `07348ff..57f2fac` (Stage 19's log).
 3. **`production/studio/` re-planned and applied**, by Claude on the user's word naming it, from a
    checkout of the merged `main` (Lesson 79): account **Production**, the infrastructure user,
    `InfrastructureAccess` through `awsds-infra-prod`. No run of Production's workflows may be in
@@ -2619,8 +2625,8 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and this sitting's day 1 (N.6 items 7 to 10): Stage
-   20 orders its pass 8 after pass 5.
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 and #321's merge (N.6 items 7
+   to 10): Stage 20 orders its pass 8 after pass 5.
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2640,6 +2646,14 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 2026-12-17, when the newest GitLab backup leaves the bucket. It needs no Sandbox day before it, and
 `app-dbt`'s release joins it only after N.9's day 1.
 
+**Run 2026-11-22**, from 02:00 to 06:14 UTC (Stage 19's log; Stage 12's for 2.2, 6d's for the image pin):
+steps 1 to 5 and 8. Steps 6 and 7 moved to R2's opening, the user's choice (N.11.2). Step 3's merge
+request and release G's reached GitLab with step 2's password rotation unconfirmed, so it is confirmed, or
+done, before R2's first push. N.6 item 6, Stage 19 4.12's and Stage 20 5.0's requests, is left for after
+the sitting, with nothing up: pass 8 being R2's, 5.0 waits on no `bundle` job, and R2's tag first deletes
+its link's asset (Stage 20 8.6, N.11.2 step 2). The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
+so step 4 now reads it before the tag.
+
 1. [Claude] With nothing up: N.8.3 step 1, `LastRotatedDate` on 2026-11-22; the other sessions told;
    `make status`. [user] Production's free-trial balance.
 2. [user] `make hub-up`, `make gitlab-up BUILD=1`, the tunnel ([`gitlab.md`](gitlab.md) §U); the local
@@ -2650,7 +2664,8 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
    `awsds/app-dbt` created by [`sagemaker-application.md`](sagemaker-application.md) §L's steps 1 to 6,
    with `awsds/infrastructure`'s job-token allowlist admitting each (Stage 20 8.7).
 4. [user] Release G, N.8.5 step 4: the mirror at `main`, the template's merge request of eight files,
-   `make up ENV=staging ONLY=egress`, the tag `v0.6.0`; `make up ENV=production ONLY=workloads-egress`
+   `make up ENV=staging ONLY=egress`, [Claude] the build runner read running ([`gitlab.md`](gitlab.md) §U
+   step 3), [user] the tag `v0.6.0`; `make up ENV=production ONLY=workloads-egress`
    before `production-gate`, then the gate. [Claude] N.8.5 step 5's readings of Production's leg.
 5. [user] After Production's leg, `make up ENV=production ONLY=workloads-egress,warehouse-compute
    GROUPS=redshift`, so no run of the leg meets a warehouse; [Claude] N.8.3 step 3,
@@ -2685,19 +2700,18 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
-After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies and N.10's day 1,
-whose pass 5 Stage 20 orders before pass 8; before 2026-12-18, since it carries `app-dbt`'s first release,
-which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
+After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
+whose pass 5 Stage 20 orders before pass 8, and #321's merge; before 2026-12-18, since it carries
+`app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
    tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] GitLab's local user's password confirmed
-   rotated, or rotated (N.8.2 step 3), before the first push; [Claude] pull request #321's branch takes
-   `origin/main` by merge, `--self-check` and `make check` read again, then `gh pr ready 321`; [user] #321
-   merged, then `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; [user]
-   `awsds/dev-env`'s README row for `default-v0.10.1` by a merge request, then [Claude] its mirror
-   (`./scripts/gitlab-mirror.py awsds/dev-env`, `gitlab/README.md`, *Changing a recipe*).
-2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order,
-   [Claude] reading the build runner running before each tag ([`gitlab.md`](gitlab.md) §U step 3):
+   rotated, or rotated (N.8.2 step 3), before the first push; with #321 merged (above), `git pull` and
+   `git push gitlab main`, the mirror the legs clone the scripts from; `awsds/dev-env`'s README row for
+   `default-v0.10.1` by a merge request, then [Claude] its mirror (`./scripts/gitlab-mirror.py awsds/dev-env`,
+   `gitlab/README.md`, *Changing a recipe*), which moves `gitlab/mirror.json` past `7f2623b6`. [Claude]
+   Before each tag of step 2, the build runner read running ([`gitlab.md`](gitlab.md) §U step 3).
+2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
    `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), R1 having left it; `app-ml`'s (Stage 17 9.7), whose bundle
    carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
    `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
@@ -2746,7 +2760,7 @@ bound it stay N.6's.
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | `app-ml-dev`'s MLflow App; `app-genai-dev`'s first call to Nova Lite |
 | 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's subscriptions and Stage 20 5.1's tar |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
-| 2026-11-26 | R2 (N.11.2), opening with #321's merge | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
+| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1; #321 merged |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
@@ -2826,8 +2840,8 @@ Each reading is in the log of the stage that owns it.
   `GM-8` passing, the house image's literal equal to the account's 73 names. Pull request #321's branch took
   `origin/main` at `5dfff219` by merge (`00113780`), its one conflict in
   [`sagemaker-application.md`](sagemaker-application.md) §S's table; `--self-check` printed every stage of
-  the four applications `ok`, `app-etl`'s nine variables per stage as on `main`, and `make check` passed. R2's
-  opening (N.11.2 step 1) syncs it again with whatever `main` gained since.
+  the four applications `ok`, `app-etl`'s nine variables per stage as on `main`, and `make check` passed. It is
+  synced again before R2 (N.12.4), with whatever `main` gained since.
 - **R1 and R2's gates**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
   the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
   package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
@@ -2873,8 +2887,9 @@ The waiting list holds each as a row. In the calendar's order:
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
   The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
-- **Before R2**: Stage 17 10.5's acts (above), and the answer on whether GitLab's local user's password was
-  rotated before R1's pushes; #321's merge opens the sitting (N.11.2 step 1).
+- **Before R2**: Stage 17 10.5's acts (above); #321 merged, its branch having taken `origin/main` by merge
+  and its `--self-check` printing every stage `ok` (N.11.1 step 6); the answer on whether GitLab's local
+  user's password was rotated before R1's pushes.
 
 ## Q. After the quotas: Stage 10's pass 3
 
