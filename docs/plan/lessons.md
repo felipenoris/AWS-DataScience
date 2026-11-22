@@ -140,6 +140,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    opinion about. The unnamed ones do not stay unanswered; they get answered by whoever is executing, at
    the moment they least want to be designing identity. The tell is a step whose verb is "create X
    **using** Y" — `using` almost always hides a form.
+   A later instance, 2026-11-22 (Stage 17 7.4, `SUP-418`): the step named an automatic evaluation of Haiku 4.5
+   by its task, metric and dataset, and not the form's *Inference configurations*. That panel always sends
+   Temperature and Top P, a cleared Top P returns to 0.5, and Claude Haiku 4.5 refuses the two together, so
+   the unnamed field made the named model impossible. The same step named a PII filter for the guardrail, a
+   field the IDE's form does not have. SMUS's guardrail page lists two policies, content filters and denied
+   topics. Both were readable before the sitting.
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next
    step depends on one.** Lesson 16 is about fields a wizard *asks* about; this is the class it does not
    cover, because the wizard never asks. Enabling Control Tower created an Identity Center user,
@@ -2112,6 +2118,38 @@ count taken in the language that reads it).
 **What makes it expensive.** The gates ship as a tagged image, so the fix is a new tag and a pin moved in every
 application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
 assumption from the next one.
+
+## Lesson 88 — a key handed to a platform is handed to every service it creates through, and each brings a key contract the platform's page does not list
+
+**What happened.** The project key reaches SMUS once, as the Tooling configuration's `KmsKeyArn`, and its
+policy was written to SMUS's key-permissions page (Stage 6 step 2.1). On 2026-11-22 the Bedrock IDE created
+two components under it, and each was refused on a contract that page does not name. The knowledge base's
+vector bucket was admitted and its index refused until the key let `indexing.s3vectors.amazonaws.com`
+decrypt (`SUP-410`, `sagemaker-prereqs-v0.13.0`). The guardrail was refused until the provisioning role could
+`kms:CreateGrant` on the key (`SUP-417`, v0.14.0). S3 Vectors' encryption page and Bedrock's guardrail
+encryption page each state its statement, and neither was read before its component's first create. The
+estate paid one rung at a time: two refusals, two tags, two applies and two failed components to delete
+(Stage 17's log).
+
+**Why it is a class.** A platform that provisions through other services passes its key down, and each
+downstream service uses the key with its own principals and operations: a service principal that decrypts
+asynchronously, a grant the creating role must be allowed to make. The platform documents its own use of the
+key, so a policy written to its page is complete for the platform and incomplete for every service beneath
+it. Lesson 17's service creates principals nobody chose; here the principals are documented, on pages the
+platform does not link. Lesson 82's grants are written from the refusals that ran and stay open for the
+members not yet run, and these refusals arrived the same way, one first run at a time. This lesson names
+what to read in advance: the key contract of each service the platform creates through.
+
+**The rule.** Before the first create of a platform component that encrypts, list the services it provisions
+through (the component's stack, its blueprint's template or its first trail) and read each one's key page.
+Every statement they state goes into the key's policy in one change, on the component's switch (Lesson 14).
+A refusal naming KMS on a component's create is read as a missing downstream contract before it is read as
+a missing platform permission.
+
+**What makes it expensive.** The key's policy lives in a tagged module, so each missing statement costs a
+tag, a pin and an apply. A failed component leaves a blueprint deployment and a definition, deleted in two
+portal acts before the component can be created again (`SUP-410`'s later reading). Staging and Production
+pin older tags, so a statement found in Sandbox reaches them only at their next apply.
 
 ## What AWS does that its documentation does not say
 

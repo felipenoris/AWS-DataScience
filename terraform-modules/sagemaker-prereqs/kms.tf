@@ -220,6 +220,55 @@ locals {
       }
     },
   ] : st if var.redshift_serverless_enabled]
+
+  # The Bedrock IDE's knowledge base on S3 Vectors: the provisioning role creates the vector bucket
+  # under this key, and S3 Vectors refuses the index unless the key lets its indexing principal decrypt
+  # (SUP-410, measured 2026-11-22, Stage 17 7.4a). The statement is the S3 Vectors encryption page's
+  # (read 2026-11-22), with the bucket narrowed to the IDE's names, amazon-bedrock-ide-<project id>-
+  # <environment id>; AWS's key-permissions page for the Tooling blueprint names none. It rides the
+  # knowledge-base blueprint's switch (Lesson 14).
+  key_policy_s3vectors_indexing = [for st in [
+    {
+      Sid       = "AllowS3VectorsIndexingOfTheBedrockIdesVectorBuckets"
+      Effect    = "Allow"
+      Principal = { Service = "indexing.s3vectors.amazonaws.com" }
+      Action    = "kms:Decrypt"
+      Resource  = "*"
+      Condition = {
+        ArnLike = {
+          "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:s3vectors:${var.region}:${data.aws_caller_identity.current.account_id}:bucket/amazon-bedrock-ide-*"
+        }
+        StringEquals = {
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+        }
+        "ForAnyValue:StringEquals" = {
+          "kms:EncryptionContextKeys" = ["aws:s3vectors:arn", "aws:s3vectors:resource-id"]
+        }
+      }
+    },
+  ] : st if contains(local.configured_blueprints, "AmazonBedrockKnowledgeBase")]
+
+  # The Bedrock IDE's guardrail: DataZone calls CreateGuardrail as the provisioning role with this key,
+  # and Bedrock refuses it unless that role may kms:CreateGrant on the key, which the role's managed
+  # policy allows through airflow, neptune-graph and s3vectors alone (SUP-417, measured 2026-11-22,
+  # Stage 17 7.4). The statement is Bedrock's PermissionsForGuardrailsCreators (read 2026-11-22), with
+  # the principal narrowed to the provisioning role and no condition, as on the page: the refused call
+  # carried no request parameters to read a kms:ViaService from. It rides the guardrail blueprint's
+  # switch (Lesson 14).
+  key_policy_bedrock_guardrail = [for st in [
+    {
+      Sid       = "AllowGuardrailCreationByTheProvisioningRole"
+      Effect    = "Allow"
+      Principal = { AWS = module.provisioning_role.role_arn }
+      Action = [
+        "kms:Decrypt",
+        "kms:GenerateDataKey",
+        "kms:DescribeKey",
+        "kms:CreateGrant",
+      ]
+      Resource = "*"
+    },
+  ] : st if contains(local.configured_blueprints, "AmazonBedrockGuardrail")]
 }
 
 module "project_key" {
@@ -237,6 +286,8 @@ module "project_key" {
       local.key_policy_smus_domain,
       local.key_policy_smus_project_roles,
       local.key_policy_redshift,
+      local.key_policy_s3vectors_indexing,
+      local.key_policy_bedrock_guardrail,
     )
   })
 }

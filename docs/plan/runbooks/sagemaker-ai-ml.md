@@ -313,7 +313,8 @@ write to it.
 ### Playground and AI apps
 
 Both are Bedrock, and §G holds them: what opens the menu, which models answer, what an app is made of
-and what reaches a target.
+and what reaches a target. Each object the Bedrock IDE builds, what it is in AWS, the key it needs and the
+refusals it meets are [`bedrock-generative-ai.md`](bedrock-generative-ai.md).
 
 ## C. What the controls do to a create
 
@@ -390,7 +391,7 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 | Resource type | `sandbox/workflows/` | `<env>/studio/workflows.tf`, the deployment projects |
 |---|---|---|
 | Processing job | held | held |
-| Training job | written 2026-11-19 behind `training_pair_enabled`, applied after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
+| Training job | written 2026-11-19 behind `training_pair_enabled`, applied 2026-11-21 after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
 | Transform job | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | SageMaker model, the tag alone | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | Model package, on the stage's group and its versions: `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` | `CreateModelPackage` of a `PendingManualApproval` version in the application's own group, applied 2026-11-19; AWS's policy gives the list, the describe and the approval, the member's in the portal (9.5) | applied 2026-11-17 (9.5, decision 16 (b)) |
@@ -1027,21 +1028,22 @@ generative AI apps: a chat agent app and a flow app."*
 
 | Object | What it is | In the lab |
 |---|---|---|
-| Chat agent app | a model with instructions, and optionally a knowledge base, a guardrail and functions | not created (7.4b) |
-| Flow app | *"A flow app let you link prompts, supported foundational models, and other units of work, such as an Amazon Bedrock knowledge base, together and create generative AI workflows for end-to-end solutions."* | not created (7.4) |
-| Prompt, guardrail | a reusable prompt with variables and versions; a filter on a model's input and output | not created (7.4) |
+| Chat agent app | a model with instructions, and optionally a knowledge base, a guardrail and functions | built 2026-11-22; its preview and its deploy refused by Agents Classic (7.4b, `SUP-446`) |
+| Flow app | *"A flow app let you link prompts, supported foundational models, and other units of work, such as an Amazon Bedrock knowledge base, together and create generative AI workflows for end-to-end solutions."* | created 2026-11-22 with one prompt node, run once (7.4); a knowledge base node added the same day, 7.4b's fallback; no *Share* (`SUP-448`) |
+| Prompt, guardrail | a reusable prompt with variables and versions; a filter on a model's input and output | created 2026-11-22 (7.4), the guardrail after `sagemaker-prereqs-v0.14.0` (`SUP-417`) |
 | Function | a Lambda function an agent calls | left uncreated: no control names a Lambda (decision 10) |
-| Evaluation | a job that scores a model over a dataset; *"Amazon Bedrock in SageMaker Unified Studio doesn't support Human-based evaluations."* | not created (7.4) |
-| Knowledge base | the user's documents embedded into a vector store a model retrieves from | not created (7.4a); Titan V2 and an S3 Vectors store recommended (decision 12) |
+| Evaluation | a job that scores a model over a dataset; *"Amazon Bedrock in SageMaker Unified Studio doesn't support Human-based evaluations."* | Nova Lite's completed 2026-11-22; Claude Haiku 4.5's refused on the form's `temperature` with `top_p` (7.4, `SUP-418`) |
+| Knowledge base | the user's documents embedded into a vector store a model retrieves from | created 2026-11-22 on Titan V2 and S3 Vectors after `sagemaker-prereqs-v0.13.0` (7.4a, decision 12, `SUP-410`); 2 of 20 runbooks indexed (`SUP-411`) |
 
 **Agents Classic.** The IDE's builder carries the notice *"Agents Classic will no longer be open to new
 customers starting on July 30, 2026"* (read 2026-10-19). AWS's page (read 2026-11-16): *"Amazon Bedrock
 Agents (launched November 2023) is now Amazon Bedrock Agents Classic and will no longer be open to new
 customers starting on July 30, 2026."*, *"Only CreateAgent and InvokeInlineAgent are restricted for
 accounts without prior usage."*, *"There is no exception process."* and *"Knowledge Bases continue to
-work and are not affected by maintenance mode."* The Sandbox account never created an agent, so whether
-a chat agent app can be created there is verification xxxiv. A refusal leaves the knowledge base and a
-flow app, and the agent an application promotes is AgentCore's in either case (decision 26 (a)).
+work and are not affected by maintenance mode."* The Sandbox account had never created an agent, and verification xxxiv
+read 2026-11-22 that the chat agent app is an Agents Classic agent: its preview calls `InvokeInlineAgent`
+and its deploy `CreateAgent`, and both are refused (`SUP-446`). The knowledge base and a flow app remain,
+and the agent an application promotes is AgentCore's (decision 26 (a)).
 
 **Deploy, share, export.** Three acts of the IDE, each AWS's wording:
 
@@ -1257,7 +1259,7 @@ Claude Code on Bedrock from a space, with the use-case form and the retention mo
 | *"No models found. Contact your admin to enable more models."* | the account enables no Bedrock model for the portal (read 2026-10-19) | the model governance project and `sandbox/model-access/` (decision 13 (b), done) |
 | *"not authorized to perform: bedrock:InvokeModelWithResponseStream on resource: …application-inference-profile/… with an explicit deny in a service control policy"* | the portal invokes through an application inference profile the SCP did not admit (measured 2026-10-19) | admitted since decision 11's amendment, applied 2026-10-19 |
 | the same deny on `foundation-model/…` | a model outside the scoped set (Nova Lite, measured 2026-10-19) | none for a model outside the set: the ceiling is the control. Nova Lite's `us-west-2` foundation model joined the set on 2026-11-19, before `app-genai`'s loop in `dev` (decision 23 (a), 10.4) |
-| *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage."* | AWS's wording for a `CreateAgent` in an account that never created an agent (read 2026-11-16, not met here) | none, by AWS's page; a flow app and the knowledge base stay (§G) |
+| *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage."* | Agents Classic's refusal of an account that never created an agent: met 2026-11-22 in the browser's response to the chat agent app's `InvokeInlineAgent`, while its `CreateAgent` was refused with no message (`SUP-446`) | none, by AWS's page; a flow app and the knowledge base stay (§G, [`bedrock-generative-ai.md`](bedrock-generative-ai.md) §F) |
 | an `AccessDeniedException` on `bedrock:InvokeModel`, from a task in a target (designed; its wording is step 10.4's reading) | the request names no numbered version of a guardrail of the account, names a guardrail's `DRAFT`, or names a model outside the stage's profile: the boundary's exception admits none of them (§G) | the version the `guardrail` task returned, in the request's `guardrailConfig`. `app-genai-probe` expects this refusal and passes on it |
 | `DENY-SCP` on a `CreateEndpointConfig` that carries a `ServerlessConfig` | `DenySageMakerServerlessInference`, in the `Workloads` OU (measured 2026-10-18) | none: an instance-backed endpoint in Sandbox, a batch transform in a target |
 | `A SageMaker job with name … already exists.` | a task with `action_if_job_exists: fail` met its own job's name (read in the provider's code) | a per-run stamp in the job's name |
@@ -1313,8 +1315,9 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **An ML pipeline**, and the visual editor's forms (pass 5).
 - **Feature Store**: the entry, the project role's grant, the runtime endpoint, the offline store's
   table under Lake Formation (6.4, verification xxxiii).
-- **The Bedrock IDE's objects**: a prompt, a guardrail, a flow, an evaluation, the knowledge base and
-  the chat agent app (7.4, 7.4a, 7.4b, verification xxxiv).
+- **The Bedrock IDE's remainder**: `Retrieve` from a space (7.4b, verification xxiv). No shared snapshot
+  reaches the catalog and no answer cites a chunk, the chat agent app being refused and a flow app having
+  no *Share* ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
 - **A worker's `CreateModel` and `CreateTransformJob` as a project role**, in any account (verifications
   xxix and xxx).
 - **The provider's calls at 9.38.0 on a worker**: read in the code and not seen in a trail (`SUP-372`,

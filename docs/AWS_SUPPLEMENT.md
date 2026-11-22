@@ -68,7 +68,7 @@ entry is still true is the reading.
 | [Lake Formation](#lake-formation) | Data lake settings and who writes them; listings that omit grants; cross-account shares, vends and their flags; the creator's permissions; Athena writes through vended sessions; RAM |
 | [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network; an Iceberg table's rename |
 | [Redshift Serverless](#redshift-serverless) | Namespace, workgroup and usage limits; SQL, users and privileges; the Data API; datashares through Lake Formation; billing, metrics, the free trial and the audit export |
-| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections |
+| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections; the Bedrock IDE's knowledge bases, guardrails, evaluations, chat agents and flows |
 | [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE, its clients and Amazon Q |
 | [SageMaker AI jobs and models](#sagemaker-ai-jobs-and-models) | Processing jobs: status, mounts, keys and image pulls; condition keys on the job creates; models and model packages |
 | [MWAA](#mwaa) | MWAA Serverless workflows, their API and KMS use; workers, templates, tasks and the Airflow operators; provisioned MWAA |
@@ -1234,6 +1234,15 @@ entry is still true is the reading.
   the gateway endpoint for them. `GetDataAccess` is also an event name of `lakeformation.amazonaws.com`, so
   a trail lookup filters on `eventSource`. Where: `log-stage-06a-unified-studio.md`, 2026-08-24;
   `docs/AWS_STATE.md`, the persona vending row.
+  **Read again 2026-11-21** (Stage 17 1.6, from a SageMaker Unified Studio space behind the egress proxy):
+  the S3 Access Grants plugin's `GetAccessGrantsInstanceForPrefix` and `GetDataAccess` went to
+  `<account>.s3-control.us-west-2.amazonaws.com` through the proxy, one tunnel (*"CONNECT
+  <account>.s3-control.us-west-2.amazonaws.com:443 200 7313 6347 TCP_TUNNEL"*, 23:08:35Z), while the STS
+  call and the `PutObject` that followed left with no proxy line. The account-prefixed host matches no
+  `NO_PROXY` entry naming `s3.<region>.amazonaws.com`, so a proxied client reaches S3 Control through the
+  proxy, the path `SUP-042` records with the hub's gateway endpoint, not the spoke's. Verification iii's ranged read on
+  2026-11-22 showed the same tunnel at 00:12:57Z. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-21 and 2026-11-22.
 
 - `SUP-092` **Deleting an S3 Access Grants grant leaves `GetDataAccess` answering for up to about 19
   seconds, and credentials already vended work until their own expiry** (measured 2026-08-26 in Sandbox,
@@ -1257,6 +1266,14 @@ entry is still true is the reading.
   grant the error is the register's, *"You do not have READWRITE permissions to the requested S3 Prefix"*. A
   direct-refusal test runs only where no plugin sits. Where: `log-stage-16-sandbox-lake.md`, 2026-08-26,
   sitting 3; `runbooks/sandbox-lake.md`.
+  **Read again 2026-11-21** (Stage 17 1.6, from `eighth-experimentation`'s space `jup` on the house image):
+  before a `PutObject` under the project's `shared/` prefix, `GetAccessGrantsInstanceForPrefix` answered 200
+  and `GetDataAccess` for `WRITE` 403, and the write then succeeded under the project role's own
+  credentials, the plugin's fallback: the object `ml-demo-1-6.txt` exists, under the bucket's default key.
+  Where the reading above surfaced the register's refusal, the notebook here saw a successful write, so a
+  grant's refusal tested from a space is read in the trail's `GetDataAccess`, not in the call's result. The
+  plugin's version and fallback setting in either
+  interpreter were not read. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
 
 - `SUP-094` **An S3 gateway endpoint policy's refusal of another owner's bucket reaches the client as a bare
   `AccessDenied - Access Denied`, with no mention of the endpoint policy** (measured 2026-10-11 from a MWAA
@@ -2665,9 +2682,10 @@ entry is still true is the reading.
   `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
-- `SUP-380` **An *Update project* does not carry a profile's changed override of a non-editable parameter
-  into a living environment: the environment keeps the value resolved at its creation** (measured
-  2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
+- `SUP-380` **An *Update project* did not carry a profile's new override of `enableSpaces` into an environment
+  created before the override, and carried a changed override of the image pin into every environment created
+  with it**
+  (measured 2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
   `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
   `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
   `enableSpaces` `"false"`, and `get-project-profile` read it in both `parameterOverrides` and
@@ -2680,6 +2698,19 @@ entry is still true is the reading.
   keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
   `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+  **Read again 2026-11-22** (Stage 6d 2.7 step 8, read by the coordinating session): the image pin moved in
+  every environment. `experimentation` has overridden the pin since 2026-10-30 (#277), and Sandbox's six
+  `SageMakerAIDomain` environments were created after it, from 2026-11-18 18:16:05Z to 2026-11-19 00:19:40Z, each
+  storing `/11` in its `userParameters`, `isEditable` false. The profile's pin went to 12 at 05:07Z. The owner's
+  *Update project* on the six projects, `UpdateProject` from 05:14:42Z to 05:21:06Z with `projectProfileVersion`
+  `latest`, re-deployed each through the provisioning role: `Tooling`'s `UpdateStack`, 57 parameters, with no
+  resource event, and `SageMakerAIDomain`'s, 29 parameters, passing `SageMakerDomain` through an update whose
+  `UpdateDomain` (05:16:14Z to 05:28:53Z) rewrote the whole `DefaultUserSettings`. Each environment then stored
+  `/12`, and each domain read JupyterLab and Code Editor at version 12, custom images and default alike: the
+  parameters the profile overrode at creation were re-resolved from its latest version. The readings differ in
+  the parameter as well as in the creation condition, and no living environment holds the image pin from the
+  blueprint's default, so which of the two decides is unmeasured. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
   just created, which the provisioning role's managed policy does not grant, and the environment goes
@@ -3632,6 +3663,198 @@ entry is still true is the reading.
   is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-11-21 (two entries); `threat-model.md`, `TM-34`.
 
+### The Bedrock IDE
+
+- `SUP-410` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
+  configuration carries, and the index is refused unless that key grants `indexing.s3vectors.amazonaws.com`
+  `kms:Decrypt`, a statement SMUS's key-permissions page does not name** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The knowledge base was created from the portal's *My components* with Titan Text Embeddings
+  V2 at 1024 dimensions and Amazon S3 Vectors. At 01:03:10Z the provisioning role, from
+  `datazone.amazonaws.com`, called `CreateVectorBucket` `amazon-bedrock-ide-<project id>-<environment id>`
+  with `sseType` `aws:kms` and the key the Tooling configuration alone carries as `KmsKeyArn`; the
+  knowledge-base configuration carries no key parameter. The bucket was admitted. `CreateIndex`
+  `amazon-bedrock-ide` (1024, `float32`, `euclidean`) was refused: *"AccessDeniedException: Insufficient
+  access to perform asynchronous indexing. Ensure that the key used to encrypt the index still exists, is
+  active, and has a resource policy granting access to the S3 service principal
+  'indexing.s3vectors.amazonaws.com'."* The portal showed it inside *"Amazon Bedrock couldn't deploy the
+  Knowledge Base. Delete this component, and then create a new one."* The environment's stack, holding its
+  wait handles alone (`SUP-169`), was created and deleted within 35 s. The vector bucket stayed, empty, with
+  no index and no tag. Before the stack, `AmazonSageMakerBedrockModelManagementRole` had created an
+  application inference profile copied from the embeddings model, which stayed too. The S3 Vectors encryption
+  page documents the indexing principal's statement: `kms:Decrypt` under `aws:SourceArn`,
+  `aws:SourceAccount` and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`).
+  SMUS's key-permissions page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch
+  Serverless. Bedrock's knowledge-base setup page names no key policy. All three pages were read 2026-11-22.
+  A project key written to SMUS's page therefore refuses every IDE knowledge base on S3 Vectors. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 01:33Z): with the statement in the key's policy (`sagemaker-prereqs-v0.13.0`),
+  the second create's `CreateIndex` was admitted. The failed component's row in *My components* carried an
+  error icon and no menu; once its blueprint deployment was deleted from *Resource blueprints*, the row
+  offered *Delete*. The first vector bucket survived both deletes, empty.
+
+- `SUP-411` **The Bedrock IDE's S3 Vectors index declares `AMAZON_BEDROCK_TEXT` alone non-filterable, where
+  Bedrock's pages add `AMAZON_BEDROCK_METADATA`, and ingestion then fails on S3 Vectors' 2 KB cap on a
+  filterable string with a per-document reason that names no metadata** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The index `amazon-bedrock-ide` the provisioning role created at 01:33:17Z read
+  `nonFilterableMetadataKeys` `AMAZON_BEDROCK_TEXT` and `indexMode` `ENHANCED`; the knowledge-base form
+  exposes no index setting. Bedrock's knowledge-base setup page (its S3 Vectors tab) and its chunking page
+  say to add `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` as non-filterable keys. S3 Vectors' limits
+  page caps each filterable string value at 2 KB, and its metadata-filtering page says non-filterable keys
+  are configured when the index is created. Over 20 Markdown runbooks with the form's default chunking
+  (fixed size, 300 tokens, 15 % overlap), the sync the create started indexed 2 and failed 18. A second
+  sync scanned 20, indexed none and failed 18, counting the other 2 in no statistic. Both jobs' reason
+  read *"Invalid record for key '<uuid>': Metadata value is invalid: exceeds 2048 byte string limit
+  (Service: S3Vectors, Status Code: 400 …)"*, and each failed document's `statusReason` read *"The document
+  was not indexed. No content could be extracted from it, or processing ended before it completed."*
+  Neither reading names the key that exceeded. The two indexed runbooks hold one Markdown table each and
+  the 18 others two or more, a correlation read from the files, not a cause. A knowledge base the IDE
+  creates on S3 Vectors keeps this index for its life. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+
+- `SUP-417` **The Bedrock IDE's guardrail is created by DataZone as the provisioning role under the project
+  key, and Bedrock refuses it unless that role may `kms:CreateGrant` on the key, which SMUS's key-permissions
+  page does not name** (measured 2026-11-22 in Sandbox, Stage 17 7.4). The guardrail was created from the
+  portal's *My components* → *Create component* → *Guardrail* with one denied topic. At 01:56:24Z
+  `CreateGuardrail`, called from `datazone.amazonaws.com` as `awsds-sandbox-smus-provisioning` (session
+  `AmazonDataZoneEnvironmentDeployer-<account>`), was refused with *"You don't have sufficient permissions
+  for this KMS key."*, and in the same second `kms:CreateGrant` on the project key was refused: *"… is not
+  authorized to perform: kms:CreateGrant on resource: arn:aws:kms:us-west-2:<account>:key/<project key> because
+  no identity-based policy allows the kms:CreateGrant action"*. Both events carry `datazone.amazonaws.com` as
+  source and user agent, and the grant's event no request parameters. The role's managed policy allows
+  `kms:CreateGrant` through `airflow`, `neptune-graph` and `s3vectors` alone, and the key's policy allowed it
+  to the role through `redshift-serverless` alone. The environment's stack, created at 01:56:20Z, was rolled
+  back to `DELETE_COMPLETE`, and the environment read `CREATE_FAILED` with *"Access denied for operation
+  'AWS::Bedrock::Guardrail'."* (`HandlerErrorCode: AccessDenied`): CloudFormation's handler made the call, and
+  the trail attributes it to DataZone. Bedrock's guardrail encryption page lists, for the creating identity,
+  `kms:Decrypt`, `kms:GenerateDataKey`, `kms:DescribeKey` and `kms:CreateGrant` with no condition (read
+  2026-11-22); SMUS's key-permissions page names no guardrail statement. A project key written to SMUS's page
+  therefore refuses every IDE guardrail. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
+  `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 02:45Z): with the statement in the key's policy (`sagemaker-prereqs-v0.14.0`),
+  `CreateGuardrail` was admitted as the same role, and in the same second three `kms:CreateGrant` on the key,
+  each naming `bedrock.us-west-2.amazonaws.com` as grantee and retiring principal. Two are bound to the
+  encryption context `aws:bedrock:guardrail-id`; the third carries no constraint and allows `Decrypt`,
+  `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant` and `DescribeKey`. The guardrail therefore left on
+  the project key a grant to Bedrock that no guardrail id bounds.
+
+- `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, which Claude Haiku
+  4.5 refuses, so the IDE did not evaluate it; the portal reports an unknown error** (measured 2026-11-22 in
+  Sandbox, Stage 17 7.4). The form's *Inference configurations* panel holds Max tokens 500, Temperature 0.5,
+  Top P 0.5 and Top K 50 by default, and a cleared Top P returns to 0.5. Its model list offered Nova Lite,
+  Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5; Opus 4.5 and Sonnet 4.5 were not submitted. With
+  Haiku 4.5, Question and answer and Toxicity over a 20-line custom dataset, DataZone created the evaluation
+  environment, whose stack holds an output and no resource. At 02:07:54Z Bedrock's pre-flight `Converse`, as
+  the project's `AmazonBedrockServiceRole-*` on the application inference profile, was refused: *"The model
+  returned the following errors: `temperature` and `top_p` cannot both be specified for this model. Please use
+  only one."*, and `CreateEvaluationJob`, as the project role, with *"There was a validation exception when
+  running inference for model identifier
+  arn:aws:bedrock:us-west-2:<account>:application-inference-profile/<id>. Please review the error and retry:
+  …"* and the same reason. The trail's `Converse` event shows `inferenceConfig` holding `maxTokens` 1 alone,
+  and the job's `inferenceParams` read `HIDDEN_DUE_TO_SECURITY_REASONS`. The portal read *"An error occurred
+  while creating the evaluation job: Unknown error. Potentially invalid input"*, and no evaluation job exists.
+  The environment stayed `ACTIVE`.
+  The prompt editor drops Top P instead: its form at Temperature 1 and Top P 0 stored, in both versions of the
+  prompt, `inferenceConfiguration` `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no
+  `topP`, and its test of Haiku 4.5 was admitted (`ConverseStream` at 01:48:24Z as the project role). The trail
+  shows `maxTokens` alone for every call, so the stored prompt is what tells the two forms apart. SMUS's
+  job-creation page says *"You can change Max tokens, temperature, and Top P inference parameters"* and names
+  no model they exclude (read 2026-11-22). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  A later reading (2026-11-22, 02:52Z): with Nova Lite and the same task, metric and dataset,
+  `CreateEvaluationJob` was admitted. Nova Lite's panel held Max tokens 500, Temperature 0.5 and Top P 0.5,
+  with no Top K, and was closed with no change. `GetEvaluationJob` reads the job's `inferenceParams` as
+  `maxTokens` 2048, `temperature` 0, `topP` 0 and no stop sequence: the form's *Default* sends values its panel
+  does not show, both sampling parameters among them, and `GetEvaluationJob` shows what the trail hides.
+
+- `SUP-419` **The Bedrock IDE's evaluation form refuses a custom dataset for Accuracy and Robustness under
+  Question and answer, where SMUS's pages say every metric takes one** (measured 2026-11-22 in Sandbox, Stage 17
+  7.4). With the task *Question and answer* and the metric Accuracy or Robustness, the form greys out *Upload a
+  dataset to S3* and *Choose a dataset from S3*, reads *"Custom datasets are not supported for Q&A task type with
+  robustness or accuracy metrics"*, and leaves the built-in BoolQ, Natural Questions and Trivia QA checked.
+  Toxicity takes the upload. SMUS's custom-dataset page says *"you can use a custom prompt dataset for each
+  metric you select in the model evaluation job"* and requires `referenceResponse` *"for all accuracy, and
+  robustness evaluations"*; its job-creation page offers, *"For each metric"*, the built-in or an S3 dataset
+  (both read 2026-11-22). A question-and-answer dataset of one's own is therefore scored for toxicity alone.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-445` **The Bedrock IDE keeps a component's portal name in its DataZone environment's description, and
+  names the environment and the Bedrock resource after ids** (read 2026-11-22 in Sandbox, Stage 17 7.4). Each
+  component is an environment whose description is JSON, `{"resourceId":"<component uuid>","resourceName":"<the
+  portal's name>","resourceDescription":"<the form's description>"}`, and whose name is `<component uuid>-dev`;
+  the portal's URL carries the uuid (`/bedrock/prompts/<uuid>`, `/bedrock/promptFlows/<uuid>`). The Bedrock
+  resource's name is `Bedrock-Prompt-<environment id>` or `Bedrock-Flow-<environment id>`, its description names
+  the project and the domain, and the flow carries the tags `AmazonDataZoneProject`, `AmazonDataZoneEnvironment`,
+  `AmazonDataZoneBlueprint`, `AmazonDataZoneDomain` and `AmazonBedrockManaged`. A knowledge base is named
+  `<project id>-<portal name>`. An evaluation's environment and job are both named `<project id><portal name>`,
+  with no separator and no description. No SMUS page describes the mapping, so a reader that lists Bedrock's
+  objects finds none under the name the portal shows. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+  A later reading (2026-11-22, 02:45Z to 02:52Z): the guardrail is named after its environment,
+  `<component uuid>-dev`, and carries the flow's five tags, `AmazonDataZoneBlueprint` reading
+  `AmazonBedrockGuardrail`. The project holds one application inference profile per model its components
+  used, each created by `AmazonSageMakerBedrockModelManagementRole-<account>` at the model's first use and
+  named `<domain id> <project id>`: its four, for an embeddings model, Claude Opus 4.5, Claude Haiku 4.5 and
+  Nova Lite, share that name, and the domain's two from the playground share `<domain id>` (`SUP-187`). Nova
+  Lite's was created at the evaluation's submit, 4 s before its environment.
+
+- `SUP-446` **The Bedrock IDE's chat agent app is an Agents Classic agent: its preview calls `InvokeInlineAgent`
+  and its deploy `CreateAgent`, both refused for an account with no prior agent use, and the portal shows
+  neither refusal's wording** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). *Save* writes the app's
+  definition to the project's bucket, `amazon-bedrock/builder/apps/chatApp/<uuid>-definition.json`, and creates
+  no environment and no agent. The definition names the model by a catalog listing revision, `<listing id>:2`,
+  whose `BedrockModelAssetType` asset has the `us.` system profile as its base, names the knowledge base and the
+  guardrail by component uuid, and holds `temperature`, `topK` and `maxTokens` with no `topP`. Each *Preview*
+  message sent `POST bedrock-agent-runtime.us-west-2.amazonaws.com/agents/<session id>` from the browser,
+  answered 403 with *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts
+  without prior service usage."*; the portal read *"Failed to run application Amazon Bedrock encountered an
+  error when invoking the Bedrock runtime API. Try again later."* and *"Something went wrong."*. *Deploy*
+  created a DataZone environment `<uuid>-shared` of the `AmazonBedrockChatAgent` blueprint, and its stack's
+  `CreateAgent`, as the provisioning role from `datazone.amazonaws.com`, on the project's application inference
+  profile with the project key and the guardrail's `DRAFT`, was refused `AccessDenied` with no error message
+  in the trail and no KMS call; the environment read `CREATE_FAILED` with *"Access denied for operation
+  'AWS::Bedrock::Agent'."*. The IAM simulator, with resource `*`, reads `bedrock:CreateAgent` allowed for that
+  role by `SageMakerStudioProjectProvisioningRolePolicy` and the SCPs under the request's tags, so the refusal
+  is Bedrock's own, and its wording reaches the browser on `InvokeInlineAgent` alone. The builder's banner
+  dates Agents Classic's closing to new customers, July 30, 2026, and names no refusal of its own calls.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-447` **The Bedrock IDE's flow environment always creates a role of its own, and creates it with no
+  permissions boundary: the blueprint configuration's `environmentRolePermissionBoundary` does not reach it,
+  and the flow runs as the project's service role instead** (read 2026-11-22 in Sandbox, Stage 17 7.5). The
+  stack of a flow app's environment declares `AWS::IAM::Role` with no condition, named
+  `AmazonBedrockFlowServiceRole-<environment id>`. The environment passed the stack parameter
+  `useAwsManagedPoliciesWithoutBoundary` `true`, which gives the role AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` and no boundary; `false` gives it inline policies under AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`. Neither branch reads the boundary the
+  `AmazonBedrockFlow` blueprint configuration names, `awsds-sandbox-project-boundary` here, and the template
+  takes no parameter for it. The provisioning role's `CreateRole`, from `datazone.amazonaws.com`, named no
+  `permissionsBoundary`. The flow's `ExecutionRoleArn` is the new role only when `bedrockServiceRoleArn` is
+  empty; the environment passed the project's `AmazonBedrockServiceRole-*`, so the flow ran as that bounded
+  role and the new one reads no `RoleLastUsed`. Its trust admits `bedrock.amazonaws.com` for this account's
+  flows alone, its policy names only the project's Bedrock objects by tag, models through an inference
+  profile, `RetrieveAndGenerate` on `*` and the project key through Bedrock, and the project role may not pass
+  it (`iam:PassRole` `implicitDeny` in the simulator). No SMUS page read for this project describes the role,
+  the flow app pages read on 2026-11-22 included. A check that every blueprint-authored role carries the
+  boundary fails on each flow app's environment. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+
+- `SUP-448` **The Bedrock IDE's flow builder deploys a flow on each test message and never on *Save*, and
+  offers a flow app no *Share*** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). `ml-demo-flow` was edited to
+  carry a knowledge base node. *Save* read *"Saved"* and wrote the four-node definition to the project's
+  bucket, `amazon-bedrock/builder/apps/flowApp/<uuid>-definition.json`, and `GetFlow` still read the two-node
+  flow prepared two hours before. The first test message ran a PUT of the asset `genAI/assets/flows/<uuid>`,
+  DataZone's `UpdateEnvironment`, a PUT of the environment's `definition.json` and the update of the stack
+  `DataZone-Env-<environment id>` (04:25:26Z to 04:25:36Z), whose `UpdateFlow` and `PrepareFlow` ran as the
+  provisioning role from `datazone.amazonaws.com`, before the browser's `InvokeFlow` on `TSTALIASID`
+  (04:25:49Z). Each of the three later messages, with no edit between them, updated the stack again (the stack
+  from 04:26:50Z to 04:27:01Z, then `UpdateFlow` at 04:28:33Z and at 04:30:29Z), and a message took 70 to
+  80 s from the send to the answer. The
+  stack updated `BedrockFlow` alone. *My apps* lists the flow *"Not shared"*, with a delete icon alone. AWS's
+  flow app pages say *Save* saves the app and the run button tests it, and its share page describes chat agent
+  apps alone (`build-flow.html`, `app-share.html`, read 2026-11-22). A flow saved and never tested therefore
+  runs its previous definition, a `GetFlow` after *Save* reads the edit as lost, and every test is a stack
+  update as the provisioning role. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
+  `runbooks/bedrock-generative-ai.md` §B.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
@@ -3836,6 +4059,21 @@ entry is still true is the reading.
   *"You cannot delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated
   the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its
   app. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+
+- `SUP-450` **A SageMaker Unified Studio JupyterLab app calls `cognito-identity.us-east-1.amazonaws.com`
+  and `client-telemetry.us-east-1.amazonaws.com` every few seconds while it runs, and the idle shutdown does
+  not count the calls as activity** (measured 2026-11-21 in Sandbox's proxy log, Stage 17 sitting B). From
+  the space `jup`, JupyterLab on `ml.t3.medium`, the proxy logged a pair of tunnels every 2.5 to 2.6 s, each
+  pair the same sizes: *"CONNECT cognito-identity.us-east-1.amazonaws.com:443 200 8072 2932 TCP_TUNNEL"* and
+  *"CONNECT client-telemetry.us-east-1.amazonaws.com:443 200 5605 3637 TCP_TUNNEL"*. The app's address sent
+  1,529 pairs from 20:17:53Z to 21:23:15Z, from its UI's first minutes to its idle delete at 21:23:14Z
+  (`SUP-221`, the domain's `IdleTimeoutInMinutes` 60), and the restarted app's new address sent them again
+  from 23:07:53Z. About 6.6 KB leave per pair, 9.2 MB an hour per running JupyterLab app, and 19 MB arrive.
+  The pair passes the compute plane's `.amazonaws.com` allowance. A Code Editor space sent it once per app
+  start (6d's log; `SUP-233`), and `app-etl-dev`'s JupyterLab space `default` about 300 of each in 20
+  minutes on 2026-11-15. The sending component was not identified. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21; `log-stage-12-observability-finops.md`,
+  2026-11-21; `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ### The Code Editor and the remote IDE
 
@@ -4070,6 +4308,47 @@ entry is still true is the reading.
   without the data key's grant. With `ProcessingOutputConfig.KmsKeyId` set, the same object read under the
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
+
+- `SUP-408` **A `CreateTrainingJob` sent with no tags from a notebook in a SageMaker Unified Studio space
+  is recorded with the space's `sagemaker:*-arn` and `AmazonDataZone*` tags and admitted without the
+  caller's `sagemaker:AddTags`, while the same request naming `AmazonDataZoneProject` is refused as
+  `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
+  17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
+  `requestParameters.tags` with `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn`,
+  `AmazonDataZoneProject`, `AmazonDataZoneScopeName`, `AmazonDataZoneUser` and `AmazonDataZoneDomain`, and
+  the job `ml-demo-xgb-untagged-20261121-231933` carried the same seven, though no policy on the project
+  role allowed `AddTags`. Eight seconds later the request whose `Tags` named `AmazonDataZoneProject` read
+  *"not authorized to perform: sagemaker:AddTags ... because no identity-based policy allows the
+  sagemaker:AddTags action"* (`SUP-267`'s exclusion). The composer of the seven is not read: the space's
+  `BOTOCORE_EXPERIMENTAL__PLUGINS` names the S3 Access Grants plugin alone, the blueprint domain's
+  `TagPropagation` reads `None`, and the four `AmazonDataZone*` keys are four of the nine the space and its
+  user profile carry. A notebook in a space creates a training job without the training pair by naming no
+  tag; a workflow's operator names it and needs the pair (`sandbox/workflows/`). Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
+  **Read again 2026-11-22** (Stage 17 3.2): `CreateModelPackageGroup` from the same space, its `Tags`
+  naming `AmazonDataZoneProject` alone, was recorded at 00:18:45 with the same seven keys and admitted
+  through `sandbox/ml/`'s statement, whose `aws:TagKeys` condition admits that key alone, so the six others
+  were not in the authorization. A versioned `CreateModelPackage` with no tag argument was recorded at
+  00:34:10 with no `tags` key (`SUP-409`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-409` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
+  refused as `sagemaker:AddTags` on `model-package/<group>/new`, and the same request with no tag argument
+  is authorized against the group's tags** (measured 2026-11-22 in Sandbox, Stage 17 3.2, as
+  `eighth-experimentation`'s role from a space). CreateModelPackage's API reference says a package created
+  in a group uses the group's tags and *"you cannot supply a tag argument"*. With `Tags` naming
+  `AmazonDataZoneProject`, the request at 00:18:46 read *"not authorized to perform: sagemaker:AddTags on
+  resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/ml-demo-xgboost/new because no
+  identity-based policy allows the sagemaker:AddTags action"*, `requestParameters` null: the authorization
+  answers before any validation of the tag argument, and names a permission. Without
+  `Tags`, the request at 00:34:10 created version 1, `PendingManualApproval`, recorded with no `tags` key.
+  The one statement on the role allowing `CreateModelPackage` on that resource is the blueprint's
+  `SageMakerCreatePermissions` (`SageMakerStudioProjectRoleMachineLearningPolicy` v48), conditioned on
+  `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag, so the version's resource tag
+  at the create is its group's. `ListTags` on the version answers *"ValidationException: Tag operations are
+  supported only on ModelPackage Group not on ModelPackage Versions."* An `AddTags` grant on `model-package/*`
+  would authorize a request the API reference excludes; a registration names no tag, into a group tagged
+  with the project.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ## MWAA
 
@@ -4839,6 +5118,14 @@ entry is still true is the reading.
 
 ## Bedrock
 
+The Bedrock IDE, SageMaker Unified Studio's builder of Bedrock components, is recorded under
+[DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio), *The Bedrock IDE*: `SUP-410`
+and `SUP-411` (a knowledge base on S3 Vectors: the key statement its index needs, and the index's filterable
+metadata), `SUP-417` (a guardrail: `kms:CreateGrant` on the project key), `SUP-418` and `SUP-419` (an
+evaluation: the sampling parameters Claude Haiku 4.5 refuses, and its datasets), `SUP-445` (the names),
+`SUP-446` (the chat agent on Agents Classic), `SUP-447` (a flow's role with no boundary) and `SUP-448` (a flow
+deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base's calls carry.
+
 - `SUP-288` **The Bedrock use-case form is stored as double base64 over a flat JSON object, and one
   submission covers every model** (measured 2026-09-11, Stage 6e M2). `PutUseCaseForModelAccess` and
   `GetUseCaseForModelAccess` declare `formData` an opaque blob, and the CLI prints its outer layer; `base64
@@ -5017,8 +5304,8 @@ entry is still true is the reading.
   profile, so a later enable gives a new id and an old series no longer resolves to a model. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-10-19; `aws/bedrock-usage.py`.
 
-- `SUP-426` **A knowledge base's calls to its embedding model are recorded with the `vpcEndpointId` of an
-  endpoint this account does not own, and with no `vpcEndpointAccountId`** (read 2026-11-22 in Sandbox's
+- `SUP-426` **A knowledge base's model calls, at ingestion and from a flow's knowledge base node, are recorded
+  with the `vpcEndpointId` of an endpoint this account does not own, and with no `vpcEndpointAccountId`** (read 2026-11-22 in Sandbox's
   trail, Stage 6e decision 13). A SageMaker Unified Studio knowledge base, created at 01:33:19 on 2026-11-22
   by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, ran two ingestion jobs. Its 2,939
   `InvokeModel` calls on the application inference profile `p391nstyc81c`, 01:33:18 to 01:34:37, are the
@@ -5037,6 +5324,15 @@ entry is still true is the reading.
   browser (`SUP-300`) and the blueprint's creates from `datazone.amazonaws.com`, no Unified Studio Bedrock
   feature reached Bedrock through this account's endpoints in those ten weeks, and an endpoint policy binds
   none of them. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22; Stage 6e decision 13.
+  **Read again 2026-11-22** (Stage 17 7.4b, Sandbox's trail): inside a flow whose knowledge base node
+  answers from the same knowledge base, each question wrote `InvokeModel` on `p391nstyc81c` as the project
+  role, the knowledge base's role, and `Converse` on the response model's application inference profile as
+  the flow's execution role, the project's `AmazonBedrockServiceRole-*`, both invoked by
+  `bedrock.amazonaws.com` through `vpce-0cf920938fc4d8fc6`, a fourth id the account does not hold
+  (*"The Vpc Endpoint Id 'vpce-0cf920938fc4d8fc6' does not exist"*, `InvalidVpcEndpointId.NotFound`). The
+  flow's prompt node, calling `Converse` as the same role on the same profile, carried no `vpcEndpointId`.
+  `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events, as Bedrock's CloudTrail page says, and
+  `lookup-events` returns none. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-427` **A Bedrock invocation refused by the commercial gate writes no CloudTrail event and no
   CloudWatch datapoint** (read 2026-11-22 in Sandbox, Stage 6e decision 17). The infrastructure user's six
