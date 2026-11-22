@@ -35,11 +35,11 @@
 # arithmetic (EBS bills while the host is STOPPED, 0.08 USD/GB-mo): docs/plan/runbooks/vpn.md
 # section S6. It is the durable home of this argument; this header is the reminder at the keyboard.
 
-# t3.medium since 2026-11-21, for the rebuild: a t3.nano's first-boot `dnf install` was OOM-killed
-# on the AL2023 repository's 91 MB of metadata, so the host came up without WireGuard (Stage 12's
-# log). A switch alone keeps the disk and never re-runs the user data, so that apply was a -replace.
-# From wireguard-v0.8.1 the nano builds again (its step (0): a swap file, update-motd masked), so
-# going back is a choice made here, not a repair (vpn.md S6).
-#instance_type = "t3.nano"
-instance_type    = "t3.medium"
+# t3.nano again since 2026-11-22: the assignment is commented out, so variables.tf's default, D4's
+# shape, governs (Stage 12 decision due 4, #356). From 2026-11-21 it read t3.medium: a t3.nano's
+# first-boot `dnf install` had been OOM-killed on the AL2023 repository's 91 MB of metadata, so the
+# host came up without WireGuard, and since a switch alone never re-runs the user data, that apply
+# was a -replace. wireguard-v0.8.1's step (0), a swap file and update-motd masked, is what lets the
+# nano build (vpn.md S6).
+#instance_type = "t3.medium"
 root_volume_size = 8

@@ -120,11 +120,10 @@ is topological:
 | Exit | none for tunnel traffic: the client's internet is the **proxy**, a separate `[D]` host | none. There are zero NAT gateways in this estate (D38); an `egress/` slice is interface endpoints and, in the two compute VPCs, a DNS firewall |
 | Endpoints | the `[P]` **gateway** endpoints of the hub (free, always there) | the `[E]` **interface** endpoints, billed hourly, new ids every `make up` |
 | Who needs it | a laptop reaching a private address or name, and the monitored profile's internet (§S4) | Stage 6's notebooks, Stage 7's GitLab host and runners — anything that lives in a private subnet, whose only management path is the `ssm` trio |
-| At-rest burn | USD 0.0416/h running while the tracked file selects `t3.medium` (#353), 0.0052 on D4's `t3.nano`; plus the proxy's 0.0208 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.080 (Staging) · 0.120 (`VPC-SharedServices`) · 0.080 (`VPC-Workloads`), the endpoints alone (`scripts/tfhygiene/layers.py`, read 2026-11-17) |
+| At-rest burn | USD 0.0052/h running on D4's `t3.nano` (0.0416 while the host ran `t3.medium`, #353 to #356); plus the proxy's 0.0208 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.080 (Staging) · 0.120 (`VPC-SharedServices`) · 0.080 (`VPC-Workloads`), the endpoints alone (`scripts/tfhygiene/layers.py`, read 2026-11-17) |
 
-A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0674/h while the VPN
-runs the tracked file's `t3.medium` (#353) and 0.0310/h on D4's `t3.nano`, against the 0.08 to 0.18/h an
-account's `egress/` slice would raise.
+A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0310/h against the 0.08 to
+0.18/h an account's `egress/` slice would raise.
 
 The host's second job is gone. From 2026-08-21 to 2026-09-06 it was also a NAT instance for the Sandbox
 isolated tier — `vpc_nat_cidrs`, `source_dest_check` off, a masquerade for those ranges, and a
@@ -246,11 +245,11 @@ differences called out where they land.
 **The nano builds again from `wireguard-v0.8.1`.** On v0.7.0 a `t3.nano`'s first boot stopped at step
 (1): the AL2023 repository's metadata, 91 MB on 2026-11-21, takes a cold `dnf` to about 620 MiB, the
 nano holds 415 MiB of RAM and as much zram, and the OOM killer took the install (`SUP-405`, `SUP-406`).
-The host was rebuilt on `t3.medium`, which the tracked file still selects. v0.8.1's step (0) writes a
-1 GiB swap file and masks update-motd, whose `dnf check-update` runs at every boot, before the first
-`dnf`, so the first boot fits every admitted size. The first apply on v0.8.1 replaces the host, because
-the user data changed; the size it builds is still the tracked file's selection, and after that a size
-switch is the stop and start below, with the swap file already on the disk.
+The host was rebuilt on `t3.medium` (#353), and goes back to the nano with #356. v0.8.1's step (0)
+writes a 1 GiB swap file and masks update-motd, whose `dnf check-update` runs at every boot, before the
+first `dnf`, so the first boot fits every admitted size. The first apply on v0.8.1 replaces the host,
+because the user data changed; the size it builds is still the tracked file's selection, and after that
+a size switch is the stop and start below, with the swap file already on the disk.
 
 **The AMI decides the family; the parameter decides only the size within it.** The `wireguard` module
 pins the Amazon Linux 2023 x86_64 image by SSM parameter —
