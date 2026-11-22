@@ -1636,3 +1636,29 @@ session with the user's words; Claude read Sandbox as the infrastructure user wi
   `my-data-product`'s subscription of 08:46 (`bgma38ycnwdvkg`). The source `READY`, never run, no schedule,
   no environment, on the connection `5pf7uc0ugllsb4`. The full `get-database` and `get-table` bodies were
   saved outside the repository.
+
+## 2026-11-22 — 0.6: Sandbox's `InfrastructureAccess` kept a contributor of the Sandbox projects, the user's decision
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read Lake Formation in `Data Governance Account` (`awsds-infra-data`)
+and the memberships from `Sandbox Account 1` (`awsds-infra-sandbox-1`), as the infrastructure user with
+`InfrastructureAccess`, reads alone. Times UTC.*
+
+- **[user] The decision**, at 13:40, verbatim: *"Manter, aceito por escrito (Recomendado)"*. The card's other
+  options, not taken: *"Trocar por designation customizada"*, *"Remover a membership"* and *"Adiar este e
+  os demais"*. The option as the card stated it: the membership stays, recorded with a revision trigger, a
+  second operator who is not the lake's administrator, or a custom designation measured to cover the
+  procedures' writes (2.7's `delete-environment`, `redshift-connection.md` §P 4a's `UpdateConnection`, the
+  `create-environment` of decision due 6 and Stage 17 1.5); `institutional-delta.md` records that an
+  institution would give its operators a read-only designation (Connections and Catalog). No AWS write
+  follows.
+- **[Claude] The facts it rests on**, read at 13:44: Data Governance's Lake Formation administrators are
+  `awsds-data-smus-manage-access`, `awsds-data-smus-provisioning` and the `InfrastructureAccess` permission
+  set's role, so a project membership widens nothing of that identity's reach over the governed data.
+  `list-project-memberships`: `eighth-experimentation` and `test-experimentation` each hold one
+  `PROJECT_CONTRIBUTOR` group, the Sandbox role's group profile of 0.6, and `app-etl-dev` and `app-dbt-dev`
+  two, the second the bundle role's (INT-25); the deciding session read two in `app-ml-dev` and
+  `app-genai-dev` as well. The waiting list's row named the domain's RAM share at version 10 (`SUP-360`); it
+  is at version 13 since 2026-11-19 (Stage 19 4.12).
+- **[Claude] Written**: 0.6's note, `institutional-delta.md`'s row, and the waiting list's Decisions row
+  removed. 6h's `EXC-17` and `INT-25` hold no session of their own; their files are unchanged.

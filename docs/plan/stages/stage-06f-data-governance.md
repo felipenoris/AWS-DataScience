@@ -97,7 +97,11 @@ control is the owner project's approval; on the register road, the tag and the e
   `CreateProjectMembership` at 06:15Z, as the data scientist user) the Sandbox `InfrastructureAccess`
   role is a contributor of both projects through a role group profile, and its session reads `GetAsset`,
   `ListConnections` and `GetConnection` (2026-10-18), while the `Data Governance` session is refused the
-  same calls.
+  same calls. **Kept by the user on 2026-11-22**, accepted in writing (the log): the procedures' writes
+  need the membership (2.7's `delete-environment`, `redshift-connection.md` §P 4a's `UpdateConnection`, the
+  `create-environment` of decision due 6 and Stage 17 1.5), and Data Governance's `InfrastructureAccess` is
+  a Lake Formation administrator already. Revision trigger: a second operator who is not the lake's
+  administrator, or a custom designation measured to cover those writes.
 - **0.7 No project reads the lake today.** The project role's `glue:GetDatabase` on `raw` and `curated`
   is refused for want of a Lake Formation `DESCRIBE`.
 - **0.8 The approval verbs are in `GovernanceManagerAccess`** (`OwnTheDataZoneDomain`), while DataZone
