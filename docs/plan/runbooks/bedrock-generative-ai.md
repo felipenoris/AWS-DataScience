@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Scope** | The objects the Generative AI menu's builder, the Bedrock IDE, makes in a Sandbox project: the prompt, the guardrail, the flow app, the knowledge base, the evaluation and the chat agent app. For each: what it is in AWS, which identity creates it and which runs it, what the project key must allow, how the portal names it, how it is deleted, and what the portal hides. The menu, the models, the playground and the path of a model call to a target are [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G |
+| **Scope** | The objects the Generative AI menu's builder, the Bedrock IDE, makes in a Sandbox project: the prompt, the guardrail, the flow app, the knowledge base, the evaluation and the chat agent app. For each: what it is in AWS, which identity creates it and which runs it, what the project key must allow, how the portal names it, how it is deleted, and what the portal hides; and around them, the doors, the models, the ceilings and the costs. The menu, the models, the playground and the path of a model call to a target are [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G |
 | **Operator** | The **data scientist** builds in the portal as a member of the project. The **infrastructure user** (`InfrastructureAccess`, `awsds-infra-sandbox-1`) writes the key's statements in `sagemaker-prereqs`, applies `sandbox/sagemaker/`, and reads the objects and the trail with §V's instruments |
 | **The rules** | **The builder's objects stay in Sandbox**: a target has no IDE, and the CI/CD CLI's bundle carries none of them (D17, D41). **Each saved object is a DataZone environment** of the project, which DataZone deploys as a CloudFormation stack. **The portal's banner never names a refusal's cause**: the trail or the browser's network response does (§F). **The project key needs statements** SMUS's key-permissions page does not name (§K) |
 | **The picture around it** | [Stage 17](../stages/stage-17-sandbox-machine-learning.md) pass 7, steps 7.2 to 7.6, and its decisions 1, 5, 10, 12 and 26, cited by number. The platform behaviours are `SUP-187`, `SUP-410`, `SUP-411`, `SUP-417`, `SUP-418`, `SUP-419`, `SUP-445`, `SUP-446` and `SUP-447` in [`docs/AWS_SUPPLEMENT.md`](../../AWS_SUPPLEMENT.md). The key is [`terraform-modules/sagemaker-prereqs/kms.tf`](../../../terraform-modules/sagemaker-prereqs/kms.tf), and the prices are [`docs/PRICING.md`](../../PRICING.md), "Knowledge Bases and Guardrails" |
@@ -11,6 +11,7 @@
 | Section | Audience | What it holds |
 |---|---|---|
 | [§O](#o-the-pieces) | both | the pieces: each object, what it is in AWS, which identity creates it and which runs it, what bills at rest |
+| [§I](#i-the-doors-the-models-and-the-ceilings) | the infrastructure user | the doors, the models a project reaches, the ceilings on every call, what a sitting bills |
 | [§N](#n-the-names) | both | the names: where the portal's name lives, what each environment and resource is called, the inference profiles |
 | [§K](#k-the-project-key) | the infrastructure user | the project key: what the builder puts under it, the statements SMUS's page omits, the grants a guardrail leaves |
 | [§B](#b-building-each-object) | the data scientist | building each object: the form, what it sends, what the lab read |
@@ -61,8 +62,44 @@ projects bucket, `amazon-bedrock/builder/components/<kind>/<uuid>-definition.jso
 *My components* stays while its definition does, after its environment is gone (§X).
 
 **What bills at rest** is the knowledge base's S3 Vectors store, by storage: 0.06 USD per GB-month, cents for
-the runbooks. A guardrail bills per 1,000 text units it filters and a model per token, both priced in
-`docs/PRICING.md`; a flow's own price is not priced there (§U).
+the runbooks. The other objects bill per use (§I), and a flow's own price is not in `docs/PRICING.md` (§U).
+
+## I. The doors, the models and the ceilings
+
+**The doors.** A call from a space reaches Bedrock through the VPC's interface endpoints, two optional
+groups of `vpc-egress`: `bedrock-base` (`bedrock`, `bedrock-runtime`) and `bedrock-agent` (`bedrock-agent`,
+`bedrock-agent-runtime`), raised with `make up ENV=sandbox GROUPS=…` ([`docs/NETWORK.md`](../../NETWORK.md)).
+The house image's `NO_PROXY` carries every group's names, so a call to a group left down times out instead
+of leaving through the proxy. The builder needs no door of its own: DataZone's creates and the project role's
+`CreateEvaluationJob` and `StartIngestionJob` carry no `vpcEndpointId` (§V, 2026-11-22). A notebook's call
+takes one, the `Retrieve` of §U among them.
+
+**The models a project reaches** pass three layers ([`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G):
+
+- The account enables a model for the portal: decision 13 (b), the domain's model governance project and
+  `sandbox/model-access/`, whose `project_models` admits Claude Opus 4.5, Sonnet 4.5 and Haiku 4.5, copied
+  from their `us.` profiles, and Titan Text Embeddings V2 and Nova Lite, on demand.
+- The SCP's ceiling, `DenyBedrockInvocationOutsideTheScopedModels`, refuses every other model on whichever
+  pass names it ([`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)).
+- The project's application inference profile for the model (§N), created at its first use.
+
+The builder's lists offered Nova Lite and the three Claude 4.5 models to the chat agent and the evaluation,
+and Titan V2 to the knowledge base (2026-11-22).
+
+**The retention ceiling.** `DenyInvokingModelsThatRetain` refuses, to every principal, the models the vendor
+names as retaining traffic for review, `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1`, and
+Bedrock's retention mode `none`, hand-managed, is declared in all 17 Regions (6e 7.5). AWS refuses
+`claude-opus-5` and `claude-sonnet-5` to this account (`EXC-08` in [`docs/AWS_STATE.md`](../../AWS_STATE.md)).
+None of these models appears in the builder's lists.
+
+**The boundary.** Every project role and every `AmazonBedrock*` role the Tooling environment creates carries
+`awsds-sandbox-project-boundary` (D13); the flow's own role is the exception (§O, `SUP-447`).
+
+**What a sitting bills**, from `docs/PRICING.md`: Claude Haiku 4.5 through its `us.` profile at 1.10 USD per
+million input tokens and 5.50 per million output; Nova Lite at 0.06 and 0.24; Titan V2's embeddings at 0.02
+per million; a guardrail at 0.15 USD per 1,000 text units for each of its content and topic policies; S3
+Vectors at 0.06 USD per GB-month stored and 0.20 per GB put. Each optional endpoint group adds to the hub's
+hourly rate while it is up. `./aws/bedrock-usage.py` reads a window's tokens and their cost (§V).
 
 ## N. The names
 
@@ -218,6 +255,8 @@ from IAM by the simulator (Lesson 24).
 | The deploy's *"… failed to stabilize after create/update: … Access denied for operation 'AWS::Bedrock::Agent'."* | `CreateAgent` `AccessDenied`, with no message and no KMS call; the simulator reads it allowed (`SUP-446`) | the same |
 | *"Access to model required"* on *Foundation model as a parser* | not read | the default parser |
 | *"This tool is not available for this project."*, *"No models found. Contact your admin to enable more models."* | the menu's blueprints or the models' enablement | [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G |
+| A model call refused *"with an explicit deny in a service control policy"* | `DenyBedrockInvocationOutsideTheScopedModels` or `DenyInvokingModelsThatRetain` (§I) | a scoped model; [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §F holds the dated readings |
+| *"… is not available for this account … contact AWS Sales"* | AWS's refusal of `claude-opus-5` and `claude-sonnet-5`, `EXC-08` | none: a Claude 4.5 model |
 
 ## V. The instruments
 
