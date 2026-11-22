@@ -1186,7 +1186,20 @@
   <https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html>. *Data protection* carries
   the deployment-account argument — *"Because the model providers don't have access to those accounts,
   they don't have access to Amazon Bedrock logs or to customer prompts and completions"*:
-  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>. **Abuse detection
+  re-read 2026-10-11** for Stage 6e decision 17: the Claude models it names as retaining are still
+  Fable 5 and Fable 5.1 alone, so Opus, Sonnet and Haiku 5.5 are outside 7.5's deny.
+
+- **Amazon Bedrock model lifecycle**, the pages Stage 6e decision 17 is written from (read
+  2026-10-11). The page for models launched before 2026-09-07 carries the table with Claude Sonnet 4.5's
+  dates (legacy 2026-10-08, public extended access 2027-01-08, end of life 2027-04-08), the higher price
+  the provider sets during public extended access, and the rule that existing customers may lose
+  access to a Legacy model after 15 days of inactivity:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html>. The page for
+  later models replaces the extended-access phase with a per-model EOL floor on the model card:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html>. `GetFoundationModel`
+  returns the same dates in `modelLifecycle` (`legacyTime`, `publicExtendedAccessTime`,
+  `endOfLifeTime`), which is what `./aws/bedrock-scope.py` `BS-8` reads.
 
 - **Amazon Bedrock: the endpoints, the logging and the CloudTrail shape** (read 2026-09-11). The
   PrivateLink page gives the interface endpoint service names — `com.amazonaws.<region>.bedrock` and
@@ -1201,7 +1214,9 @@
   content: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>. The
   model-access form's fields (`companyName`, `companyWebsite`, `intendedUsers`, `industryOption`,
   `otherIndustryOption`, `useCases`) are in the API reference:
-  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>. The
+  CloudTrail page, read again 2026-11-22, says CloudTrail *"captures all API calls for Amazon Bedrock as
+  events"* and says nothing of a call Bedrock refuses (`SUP-427`).
 
 - **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
   `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one
@@ -1494,7 +1509,7 @@
 - The metadata a knowledge base's S3 Vectors index must leave non-filterable, read 2026-11-22 for Stage 17 7.4a after 18 of 20 documents failed (`SUP-411`). Bedrock's chunking page, which says to add `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` as non-filterable keys when the index is created and advises against hierarchical chunking on S3 Vectors: <https://docs.aws.amazon.com/bedrock/latest/userguide/kb-chunking.html>. The setup page's S3 Vectors tab says the same (cited above). S3 Vectors' limits page, each filterable string value up to 2 KB: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-limitations.html>. Its metadata-filtering page, non-filterable keys configured at the index's creation, and ENHANCED indexes in a bucket created on or after 2026-09-30: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-metadata-filtering.html>. Its page on Bedrock knowledge bases, the metadata limits a high token count with hierarchical chunking can exceed: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-bedrock-kb.html>.
 - The key a guardrail's creator needs, read 2026-11-22 for Stage 17 7.4 after the IDE's guardrail was refused (`SUP-417`). Bedrock's guardrail encryption page, whose `PermissionsForGuardrailsCreators` grants `kms:Decrypt`, `kms:GenerateDataKey`, `kms:DescribeKey` and `kms:CreateGrant` with no condition, and for its users `kms:Decrypt`: <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-kms.html>. Its permissions page, re-read (cited below): <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html>.
 - What the Bedrock IDE's guardrail and evaluation forms offer, read 2026-11-22 for Stage 17 7.4 through a page-reading agent (`SUP-418`, `SUP-419`). SMUS's guardrail pages, *"A guardrail consists of the following policies"*, content filters (Hate, Insults, Sexual, Violence) and up to five denied topics, silent on word filters, sensitive information and contextual grounding, with blocked messaging for prompts and responses: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/guardrails.html>, and the component's create page in its Markdown form: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/creating-a-guardrail-component.md>. The evaluation pages, re-read (cited below): a custom dataset *"for each metric you select"*, `referenceResponse` required for question-and-answer prompts and for accuracy and robustness, and *"You can change Max tokens, temperature, and Top P inference parameters"*. The question-and-answer task page, which names a Cohere toxicity issue as its only model restriction: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-tasks-question-answer.md>.
-- What the Bedrock IDE's flow app does on *Save* and on a test, and whether it shares, read 2026-11-22 for Stage 17 7.4b through a page-reading agent (`SUP-448`, `SUP-449`). SMUS's flow app pages, where *Save* saves the app and the run button tests it, and a knowledge base node takes a knowledge base, a response model and an optional guardrail: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-flows-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/build-flow.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-prompt-flow-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/nodes.html>; its share page, for chat agent apps alone: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>. CloudTrail's record contents, where an event AWS originates through a service's VPC usually carries `AWS Internal` or the service name in `vpcEndpointId` and `vpcEndpointAccountId`: <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>; Bedrock's CloudTrail page, where `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events (`AWS::Bedrock::FlowAlias`, `AWS::Bedrock::KnowledgeBase`) and `InvokeModel` and `Converse` management events: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>.
+- What the Bedrock IDE's flow app does on *Save* and on a test, and whether it shares, read 2026-11-22 for Stage 17 7.4b through a page-reading agent (`SUP-448`, `SUP-426`). SMUS's flow app pages, where *Save* saves the app and the run button tests it, and a knowledge base node takes a knowledge base, a response model and an optional guardrail: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-flows-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/build-flow.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-prompt-flow-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/nodes.html>; its share page, for chat agent apps alone: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>. CloudTrail's record contents, where an event AWS originates through a service's VPC usually carries `AWS Internal` or the service name in `vpcEndpointId` and `vpcEndpointAccountId`: <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>; Bedrock's CloudTrail page, where `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events (`AWS::Bedrock::FlowAlias`, `AWS::Bedrock::KnowledgeBase`) and `InvokeModel` and `Converse` management events: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>.
 - How a model reaches a SageMaker Unified Studio project, read 2026-10-19 for Stage 17 decision 13. The two model roles' managed policies, in the reference and in the admin guide: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelConsumptionPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelConsumptionPolicy.html>. Enabling models for projects and playgrounds in the *Amazon Bedrock models* tab, and the governance project an associated account's identity must join before it publishes models: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazon-bedrock.html>. The user guide's Bedrock page, where the administrator decides which models a user reaches: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock.html>. The foundation model required in each Region beside an inference profile, and `bedrock:InferenceProfileArn`: <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-prereq.html>. AWS's post of 2025-07-09 narrowing the provisioning role to chosen models: <https://aws.amazon.com/blogs/machine-learning/configure-fine-grained-access-to-amazon-bedrock-models-using-amazon-sagemaker-unified-studio>. The portal's model handler, downloaded from its public CDN and never run, whose project subscribes to a model's listing on first use: <https://a.b.cdn.console.awsstatic.com/a/v1/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/module-GY0Cw3hN.js>. The environment resource at the pinned `awscc` 1.98.0, with `environment_role_arn`: <https://raw.githubusercontent.com/hashicorp/terraform-provider-awscc/v1.98.0/docs/resources/datazone_environment.md>; the same provider's documentation tree, which holds no asset, listing or subscription resource: <https://github.com/hashicorp/terraform-provider-awscc/tree/v1.98.0/docs/resources>.
 
 - **SageMaker Unified Studio Git connections, cross-account Git, the release notes, and CodeConnections' GitLab self-managed host and connection sharing** — read 2026-10-25 for INT-13 (Stage 7 7.2), after the user read Production's host form listing its VPCs:
@@ -1779,6 +1794,44 @@
     inside the `3.0-5` image was not read:
     <https://raw.githubusercontent.com/aws/sagemaker-xgboost-container/master/src/sagemaker_xgboost_container/algorithm_mode/serve_utils.py>.
 
+- **MLflow beside the portal's graph tools (read 2026-11-21, for
+  [`SMUS-GRAPH-TOOLS.md`](SMUS-GRAPH-TOOLS.md)).** Through page-reading agents, in the pages' Markdown form.
+  - The ML pipelines visual editor's MLflow integration: *Integration → MLflow* on the toolbar picks a
+    tracking server or an app and an experiment for the pipeline's metrics, *Update app and experiment*
+    overrides both for one execution, and a default MLflow application is created when the editor is
+    entered. The page names no Studio, no domain type and no writer of the run:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/build-and-manage-steps-integration.html>.
+  - The automatic registration of an MLflow model in the SageMaker Model Registry, an opt-in sync turned on
+    with `UpdateMlflowApp` or `UpdateMlflowTrackingServer`: `mlflow.register_model()` creates a model
+    package group named `<registered model>-<suffix>`, the suffix the first six characters of a SHA-256 of
+    the ARN's last segment, and a version in it, whose approval is a separate SageMaker call:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-model-registration.html>.
+  - Logging through the MLflow SDK with the server's ARN as the tracking URI, the page silent on where the
+    code runs: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-log-metrics.html>.
+    The overview, re-read, names no default app for an account or a domain:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>.
+  - `CreateTrainingJob`'s `MlflowConfig`, an MLflow resource's ARN, an experiment and a run name, with no
+    sentence on who writes the run or on network isolation:
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateTrainingJob.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_MlflowConfig.html>.
+  - The user guide's MLflow pages, re-read: the UI opens on experiments, models and traces; one page creates
+    an app from *Compute → MLflow* and the other connects one by its ARN; none joins MLflow to ML
+    pipelines, workflows, Visual ETL or lineage, and the release notes hold no MLflow entry:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-iam-based-domains.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  - MLflow's tracking pages: a run records one execution of code, an experiment groups runs and models, the
+    UI lists, searches and compares runs and charts their metrics, and a child run carries
+    `mlflow.parentRunId`: <https://mlflow.org/docs/latest/ml/tracking/>,
+    <https://mlflow.org/docs/latest/ml/tracking/tracking-api/>. The trace view, a span tree with each span's
+    latency on a timeline and the run a trace was logged in:
+    <https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui>. The 3.16.0 highlights, a rebuilt
+    trace explorer, span links and trace views the assistant builds: <https://mlflow.org/releases/3.16.0/>.
+    Tried for whether MLflow 3 removed MLflow Recipes, and returned no text:
+    <https://mlflow.org/docs/latest/genai/mlflow-3/breaking-changes/>,
+    <https://github.com/mlflow/mlflow/releases/tag/v3.0.0>.
+
 - **Amazon Bedrock for an application's model call: Agents Classic, a guardrail enforced in IAM and at
   the account, inference profiles and the models of `us-west-2` (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 10 and its decisions 22 to 27).**
@@ -1937,6 +1990,45 @@
     USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
     ([`PRICING.md`](PRICING.md)):
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+- **Amazon Bedrock AgentCore's web search and the AWS Agent Registry (read 2026-11-22, for `TM-28` and
+  `SUP-176`).** Each page in its HTML form, through a page-reading agent.
+  - The administrator guide's document history, its first 39,900 of 89,272 characters received verbatim:
+    entries of 2026-11-13 for `SageMakerStudioProjectRoleMachineLearningPolicy` (the API key credential
+    provider, the token vault, the web search tool, the Agent Registry and its service-linked role, KMS
+    through Identity Center, `datazone:UpdateAssetOwner`) and `SageMakerStudioProjectUserRolePolicy`, and of
+    2026-11-14 for the four execution policies of an IAM-mode domain; no entry after 2026-11-14:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
+  - The Web Search API, generally available 2026-11-10: `InvokeWebSearch` returns ranked results with text
+    extracts from an Amazon-operated web index, filtered by domain and publication time. The guide gives the
+    resource `arn:aws:bedrock-agentcore:<Region>:aws:tool/web-search.v1`, IAM authorization alone, the data
+    plane endpoint and PrivateLink through `com.amazonaws.<region>.bedrock-agentcore`, `us-west-2` among its
+    Regions, and CloudTrail data events, off by default, that log `webSearchId` and `maxResults` and not the
+    query; no page states a retention or names another provider:
+    <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-bedrock-agentcore-web-search-api/>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-get-started.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-privatelink.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-cloudtrail.html>.
+  - The AWS Agent Registry: a record's type (MCP, Agent, Skills, Custom, Web bot), a description of up to
+    4,096 characters, a descriptor, a source URL and a skill package of up to 5 MiB. Search returns approved
+    records alone and is authorized per registry, so a record-level deny does not reach it.
+    `SubmitRegistryRecordForApproval` moves a record to `PENDING_APPROVAL`, or approves it where the registry
+    auto-approves, and `UpdateRegistryRecordStatus` approves, rejects and deprecates. The owner shares a
+    registry through AWS RAM, with accounts outside the organization by invitation, under four managed
+    permissions. The pages date the end of the preview `bedrock-agentcore` namespace's support 2026-10-30,
+    log control-plane calls as management events, and give no Region list:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-key-capabilities.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-create-manage-records.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-cross-account-sharing.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-iam-permissions.html>.
+  - The rates, read with no credential ([`PRICING.md`](PRICING.md)): the price list's index, which names the
+    service code `awsagentregistry`; AgentCore's `us-west-2` offer file, version `20261120191134`, with the
+    web search tool's rows; the Agent Registry's region index and `us-west-2` offer file, version
+    `20261106194856`:
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/region_index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/us-west-2/index.json>.
 - SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
   decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
   and as a workflow's *Notebook Operator* and *Notebook Sensor*:
@@ -2400,7 +2492,15 @@
 
 - Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
+- Lake Formation and CloudTrail (read 2026-11-22, for `SUP-416`). The vended session's name, `AWSLF-<version>-<engine code>-<account id>-<suffix>` with `AT` for Athena and the account that requested the credentials, and the consumer's opt-in that gives the owner the principal's ARN: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-logging.html>. The service's CloudTrail page, whose `GetDataAccess` examples carry no audit context: <https://docs.aws.amazon.com/lake-formation/latest/dg/logging-using-cloudtrail.html>. The underlying-data page, which does not mention KMS: <https://docs.aws.amazon.com/lake-formation/latest/dg/access-control-underlying-data.html>.
+
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
+
+- The actions, resources and condition keys of AWS Lake Formation, the machine-readable copy (read
+  2026-11-22, for [Stage 6f](plan/stages/stage-06f-data-governance.md) 11.12's residue): no resource type,
+  one condition key (`lakeformation:EnabledOnlyForMetaDataAccess`), and `DeregisterResource`,
+  `RegisterResource` and `UpdateResource` with neither, so an SCP carve-out on deregistration can name a
+  principal and never a location: <https://servicereference.us-east-1.amazonaws.com/v1/lakeformation/lakeformation.json>.
 
 - Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
 
@@ -3699,6 +3799,12 @@
   CloudTrail):
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-cli.html>,
   <https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_LookupAttribute.html>.
+
+- CloudTrail record contents (read 2026-11-22, Stage 6e decision 13): `vpcEndpointId` since 1.04 and
+  `vpcEndpointAccountId`, the endpoint owner's account, since 1.09, both optional; for events AWS originates
+  through a service's VPC the page gives `AWS Internal` or the service name, and the current version is
+  1.11 (`AWS_SUPPLEMENT.md` `SUP-426`):
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>.
 
 - A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
   `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works

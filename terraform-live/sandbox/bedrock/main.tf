@@ -3,7 +3,7 @@
 # WHY THIS SLICE EXISTS AT ALL. The blueprint that creates a project role attaches three
 # AWS-managed policies to it, and 3.1 measured what they give: every `bedrock:InvokeModel*` allow
 # lands on `foundation-model/*`, NONE on the system inference profile, and `ListInferenceProfiles`
-# is granted nowhere. Since all three scoped models are inference-profile only, the role has the
+# is granted nowhere. Since every scoped model is inference-profile only, the role has the
 # half of the grant that cannot be used without the half it does not have.
 #
 # WHY IT IS NOT IN THE BLUEPRINT. `awscc_datazone_environment_blueprint_configuration` carries
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "bedrock_assistant" {
 
   # Resolving a profile the client names. `GetInferenceProfile` is how the client maps an
   # application inference profile ARN to its backing model to pick the request shape - a case this
-  # estate does not have, since the scoped set is three SYSTEM_DEFINED profiles. Without it the
+  # estate does not have, since every scoped profile is SYSTEM_DEFINED. Without it the
   # client retries once with the other shape, so omitting it costs a round-trip rather than a
   # failure; it is here because the round-trip is per new model and the grant is already narrow.
   statement {

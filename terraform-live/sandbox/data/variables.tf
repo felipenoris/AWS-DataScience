@@ -37,6 +37,14 @@ variable "lake" {
   nullable    = false
 }
 
+# ------------------------------- the data transfer role's key statement (Stage 21 step 4.5)
+variable "data_transfer_key_statement_enabled" {
+  description = "Stage 21 decision 3 (b), for one sitting: true adds GenerateDataKeyDecryptDataTransferRole to the account data key's policy, admitting sandbox/warehouse/'s data transfer role through S3 (main.tf). Applied after that slice's data_transfer_role_enabled creates the role, and false again before the role is removed. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
   type        = string

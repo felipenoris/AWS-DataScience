@@ -673,6 +673,9 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     `Sandbox` only, to S3 with the account's CMK and a lifecycle**, inside decision 3's map — the
     assistant is the one channel where a model sees governed data and nothing today can say what it saw.
     If the answer is off, the threat model carries the residual by name rather than by silence.
+    **Handed here by 6e decision 13 on 2026-11-22**: the `bedrock` control-plane endpoint keeps
+    `Action = "*"`, so whichever way this goes, an SCP guards `PutModelInvocationLoggingConfiguration`;
+    the endpoint binds only the calls that leave the VPC.
 12. **The filtered principal in Sandbox** (2.1b, 2.3) — Stage 5a decision 6 puts the grain at the
     role or the project, and the two candidates fail differently (read 2026-10-18).
     `DataScientistAccess`, the only principal holding the lake's regrants, has had no `athena:` action

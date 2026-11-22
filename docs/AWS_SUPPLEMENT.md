@@ -1531,7 +1531,37 @@ entry is still true is the reading.
   on the link and on the lake's table, in both accounts. No `UpdateTable`, no `GenerateDataKey` and no
   manifest object existed, although the console message said one may need cleaning. The editor appended `
   LIMIT 100` to every statement, the insert included. Where: `log-stage-09-deployment-targets.md`,
-  2026-10-30.
+  2026-10-30. A statement carrying its own limit gains none (read 2026-11-22, Stage 6g 2.4): `SELECT * FROM
+  "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10;` ran as `… LIMIT 10`, with no semicolon. The statement is
+  read with `athena get-query-execution`, since the trail's `StartQueryExecution` shows `queryString` as
+  `***OMITTED***`. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22.
+
+- `SUP-416` **A cross-account Athena read through Lake Formation leaves `Decrypt` events in the owner's
+  trail by the registration role, invoked by `glue.amazonaws.com`, and names the query only in the
+  consumer's `GetDataAccess` on the resource link** (read 2026-11-22 in Sandbox's and Data Governance's
+  trails, Stage 6g 2.4). The project role's query `c9f604ea-50f8-47b3-b171-caf3985b6692`, from the portal's
+  query editor through the link `glue_db_blerpkhn9nj7o0.trades` to `curated.trades`, left two
+  `GetDataAccess` in Sandbox at 02:15:34Z. The one invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string rather than JSON, and the project role's ARN as `lakeFormationPrincipal`. The one invoked by
+  `glue.amazonaws.com` on the lake's table carries `callType` `EXTERNAL` and no audit context. Both carry
+  `requesterService` `ATHENA` and one `lakeFormationRoleSessionName`,
+  `AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`. Data Governance received the second alone, as a shared
+  event of type `AWSAccount` whose `principalId` is the project role's unique id and its session,
+  `<Identity Center user id>@<environment id>`. The nine `Decrypt` in Data Governance at 02:15:35Z name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`, a session created
+  at 02:15:34Z, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, encryption context
+  `aws:s3:arn` the bucket's ARN, no source identity and no VPC endpoint. AWS's *Cross-account CloudTrail
+  logging* page gives the session name's format, `AT` for Athena and the account id of the account that
+  requested the credentials, with a Glue job's S3 event as its example; neither it nor the service's
+  CloudTrail page mentions KMS events, an Athena read's `invokedBy` or the audit context (read 2026-11-22).
+  In the owner's account the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names Athena,
+  the consumer account and the role's session, never the query. The query comes from the consumer's trail:
+  the session name finds the `GetDataAccess` on the link, its audit context names the query, and the
+  query's `StartQueryExecution` carries the source identity. Whether the consumer's opt-in, *Resource
+  owners* under *Default permissions for AWS CloudTrail*, adds the principal's ARN to the owner's copy was
+  not measured. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22 (2.4's Athena read, and the
+  attribution read after it).
 
 ## Athena
 
@@ -1558,7 +1588,12 @@ entry is still true is the reading.
   the same shape the next day. A classifier that files a policy-less refusal as an IAM deny misfiles these,
   so attribution needs a contrast call from an account the statement does not reach. Where:
   `log-stage-05a-data-foundation.md`, 2026-08-20 (4e); `log-stage-06a-unified-studio.md`, 2026-08-21;
-  `aws/probes/probes.py`.
+  `aws/probes/probes.py`. The portal's query editor shows the same text (read 2026-11-22, Stage 6f 4.3):
+  `governed-lake`'s editor in Data Governance, as the project role in the Governance Manager's session,
+  answered *"…on the resource. After your AWS administrator or you have updated your permissions, please
+  try again. (Service: Athena, Status Code: 400, …)"*, CloudTrail's `errorCode` `AccessDenied`, the
+  workgroup existing and its `GetWorkGroup` answered 3 s earlier (`log-stage-06f-data-governance.md`,
+  2026-11-22).
 
 - `SUP-119` **`athena:UpdateSession`, which AWS's sample statement for disabling Athena Spark denies, is in
   no Athena API model** (read 2026-08-21 in the CLI's service model, Stage 6 step 1.6). AWS's SageMaker
@@ -2320,7 +2355,13 @@ entry is still true is the reading.
   identifier read `createdAt` 2026-08-21T00:49:55Z and `updatedAt` 2026-10-22T22:46:51Z, the dates the reading
   of 2026-10-30 recorded, with the template `DataZone-SageMakerAIDomain-prod-20260905` and its 17 user
   parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
-  `upstream-releases.md`, the `SageMakerAIDomain` row.
+  `upstream-releases.md`, the `SageMakerAIDomain` row. Read again 2026-11-22 on `RedshiftServerless`
+  (Stage 21): the get reads `createdAt` and `updatedAt` both 2026-05-13T21:31:31Z, while the template object
+  behind its `templateUrl` read `LastModified` 2026-11-13T19:43:40Z on 2026-11-18 (`SUP-378`) and
+  2026-11-21T01:19:23Z on 2026-11-22, 10,532 bytes both times. The object is rewritten in place with no
+  change to the blueprint's dates, so its `LastModified` dates a rewrite, not a release; a change of content
+  under the same name is read from the object's `ETag` (`"d516acd3183d361cf3b92a12ec19dd95"` on 2026-11-22).
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 - `SUP-378` **The `RedshiftServerless` blueprint's template treats a base capacity of 128 and a maximum of 0 as
   sentinels, and the blueprint's user parameters default the maximum to 512 RPU** (read 2026-11-18, Stage 21
@@ -2696,8 +2737,8 @@ entry is still true is the reading.
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
   actions on `*` with no domain scope and, since v47, Bedrock AgentCore's managed browser and code
-  interpreter** (read in Sandbox's policy documents on 2026-08-26, 2026-10-30 and 2026-11-08; not
-  exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
+  interpreter, joined in v48 by its web search and the Agent Registry** (read in Sandbox's policy documents
+  on 2026-08-26, 2026-10-30, 2026-11-08 and 2026-11-22; not exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
   "*"`, where the user-role policy beside it is scoped to the role's domain, and S3 reach keyed on principal
   tags,
   `${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`.
@@ -2709,6 +2750,36 @@ entry is still true is the reading.
   `RevokeSubscription` on `*`, and no managed policy on the role grants `StartDataSourceRun` (2026-11-08).
   Where: `log-stage-06a-unified-studio.md`, 2026-08-26; `upstream-releases.md`, the project role's managed
   policies; `threat-model.md` `TM-28`; `log-stage-19-smus-native-data-product.md`, 2026-11-08.
+  v48 (2026-11-13 20:47:08 UTC, the default version) was read 2026-11-22 in Sandbox by the infrastructure
+  user (`InfrastructureAccess`) against v47: 96 statements where v47 held 90, 339 distinct actions where it
+  held 312, nothing removed. Six statements are new. `ACApiKeySecret` allows `secretsmanager:CreateSecret`,
+  `PutSecretValue`, `DeleteSecret` and `GetSecretValue` on `secret:bedrock-agentcore-identity!*` when
+  `aws:CalledVia` names `bedrock-agentcore.amazonaws.com`. `ARConsumerPublisher` allows the Agent Registry's
+  `agent-registry:List*`, `GetRegistry`, `GetRegistryRecord`, `GetDiscoverableRegistryRecord` and
+  `SearchDiscoverableRegistryRecords` on `*` with no condition; `ARCreate` allows `CreateRegistryRecord`
+  under the request's `AmazonDataZoneProject` tag; `ARPublisher` allows `UpdateRegistryRecord`,
+  `UpdateRegistryRecordStatus`, `DeleteRegistryRecord`, `SubmitRegistryRecordForApproval` and
+  `TagResource` on records carrying the role's project tag. `IdCKmsDecrypt` and `IdCKmsDescribe` allow
+  `kms:Decrypt` and `DescribeKey` through `sso` and `identitystore`. Seven statements gain actions:
+  `ACManagedBuiltInTools` `bedrock-agentcore:InvokeWebSearch` on AWS's `tool/web-search.v1`, with no
+  condition; `ACProjectResources` `*ApiKeyCredentialProvider` and `GetResourceApiKey` on project-tagged
+  resources; `ACIdentityDirectory` the same two, `*TokenVault` and `ListTagsForResource` on the account's
+  `token-vault/default`; `ACUnscopedMetadata` `ListApiKeyCredentialProviders`; `DataZoneUserPermissions`
+  `datazone:UpdateAssetOwner` on `*`; `SSOReadOnlyPermissions` `identitystore:GetUserId`, `GetGroupId`,
+  `sso-directory:DescribeUser`, `DescribeGroup` and `sso:ListInstances` under `aws:ViaAWSService`;
+  `CreateSLR` the Agent Registry's service-linked role. No statement grants `agent-registry:CreateRegistry`
+  or `InvokeRegistryMcp`. Simulated the same day as `eighth-experimentation`'s project role, with the
+  Region, the project tag and the account in the context (`SUP-008`): `InvokeWebSearch`, a browser and a
+  code interpreter session, the registry's search, create, submit and status calls,
+  `CreateApiKeyCredentialProvider`, `GetResourceApiKey` and `UpdateAssetOwner` each `allowed` by this
+  policy, `AllowedByOrganizations` and `AllowedByPermissionsBoundary` true; the secret's create `allowed`
+  through AgentCore and `implicitDeny` without `aws:CalledVia`. The negative controls: `athena:StartSession`
+  `explicitDeny` by the organization, `s3:GetObject` on `awsds-data-curated` `explicitDeny` by the boundary.
+  As Staging's and Production's deployment project roles the same day, `InvokeWebSearch`, a browser session
+  and `CreateApiKeyCredentialProvider` read `explicitDeny` by the boundary's
+  `DenyServicesNoProjectUsesHere`, and the registry's search, create, submit and status calls and
+  `UpdateAssetOwner` read `allowed`: `agent-registry` is a service prefix of its own, which the fence does
+  not name. Where: `upstream-releases.md`, the project role's managed policies; `threat-model.md` `TM-28`.
 
 - `SUP-177` **`SageMakerStudioProjectUserRolePolicy` lets every SMUS project role send to other accounts'
   queues, invoke other accounts' functions, regrant Lake Formation permissions with no condition and, since
@@ -2891,7 +2962,12 @@ entry is still true is the reading.
   nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
   2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
-  *Create database* item.
+  *Create database* item. A name the account's catalog already holds is refused before any stack: the
+  portal's `mydatabase` in `test-experimentation` (`60j5234reuos9c`, created 2026-11-09 19:53:53Z by the
+  Data Scientist User, `eighth-experimentation`'s `mydatabase` existing) read `VALIDATION_FAILED` 11 s
+  later, `failureReason` *"Failed to validate environment 60j5234reuos9c: Glue database with name
+  mydatabase already exists"*, `provisionedResources` null, and the record stays in the project (read
+  2026-11-22, `log-stage-06f-data-governance.md`).
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -3077,7 +3153,15 @@ entry is still true is the reading.
   session, at 01:07:09Z, 39 s after `revoke-subscription`. The *"Policy not found"* Stage 18 read after the
   revocation came from `glue get-resource-policy`, which lists none of these (`SUP-099`): the trail's three
   deletes are what show them gone, and `glue get-resource-policies` read an empty list on 2026-11-17
-  (`log-stage-18-staging-deployment-project.md`, 2026-11-17).
+  (`log-stage-18-staging-deployment-project.md`, 2026-11-17). A second subscriber project in an account
+  the producer already shares to (measured 2026-11-22, Stage 6f 4.3, `test-experimentation` on
+  `curated.trades` beside `eighth-experimentation`) costs one grant: the producer's role made one
+  `BatchGrantPermissions` (`SELECT` to Sandbox's `IAMPrincipals` under the new project's condition,
+  `CROSS_ACCOUNT_VERSION` 5) 5 s after the approval and no RAM or Glue policy call, the share
+  `LakeFormation-V5-ZKUYXYESG4` and the five per-resource policies keeping their update times and hashes, and
+  the grant read `COMPLETED` 16 s after the approval, against 63 s for the first. The same night inside one
+  account (`house-price` into `test-experimentation`): the owner's grant 32 s after the request, the link 11 s
+  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3324,6 +3408,21 @@ entry is still true is the reading.
   this project say posting needs `datazone:PostLineageEvent` and name no check against the dataset's
   owning project. A role holding `PostLineageEvent` writes into every project's graph, and a node's history
   is the instrument that shows who did. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (2.6, 3.4).
+
+- `SUP-415` **A subscription's fulfilment writes a lineage node for the subscriber's resource link, keyed by
+  the link's Glue ARN, and a later link of the same name inherits that node with every upstream it had**
+  (measured 2026-11-22, Stage 6f 2.2 and 4.3). After each grant read `COMPLETED`, Data Governance's trail
+  holds `datazone.amazonaws.com` writing a `DatasetLineageNodeType` node whose `sourceIdentifier` is the
+  link's ARN (`arn:aws:glue:us-west-2:<Sandbox>:table/glue_db_4zojr4rr6bmnww/<table>`), named after the
+  subscription target and carrying `SubscriptionTargetLineageForm`, `DatasetSchemaForm`, `DatasetForm` and
+  `ColumnLineageForm`, with the listing's node as its upstream and both versions dated at the grant's
+  completion: `house-price`'s link a new node 6 s after its grant completed, `trades`' link a new version
+  14 s after. That `trades` node, `3juvtmem73n1g0`, dates from 2026-10-22, when Stage 18 7.2's subscription
+  to Staging's `trades` created a link of the same name; its revocation added a version and kept the edge.
+  The node now lists two upstreams, the lake listing's node and that of Staging's listing
+  `bx8v3rafykv3ww`, which `get-listing` answers `ResourceNotFoundException`. A subscriber's graph keeps a
+  revoked producer as an input of every link that reuses the name. Where:
+  `log-stage-06f-data-governance.md`, 2026-11-22.
 
 ### Connections
 
@@ -4993,7 +5092,13 @@ entry is still true is the reading.
   `agreementAvailability.status: NOT_AVAILABLE` means no agreement has been created, not *no agreement is
   needed*, and reading it the second way is what hid the omission through three separate readings. The
   agreement is account-wide: created in one Region it reads `AVAILABLE` in the others before the creating
-  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4.
+  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4. Read again
+  2026-11-22 (Stage 6e decision 17): the agreements for Opus, Sonnet and Haiku 5.5, created through
+  `us-west-2`, read one status in all three routed Regions at each reading. Opus 5.5 read `AVAILABLE`
+  everywhere at the first reading, 02:13:31, 49 seconds after its CloudTrail event; Sonnet and Haiku 5.5 read
+  `PENDING` everywhere at 02:13:31 and `AVAILABLE` everywhere by 02:14:13. The other Regions leading the
+  creating one did not recur, so the order of the Regions is not a property. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-294` **A Bedrock model can be gated commercially with every readable instrument reporting it
   available** (measured 2026-09-12). `anthropic.claude-sonnet-5`: agreement `AVAILABLE`,
@@ -5007,9 +5112,16 @@ entry is still true is the reading.
   `claude-fable-5`, `claude-fable-5-1`) did not. `agreementAvailability: NOT_AVAILABLE` means no agreement
   has been created, not that none is needed: a live offer existed for each model. An agreement is per model
   and account-wide: Sonnet 5's went `PENDING` to `AVAILABLE` within seconds, `us-east-1` and `us-east-2`
-  reading `AVAILABLE` before the creating Region left `PENDING`, while Sonnet 4.5's took minutes;
+  reading `AVAILABLE` before the creating Region left `PENDING` (not repeated on 2026-11-22, `SUP-293`),
+  while Sonnet 4.5's took minutes;
   `amazon.nova-lite-v1:0` needed none. The grant, the endpoint policy, the SCP and the use-case form were
-  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12.
+  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12. Read again
+  2026-11-22 (Stage 6e decision 17): Opus, Sonnet and Haiku 5.5, ids without a date, were refused to the
+  infrastructure user at 02:37:50 to 02:37:52 and again at 02:44:04 to 02:44:06 with the same
+  `AccessDeniedException`, *"anthropic.claude-opus-5-5 is not available for this account …"*, the
+  agreements `AVAILABLE` in all three routed Regions since 02:14 and the SCP naming the ids since 02:37:30.
+  Haiku 4.5 answered the same night. The shape rule holds for a third generation. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-295` **A streaming Bedrock invocation writes two CloudTrail events; a non-streaming one writes one**
   (measured 2026-09-12). `InvokeModelWithResponseStream` records one event carrying
@@ -5028,7 +5140,9 @@ entry is still true is the reading.
   `foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0` and host
   `bedrock-runtime.us-west-2.amazonaws.com`; the service event named the same model. A count keyed on
   `modelId` sees a profile ARN there, not a model id. Where: `log-stage-17-sandbox-machine-learning.md`,
-  2026-10-19.
+  2026-10-19. Read again 2026-11-22 (Stage 6e decision 17): `InvocationClientErrors` carries a `ModelId`
+  series for an application inference profile, `ljl42zoh6e4v`, beside the dimensionless one, with one error
+  at 02:07 in both; a refusal by the commercial gate writes neither an event nor a datapoint (`SUP-427`).
 
 - `SUP-296` **CloudWatch carries a cross-region profile's tokens in the source Region, with invocation
   logging off** (measured 2026-09-12). `AWS/Bedrock` publishes `Invocations` and four token counts per
@@ -5081,7 +5195,13 @@ entry is still true is the reading.
   policy. A ceiling that refuses the profile pass therefore hides whether the model pass holds. The browser
   called `bedrock-runtime` directly, with no `vpcEndpointId`, as the consumption role in a session named
   `<DataZone user>@<environment>`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-10-19;
-  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`.
+  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`. Read again over 2026-10-17 21:07 to
+  2026-11-22 01:56 in Sandbox's trail (Stage 6e decision 13): the portal's Bedrock pages call the control
+  plane from the browser too, as the project role from a public address with no `vpcEndpointId`:
+  `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
+  `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered. The consumption
+  role's 15 `ListFoundationModels` came the same way. Where: `log-stage-06e-claude-code-bedrock.md`,
+  2026-11-22.
 
 - `SUP-301` **CloudWatch publishes a Bedrock call through an application inference profile under the
   profile's id, which names no model** (measured 2026-10-19 in Sandbox, Stage 17 7.3). Haiku 4.5's
@@ -5094,20 +5214,53 @@ entry is still true is the reading.
   profile, so a later enable gives a new id and an old series no longer resolves to a model. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-10-19; `aws/bedrock-usage.py`.
 
-- `SUP-449` **A knowledge base's model calls inside a Bedrock flow carry a `vpcEndpointId` the account does
-  not hold, and no `vpcEndpointAccountId`** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). A flow whose
-  knowledge base node answers from `ml-demo-runbooks` wrote, per question, `InvokeModel` on the embeddings
-  model's application inference profile as the knowledge base's role and `Converse` on the response model's
-  profile as the flow's execution role, both invoked by `bedrock.amazonaws.com` with `vpcEndpointId`
-  `vpce-0cf920938fc4d8fc6`. `DescribeVpcEndpoints` in the account answers *"The Vpc Endpoint Id
-  'vpce-0cf920938fc4d8fc6' does not exist"* (`InvalidVpcEndpointId.NotFound`), and the account's own
-  `bedrock-runtime` endpoint has another id. The flow's prompt node, calling `Converse` as the same role on the
-  same profile, carries no `vpcEndpointId`. CloudTrail's record contents page says an event originated by AWS
-  through a service's VPC usually carries `AWS Internal` or the service name in both fields (read
-  2026-11-22). `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events, as Bedrock's CloudTrail
-  page says, and `lookup-events` returns none. A door read from `vpcEndpointId` alone therefore names an
-  endpoint outside the estate; the id is compared with the account's endpoints before a call is attributed
-  to one (Lesson 40). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+- `SUP-426` **A knowledge base's model calls, at ingestion and from a flow's knowledge base node, are recorded
+  with the `vpcEndpointId` of an endpoint this account does not own, and with no `vpcEndpointAccountId`** (read 2026-11-22 in Sandbox's
+  trail, Stage 6e decision 13). A SageMaker Unified Studio knowledge base, created at 01:33:19 on 2026-11-22
+  by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, ran two ingestion jobs. Its 2,939
+  `InvokeModel` calls on the application inference profile `p391nstyc81c`, 01:33:18 to 01:34:37, are the
+  only Bedrock events from 2026-10-17 21:07 to 2026-11-22 01:56 that carry a `vpcEndpointId`. Each is
+  recorded in the project role's session, with `invokedBy`, `sourceIPAddress` and `userAgent`
+  `bedrock.amazonaws.com`. Each ingestion job's calls came in one session named `EmbeddingTask-<id>` through
+  one endpoint id: 1,479 through `vpce-0d75040e827258f9d` and 1,457 through `vpce-046f1b5f53e3e98c7`. One
+  call at the knowledge base's creation and one at each `StartIngestionJob`, in sessions named
+  `BKB-CP-<knowledge base id>-<suffix>`, came through a third, `vpce-021c8cd79f64c2f84`.
+  `describe-vpc-endpoints` finds none of the three in the account, whose four Bedrock endpoints carried no
+  event. CloudTrail's record reference, at eventVersion 1.11, says that for events AWS originates through a
+  service's VPC the field is *"usually `AWS Internal` or the service name"*, and it defines
+  `vpcEndpointAccountId` (since 1.09) as the endpoint owner's account. These 1.11 records carried a `vpce-`
+  id and no owner, as did every other event of the window. A count of calls through the account's endpoints
+  therefore matches its own endpoint ids, never a non-null `vpcEndpointId`. With the portal's calls from the
+  browser (`SUP-300`) and the blueprint's creates from `datazone.amazonaws.com`, no Unified Studio Bedrock
+  feature reached Bedrock through this account's endpoints in those ten weeks, and an endpoint policy binds
+  none of them. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22; Stage 6e decision 13.
+  **Read again 2026-11-22** (Stage 17 7.4b, Sandbox's trail): inside a flow whose knowledge base node
+  answers from the same knowledge base, each question wrote `InvokeModel` on `p391nstyc81c` as the project
+  role, the knowledge base's role, and `Converse` on the response model's application inference profile as
+  the flow's execution role, the project's `AmazonBedrockServiceRole-*`, both invoked by
+  `bedrock.amazonaws.com` through `vpce-0cf920938fc4d8fc6`, a fourth id the account does not hold
+  (*"The Vpc Endpoint Id 'vpce-0cf920938fc4d8fc6' does not exist"*, `InvalidVpcEndpointId.NotFound`). The
+  flow's prompt node, calling `Converse` as the same role on the same profile, carried no `vpcEndpointId`.
+  `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events, as Bedrock's CloudTrail page says, and
+  `lookup-events` returns none. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-427` **A Bedrock invocation refused by the commercial gate writes no CloudTrail event and no
+  CloudWatch datapoint** (read 2026-11-22 in Sandbox, Stage 6e decision 17). The infrastructure user's six
+  `InvokeModel` calls on `us.anthropic.claude-opus-5-5`, `-sonnet-5-5` and `-haiku-5-5`, at 02:37:50 to
+  02:37:52 and 02:44:04 to 02:44:06, each answered `AccessDeniedException`, *"… is not available for this
+  account …"* (`SUP-294`). Read at 03:25, event history held no `InvokeModel` between 02:30 and 03:00 in
+  `us-west-2`, `us-east-1` or `us-east-2`, while it held Bedrock's `ListIngestionJobs` and `GetIngestionJob`
+  of 02:42:07 and 02:42:08.
+  `AWS/Bedrock` `InvocationClientErrors` in `us-west-2` held one datapoint from 2026-11-08 to 04:00, one
+  error at 02:07 on the application inference profile `ljl42zoh6e4v`, and no series names a 5.5 id. The
+  trail of 2026-09-12 agrees: the infrastructure user's Nova Lite at 06:32:23 and Sonnet 4.5 at 06:35:57
+  are recorded, and the gate's refusal of `us.anthropic.claude-sonnet-5` in the same sitting is not. That
+  day's 42 `AccessDenied` events on the two invocation APIs are 18 IAM refusals (*"no identity-based policy
+  allows"*) and 24 SCP refusals (*"explicit deny in a service control policy"*), none of them the gate's,
+  which the project role met twice from a space. Bedrock's CloudTrail page says CloudTrail *"captures all
+  API calls for Amazon Bedrock as events"* and says nothing of a refused call. The client's error is the
+  only record of the gate's refusal, so an absence of refusals in the trail or the metric does not show
+  that nobody tried a gated model. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 ## Terraform
 
@@ -5191,6 +5344,13 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   The complement, 2026-11-12, release F's applies in the same two slices: the same policy planned the
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
+  Read again 2026-11-22 in `sandbox/warehouse/` (Stage 6h decision 8 (a)'s standing change, Terraform
+  1.17.2), with no `depends_on`: `data.aws_iam_policy_document.project_warehouse["avhvbqn37ty7m8"]`
+  references `aws_iam_role.project_access[each.key]`, its own instance unchanged, and was planned *"will be
+  read during apply"*, *"(depends on a resource or a module with changes pending)"*, because the resource
+  gains the instance `4gqfau9xuo6e4w`. The plan read *"7 to add, 2 to change"*, the existing project's
+  policy the second change: the deferral follows the resource, not the instance. The apply half is read at
+  the Sandbox warehouse sitting. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
   2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on

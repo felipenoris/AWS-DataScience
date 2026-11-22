@@ -532,6 +532,18 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    than its exit code, because that field is a positive proof of a grant that no failure elsewhere
    would have attributed correctly.
 
+   Amended 2026-11-22 (Stage 6h decision 8 (a)), because a database reached over a port adds a fourth
+   term, the network. The decision said that under the wide tag `for-use-with-all-datazone-projects=true`
+   the schema `GRANT` is the only per-project gate on the notebook and Data API doors, and the
+   per-sitting recommendation kept the second project out of `projects` while its 5.2b connected from
+   that project's notebook. The tag widens IAM alone: AWS's project policy admits every project role to
+   `GetCredentials`, and the workgroup's security group still admits `5439` from the map's projects
+   only, so the step would have read a timeout and measured the network instead of the grant (Lesson
+   42). Read in the code on 2026-11-20, before any sitting ran it. The Data API reaches the workgroup
+   from AWS's side and is the one door where the grant stands alone. The fourth discriminator: for each
+   door, name the IAM grant, the database grant and the rule that admits the packet. A switch that
+   widens one of them opens no door, and gates keyed off one map widen only where the switch reaches.
+
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule
    over it — and the rule inherits every resource that wears the attribute for an unrelated
    reason.** Stage 5a pass 3 was one expression away from sharing the drop-box. The classification
@@ -701,6 +713,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
    promises a policy control names the condition key it writes, read from the service reference, before
    the card is offered.
+   Stage 6e's decision 13, taken on 2026-09-12, left the `bedrock` endpoint's policy unscoped on the premise
+   that SageMaker Unified Studio's blueprints call Bedrock's control plane through it, and wrote the premise
+   down as unexercised. Once Stage 17 had used the features, ten weeks of trail read on 2026-11-22 showed
+   none of their calls through the endpoint (`SUP-426`), and the user kept the decision on another ground,
+   the layer an endpoint policy binds. A decision that names its premise as unexercised can be re-read
+   against it; this one was, three times.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -1271,7 +1289,14 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
     specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
     creation role *"must be provided when using repository tags and/or KMS in the template"*;
     `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
-    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A session's
+    brief forks the same way: the brief for Stage 21's 4.5 asked for *"the stage's recommendation"*, and
+    the stage file held none; its one sentence on the item framed the narrower option as a reading in
+    itself, while the user's rule for that stage's recommendations pointed at the wider one (2026-11-22).
+    A lesson forks too. On 2026-11-22 a peer session carried Lesson 79 as a rule that applies come from
+    `main`, which would have merged PR #108 before decision 17's SCP apply and its invocations, putting
+    model ARNs no invocation had proven on `main` for another session to apply (Lesson 69). The lesson
+    says to plan from the tree that applied, or after the merge; its text settled it (Stage 6e).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1385,6 +1410,14 @@ printed the seven variables, 2026-10-11) and `serverless-workflows.md` §O repea
 control was one word away, the same grep for a name known to be in the file. The design change the
 false absence motivated stood on another ground found afterwards, a CLI-created workflow's injection
 being unmeasured and the CLI's code passing no variable, and the claim was corrected the same day.
+
+**A fourth instance, 2026-11-22** (Stage 6e decision 17). The commercial gate refused six invocations of
+the 5.5 models, and CloudTrail lookups at 02:42, 02:45 and 02:47 found no event for any of them; the empty
+answers were read as delivery lag. At 03:25 the same history held Bedrock's `ListIngestionJobs` and
+`GetIngestionJob` of 02:42, so the instrument was seeing the account in that window: the gate's refusal
+writes no event and no CloudWatch datapoint (`SUP-427`). The trail of 2026-09-12 had held the same absence
+beside the recorded successes of the same sitting, and no reading had asked whether the refusal was there.
+A count of gated attempts built on the trail would read zero while sessions were being refused.
 
 ## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
 
@@ -1972,7 +2005,9 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 - `"$M:examples/app-etl"` applied zsh's `:e` modifier, and `git ls-tree` received `xamples/app-etl`
   (2026-11-16);
-- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15);
+- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15), and `aws … $P`
+  received `--region us-west-2 --profile …` as one word and answered *"Unknown options"* (Stage 6e,
+  2026-11-22);
 - `echo ======` failed with *"===== not found"*, since `=word` expands to the path of the command `word`
   (2026-11-16);
 - a glob that matched nothing refused the whole line: `terraform-modules/sagemaker-app*` (2026-11-16), and
@@ -1981,8 +2016,15 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 it refused
 `(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, and inside `$(…)` behind
-`2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
-runs as `grep -F` or in Python, with its exit code read.
+`2>/dev/null` the count read empty, the same silence from another cause. On 2026-11-22 it refused two
+bounded repeats, `[^"]{0,40}` and `[^"]{0,80}`, in one pattern over a session transcript with *"exceeds
+complexity limits"* (Stage 6e). A search whose absence is evidence runs as `grep -F` or in Python, with its
+exit code read.
+
+Both recurred on 2026-11-22, in Stage 6g's trail reads. An unquoted `$ids` reached
+`batch-get-query-execution` as one argument, refused with *"Member must satisfy regular expression pattern:
+\S+"*, a message about the parameter's shape that never names the shell. Ugrep refused
+`.{0,80}6g 2\.4.{0,90}` with *"exceeds complexity limits"* and exit 2.
 
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such

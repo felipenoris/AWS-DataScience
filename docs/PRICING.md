@@ -710,6 +710,27 @@ per token. Measured 2026-09-12 from each model's agreement rate card, `USW2_Inpu
 `USW2_OutputTokenCount`. A session's bill moves by that difference only in proportion to how much of
 it runs on Sonnet rather than on the primary.
 
+**The 5.5 generation**, read 2026-10-11 from each model's agreement rate card and confirmed against
+the Pricing API (`AmazonBedrockFoundationModels`, `us-west-2`, the `us.` standard dimensions). Stage
+6e decision 17 moves the scoped set here only once an invocation answers, and on 2026-11-22 AWS
+refused all three to this account (`AWS_STATE.md` `EXC-08`):
+
+| Model | Input | Output | Cache read | Cache write, 5 min |
+|---|---|---|---|---|
+| Claude Opus 5.5 — the primary, once the image pins it | 4.40 | 22.00 | 0.22 | 5.50 |
+| Claude Sonnet 5.5 — in the picker, once the image pins it | 2.20 | 11.00 | 0.11 | 2.75 |
+| Claude Haiku 5.5 — background work, once the image pins it | 0.11 | 0.55 | 0.011 | 0.1375 |
+
+**Every rate falls against the 4.5 set**: Opus by a fifth, Sonnet by a third, Haiku to a tenth. Cache
+read is 5% of input for Opus and Sonnet 5.5, where every 4.5 model publishes 10%, and cache reads were
+32% of the measured day below. **Haiku 5.5 alone publishes a long-context tier at five times its
+standard rate** (0.55 / 2.75 / 0.055 / 0.6875); neither source states the threshold, and
+`./aws/bedrock-usage.py` prices every token at the standard row, so a long-context session reads low.
+
+**Sonnet 4.5 is LEGACY since 2026-10-08.** Its public extended access starts 2027-01-08 at a price
+the provider sets and AWS announces, and it reaches end of life on 2027-04-08 (`get-foundation-model`,
+read 2026-10-11). The 3.30 / 16.50 above holds until the first of those dates.
+
 **Pinning a Haiku is a decision and not a detail**: without the pin, background work bills at the
 primary model's rate.
 
@@ -785,12 +806,20 @@ its sessions consume, and the offer holds no row for a runtime that exists with 
 | Runtime, committed baseline (`USW2-Runtime:Committed-baseline:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.0997, 0.0132 |
 | Runtime, instance-based management (`USW2-Runtime:Instance-based:<type>:Management-Hours`, 889 rows) | per hour | by instance type: `m5.large` 0.01152, `c5.large` 0.0102 |
 | Browser tool and Code Interpreter, consumption-based | per vCPU-hour, per GB-hour | 0.0895, 0.00945 |
+| Web search tool (`USW2-WebSearchTool:Consumption-based:Queries`), read 2026-11-22 from version `20261120191134`, published `2026-11-20T19:11:34Z` | per query | 0.007, after a `Global-WebSearchTool` tier of 5,000 queries at 0.00 whose period the file does not state |
 
 The first row's figures are the ones AWS's pricing page gave on 2026-11-16. The offer file does not say
 which runtime the `-v2` usage types price, so which pair a session of 10.11 meters is that step's
 reading, from the first bill. The offer's other families, unused here, are Gateway, Memory, Policy,
 Evaluations and Knowledge-Base. The model's tokens and the guardrails' text units are billed apart, at
 the rates above.
+
+**The AWS Agent Registry, measured 2026-11-22** for `TM-28`, from the `us-west-2` offer file
+`awsagentregistry` (version `20261106194856`, published `2026-11-06T19:48:56Z`, three products); its region
+index lists `us-west-2`, `us-east-1`, `eu-west-1`, `ap-northeast-1`, `ap-southeast-2` and `us-gov-west-1`.
+Each tier opens at 0.00 USD, with no period stated: search calls 0.00002 USD each past 1,000,000, list and
+get calls 0.000004 past 2,000,000, records 0.0004 each past 5,000. The estate holds no registry
+(2026-11-22).
 
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 

@@ -302,7 +302,7 @@ reads only.
 | A refusal of a call the page sends itself | the browser's network response, `InvokeInlineAgent`'s among them |
 | The definition a flow runs | `aws bedrock-agent get-flow --flow-identifier <id>`, which reads the last test's deploy (`SUP-448`); the saved definition is the app's file in the projects bucket |
 | Whether the guardrail intervened, on which policy and which side | `aws cloudwatch get-metric-statistics --namespace AWS/Bedrock/Guardrails --metric-name InvocationsIntervened`, with the dimensions `GuardrailArn` and `GuardrailVersion`, or `GuardrailContentSource`, `GuardrailPolicyType` and `Operation=ApplyGuardrail`; `Invocations` counts two per answered question and one per blocked input |
-| The door of a flow's model calls | the event's `vpcEndpointId` against `aws ec2 describe-vpc-endpoints`: a knowledge base's calls carry an id the account does not hold (`SUP-449`) |
+| The door of a flow's model calls | the event's `vpcEndpointId` against `aws ec2 describe-vpc-endpoints`: a knowledge base's calls carry an id the account does not hold (`SUP-426`) |
 
 ## U. What is unmeasured
 

@@ -544,8 +544,8 @@ data "aws_iam_policy_document" "data_transfer" {
   # The namespace's key, the account data CMK. Its key policy delegates to IAM only for calls through
   # Redshift Serverless (sandbox/data/'s AllowRedshiftServerlessViaServiceInThisAccount), so this
   # statement reaches the key on that path alone. A call through S3, the path AWS's page writes into
-  # a customer managed key's policy for this role (GenerateDataKeyDecryptDataTransferRole), needs a
-  # statement in that key policy naming the role, which is sandbox/data/'s and is not written.
+  # a customer managed key's policy for this role, is sandbox/data/'s GenerateDataKeyDecryptDataTransferRole,
+  # which names the role directly while that slice's data_transfer_key_statement_enabled is true.
   statement {
     sid       = "UseTheNamespaceKey"
     effect    = "Allow"

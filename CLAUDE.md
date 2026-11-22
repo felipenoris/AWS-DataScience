@@ -222,6 +222,9 @@ per laptop, never one per session.
   `docs/PRICING.md`, `docs/log/INDEX.md`) are edited in the smallest hunk that carries the fact; in
   Current position a session edits its own stage's row. The branch is synced with `origin/main` before
   the PR opens and again before the user merges, so the session that caused a conflict resolves it.
+- Remote-tracking refs are shared by every worktree: a peer's `git fetch` moved `origin/main` while a
+  session was merging it (2026-11-22). A session reads `git rev-parse origin/main` again right before it
+  commits a merge, and names that hash in the PR.
 - A module tag is repository-global and never moves (`terraform-changes.md`, Recipe B). The next
   version is read from `git ls-remote --tags origin` at the moment of tagging, never from memory: a
   peer may have taken it.
@@ -423,7 +426,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 | Anything Claude Code on Bedrock: the retention mode, the use-case form, the grant and endpoints it needs, what a user cannot change | [`docs/plan/runbooks/claude-code-sagemaker.md`](docs/plan/runbooks/claude-code-sagemaker.md): §M enabling the model, §I the infrastructure half, §U the scientist's, §V the instruments |
 | Anything serverless workflow in a SageMaker project: the editor and its import, a processing task under the D13 boundary, packaging code and dependencies for a Python or Bash task, the grant a project needs, reading a run back | [`docs/plan/runbooks/serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md): §O the pieces, §T the `awsds-workflows` tool, §G the grant, §A the authoring rules, §J the processing task, §C the code archive, §V the readings |
 | Anything machine learning or generative AI in a SageMaker project: an entry of the portal's AI/ML and Generative AI menus, what the controls do to a create, an application that trains, registers, serves or calls a model, its promotion and the approval of a version | [`docs/plan/runbooks/sagemaker-ai-ml.md`](docs/plan/runbooks/sagemaker-ai-ml.md): §A how to read it, §O the pieces, §E the menus' entries, §C the controls, §B the bundle, §W the workflows, §D the flow in Sandbox, §P the promotion, §R the registry and the approval, §G the Generative AI path, §F a refusal by its wording, §V the readings, §U what is unmeasured |
-| How Visual ETL, ML pipelines and workflows differ: what each graph is, how each reaches a workflow, and what starts an application's run | [`docs/SMUS-GRAPH-TOOLS.md`](docs/SMUS-GRAPH-TOOLS.md), a synthesis dated 2026-11-21; the files it links hold the current state |
+| How Visual ETL, ML pipelines, workflows and MLflow differ: what each graph is, how each reaches a workflow, what writes an MLflow run, and what starts an application's run | [`docs/SMUS-GRAPH-TOOLS.md`](docs/SMUS-GRAPH-TOOLS.md), a synthesis dated 2026-11-21; the files it links hold the current state |
 | Anything Databricks: how it deploys on AWS, its notebook and terminal, Lakeflow Jobs and pipelines, Unity Catalog, its AI stack, bundles and the promotion model, read against the requirements for the comparison with SMUS | [`docs/DATABRICKS.md`](docs/DATABRICKS.md), opening with the names that changed in 2025 and 2026 |
 
 #### GitLab, applications and the promotion
@@ -448,19 +451,18 @@ up with what each closes, and the dated deadlines.
 
 #### Stages
 
-Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6i, 7, 16 and 18. Not started: 13, which waits on the
-domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
-pass 1 was done 2026-11-18 with nothing up, its passes 2-5 on §N.10's day 2. The calendar is
-`promotion.md` §N.12.
+Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6g, 6i, 7, 16 and 18. Not started: 13, which waits on
+the domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
+pass 1 was done 2026-11-18 with nothing up, 1.3's wizard and decision 4 on 2026-11-22, its passes 2-5 on
+§N.10's day 2. The calendar is `promotion.md` §N.12.
 
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20 | `promotion.md` §N.10's day 1, before 2026-12-19 (decision 9): the `--sql` read, the `enable_large_strings_opt_in` re-plan, the `max_query_execution_time` test. The bill's half of verification x after the free trial ends |
 | 6d, Unified Studio's remainder | Steps 3, 4, 8 and 9 closed, step 2 but 2.4's after half, 2.7's steps 2 to 5 done 2026-11-18; 5.1 read and decision 17's deny in the targets applied 2026-11-19; decision 6, 4.7 with `TM-34` (`SUP-396`) and 7.6 closed 2026-11-21, step 12's leftovers deleted the same day | The user's: the 1.1 and 1.2 attempts. §N.9.3's remainder at the end of day 2: 7.5's monitored half by the deep link alone (`SUP-398`), 7.7, 6.1 (viii). R1: 2.7 step 7. Stage 8 5.6's rule is in `awsds-workflows` `4401f91` (PR #29); each application's pin moves at its next tag |
-| 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5, the `bedrock-runtime` endpoint). Held by PR #108 | The user's: the three Claude 5.5 model agreements (decision 17), decisions 11 and 13, and decision 6's budget notification. 6.4's token volume on §N.9's day 3 |
-| 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation`. Decisions 2 to 6 taken | The user's: step 2's portal acts, 11.12's rollback residue |
-| 6g, access by identity | Applied 2026-09-17, 1.4 closed on both profiles | 2.4's Athena read, which the user re-specifies. Decision 1's proxy-host replacement at the next `production/proxy/` apply, in a hub sitting |
-| 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and through JupyterLab; decision 3 done 2026-11-19, `lineageSync` off and database `sandbox` | The user's: decision 8 (a)'s window. §N.10's day 1: the editor on `sandbox`, 5.1 to 5.4 and 5.2b around #323's switch, 0.4's portal half; 6.4 on day 2 |
+| 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5). Decisions 11, 13 and 17 taken; AWS refused the 5.5 three on 2026-11-22 (`EXC-08`), so the 4.5 set stays | The user's: Sonnet 4.5's successor before 2027-01-08 (`BS-8`) and decision 6's budget notification. 6.4's token volume on §N.9's day 3 |
+| 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation` and, since 2026-11-22, `test-experimentation`. Decisions 2 to 6 taken; 2.1, 2.2 and 4.3 done and 11.12's residue accepted 2026-11-22 | The user's: 2.3 to 2.6's portal acts; 11.12, the rollback, when called |
+| 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and JupyterLab; decision 3 done 2026-11-19, `lineageSync` off, database `sandbox`; 8 (a) standing and 6.4 `lab` kept, 2026-11-22 | §N.10's day 1: the editor on `sandbox`, 5.1 to 5.4 and 5.2b around #363's apply, 0.4's portal half |
 | 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), release T's `v0.4.7` on 2026-11-15, release F's `v0.5.2` on 2026-11-16, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | Release G's `v0.6.0` (Stage 19 decision 26 (b)) in R1: `runbooks/promotion.md` §N.8.5 and §N.11.1. What is left, in order: §N.6 |
 | 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30. Every decision taken | R1 after 2026-11-22 (`promotion.md` §N.11.1, carrying §N.8.3): `EXC-13`'s Production half. What is left, in order: §N.6 |
 | 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15; since 2026-11-16 the chains of `<env>/chains/` start the CLI's workflows in both targets (Stage 19 4.11). Every decision taken | What is left, in order: `promotion.md` §N.6 |
@@ -510,9 +512,9 @@ pass 1 was done 2026-11-18 with nothing up, its passes 2-5 on §N.10's day 2. Th
   25, 0, 1 on 2026-10-30. The probes read `ResourceLimitExceeded` as authorized. SageMaker job quotas are
   above zero in Staging and Production since 2026-10-24.
 - **Bedrock**: the retention mode `none` is declared in all 17 Regions and frozen by Stage 6e's 7.5;
-  `claude-opus-5` and `claude-sonnet-5` are refused for this account (`EXC-08`).
-- **Module pins** are read from the callers (`grep -rn '?ref=' terraform-live`). Abandoned on origin and
-  never pinned (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0 to v0.14.0, and `vpc-v0.3.0`.
+  `claude-opus-5`, `claude-sonnet-5` and the 5.5 three are refused for this account (`EXC-08`).
+- **Module pins** are read from the callers (`grep -rn '?ref=' terraform-live`). Abandoned on origin and never
+  pinned (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0 to v0.14.0, `vpc-v0.3.0` and `wireguard-v0.8.0`.
 - **The VPN** has two client profiles, monitored and split-tunnel, on one key (`vpn.md` §C7). With the
   tunnel down, macOS's system proxy breaks the `aws` CLI, and `NO_PROXY='*'` is the override. A CLI login
   answered in a browser that holds a portal session as another user ends that session, so `aws/login.py`

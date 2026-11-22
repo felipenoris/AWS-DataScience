@@ -28,8 +28,8 @@ read the picker as §I declares it.
 
 **The model set is what stays open.** The scoped models `claude-opus-5` and `claude-sonnet-5` are
 **refused by AWS for this account**, and the working set is the 4.5 generation (M4, `EXC-08`), of which
-Sonnet 4.5 reads `LEGACY` since 2026-10-08, its end of life 2027-04-08 (`INV-18`); the 5.5 generation's
-agreements wait on the user (decision 17, PR #108). M5's exemption has its compensating deny since
+Sonnet 4.5 reads `LEGACY` since 2026-10-08, its end of life 2027-04-08 (`INV-18`); the 5.5 generation is
+refused too, its agreements `AVAILABLE` since 2026-11-22 (decision 17). M5's exemption has its compensating deny since
 2026-09-12 (decision 15), and the mode is declared in all 17 enabled Regions (decision 16).
 
 The readings are in [`log-stage-06e`](../../log/log-stage-06e-claude-code-bedrock.md). Every sentence
@@ -263,10 +263,13 @@ and decision 2 keeps the model-access form out of it for the same reason.
   "Resource": [
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5",
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-2",
     "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5",
     "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-2",
     "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5",
-    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1"
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-2"
   ]
 }
 ```
@@ -381,6 +384,7 @@ The model ids this estate has accepted, and the ones it would accept for the sco
 | current | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` | agreements accepted 2026-09-12; **refused for this account**, see below |
 | previous | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` | agreements accepted 2026-09-12; **invocable, and the scoped set since decision 14** |
 | either way | `anthropic.claude-haiku-4-5-20251001-v1:0` | agreement accepted 2026-09-12; invocable |
+| 5.5 (decision 17) | `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5` | agreements accepted 2026-11-22, `AVAILABLE` in the three routed Regions within two minutes; **refused for this account** at the first invocation the same night, see below |
 
 **After-reading.** The status goes `NOT_AVAILABLE` → `PENDING` → `AVAILABLE`. It settled in seconds
 for one model and took minutes for another, so poll rather than assume:
@@ -392,7 +396,8 @@ until [ "$(aws bedrock get-foundation-model-availability --region us-west-2 --pr
 **Per account and per model, not per Region.** Measured 2026-09-12: an agreement created in
 `us-west-2` read `AVAILABLE` in `us-east-1` and `us-east-2` **before** the creating Region left
 `PENDING`. Each model needs its own; Amazon's own models need none — `amazon.nova-lite-v1:0` reads
-`AVAILABLE` with nothing done.
+`AVAILABLE` with nothing done. On 2026-11-22 the three 5.5 agreements read one status in all three
+Regions at each reading, so which Region leaves `PENDING` first is not a property (`SUP-293`).
 
 **The generation gate, and no reading exposes it.** Measured 2026-09-12, with the agreement
 `AVAILABLE`, the form present in all three Regions and every availability field green:
@@ -410,7 +415,9 @@ Haiku 4.5 and Opus 4.5. The split follows the shape of the model id: **dated ids
 `claude-opus-4-6/4-7/4-8`, `claude-sonnet-4-6`, `claude-fable-5`, `claude-fable-5-1`) are not.** The
 gate is commercial, at the account, and **every readable instrument reports the model as available and
 authorized while the invocation refuses it** — Lesson 13 at account scale. The message is literal:
-the path forward is the sales contact it names, or the previous generation.
+the path forward is the sales contact it names, or the previous generation. The 5.5 ids have the
+clean shape too, and the gate refused all three on 2026-11-22 with this message, the SCP naming them
+since 02:37:30 (decision 17's step 3).
 
 ### M5 — Exempt the invocation from the Region ceiling
 
@@ -593,6 +600,9 @@ aws bedrock-runtime invoke-model --region us-west-2 --model-id us.anthropic.clau
 | `… explicit deny in a service control policy: p-…`, naming a resource in another Region | M5 |
 | `… is not available for this account … contact AWS Sales` | M4, or the generation gate M4 describes |
 | `… no identity-based policy allows the bedrock:InvokeModel action` | the model is not in `sandbox/bedrock/`'s `models` map — §P |
+
+The second refusal exists only in the client's output: the gate writes no CloudTrail event and no
+`InvocationClientErrors` datapoint (`SUP-427`), so neither channel shows afterwards that a session met it.
 
 **Then both channels**, which is what §V's rows are for: CloudTrail for `vpcEndpointId` and the
 absence of an `errorCode`, and `/awsds/prod/proxy` for the absence of any `bedrock` or Anthropic name
@@ -1032,8 +1042,9 @@ instrument that answers the question "can this model be used here".** Everything
 compares what this repository **declares** — read out of the SCP, not out of a constant — against
 what AWS does: whether a profile still routes only where the condition names (`BS-3`), whether each
 scoped model still holds an agreement (`BS-5`), whether every enabled Region declares `none`
-(`BS-6`), and whether the SCP, the grant's `models` map and the image's pins still agree (`BS-7`).
-Two of those facts are AWS's rather than ours and move without any diff here.
+(`BS-6`), whether the SCP, the grant's `models` map and the image's pins still agree (`BS-7`), and
+whether the provider has moved a scoped model to `LEGACY` or past it (`BS-8`). The routing, the agreement
+and the lifecycle are AWS's rather than ours and move without any diff here.
 
 ```bash
 ./aws/bedrock-scope.py

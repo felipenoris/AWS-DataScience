@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | **In progress.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer, and **1.4 closed the same day on the monitored profile** — the calls answer through the proxy and the access log attributes each to the device. **Verification ii is answered by reading, 2026-10-18** (PR #187): the removal opened only what 0.1 listed. Owed: 2.4's Athena read from a Sandbox space, which as written is refused rather than answered, since the project role holds no Lake Formation grant on the lake (step 2.4); and decision 1's replacement of the proxy host, which the next `production/proxy/` apply makes and which starts a host, so it belongs to a hub session |
-| **Prerequisites** | **None that block.** The monitored-profile halves of 1.4 and 2.4 were measured on 2026-09-18; what remains, 2.4's Athena read, needs the user's choice of principal (step 2.4) and, from a space, the hub and a Sandbox space up; the portal's query editor runs Athena as the project role with no space (Stage 18 7.2, 2026-10-22) |
+| **Status** | **Done 2026-11-22.** Written 2026-09-17 from the requirement change [`objectives.md`](../objectives.md) records and [D39](../decisions/D39-access-by-identity.md) decides, against two read-only inventories of the repository taken the same day. **Step 0 read the same day**: the six deployed sets match the code, no persona called AWS in the seven days before, and the two reaches 0.1 found that no decision named — the Governance Manager's entitlement writes and CloudWatch Logs contents from any network — were accepted without an alarm by the user. **Both applies ran the same day** (steps 1.3 and 2.3, each re-planning `No changes` and read back from the deployed documents), with steps 3 and 4 in the same sitting. **All three decisions due are taken**, 1 and 2 with their own applies: the proxy wears its instance's own address and `make up`'s hub precondition refuses on the proxy alone. **The laptop halves of 1.4 and 2.4 were measured 2026-09-18** as `DataScientistAccess` with the tunnel down: `describe-log-groups` answers, `list-buckets` is the set's own implicit deny where it was an explicit one, and the drop-box took a `PutObject` while `awsds-data-raw` refused at the identity layer, and **1.4 closed the same day on the monitored profile** — the calls answer through the proxy and the access log attributes each to the device. **Verification ii is answered by reading, 2026-10-18** (PR #187): the removal opened only what 0.1 listed. **Decision 1's replacement was made 2026-11-21** by Stage 12 2.2's `production/proxy/` apply: `i-071bcc561f75b51d7` carries the corrected comment. **2.4's Athena read was done 2026-11-22** as the project role, the user's choice of principal: `eighth-experimentation`'s query editor read 10 rows of `curated.trades` through 6f step 11's subscription with no space, which answers verification iv. Nothing is owed |
+| **Prerequisites** | **None.** Every step has run |
 | **Consumes** | [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D18](../decisions/D18-data-scientist-access.md), [D38](../decisions/D38-single-egress-hub.md), [D39](../decisions/D39-access-by-identity.md) |
 | **Proves** | Nothing new crosses an account boundary. Retired: [INT-16](../integrations.md) as a recorded deviation. Changed in shape: [INT-05](../integrations.md)'s laptop half, from an address branch to a principal branch |
 
@@ -200,11 +200,7 @@ exercised both (Lesson 20's mirror).
   joins `EXC-02`; the buckets declare no `expiration_days`, so it stays until Stage 9's pickup or a
   deliberate cleanup. **The same put through the tunnel** (`…/awsds-6g-24-probe-tunnel.txt`) also
   succeeded, so the exemption is the principal and not the path — that write was Claude's, beyond the
-  two the user authorized, and its object is in `EXC-02` for the same reason. Owed: the Athena read
-  from a Sandbox space, which needs the hub and a space up, **and a grant the step assumed**: the project
-  role holds no Lake Formation grant on `curated` (6f 0.7 and `CT-7`; 6h read *Required Describe on raw*
-  on 2026-10-10), so as written the query is refused, not answered. It needs the user's choice: the
-  persona's Athena read from a laptop, or the project role after 6f decision 1's re-grants.
+  two the user authorized, and its object is in `EXC-02` for the same reason.
 - **The perimeter itself stayed unexercised, and 2026-09-18 says why.** With the tunnel down and the hub
   up, `InfrastructureAccess` in Sandbox — identity allows it, the network does not — put the same file into
   `awsds-data-raw` and was refused by the **key** policy: `kms:GenerateDataKey … no resource-based policies
@@ -215,6 +211,19 @@ exercised both (Lesson 20's mirror).
   `DenyOutsideTrustedNetworks` and its two drop-box siblings statements verified by reading rather than by
   attempting (Lesson 22); the principal they are written against is a compute role with lake grants calling
   from outside its VPC endpoint. Recorded in the lake's `README.md` beside the statements.
+- **2.4's Athena read done 2026-11-22**, as the principal the user chose that night: the project role,
+  through 6f step 11's subscription. The step had assumed a grant the role does not hold, none on `curated`
+  (6f 0.7 and `CT-7`; 6h read *Required Describe on raw* on 2026-10-10). The persona's read from a laptop
+  would stop at its identity policy, since `DataScientistAccess` carries no `athena:` action since
+  2026-08-26 (D19). The user ran `SELECT * FROM "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10` in
+  `eighth-experimentation`'s query editor, *Athena (SQL)*, with no space: 10 rows, the five columns of
+  `curated.trades`. Execution `c9f604ea-50f8-47b3-b171-caf3985b6692` `SUCCEEDED` at 02:15:35Z, 1,178 bytes
+  scanned, as the project role with the Data Scientist User as source identity. Lake Formation vended
+  `SELECT` in both accounts, and the lake key decrypted nine times for `awsds-data-lf-registration` under
+  the context `awsds-data-curated`. That role is a Data Governance principal, which
+  `DenyOutsideTrustedNetworks` exempts through `aws:PrincipalAccount`, a test 2.3 did not change (read
+  from the policy). A space adds only the Athena API call through Sandbox's `athena` interface endpoint,
+  which 2.3 did not touch either. Stage 9 8.1 measured the same path on 2026-10-30, a count of `30`.
 - **2.4 [user provokes, Claude records] The contrast.** As `awsds-scientist-sandbox`, from a laptop with no
   proxy: `s3:PutObject` into the drop-box's dated prefix succeeds; `s3:PutObject` into `awsds-data-raw`
   fails, and its wording says whether the bucket policy or the identity refused it. From a Sandbox space,
@@ -285,7 +294,7 @@ exercised both (Lesson 20's mirror).
 | i | Does a persona call from outside the VPN, with no proxy configured, answer after 1.3, and what did the same call's refusal name before it? **Answered 2026-09-18**: `describe-log-groups` answers off the VPN with no proxy, where the deleted deny refused it explicitly before 1.3 | 0.2, 1.4 |
 | ii | Did the removal open anything 0.1 did not list? **Answered 2026-10-18 by reading: no.** 1.3's plan removed `DenyControlPlaneOffVpn` and changed no other statement, so what it opened is the allows 0.1 listed from the deployed sets, and 1.4's two calls answered as that list predicts. Read again from the six deployed sets: no statement tests a network key, `CloudWatchLogsReadOnlyAccess` is still v12 and `awsds-org-project-storage-vending` v1, and the one Allow added since is [5b](stage-05b-redshift-serverless.md)'s `ReadRedshiftServerlessStatus` on `DataScientistAccess` (2026-09-20), six `redshift-serverless` reads, reachable from any network as every allow is under D39 | 0.1, 1.4 |
 | iii | Does the drop-box take the persona's write from any network while the same persona's write to another lake bucket still fails, and which policy refuses it? **Answered 2026-09-18**: yes, the drop-box took the `PutObject` off the VPN and through the tunnel, and `awsds-data-raw` refused it at the identity layer, so `DenyOutsideTrustedNetworks` is attached, not exercised, for this principal | 2.4 |
-| iv | Is the lake's read path from a Sandbox space unchanged? | 2.4 |
+| iv | Is the lake's read path from a Sandbox space unchanged? **Answered 2026-11-22: yes.** The project role read 10 rows of `curated.trades` through 6f step 11's subscription, from the query editor with no space, Lake Formation vending in both accounts and the registration role decrypting the objects. A space adds only the Athena call through its endpoint, which 2.3 did not change | 2.4 |
 | v | Does the private network stay closed off the VPN? **Answered 2026-09-18**: yes, neither `proxy.awsds.internal` nor `vpn.awsds.internal` resolves with the tunnel down | 1.4 |
 | vi | Does the monitored profile still work end to end, its access log attributing each device? **Answered 2026-09-18**: yes, the calls answer through the proxy and the access log attributes each line to the device, `10.90.0.2` | 1.4 |
 
@@ -309,14 +318,24 @@ exercised both (Lesson 20's mirror).
    `make hub-down` stopped the host again. The hub ran **68.7 hours in the previous 30 days**, so the
    released allocation saves ≈ **USD 3.3/month** and the instance's own address costs ≈ 0.34 at that rate.
 
-   **A replacement is pending from the same sitting.** `user-data.sh.tftpl`'s first-render comment was
-   corrected after the apply — it named the Elastic IP association — and the deployed host reads back
-   carrying the old text, so the next **apply** of `production/proxy/` replaces it. `make hub-up` is not
+   **A replacement was owed from the same sitting.** `user-data.sh.tftpl`'s first-render comment was
+   corrected after the apply — it named the Elastic IP association — and the deployed host read back
+   carrying the old text, so the next **apply** of `production/proxy/` would replace it. `make hub-up` is not
    that apply: a `[D]` slice is started and stopped by the dormant hook and applied only by hand, which
    2026-09-18's `hub-up` confirmed — `i-0d42d0393c39eefdb` came back up unchanged. The host is stateless
    and rebuilds from this template; only the public address moves with it. **Still pending on
    2026-10-17**: the proxy is the same `i-0d42d0393c39eefdb`, last started 2026-10-16 16:31:16Z, stopped
    since 2026-10-16 23:33:56Z, with no public address while stopped.
+
+   **The replacement was made on 2026-11-21** by Stage 12 2.2's hub sitting. It applied `production/proxy/`
+   from `main` at `65254241` (PRs #352 and #354), 23:51:42 to 23:53:26 UTC, and the host was replaced on
+   `ami` and `user_data` (this comment and `TM-01`'s `-n`, PR #351), with `instance_type` `t3.micro ->
+   t3.small`. The trail reads `TerminateInstances` on `i-0d42d0393c39eefdb` at 23:51:52Z and `RunInstances`
+   at 23:52:55Z. The new host is `i-071bcc561f75b51d7`, launched 23:52:54Z, private `10.31.160.128`, public
+   `184.36.57.235` for that run, with no Elastic IP. Its user data, read back on 2026-11-22, is 15,148 bytes
+   and carries the corrected comment. The proxy served nothing for about 2 min 17 s. The host runs
+   `65254241`'s template, not `main`'s, which has since gained #356's step (0) and #359's size check; the
+   step (0) replaces the host at the next apply, after §N.9's day 2 (Stage 12's log, 2026-11-22).
 
    **The address is per-run, measured across the stop and start**: `35.90.250.102` on 2026-09-17 and
    `52.10.244.25` on 2026-09-18, one instance, private `10.31.160.140` throughout. `./aws/proxy.py`

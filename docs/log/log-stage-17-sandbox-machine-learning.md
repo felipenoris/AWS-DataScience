@@ -4682,7 +4682,7 @@ UTC.
   under `GuardrailPolicyType` `TopicPolicy` and `GuardrailContentSource` `Input`; `TopicPolicy` at `Output`
   read 0 at 04:25, 04:27 and 04:28, with no datapoint at 04:30. An answered question is evaluated twice, its
   input and its response, and a blocked input once.
-- **[Claude] The trail, per message** (`SUP-449`), read as the infrastructure user (`InfrastructureAccess`,
+- **[Claude] The trail, per message** (`SUP-426`), read as the infrastructure user (`InfrastructureAccess`,
   `awsds-infra-sandbox-1`); the second message's, 04:27:25 to 04:27:30: `GetInferenceProfile` as the
   project's service role; `InvokeModel` on the embeddings profile `p391nstyc81c` as the project role, the
   knowledge base's role; `Converse` on `ljl42zoh6e4v` as the service role, the node's generation; `GetPrompt`;

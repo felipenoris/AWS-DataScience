@@ -87,10 +87,11 @@ PROJECT_ROLES_RE = re.compile(
 # here. This file carried a literal until 2026-09-12 and it named the generation Stage 6e decision
 # 14 had already abandoned, so BR-4 reported `pass` about three profiles nobody had scoped.
 
-# The models the vendor's abuse-detection page named as retaining all traffic for up to 30 days,
-# read 2026-09-11. This list is DATED, not derived: `allowed_modes` is in no API, so nothing here
-# can refresh it. Stage 6e step 7.5's second deny is written against these ids.
-RETAINING = ("anthropic.claude-fable-5", "anthropic.claude-fable-5-1")
+# The models the vendor's abuse-detection page names as retaining all traffic for up to 30 days:
+# Fable 5 and 5.1 read 2026-09-11, Fable 5.2 read 2026-11-22. This list is dated, not derived:
+# `allowed_modes` is in no API, so nothing here can refresh it. Stage 6e step 7.5's second deny is
+# written against these ids.
+RETAINING = ("anthropic.claude-fable-5", "anthropic.claude-fable-5-1", "anthropic.claude-fable-5-2")
 
 # The calls whose non-empty answer is a bill. Each is (service-verb, JMESPath to the list).
 BILLING = (
