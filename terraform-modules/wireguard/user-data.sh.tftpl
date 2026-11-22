@@ -25,6 +25,25 @@ say () { echo "=== AWSDS-VPN $(date -u +%H:%M:%SZ) $* ==="; }
 
 say "BEGIN - $(uname -srm)"
 
+# ------------------------------------------------------------ (0) room for step (1)'s dnf
+#
+# A 1 GiB swap file and update-motd masked, before the first dnf (wireguard-v0.8.1). Why - the
+# OOM of 2026-11-21 that made it necessary - is in main.tf beside the templatefile() call: every
+# byte of this file counts toward EC2's 16 KB user-data limit, and the rendered script is near it.
+say "(0) a 1 GiB swap file, and update-motd's dnf off this host"
+if dd if=/dev/zero of=/swapfile bs=1M count=1024 status=none && chmod 0600 /swapfile \
+     && mkswap /swapfile > /dev/null && swapon /swapfile ; then
+  echo '/swapfile none swap defaults 0 0' >> /etc/fstab
+  say "(0) swap: $(swapon --show=NAME,SIZE --noheadings | tr -s ' ' | paste -sd ';')"
+else
+  say "(0) FAILED - no swap file. On a host under about 1 GiB, step (1)'s dnf will be OOM-killed"
+fi
+if systemctl mask --now update-motd.service ; then
+  say "(0) update-motd masked"
+else
+  say "(0) update-motd NOT masked - its dnf check-update may run beside step (1)"
+fi
+
 # ------------------------------------------------------------------------- (1) packages
 #
 # The three names were measured present in the AL2023 core repository for this region on

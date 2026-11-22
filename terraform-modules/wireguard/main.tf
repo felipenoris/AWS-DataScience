@@ -148,6 +148,40 @@ locals {
   forward_post_up   = length(var.forward_destinations) == 0 ? "iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT" : "${local.forward_allow_up}iptables -A FORWARD -i %i -j REJECT --reject-with icmp-admin-prohibited; iptables -A FORWARD -o %i -j ACCEPT"
   forward_post_down = length(var.forward_destinations) == 0 ? "iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT" : "${local.forward_allow_down}iptables -D FORWARD -i %i -j REJECT --reject-with icmp-admin-prohibited; iptables -D FORWARD -o %i -j ACCEPT"
 
+  # Step (0) of the user data - a 1 GiB swap file and update-motd masked, before the first dnf -
+  # since wireguard-v0.8.1, argued here rather than in the script because user data is capped at
+  # 16 KB (EC2's limit, enforced at plan by the provider: "expected length of user_data to be in the
+  # range (0 - 16384)"), comments count, and the rendered script was about 13.4 KB before the step.
+  # v0.8.0 carried this argument in the script, rendered to about 16.4 KB for production's peers and
+  # failed that plan: it is abandoned and never pinned (Lesson 46).
+  #
+  # On 2026-11-21 a t3.nano's first boot lost step (1)'s dnf to the OOM killer at 25 s. It had
+  # downloaded the AL2023 repository's 91 MB of metadata and held 162 MiB resident and 348 MiB
+  # swapped, with the nano's 415 MiB of RAM spent and its 415 MiB of zram swap full. dnf ran inside
+  # cloud-final.service, and cloud-init received SIGTERM at once - systemd stops a unit whose process
+  # the kernel OOM-killed, its documented OOMPolicy=stop default - so the host came up with no tunnel.
+  # A cold dnf needs about 620 MiB on that image (617 MiB peak for a download-only install of three
+  # packages and 623 MiB for `dnf check-update`, measured on a t3.medium the same night), and the
+  # metadata grows with every release: the size that builds today is not the size that builds next
+  # year.
+  #
+  # The swap file is what lets a nano finish the install - slower, but finished. zram keeps its
+  # priority (100, against the file's default negative one), so the file takes only what the
+  # compressed swap cannot. dd writes it rather than fallocate: every block is written, so there are
+  # no holes for swapon to refuse, whatever the filesystem. It stays in /etc/fstab, so a later dnf -
+  # an operator's, through SSM - has the same room. AL2023's zram-generator creates no zram above
+  # 800 MB of RAM ("system has too much memory (3835MB), limit is 800MB, ignoring", the t3.medium's
+  # console), so on a t3.micro the file is the only swap there is.
+  #
+  # update-motd's 70-available-updates runs a cold `dnf check-update` at every boot, and on the nano
+  # it was the second process OOM-killed (at 48 s, 185 MiB resident and 370 MiB swapped). It feeds
+  # the login banner's count of available updates, and nobody logs in here: the shell is an SSM
+  # session (vpn.md K0a). `mask --now` also stops a run already going and cancels one already
+  # queued, and since a [D] host boots at every session start, the mask is permanent rather than a
+  # first-boot measure.
+  #
+  # Neither is fatal. A host large enough not to need them builds without them, and step (1) is
+  # where a host too small for its dnf says so.
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     masquerade_post_up   = local.masquerade_post_up
     masquerade_post_down = local.masquerade_post_down

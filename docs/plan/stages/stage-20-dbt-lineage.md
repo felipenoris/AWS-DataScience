@@ -2116,8 +2116,8 @@ Measured rates, `us-west-2`, from [`docs/PRICING.md`](../../PRICING.md):
   free. A run posts events by the ten.
 - Pass 4: the applies change policy documents and bill nothing; 4.5's job on `ml.t3.medium` at 0.050
   per hour, and the worker's task-hours while it waits.
-- Pass 8's sittings: the hub at 0.0674 per hour while the VPN runs the tracked file's `t3.medium` (#353),
-  0.0310 on D4's `t3.nano`, and GitLab's `t4g.large` at 0.0672 (the GitLab session's rows), the runners
+- Pass 8's sittings: the hub at 0.0310 per hour and GitLab's `t4g.large` at 0.0672 (the GitLab
+  session's rows), the runners
   while they run; `staging/egress/`'s and `production/workloads-egress/`'s interface endpoints at 0.010
   per hour each plus 0.010 per GB while up, decision 15 (a)'s `athena` one more in each, and about 0.60
   of Config per `staging/egress` up and down; each leg's worker task-hours and Glue run at the rates

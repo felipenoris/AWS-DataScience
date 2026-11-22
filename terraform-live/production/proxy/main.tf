@@ -71,6 +71,12 @@ locals {
     }
   })
 
+  # The user data's step (0) - a 1 GiB swap file and update-motd masked, the wireguard module's
+  # commands (2026-11-22) - is argued in that module's main.tf, beside its own templatefile() call,
+  # and not in the script: EC2 caps user data at 16 KB, and this one carries squid.conf and the render
+  # script inside it, about 15.2 KB before the step. What is particular to this host: its first
+  # boot's dnf was OOM-killed on a t3.nano on 2026-09-06, and on a t3.micro, about 930 MiB,
+  # zram-generator creates no swap at all, so the file is the only swap there is.
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     squid_conf    = local.squid_conf
     render_script = local.render_script

@@ -312,10 +312,10 @@ the real bill.
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
 **Typical Sandbox hour, as built** (`us-west-2`): 18 endpoints 0.180 (6c, 2026-09-07) + one `ml.t3.medium`
-app 0.050 + the hub's two hosts 0.0624 while the VPN runs the tracked file's `t3.medium` (#353), the
-`t3.medium` and the `t3.small`, ≈ **0.29/h** (0.0260 and ≈ 0.26/h on D4's `t3.nano`), with no per-GB NAT
+app 0.050 + the hub's two hosts 0.0260, the VPN's `t3.nano` and the proxy's `t3.small`, ≈ **0.26/h**
+(0.0624 and ≈ 0.29/h while the VPN ran `t3.medium`, #353 to #356), with no per-GB NAT
 charge — an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a
-four-hour session pays about 1.17 in hours (1.02 on `t3.nano`) and 0.36-0.87 in Config, and two short
+four-hour session pays about 1.02 in hours and 0.36-0.87 in Config, and two short
 sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
 hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
 **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
@@ -375,9 +375,9 @@ Billed beside the hour:
 - **Endpoint processing**, 0.01 USD/GB: 2.86 GB on 2026-10-12, the day of the first image build (0.029),
   and 0.21 GB on 2026-10-13.
 - **AWS Config**, per cycle rather than per hour: the GitLab row of the table above, 0.21-0.38.
-- **The hub**, when no other session holds it: 0.0674/h while the VPN runs the tracked file's `t3.medium`
-  (#353), the `t3.medium` 0.0416, the `t3.small` 0.0208 and the proxy's public IPv4 0.005; 0.0310/h on
-  D4's `t3.nano` (0.0052), the size `make status` prices (Stage 12 decision due 4). The proxy sets
+- **The hub**, when no other session holds it: 0.0310/h, the VPN's `t3.nano` 0.0052 (D4's size, the
+  tracked file's again since #356, Stage 12 decision due 4; 0.0674/h while it ran `t3.medium` at 0.0416,
+  #353), the `t3.small` 0.0208 and the proxy's public IPv4 0.005. The proxy sets
   `associate_public_ip_address`, billed while the host runs: `PublicIPv4:InUseAddress` read twice the
   hosts' running hours on 2026-10-12. The VPN's Elastic IP bills 0.005/h stopped or running, a floor line.
 - **CPU credits**: neither slice sets `credit_specification`, so `t4g.large` and the `t3a.small` pair
@@ -416,8 +416,8 @@ What the row leaves out, and why:
 
 - **The account** bills nothing (§10); what it costs is one slot of the account quota, the reason the
   stage is blocked.
-- **The hub** serves every unit, so a unit adds nothing to its 0.0674/h while the VPN runs the tracked
-  file's `t3.medium` (#353), 0.0310/h on D4's `t3.nano` (the GitLab session's hub line above); the peering
+- **The hub** serves every unit, so a unit adds nothing to its 0.0310/h (the GitLab session's hub line
+  above); the peering
   and zone rows a vend adds there are free.
 - **What the unit's people run**: a space at 0.050/h on `ml.t3.medium` (above) and its volume at 0.112
   per GB-month with every app stopped (§8). Unit 1 also carries Stage 5b's warehouse, which step 1's

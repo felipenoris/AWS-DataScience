@@ -15,6 +15,16 @@ set -euxo pipefail
 
 say() { echo "=== awsds-proxy: $*"; }
 
+# Step (0), the wireguard module's commands: main.tf says why (user data is capped at 16 KB).
+say "(0) a 1 GiB swap file, and update-motd's dnf off this host"
+if dd if=/dev/zero of=/swapfile bs=1M count=1024 status=none && chmod 0600 /swapfile \
+     && mkswap /swapfile > /dev/null && swapon /swapfile ; then
+  echo '/swapfile none swap defaults 0 0' >> /etc/fstab
+else
+  say "(0) FAILED - no swap file; on a small host step (1)'s dnf will be OOM-killed"
+fi
+systemctl mask --now update-motd.service || say "(0) update-motd NOT masked"
+
 say "(1) packages"
 dnf install -y squid jq amazon-cloudwatch-agent
 
