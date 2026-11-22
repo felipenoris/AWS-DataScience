@@ -4983,3 +4983,14 @@ From 19:11 to 20:21; times UTC. §N.9's day 3, the other sitting, told of the wr
   0 fail, 6 note, as at 19:19.
 - **Left of step 6**: the data source `c4n05wth04ll3k` stands `FAILED_CREATION`; deleting it and creating
   it again is §N.10's day 2's, with the compute up.
+
+## 2026-11-22 — Step 6 again on §N.10's day 2: the source created, its run refused
+
+*Claude, in the session of `promotion.md` §N.10's day 2, recording a step whose full reading is Stage 21's log of
+the same day (2.2). Times UTC.*
+
+- **[Claude] Step 6**: `c4n05wth04ll3k` deleted at about 22:58 and the source created again with day 1's rules as
+  `brnatob4h2kwb4`, `READY` at 22:59:17, the four Data API reads applied at 21:23 admitting its validation. Its
+  run at 22:59:30 was refused on `redshift-data:ExecuteStatement` for the access role, nothing imported, so the
+  asset 5.3 publishes does not exist yet; the statement is written in `sandbox/warehouse/iam.tf` and waits for
+  the user's word.

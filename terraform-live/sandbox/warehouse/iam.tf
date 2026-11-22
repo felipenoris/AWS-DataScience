@@ -455,11 +455,11 @@ data "aws_iam_policy_document" "project_access_portal" {
 
   # A Redshift data source on the project's connection (Stage 19 step 6, Stage 21 2.2). DataZone
   # validates it at creation as this role, in a session the project role opens, and calls
-  # `redshift-data:ListDatabases` first (SUP-460). The four actions are the Data API's metadata reads,
-  # which a source importing tables and views calls; each takes the workgroup as its resource (the
-  # Service Authorization Reference), so the scope is the layer-2 pattern above. `ExecuteStatement`
-  # and the statement reads stay out: they are a query path from anywhere, added only when a source's
-  # run is read asking for them.
+  # `redshift-data:ListDatabases` first; the source's run then calls `redshift-data:ExecuteStatement`
+  # in the same session (SUP-460). The metadata reads and `ExecuteStatement` take the workgroup as
+  # their resource (the Service Authorization Reference), so the scope is the layer-2 pattern above.
+  # The statement runs as this role's database user, the per-project user, and reaches what its
+  # `GRANT`s reach, through the Data API from wherever the role's credentials work.
   statement {
     sid    = "ImportTheWarehousesMetadataForADataSource"
     effect = "Allow"
@@ -468,10 +468,32 @@ data "aws_iam_policy_document" "project_access_portal" {
       "redshift-data:ListSchemas",
       "redshift-data:ListTables",
       "redshift-data:DescribeTable",
+      "redshift-data:ExecuteStatement",
     ]
     resources = [
       "arn:aws:redshift-serverless:${var.region}:${data.aws_caller_identity.current.account_id}:workgroup/*",
     ]
+  }
+
+  # The reads of a statement the source's run started. These actions take no resource, so the scope
+  # is the session: AWS's `RSDataIAMSession` (SageMakerStudioProjectUserRolePolicy v77) limits them to
+  # the statements the calling session owns.
+  statement {
+    sid    = "ReadTheDataSourcesOwnStatements"
+    effect = "Allow"
+    actions = [
+      "redshift-data:DescribeStatement",
+      "redshift-data:GetStatementResult",
+      "redshift-data:CancelStatement",
+      "redshift-data:ListStatements",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "redshift-data:statement-owner-iam-userid"
+      values   = ["$${aws:userid}"]
+    }
   }
 
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes

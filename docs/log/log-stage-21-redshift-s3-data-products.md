@@ -758,3 +758,60 @@ share; reads as the infrastructure user with `InfrastructureAccess` in `Sandbox 
   `FAILED_CREATION`, its error naming `redshift-data:ListDatabases` for
   `awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c`; the access role's portal policy holds
   `ImportTheWarehousesMetadataForADataSource`, the four Data API reads on `workgroup/*`.
+
+## 2026-11-22 — §N.10's day 2: 2.4's applies, 2.1, and 2.2 refused at its run
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Faça 2.1
+e 2.2 pelo chrome."* and *"Autorizo os dois applies."* (about 22:50). The applies and the reads as the
+infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data
+Governance Account` (`awsds-infra-data`); the portal's acts in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner. N.9's day 3 told of each write first. Times UTC.*
+
+- **[Claude] 2.4's applies**, from this branch at `main`'s `decc55d5`, the plans saved at 22:46 and 22:47 after
+  each slice planned *"No changes."* without the switch:
+  - `sandbox/sagemaker/` with `redshift_serverless_enabled=true`, 22:51:11 to 22:51:44: *"Apply complete!
+    Resources: 3 added, 1 changed, 0 destroyed."*, the blueprint configuration `dlyaabb17hano0`, its
+    `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, AWS's `AmazonDataZoneRedshiftManageAccessRolePolicy` on
+    `awsds-sandbox-smus-manage-access`, and the project key's policy;
+  - `data-governance/governance/` with the same switch, 22:51:53 to 22:52:12: *"Apply complete! Resources: 0
+    added, 1 changed, 0 destroyed."*, the profile `experimentation`;
+  - each re-planned with the switch at 22:52 and 22:53: *"No changes."*.
+- **[Claude] The profile** `dh60xbal05q64w` at 22:53:21: the configuration `RedshiftServerless`
+  (`c12845c5-…`), `ON_DEMAND`, order 14, `redshiftBaseCapacity` and `redshiftMaxCapacity` `"4"` with
+  `isEditable` false; DataZone's resolved parameters name the database `dev`, the workgroup
+  `redshift-serverless-workgroup`, the namespace `redshift-serverless-namespace`, the schema `project`, the
+  connection `project.redshift`, `provisionManagedSecret` `true` and `connectToRMSCatalog` `false`. The
+  *Update project* banner N.9 saw on `eighth-experimentation` at 22:2x predates these applies: the trail
+  holds four `UpdateProjectProfile` by the infrastructure user from 19:00:09 to 19:00:14 and one at 05:07:41.
+  Neither session clicks it while the configuration stands.
+- **[Claude] 2.1**, the Query Editor on `redshift-serverless.redshift`, database `sandbox`, *Limit 100* off,
+  the editor's offer of its new version left with *Later*. `CREATE VIEW lab.trades_hot_by_desk` at 22:55:02
+  (query 15519811) and `CREATE TABLE lab.trades_hot_daily AS …` at 22:56:02 (15519826), both `success` by
+  user 103, `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, which owns the view and the table;
+  `lab.trades_hot_daily` holds 5 rows. While the statement was typed the editor raised twice *"A problem
+  occurred while getting autocompletion data"*, *"autocompleteMsg.getMetadataErrorAccessDenied"*.
+- **[Claude] 2.2, Stage 19's step 6 again**: `c4n05wth04ll3k` deleted at about 22:58 from *Manage → Data
+  sources*, *Actions → Delete data source*, the dialog reading *"Deleting this data source will not delete
+  assets it has already published, but no new runs will occur."* The source created again with day 1's
+  rules: `sandbox-lab-trades-hot`, `brnatob4h2kwb4`, Amazon Redshift on `redshift-serverless.redshift`
+  (`awsds-sandbox-warehouse`), database `sandbox`, schema `lab`, *Include: trades_hot\**, *Publish assets to
+  the Catalog* No, *Automated business name generation* Enabled, on demand. The wizard notes *"This
+  connection does not support importing data lineage because it does not use an Amazon Redshift secret for
+  authentication"*. Created at 22:59:17, `READY`.
+- **[Claude] The creation and the run in Sandbox's trail**: at 22:59:18 the project role's session
+  `SYSTEM@5hkjdsy3umpi1c` assumed `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, which called
+  `GetCredentials` twice, `ListDatabases` (`database` `sandbox`) and at 22:59:19 `ListSchemas`
+  (`schemaPattern` `lab`), each admitted. The run, started at 22:59:30, failed in 3 s, nothing added or
+  updated: *"Data source run failed - VALIDATION_EXCEPTION User: …assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c
+  is not authorized to perform: redshift-data:ExecuteStatement on resource: …workgroup/… because no
+  identity-based policy allows the redshift-data:ExecuteStatement action (Service: RedshiftData, Status Code:
+  400, …) (SDK Attempt Count: 3)"*. The trail holds three `ExecuteStatement` `AccessDenied` at 22:59:32,
+  22:59:33 and 22:59:35, `requestParameters` `{}`, and no `ListTables` or `DescribeTable`.
+- **[Claude] The statements the run asks for**, written in `sandbox/warehouse/iam.tf`:
+  `ImportTheWarehousesMetadataForADataSource` gains `redshift-data:ExecuteStatement` on the workgroups, and
+  `ReadTheDataSourcesOwnStatements` grants `DescribeStatement`, `GetStatementResult`, `CancelStatement` and
+  `ListStatements` on `*` under `redshift-data:statement-owner-iam-userid = ${aws:userid}`, the shape of AWS's
+  `RSDataIAMSession` in `SageMakerStudioProjectUserRolePolicy` v77. Access Analyzer's `validate-policy`: no
+  finding. Planned from this branch at 23:02 with both switches named (`all_projects_tag_enabled=true`,
+  `data_transfer_role_enabled=false`): *"Plan: 0 to add, 2 to change, 0 to destroy."*, the portal policies of
+  `avhvbqn37ty7m8` and `4gqfau9xuo6e4w`, saved. Not applied: the user's word first.
