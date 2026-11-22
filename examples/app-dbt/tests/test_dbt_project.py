@@ -48,31 +48,48 @@ def manifest(tmp_path_factory):
     return json.loads((project / "target" / "manifest.json").read_text())
 
 
-def test_the_model_is_an_iceberg_table_dropped_by_athena(manifest):
-    model = manifest["nodes"]["model.app_dbt.notional_by_desk"]
+TRADES = {"trade_date", "desk", "instrument", "quantity", "price"}
+# Each model and the source it reads: trades, which the workflow's Glue task writes, and
+# trades_notional, the resource link of the project's subscription to Production's listing.
+MODELS = {
+    "notional_by_desk": "source.app_dbt.app_dbt.trades",
+    "notional_by_desk_prod": "source.app_dbt.app_dbt.trades_notional",
+}
+
+
+@pytest.mark.parametrize(("name", "source"), MODELS.items())
+def test_each_model_is_an_iceberg_table_dropped_by_athena(manifest, name, source):
+    model = manifest["nodes"][f"model.app_dbt.{name}"]
     assert model["config"]["materialized"] == "table"
     assert model["config"]["table_type"] == "iceberg"
     assert model["config"]["native_drop"] is True
     assert model["config"]["persist_docs"] == {"relation": True, "columns": True}
     assert model["schema"] == "app_dbt"
     assert model["database"] == "awsdatacatalog"
-    assert model["depends_on"]["nodes"] == ["source.app_dbt.app_dbt.trades"]
+    assert model["depends_on"]["nodes"] == [source]
     assert set(model["columns"]) == {"desk", "notional"}
 
 
-def test_the_source_is_the_trades_table_of_the_product_database(manifest):
-    source = manifest["sources"]["source.app_dbt.app_dbt.trades"]
-    assert (source["database"], source["schema"], source["identifier"]) == (
-        "awsdatacatalog",
-        "app_dbt",
-        "trades",
+def test_the_project_has_the_two_models_alone(manifest):
+    models = [node for node in manifest["nodes"].values() if node["resource_type"] == "model"]
+    assert sorted(node["name"] for node in models) == sorted(MODELS)
+
+
+def test_the_sources_are_the_two_tables_of_the_product_database(manifest):
+    sources = {
+        source["identifier"]: (source["database"], source["schema"], set(source["columns"]))
+        for source in manifest["sources"].values()
+    }
+    assert sources == {
+        "trades": ("awsdatacatalog", "app_dbt", TRADES),
+        "trades_notional": ("awsdatacatalog", "app_dbt", TRADES | {"notional"}),
+    }
+
+
+def test_each_model_tests_its_desk_column_not_null(manifest):
+    tests = sorted(
+        (node["test_metadata"]["name"], node["column_name"], node["depends_on"]["nodes"])
+        for node in manifest["nodes"].values()
+        if node["resource_type"] == "test"
     )
-    assert set(source["columns"]) == {"trade_date", "desk", "instrument", "quantity", "price"}
-
-
-def test_the_desk_column_is_tested_not_null(manifest):
-    tests = [node for node in manifest["nodes"].values() if node["resource_type"] == "test"]
-    assert [(node["test_metadata"]["name"], node["column_name"]) for node in tests] == [
-        ("not_null", "desk")
-    ]
-    assert tests[0]["depends_on"]["nodes"] == ["model.app_dbt.notional_by_desk"]
+    assert tests == [("not_null", "desk", [f"model.app_dbt.{name}"]) for name in sorted(MODELS)]

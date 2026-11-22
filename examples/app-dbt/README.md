@@ -1,6 +1,6 @@
 # app-dbt
 
-A dbt project run by a Bash task of a SageMaker workflow: Athena builds the model as an Iceberg table of
+A dbt project run by a Bash task of a SageMaker workflow: Athena builds each model as an Iceberg table of
 the project's database, and OpenLineage's dbt wrapper posts the run's lineage to the domain. The
 application of the infrastructure repository's Stage 20, on the template `examples/app-etl/` with no
 image, no job and no model. Its manifest holds three stages, one account each (the stage's decisions
@@ -42,7 +42,7 @@ Every path is under the project's shared prefix, `{proj.connection.default.s3_sh
 | Task | Operator | What it does | Its lineage |
 |---|---|---|---|
 | `load` | `GlueJobOperator`, the job `app-dbt-{proj.id}` (Glue 6.0, two `G.1X` workers, the project's network connections), created or updated by the task | reads `inbox/` and writes the Iceberg table `trades` of `{env.PRODUCT_DATABASE}`, read back and counted | the Spark listener, the template's settings |
-| `transform` | `BashOperator` on the worker, from `code/app-dbt.zip`; after `load` | `dbt build` through the wrapper: the model `notional_by_desk`, an Iceberg table Athena creates from `trades`, and a `not_null` test on its `desk` | the wrapper's events, posted by the `amazon_datazone_api` transport |
+| `transform` | `BashOperator` on the worker, from `code/app-dbt.zip`; after `load` | `dbt build` through the wrapper: the models `notional_by_desk`, an Iceberg table Athena creates from `trades`, and `notional_by_desk_prod`, one from `trades_notional`, the resource link of the project's subscription to Production's listing, each with a `not_null` test on its `desk` | the wrapper's events, posted by the `amazon_datazone_api` transport |
 
 Each task is tried once (`retries: 0`). The worker extracts the archive to `/usr/local/airflow/dags`, and
 `transform` starts `bash /usr/local/airflow/dags/run-dbt.sh` with every option in single quotes, so
@@ -101,8 +101,8 @@ With `as-built`, the events go as the wrapper builds them. With `glue-arn`, the 
 hands each event to `app_dbt.lineage.GlueTableNames` before the post, which renames every Athena
 dataset of the inputs, the outputs and each `columnLineage` input field. Either way each dataset keeps
 its `symlinks` facet, which names `table/<database>/<table>` under `arn:aws:glue:<region>:<account>`.
-A build posts six events after dbt ends, a `START` and an end for the dbt run, for the model and for
-its test, under the stage's job namespace, `LINEAGE_NAMESPACE` (the infrastructure repository's Stage 20
+A build posts its events after dbt ends, a `START` and an end for the dbt run, for each model and for
+each test, under the stage's job namespace, `LINEAGE_NAMESPACE` (the infrastructure repository's Stage 20
 decision 16 (c)): each stage's runs are a job of their own in the domain every account posts to.
 `run-dbt.sh` by hand reads `app-dbt` unless `--namespace` names another.
 

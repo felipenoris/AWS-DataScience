@@ -1,6 +1,7 @@
-# The dbt project of app-dbt: the product database's table trades as a source, written by the
-# workflow's Glue task, and the model notional_by_desk built from it on Athena. run-dbt.sh copies this
-# folder to a temporary one and runs dbt there, since dbt writes target/ and logs/ beside the project.
+# The dbt project of app-dbt: two sources in the product database, the table trades the workflow's
+# Glue task writes and the resource link trades_notional of the project's subscription, and a model
+# built from each on Athena. run-dbt.sh copies this folder to a temporary one and runs dbt there, since
+# dbt writes target/ and logs/ beside the project.
 name: app_dbt
 version: "0.1.0"
 config-version: 2

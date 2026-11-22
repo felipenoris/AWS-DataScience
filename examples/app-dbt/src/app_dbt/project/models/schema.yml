@@ -10,3 +10,12 @@ models:
           - not_null
       - name: notional
         description: The sum of quantity times price over the desk's trades, rounded to cents.
+  - name: notional_by_desk_prod
+    description: The notional each desk traded in Production, summed over the trades of Production's app_etl.trades_notional, read through the project's subscription.
+    columns:
+      - name: desk
+        description: The desk.
+        data_tests:
+          - not_null
+      - name: notional
+        description: The sum of the trades' notional over the desk's trades, rounded to cents.

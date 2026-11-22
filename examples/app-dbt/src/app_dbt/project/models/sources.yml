@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: app_dbt
-    description: The product database of the project, where the workflow's Glue task writes.
+    description: The product database of the project, where the workflow's Glue task writes and a subscription of the project writes its resource link.
     schema: "{{ target.schema }}"
     tables:
       - name: trades
@@ -18,3 +18,18 @@ sources:
             description: The quantity traded.
           - name: price
             description: The price of one unit.
+      - name: trades_notional
+        description: The resource link the project's subscription to the listing trades-notional writes, whose target is Production's app_etl.trades_notional, each trade with its notional written by the application app-etl.
+        columns:
+          - name: trade_date
+            description: The day the trade was made.
+          - name: desk
+            description: The desk that made the trade.
+          - name: instrument
+            description: The instrument traded.
+          - name: quantity
+            description: The quantity traded.
+          - name: price
+            description: The price of one unit.
+          - name: notional
+            description: Quantity times price, rounded to cents by app-etl's Glue job.
