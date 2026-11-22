@@ -247,6 +247,28 @@ locals {
       }
     },
   ] : st if contains(local.configured_blueprints, "AmazonBedrockKnowledgeBase")]
+
+  # The Bedrock IDE's guardrail: DataZone calls CreateGuardrail as the provisioning role with this key,
+  # and Bedrock refuses it unless that role may kms:CreateGrant on the key, which the role's managed
+  # policy allows through airflow, neptune-graph and s3vectors alone (SUP-411, measured 2026-11-22,
+  # Stage 17 7.4). The statement is Bedrock's PermissionsForGuardrailsCreators (read 2026-11-22), with
+  # the principal narrowed to the provisioning role and no condition, as on the page: the refused call
+  # carried no request parameters to read a kms:ViaService from. It rides the guardrail blueprint's
+  # switch (Lesson 14).
+  key_policy_bedrock_guardrail = [for st in [
+    {
+      Sid       = "AllowGuardrailCreationByTheProvisioningRole"
+      Effect    = "Allow"
+      Principal = { AWS = module.provisioning_role.role_arn }
+      Action = [
+        "kms:Decrypt",
+        "kms:GenerateDataKey",
+        "kms:DescribeKey",
+        "kms:CreateGrant",
+      ]
+      Resource = "*"
+    },
+  ] : st if contains(local.configured_blueprints, "AmazonBedrockGuardrail")]
 }
 
 module "project_key" {
@@ -265,6 +287,7 @@ module "project_key" {
       local.key_policy_smus_project_roles,
       local.key_policy_redshift,
       local.key_policy_s3vectors_indexing,
+      local.key_policy_bedrock_guardrail,
     )
   })
 }

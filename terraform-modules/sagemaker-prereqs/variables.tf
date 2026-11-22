@@ -220,6 +220,7 @@ variable "blueprint_names" {
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",
     "AmazonBedrockFunction",
+    # kms.tf's guardrail-creation statement comes with it, measured at Stage 17 7.4 (SUP-411).
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
     # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12): a
