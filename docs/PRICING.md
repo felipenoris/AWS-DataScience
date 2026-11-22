@@ -311,10 +311,10 @@ the real bill.
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour, as built** (6c, 2026-09-07, `us-west-2`): 18 endpoints 0.180 + one `ml.t3.medium`
-app 0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, with no per-GB NAT charge —
+**Typical Sandbox hour, as built** (`us-west-2`): 18 endpoints 0.180 (6c, 2026-09-07) + one `ml.t3.medium`
+app 0.050 + the hub's two hosts 0.0260 (`t3.nano` + `t3.small`) ≈ **0.26/h**, with no per-GB NAT charge —
 an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a four-hour session
-pays about 1.00 in hours and 0.36-0.87 in Config, and two short sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
+pays about 1.02 in hours and 0.36-0.87 in Config, and two short sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
 hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
 **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
 (`datazone`, Stage 6 step 4.2) from 2026-08-21; design A came back down on 2026-08-25 when it was removed,
@@ -373,7 +373,7 @@ Billed beside the hour:
 - **Endpoint processing**, 0.01 USD/GB: 2.86 GB on 2026-10-12, the day of the first image build (0.029),
   and 0.21 GB on 2026-10-13.
 - **AWS Config**, per cycle rather than per hour: the GitLab row of the table above, 0.21-0.38.
-- **The hub**, when no other session holds it: 0.0206/h, the `t3.nano` 0.0052, the `t3.micro` 0.0104 and
+- **The hub**, when no other session holds it: 0.0310/h, the `t3.nano` 0.0052, the `t3.small` 0.0208 and
   the proxy's public IPv4 0.005. The proxy sets `associate_public_ip_address`, billed while the host runs:
   `PublicIPv4:InUseAddress` read twice the hosts' running hours on 2026-10-12. The VPN's Elastic IP bills
   0.005/h stopped or running, a floor line.
@@ -413,7 +413,7 @@ What the row leaves out, and why:
 
 - **The account** bills nothing (§10); what it costs is one slot of the account quota, the reason the
   stage is blocked.
-- **The hub** serves every unit, so a unit adds nothing to its 0.0206/h (the GitLab session's hub
+- **The hub** serves every unit, so a unit adds nothing to its 0.0310/h (the GitLab session's hub
   line above); the peering and zone rows a vend adds there are free.
 - **What the unit's people run**: a space at 0.050/h on `ml.t3.medium` (above) and its volume at 0.112
   per GB-month with every app stopped (§8). Unit 1 also carries Stage 5b's warehouse, which step 1's
@@ -987,7 +987,7 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.xlarge` (4 vCPU, 16 GiB) — measured 2026-10-24 with the Price List Query API (`USW2-BoxUsage:t4g.xlarge`, offer published 2026-10-23T22:13:55Z), the one size above GitLab's that `production/tooling/` admits | 0.2144 | 0.1344 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
-| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4); read again 2026-11-21 with `t3.micro`'s row, both unchanged (offer published 2026-11-21T00:48:16Z), for the proxy's size (`production/proxy/`) | 0.0336 | 0.0208 | 1.62 |
 | EC2 `t3a.micro` (1 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.micro`, the same offer), the size below the deploy and test runners | 0.0151 | 0.0094 | 1.61 |
 | EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
 | EC2 `t3a.medium` (4 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.medium`), the size above the deploy and test runners that both variables admit | 0.0605 | 0.0376 | 1.61 |
