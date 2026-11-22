@@ -37,8 +37,9 @@ the plan.
 | Sandbox 1 | `10.20.0.0/16` | Sandbox | SMUS project apps, the probes |
 | **VPC-SharedServices** | `10.30.0.0/16` | Production | GitLab, Pages, the build runner — *the VPC Stage 3 built, re-labelled at 6c step 1.1* |
 | **VPC-Networking** | `10.31.0.0/16` | Production | **the only internet gateway that serves a host**; the WireGuard host; the Squid proxy |
-| **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers — *nothing runs in it yet* |
+| **VPC-Workloads** | `10.32.0.0/16` | Production | the production SageMaker runtime, MWAA Serverless workers; Stage 9's proof job ran in it on 2026-10-23 |
 | Staging | `10.50.0.0/16` | Staging | the runtime target — **the CIDR is inherited, not re-cut**: a VPC CIDR is immutable, and the `[P]` gateway-endpoint ids the lake names survive with it |
+| Data Governance | `10.70.0.0/16` | Data Governance | **applied 2026-10-26** (Stage 6f step 11.2, `awsds-data-vpc`): the lake-publishing pilot's. The managed `Tooling` template takes a VPC, and its security group and Glue connections are the VPC's only tenants. No internet route, no peering, no interface endpoint |
 | WireGuard peers | `10.90.0.0/24` + `fd90::/64` | — | in **no** route table except VPC-Networking's public tier (`NT-4` asserts both halves) |
 
 `10.40.0.0/16` is released and stays unallocated. `10.60.0.0/16` is reserved for the `shared` platform
@@ -64,6 +65,7 @@ module's arithmetic:
 | **VPC-Networking** | `10.31.0.0/18` · `10.31.64.0/18` | `10.31.128.0/20` · `10.31.144.0/20` | `10.31.160.0/24` · `10.31.161.0/24` |
 | **VPC-Workloads** | `10.32.0.0/18` · `10.32.64.0/18` | `10.32.128.0/20` · `10.32.144.0/20` | `10.32.160.0/24` · `10.32.161.0/24` |
 | **Staging** | `10.50.0.0/18` · `10.50.64.0/18` | `10.50.128.0/20` · `10.50.144.0/20` | `10.50.160.0/24` · `10.50.161.0/24` |
+| **Data Governance** | `10.70.0.0/18` · `10.70.64.0/18` | `10.70.128.0/20` · `10.70.144.0/20` | `10.70.160.0/24` · `10.70.161.0/24` |
 
 ---
 
@@ -71,17 +73,18 @@ module's arithmetic:
 
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
-| **WireGuard host** `awsds-prod-vpn` | VPC-Networking · public · az1 | `10.31.160.22` (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
-| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
+| **WireGuard host** `awsds-prod-vpn`, `t3.nano`: D4's default, which governs again since 2026-11-22 (#356, Stage 12 decision due 4) after `t3.medium` from 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.195`, read 2026-11-22 (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
+| **Squid proxy** `awsds-prod-proxy`, `t3.small`, the slice's default since 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.128`, read 2026-11-22 (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
 | **SMUS project app ENIs** | Sandbox · private · both AZs offered | one per running app | created by the blueprint, not by this repository |
-| **Probe hosts** | Sandbox/Staging/Production, private + isolated | `[E]`, new every session | `[E]` the three `probes/` slices |
+| **Probe hosts** | Sandbox/Production, private + isolated | `[E]`, new every session | `[E]` `sandbox/probes/` and `production/probes/` |
 | **GitLab** `awsds-prod-gitlab` | **VPC-SharedServices · private** · az1 | one primary private IPv4, kept across stop/start; `gitlab.awsds.internal` and `*.awsds-pages.internal` both carry it (Stage 7 step 1.4) | `[D]` `production/tooling/` |
-| **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 7 step 6.1) | `[E]` `production/runners/` |
+| **Build runner** `awsds-prod-runner` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up BUILD=1` (Stage 7 step 6.1 and decision 5) | `[E]` `production/runners/` |
 | **Deploy runner** `awsds-prod-runner-deploy` and **test runner** `awsds-prod-runner-test` | **VPC-SharedServices · private** · az1 | `[E]`, new every `make gitlab-up` (Stage 8 step 4.3 and decision 11) | `[E]` `production/runners/` |
-| **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path**. From a space on 2026-10-10 it answered two private addresses, the workgroup's own managed-endpoint ENIs, never the `redshift-serverless` API endpoint's | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
+| **Redshift Serverless workgroup** `awsds-sandbox-warehouse` | Sandbox · **private · both AZs** | ENIs in both private subnets, new on every `make up ENV=sandbox GROUPS=redshift`; reached at `awsds-sandbox-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439`, a name the service derives and which resolves to those ENIs — **no interface endpoint is involved in the 5439 path**. From a space on 2026-10-10 it answered two private addresses, the workgroup's own managed-endpoint ENIs, never the `redshift-serverless` API endpoint's | `[E]` `sandbox/warehouse-compute/`, security group `[P]` in `sandbox/warehouse/` |
+| **Redshift Serverless workgroup** `awsds-prod-warehouse` | **VPC-Workloads · private · both AZs** | **the namespace since 2026-10-23; the workgroup raised 2026-10-24 00:23 to 00:47 UTC for Stage 9 9.3, and 2026-10-25 01:38 to 06:12 UTC for v0.4.2's DDL, load and datashare** (step 9.1): ENIs in VPC-Workloads' two private subnets, new on every `make up`, reached at `awsds-prod-warehouse.<accountId>.us-west-2.redshift-serverless.amazonaws.com:5439` by `awsds-prod-job-exec`'s jobs alone; the deploy runner has no path to it, VPC-SharedServices and VPC-Workloads not peering, so its door is the Data API (Stage 9 9.4) | `[E]` `production/warehouse-compute/`, security group `[P]` in `production/warehouse/` |
 
 **No NAT gateway appears in this table, in any VPC** ([D38](plan/decisions/D38-single-egress-hub.md)).
 
@@ -98,12 +101,17 @@ module's arithmetic:
 | `production/vpn/` | `[D]` | the WireGuard host, `wg0` (both families), the `10.90.0.0/24` return route, `vpn.awsds.internal` |
 | `production/proxy/` | `[D]` | the Squid host with its own public address, `proxy.awsds.internal`, the reconfigure association |
 | `sandbox/egress/` · `staging/egress/` · `production/egress/` · `production/workloads-egress/` | `[E]` | interface endpoints; in the two **compute** VPCs and VPC-Workloads, the DNS Firewall |
-| `sandbox/probes/` · `staging/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
+| `sandbox/probes/` · `production/probes/` | `[E]` | the throwaway hosts that measure what a `describe` cannot |
 | `production/tooling/` | `[D]` | the GitLab host, its data volume, the `gitlab.awsds.internal` and `*.awsds-pages.internal` records, GitLab's security group **and the runners' group**, declared here so GitLab's HTTPS rule never names an `[E]` object (Stage 7 steps 1.2, 1.4) |
 | `production/runners/` | `[E]` | the build, deploy and test runners, in the group `tooling/` declares - and no route at all, like the buildbox the build runner replaced at Stage 7 step 6.5 |
+| `data-governance/publishing/` | `[P]` | **applied 2026-10-26** (Stage 6f step 11.2): Data Governance's VPC 3×2 through the `vpc` module with `public_internet_route = false`, its two gateway endpoints and its flow log, and no peering (a `check` block holds `peerings` empty). Its tenants are the publishing project's `Tooling` stack, a security group and two Glue network connections, which no launch in the Data OU ever uses |
 | `sandbox/sagemaker/` | `[P]` | **no network object of its own** — it hands the blueprint the VPC, the private subnets and their zone ids, which is what makes every project app land where §5 describes |
+| `staging/studio/` · `production/studio/` | `[P]` | **no network object of its own**, applied 2026-11-11 ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.4): each hands the deployment project's blueprints the account's compute VPC and its private subnets, Staging's `foundation/` VPC and Production's VPC-Workloads. A project environment there creates a security group of its own and a Glue network connection per subnet, which a workflow's worker, its Glue job and its processing job use: `deploy-staging`'s and `deploy-production`'s exist since 2026-11-11 (step 4.6; §9) |
+| `production/sagemaker/` · `staging/sagemaker/` | `[P]` | the job security group `awsds-<env>-jobs` and the Glue network connection on the first zone's private subnet, in VPC-Workloads and Staging's VPC (Stage 9 decision 12 (a), applied 2026-10-22): every pipeline-submitted Glue and SageMaker job runs in it |
 | `sandbox/warehouse/` | `[P]` | the warehouse's **security group** and one ingress rule per admitted SMUS project. The group is here rather than in the compute slice because it is free and is referenced by the workgroup rather than the reverse, so it survives a `make down` unattached |
 | `sandbox/warehouse-compute/` | `[E]` | the **workgroup**, which is what puts ENIs in the two private subnets. Destroyed by `make down ENV=sandbox`: Redshift Serverless has no pause, so *off* means *absent* |
+| `production/warehouse/` | `[P]` | **applied 2026-10-23** (Stage 9 step 9.1): the governed warehouse's **security group** `awsds-prod-warehouse` and its ingress rules: TCP/5439 from the jobs' group `awsds-prod-jobs`, group-to-group, with the matching egress rule on `awsds-prod-jobs` since 2026-10-25 (Stage 9 9.4), and TCP/5439 from the deployment project's security group, **applied 2026-11-12** (`sgr-021fb49c3c05b5697`, Stage 19 step 4.11); the group is here for Sandbox's reason, free and referenced by the workgroup, so it survives a `make down` unattached |
+| `production/warehouse-compute/` | `[E]` | **first applied 2026-10-24 for Stage 9 9.3's SQL (2 added at 00:23, 2 destroyed by `make down ENV=production` at 00:47 UTC)**: the governed **workgroup**, which puts ENIs in VPC-Workloads' two private subnets. Destroyed by `make down ENV=production`; raised by a sitting that uses the warehouse: 9.3's, and 2026-10-25's DDL, load and datashare with `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` |
 
 ---
 
@@ -115,7 +123,7 @@ module's arithmetic:
                          │  ONE internet-gateway route in the whole estate
                          ▼
         ┌──────────── VPC-Networking · 10.31.0.0/16 ─────────────┐
-        │  public az1:  WireGuard 10.31.160.22   Squid 10.31.160.181
+        │  public az1:  WireGuard 10.31.160.195  Squid 10.31.160.128
         │               wg0 10.90.0.1/24, fd90::1/64
         │  the ONLY route for 10.90.0.0/24, in this VPC's public table
         └───┬──────────────┬───────────────┬──────────────┬──────┘
@@ -164,12 +172,20 @@ Three paths, and reading them apart is what makes a failure diagnosable.
 |---|---|---|
 | **AWS APIs with an endpoint** | this VPC's interface endpoints, private DNS on | 0.010/h each + 0.010/GB |
 | **S3 and DynamoDB** | the `[P]` **gateway** endpoints, by prefix-list route | **free**, and this is where an ECR pull's layers come from |
-| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.micro`; **no per-GB processing charge at all** |
+| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.small`; **no per-GB processing charge at all** |
 
 **There is no fourth path.** With no default route, a name the app resolves and then tries to reach
 directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** from that VPC's own
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
+
+**A raw public address matches no name** (`TM-01`, controlled since 2026-11-22). The plane's
+`dstdomain` carries `-n` since the proxy's replacement of 2026-11-21, so Squid no longer matches a request
+naming an address by the name a reverse lookup of it returns, and the address falls to `deny all`. Without
+the flag it did: on 2026-11-21, from a space, `CONNECT 54.213.164.60:443`, an address of
+`airflow-serverless.us-west-2.api.aws` whose record is `ec2-54-213-164-60.us-west-2.compute.amazonaws.com`,
+read `200 TCP_TUNNEL` while that name is refused. On 2026-11-22 the same request read `403 TCP_DENIED`
+with the record unchanged, beside `pypi.org`'s `200` from the same space.
 
 **The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
@@ -187,9 +203,15 @@ proxy, and a group left off times out on its names instead. That literal is gene
 output, `no_proxy_all_groups` (`vpc-egress-v0.17.0`), reads every declarable service's names from the
 endpoint-service catalog at plan time, which returns the names `dns_entry` carries (compared on seven
 services, 2026-10-10), so it is the same whatever `GROUPS=` an apply named. The `mlflow` group of
-`vpc-egress-v0.18.0` (Stage 17, written 2026-10-17, not applied) is outside the 70 entries until an
-image carries the next literal: the MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is
-under `.app.aws`, so a space on the 70-entry image is refused for it with a 403 (Stage 17 decision 4).
+`vpc-egress-v0.18.0` (Stage 17) is inside the 72 entries of `default-v0.9.1` (`DE-5`, 2026-10-25): the
+MLflow plugin's host, `mlflow.sagemaker.<region>.app.aws`, is under `.app.aws`, which the proxy refuses
+to a space with a 403, so an image without the name loses the call (Stage 17 decision 4). The `mwaa`
+group, reserved and empty until `vpc-egress-v0.19.0` (2026-10-26), carries `airflow-serverless`, whose
+only name is `airflow-serverless.<region>.api.aws`: without the endpoint a space's MWAA Serverless calls
+reach the proxy and are refused, `403 TCP_DENIED` five times for the CI/CD CLI's `CreateWorkflow` on
+2026-10-26, so a session that deploys from a space is `make up ENV=sandbox ONLY=egress GROUPS=mwaa`. The
+name joins the image's literal (73 entries) with the next house image; until then the session exports it
+beside the image's list.
 
 **A missing entry fails two different ways and only one of them is visible:**
 
@@ -204,6 +226,16 @@ no private DNS at all, so no reading can produce them, and omitting them sends e
 on `*.dkr.ecr.<region>.amazonaws.com`, `emr-dashboard` on `*.emrappui-prod.…` — which is why none of
 this is written by hand. A **wildcard** name is emitted in **both** spellings, bare and dot-prefixed,
 because the clients disagree about which one covers a subtree.
+
+**Amazon Q is the one AWS dependency of a space that `NO_PROXY` cannot keep private.** Its endpoint
+service, `com.amazonaws.us-east-1.codewhisperer`, exists in `us-east-1` alone, and AWS PrivateLink's
+cross-Region catalog read from `us-west-2` (`describe-vpc-endpoint-services --service-regions
+us-east-1`, 2026-10-18) offers 92 `us-east-1` services and not this one. So the extension's calls take
+the third path, by name: on 2026-09-12 every name it used, `codewhisperer.us-east-1.amazonaws.com` and
+`aws-language-servers.us-east-1.amazonaws.com` among them, was `200 TCP_TUNNEL` through the compute
+plane's `.amazonaws.com` entry, and `q:SendMessage` reached CloudTrail `us-east-1` from the proxy's
+address with no `vpcEndpointId`. The call is refused today by the Control Tower Region ceiling, not by
+the network, and the path stays the same whichever way 6d decision due 9 goes (6d step 10.1).
 
 ---
 
@@ -261,7 +293,8 @@ axis has its own control where it is load-bearing: the **S3 gateway policy** wit
 bucket allow-list. One of its AWS-owned families is measured rather than documented:
 `mwaa-serverless-code-files-*-<region>-prod`, the bucket a MWAA Serverless worker's environment
 preparation reads a workflow's code from, as `airflow-serverless.amazonaws.com`, through this endpoint
-(`vpc-v0.4.0`, Sandbox only since 2026-10-11, 6i decision 7). A refusal by this policy is visible only
+(`vpc-v0.4.0`: Sandbox since 2026-10-11, 6i decision 7, and Staging since 2026-10-19, for Stage 18's
+4.4, whose two runs that day passed the preparation; Production's `foundation/` and `networking/` are on `vpc-v0.3.1` and lack it, `workloads/` is on `vpc-v0.4.0` since 2026-10-22 for Stage 10 1.2, and `EG-4` reads it as `mwaa-code`). A refusal by this policy is visible only
 as a CloudTrail network activity event with `errorCode` `VpceAccessDenied`. The trail 6i built to record
 them, `sandbox/endpoint-audit/`, ran from 2026-10-11 to 2026-10-12 and is recoverable from `c0baddd`.
 
@@ -284,7 +317,10 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | `awsds-prod-gitlab` `[D]` | TCP/443 from **three sources and nothing else** (Stage 7 step 1.2): the WireGuard host's group `awsds-prod-vpn` — a same-account, cross-VPC group reference over the peering, since the host masquerades every tunnel packet not bound for the proxy and a laptop arrives as its address; the Interactive **private tiers** by CIDR (`10.20.0.0/18`, `10.20.64.0/18` today, generated from the allocation table), where a SMUS project's app ENI is the source of the INT-09 clone; and the runners' group. No port 22, no port 80 |
 | `awsds-prod-runner` `[E]`-attached, `[D]`-declared | **nothing** — no ingress rule at all; declared in `production/tooling/` and attached by `production/runners/` to all three runners |
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
+| `awsds-prod-jobs` · `awsds-staging-jobs` `[P]` | TCP from **its own group**, every port: Glue's requirement for a connection's group, so a job's driver and executors reach each other. Egress to its own group, TCP/443 to the VPC's interface-endpoint group and TCP/443 to the S3 prefix list, and in Production TCP/5439 to the warehouse's group `awsds-prod-warehouse`, a rule `production/warehouse/` writes beside its ingress (applied 2026-10-25, Stage 9 9.4: the load job's connection timed out without it). Applied 2026-10-22 (Stage 9 decision 12 (a)); the governed warehouse's `5439` ingress names it (Stage 9 step 9.1) |
+| `datazone-<project>-dev`, blueprint-made, one per deployment project: Staging's and VPC-Workloads' measured 2026-11-11 | all traffic from itself; outbound all to `0.0.0.0/0`, which the subnets' routes narrow to the VPC itself, its interface endpoints, the S3 and DynamoDB gateways and, over the peering, VPC-Networking, whose proxy refuses these two ranges everything (the planes `production-workloads` and `staging-foundation`, no entry); routes read 2026-11-11 on both targets' subnets. The `Tooling` environment creates it outside Terraform ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.6), with two Glue network connections, one per private subnet |
 | `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
+| `awsds-prod-warehouse` `[P]`, `sg-0f018ef6c4848a9a3` since 2026-10-23 | TCP/5439 from **the jobs' group `awsds-prod-jobs`**, group-to-group and never a CIDR: the two subnets also hold the MWAA Serverless workers (Stage 10), and a CIDR would admit them (Stage 9 step 9.1). **No egress rule at all**, for Sandbox's reason. 6h's per-project layer does not exist here. The deployment project Production holds since 2026-11-11 is admitted since 2026-11-12 by a rule of its own (`sgr-021fb49c3c05b5697`, read back that day beside the jobs' rule), TCP/5439 from its security group `datazone-<project>-dev`, group-to-group: the warehouse workflow's job runs on the project's Glue connections, which carry that group (Stage 19 step 4.11, decision 16 (b)). The project's group admits itself inbound and every destination outbound (read 2026-11-12), so the path needs no egress rule |
 
 **The second world-open rule closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is destroyed,
 the estate holds **one** world-open rule again, and `VP-3` reads **every** account's security groups to
@@ -319,14 +355,30 @@ Access prompt** — the two surfaces that demanded the grant on 2026-08-26. A pr
 its whole subtree, so a client resolving through a VPC full of endpoints inherited every one of their
 names (Lessons 40-43).
 
-**The DNS Firewall** is in the two **compute** VPCs and in VPC-Workloads (Stage 9 step 3.3a), and its
-job is **closing the recursive resolver as an exfiltration channel** rather than filtering the internet,
-which the proxy does. The compute VPCs' allow-list is **fourteen** entries — AWS's own namespaces and
-this estate's private zones. VPC-Workloads' is **four**, AWS's namespaces only, so `gitlab`, `proxy`
-and every `prod.awsds.internal` name answer NXDOMAIN there: GitLab is in a VPC it has no peering to,
-and the proxy refuses its plane everything. VPC-Workloads' six interface endpoints are the jobs' set:
-`sts`, `logs`, `kms`, `glue`, `sagemaker.api` and `secretsmanager`. `VPC-Networking` carries none: the
-proxy has to resolve.
+**The DNS Firewall** is in Sandbox's and Staging's VPCs and in VPC-Workloads (Stage 9 steps 3.3a and
+4.3a), and its job is **closing the recursive resolver as an exfiltration channel** rather than
+filtering the internet, which the proxy does. Sandbox's allow-list is **fourteen** entries — AWS's own
+namespaces and this estate's private zones. VPC-Workloads' and Staging's are **four**, AWS's namespaces
+only, so `gitlab`, `proxy` and every `prod.awsds.internal` or `staging.awsds.internal` name answer
+NXDOMAIN there: GitLab is in a VPC neither peers with, and the proxy refuses both planes everything.
+The two carry the same interface endpoints, the jobs' set: `sts`, `logs`, `kms`, `glue`,
+`lakeformation`, `sagemaker.api` and `secretsmanager`, Staging's since 4.3a's re-cut (written
+2026-10-22, the seven read `available` by the pipeline's `staging-check` on 2026-10-25) against the four
+a worker called there on 2026-10-19 (Stage 18 4.4), and `lakeformation` in both for decision 12 (a)'s
+jobs, which vend Lake Formation credentials from inside the VPC. Both slices also name `datazone` since
+2026-11-11 (Stage 19 step 4.4), an eighth endpoint at each one's next `make up`: a deployment project's
+publishing task and its Glue job's lineage posts call the domain from inside the VPC, and without the
+endpoint a post read *"Network is unreachable"* (Stage 18 7.1, 2026-10-19). Both name `athena` since
+2026-11-18 (Stage 20 decision 15 (a)), a ninth endpoint at each one's next `make up`: `app-dbt`'s
+transform task runs dbt, which queries Athena from the deployment project's subnets, each plan of that
+day reading 18 to add where 17 was. The allow-lists stay as they are, since `*.amazonaws.com.` and
+`*.api.aws.` cover its names. Each shadows nothing a client needs, since no client resolves in either
+VPC. The workers ran on them from both AZs' subnets, with no `ecr.*` and no `monitoring` endpoint, in
+every Production app-etl and train run read on 2026-10-25 (Stage 10 verification xvi). VPC-Workloads'
+slice also takes an optional group per apply since 2026-10-23, `make up ENV=production GROUPS=redshift`
+adding the `redshift-serverless` endpoint for a job that calls the governed warehouse's API from inside
+the VPC (Stage 9 step 9.1), the way `sandbox/egress/` takes its groups; Staging's slice takes none.
+`VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this
 list and found two endpoints both compute VPCs pay for hourly answering on families it did not carry:
@@ -335,14 +387,17 @@ Both were NXDOMAIN. `app.aws` and `on.aws` joined the list with their apexes, on
 `sagemaker.aws` there. One consequence: `on.aws` also makes `dzd-<id>.sagemaker.<region>.on.aws` — the
 Unified Studio domain's own URL — resolvable, which is the DNS block 6d step 8.6 could attribute to
 nothing. **Resolving is not reaching**: that name has no endpoint, so it leaves as a proxy request and
-comes back a 403 naming the host.
+comes back a 403 naming the host. The user allowed it by its exact name on 2026-11-17 (6d decision 6); it
+is in `hub-anchors.tf` since 2026-11-18 and in the parameter since 2026-11-20 (version 12, the Sandbox
+plane 41 entries to 42), applied with the hub down: the host carries it from the association's first run
+after `make hub-up`, which `PX-3` reads.
 
 **The proxy's filters are the estate's egress policy, and they are two kinds of list:**
 
 | plane | source | mode | entries |
 |---|---|---|---|
 | `tunnel` | `10.90.0.0/24` | **`open`** — everything permitted, everything logged | 0 (a *deny* list, empty by decision) |
-| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 41 † ‡ ¶ ‖ |
+| `sandbox-foundation` | `10.20.0.0/16` | `allowlist` — SageMaker's | 42 † ‡ ¶ ‖ |
 | `production-foundation` | `10.30.0.0/16` | **`open`** — the build plane † | 0 (a *deny* list, empty by decision) |
 | `production-workloads` · `staging-foundation` | `10.32` · `10.50` | `allowlist` | 0 — **refuse everything**, by decision |
 
@@ -505,7 +560,9 @@ its record (Lesson 18).
 - **Any interface endpoint in VPC-Networking.** The invariant that keeps the client plane resolving
   publicly.
 - **IPv6 anywhere in a VPC.** All five are IPv4-only, measured — which is why the tunnel's ULA rejects
-  rather than forwards.
+  rather than forwards. Stage 6f step 11's sixth is IPv4-only as written.
+- **A route or a peering into Data Governance's VPC** (Stage 6f step 11): it exists for the `Tooling`
+  template's parameters, and the lake's consumers reach the lake through their own endpoints, as before.
 - **`sandbox/probes/`'s isolated-tier default route**, which the build host used to create. The build
   host moved and the route is gone.
 
@@ -537,4 +594,5 @@ is no fourth path"*, met from inside an app.
 | `./aws/dns-allowlist.py` | every name on every proxy plane, re-resolved — `DN-1`..`DN-4` | before adding a name, and when one stops working |
 | `./aws/vpn.py` | the tunnel host, the EIP, the world-open rule, no network condition on a permission set — `VP-1`..`VP-9` | any VPN question, `--on-host` for what the interface holds |
 | `./aws/egress.py` | the interface endpoints as deployed | while an `egress/` slice is up — it is vacuous otherwise |
+| `./aws/vending.py` | one Sandbox unit's share of this picture: its allocation, both peerings routed both ways, its child zone and the apex, its proxy plane and 3128 rule — `VN-2`..`VN-5` | before and after a vend (Stage 14); the hand-built unit is its baseline |
 | `./scripts/check-network-doc.py` | this file against the code | every commit; it decides the mechanical half only |

@@ -10,7 +10,36 @@ the bundle; the pipeline stays the deployer here. The image carries the dependen
 processing task's code joins as class (2d) (D41 item 7), and the execution role writes its application's
 result and inbox prefixes (D41 item 10).
 
-**In one line:** What crosses the gate into a headless deployment target: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there.
+**Amended 2026-11-11 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19 (c)):** the
+`test` stage is retired. The CI/CD CLI deploys the application to the `dev` project alone, and the
+pipeline's `bundle` job makes the bundle with nothing deployed in Sandbox.
+
+**Amended 2026-11-17 (user, [Stage 17](../stages/stage-17-sandbox-machine-learning.md) decisions 16 (b)
+and 21 (b), [Stage 10](../stages/stage-10-orchestration-promotion.md) decision 22 as revised):** a
+trained model joins the classes as **(7)**, the one class the repository does not carry. The pipeline's
+`bundle` job reads the archive and its `model.json` from one prefix of the application's `dev` project,
+a guard of the pipeline compares the mark `model.json` holds with the same value computed over the tag's
+training code and sample, and the archive's SHA-256 names it in every stage. Class (6) changes with it
+for such an application: each target holds a group, a task of the workflow proposes the release's
+version there and the account's deploy role approves it, and Staging reads nothing of Production's
+registry. Its training code runs in a workflow of the `dev` project alone, so the sentence below on a
+model's training in Production describes `app-etl`, whose model keeps that shape until it retires in a
+release of its own after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on
+2026-11-17; Stage 17 step 9.11). Planned by Stage 17 pass 9, nothing applied.
+
+**Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b) and item
+31, [D26](D26-unified-studio.md)'s association):** the targets are no longer headless. Each is associated
+with the domain since 2026-11-11 and holds a deployment project, and the pipeline's jobs run the CI/CD
+CLI's deploy of the bundle into it (`v0.5.2` in Production since 2026-11-16). Release T's path, the
+per-workflow role and `awscc_mwaaserverless_workflow`, is retired (item 31, applied 2026-11-17): the
+workflows run as the project role under the project key, the chains are `[P]` slices the user applies
+(decision 23 (a)), the lint reads the repository's `manifest.yaml` and `workflows/` and no rendered copy,
+and item 5's retention is decision 27 (d)'s account-level policy (`EXC-25`). Classes (2c) and (2d) lost
+their write-once prefix with release T: the CLI copies the code into the project's `shared/<app>/`, which
+the project role can rewrite (decision 28, `TM-32`). The text below keeps release T's shape where it says
+*the pipeline creates* and *no domain*, until Stage 19 step 6.2 rewrites it.
+
+**In one line:** What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
 
 **Related decisions:** [D7](D07-orchestration.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D22](D22-data-governance-account.md), [D25](D25-drop-box-consumer.md), [D26](D26-unified-studio.md), [D41](D41-sagemaker-application.md)
 
@@ -24,9 +53,9 @@ D26 forces the question: the workflow is authored in a project of the unified do
 
 **The classes added 2026-10-13.** **(2b)** the workflow's operator code package: the `Code` object a `PythonOperator` or `BashOperator` task runs on the worker, which the service copies at each save and versions with the definition, so it is pinned by its S3 `VersionId` like (2); Stage 8 step 5.6 builds and checks it, as 6d step 4.5 asked. **(2c)** a Glue job's script and every file its arguments name (`--extra-py-files`, a wheel in `--additional-python-modules`): Glue reads them from S3 when each run starts and takes no version, so no pin holds them and a job runs whatever the key holds then. The job is declared by the application's Terraform and names a script under the release's own prefix; how that prefix is kept from changing, against roles that can write its bucket, is Stage 10 decision 12. A Visual ETL flow reaches a deployment target only as (2c): its `.vetl` and its portal schedule stay in the project, and the script its editor generates is what graduates.
 
-**The class added 2026-10-15.** **(2d)** a processing task's code: the application's `src/`, which the job reads as its code input on the application image (1) that carries its dependencies (D41 item 7, Stage 10 decision 7). A `ProcessingInput` names a prefix the job reads at each run and takes no version, so (2d) lies under the release's own prefix with (2c), written once by the release job, kept from change by Stage 10 decision 12's statement and checked against the release's manifest by the lint's rule (h) of Stage 8 step 5.6.
+**The class added 2026-10-15.** **(2d)** a processing task's code: the application's `src/`, which the job reads as its code input on the application image (1) that carries its dependencies (D41 item 7, Stage 10 decision 7). A `ProcessingInput` names a prefix the job reads at each run and takes no version, so (2d) lies under the release's own prefix with (2c), written once by the release job, kept from change by Stage 10 decision 12's statement and meant to be checked against the release's manifest by rule (h) of Stage 8 step 5.6, which the pinned lint does not implement (read 2026-10-18 at `3c1708e`): the comparison is Stage 10 step 2.4's, the release job reading `src/` back against the manifest.
 
-**What starts code in a deployment target.** Nothing runs code by hand in Staging or Production (D17), so whatever must run there is started by a workflow. The workflow is the activation, and the code its tasks start is the content: the Python project, run as a SageMaker job on the application image (1) with its code as the job's input (2d); orchestration code on the worker (2b), never a data path; a Glue script (2c) for a step that reads or writes governed data, since Lake Formation vends to Glue and never to a SageMaker job (Stage 9 step 3.1). A data scientist therefore promotes a notebook's logic as code plus the task that calls it, and a workflow may hold a single task; the notebook itself does not graduate (6d decision due 14). Structure is applied rather than started: a governed schema's DDL runs in the pipeline at deploy time (Stage 9 step 9.4), a governed table and its LF-Tags are declared in Terraform before the first write (Stage 9 step 2.1), and the jobs a workflow starts are declared in the application's slice. A model follows the rule by another path: its training code runs in a workflow in Production, and the pipeline registers the version a person approves (Stage 10 step 5). The SageMaker Unified Studio CI/CD CLI draws the same line, separating a manifest's content from its activation, which is a workflow or tests; it deploys the application from its repository into the `dev` and `test` projects and makes the bundle, and the pipeline deploys the bundle here (D41).
+**What starts code in a deployment target.** Nothing runs code by hand in Staging or Production (D17), so whatever must run there is started by a workflow. The workflow is the activation, and the code its tasks start is the content: the Python project, run as a SageMaker job on the application image (1) with its code as the job's input (2d); orchestration code on the worker (2b), never a data path; a Glue script (2c) for a step that reads or writes governed data, since Lake Formation vends to Glue and never to a SageMaker job (Stage 9 step 3.1). A data scientist therefore promotes a notebook's logic as code plus the task that calls it, and a workflow may hold a single task; the notebook itself does not graduate (6d decision due 14). Structure is applied rather than started: a governed schema's DDL runs in the pipeline at deploy time (Stage 9 step 9.4), a governed table and its LF-Tags are declared in Terraform before the first write (Stage 9 step 2.1), and the jobs a workflow starts are declared in the application's slice. A model follows the rule by another path: its training code runs in a workflow in Production, and the pipeline registers the version a person approves (Stage 10 step 5). The SageMaker Unified Studio CI/CD CLI draws the same line, separating a manifest's content from its activation, which is a workflow or tests; it deploys the application from its repository into the `dev` project and makes the bundle, and the pipeline deploys the bundle here (D41).
 
 ---
 

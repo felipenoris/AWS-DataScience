@@ -76,6 +76,10 @@ data "aws_iam_policy_document" "namespace_trust" {
 #   redshift-data:*          absent until 6h's credential answer needs it. A plain JDBC/psycopg
 #                            connection over 5439 does not touch the Data API at all, so this is
 #                            decided by a measurement rather than added on spec (Lesson 41).
+#                            AWS's SageMakerStudioProjectUserRolePolicy grants the family to the project
+#                            role on a workgroup tagged with its project (simulated 2026-10-18, 6h 5.3),
+#                            so the omission here closes nothing for that role; the access role, which
+#                            carries no AWS policy, has no Data API path.
 resource "aws_iam_policy" "project_warehouse" {
   for_each = var.projects
 
@@ -334,7 +338,7 @@ resource "aws_iam_policy" "project_access_portal" {
 }
 
 data "aws_iam_policy_document" "project_access_portal" {
-  # checkov:skip=CKV_AWS_356:the sqlworkbench and tag actions below are NOT resource-scopable - AWS's own AmazonRedshiftQueryEditorV2NoSharing puts them in a statement it names `NonResourceLevelPermissions` with Resource `*`, and tag:GetResources is an account-wide API. The constraint is the role's trust policy: only this project's role can assume it, with the project id as the external id
+  # checkov:skip=CKV_AWS_356:the sqlworkbench and tag actions below are NOT resource-scopable - AWS's own AmazonRedshiftQueryEditorV2NoSharing puts them in a statement it names `NonResourceLevelPermissions` with Resource `*`, tag:GetResources is an account-wide API, and lakeformation:GetDataAccess takes no resource type, Lake Formation's grants being its scope. The constraint is the role's trust policy: only this project's role can assume it, with the project id as the external id
   # checkov:skip=CKV_AWS_111:the writes here are query-editor session state (tabs, workspace settings) and query execution, none of which takes a resource ARN. The owner-scopable half - saved queries, notebooks, charts - is deliberately NOT granted, which is what would have carried a resource constraint
   for_each = var.projects
 
@@ -393,6 +397,62 @@ data "aws_iam_policy_document" "project_access_portal" {
     ]
   }
 
+  # A governed table Lake Formation shares to this account from the lake's (Stage 9 9.5's datashare,
+  # registered there as the federated database governed_trades), read through the warehouse's consumer
+  # database of the same name. The Redshift consumer calls Glue as THIS role, the session's IAM
+  # principal, and never as the project role the database user is named after (refused 2026-10-25,
+  # glue:GetTable); Lake Formation's grant to this role decides which tables, and this decides only
+  # that the catalog may be read.
+  statement {
+    sid     = "ReadTheGovernedShareCatalog"
+    effect  = "Allow"
+    actions = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
+    resources = [
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:catalog",
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:database/governed_trades",
+      "arn:aws:glue:${var.region}:${local.lake_catalog_id}:table/governed_trades/*",
+    ]
+  }
+
+  # A product the project subscribes to and reads in place (Stage 19 pass 5, variables.tf
+  # `subscribed_products`). Redshift calls Glue on the resource link in this account and on its
+  # target in the producer's, as this role. DataZone names a link after its target (Lesson 85), so
+  # the link's half names the subscription target database's tables by wildcard; the target's half
+  # names the producer's one table. Lake Formation's grants decide which rows either half reaches.
+  dynamic "statement" {
+    for_each = length(lookup(var.subscribed_products, each.key, [])) > 0 ? [var.subscribed_products[each.key]] : []
+
+    content {
+      sid     = "ReadTheSubscribedProductsCatalog"
+      effect  = "Allow"
+      actions = ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables"]
+      resources = distinct(flatten([
+        for p in statement.value : [
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/${p.link_database}",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:table/${p.link_database}/*",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:catalog",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:database/${p.producer_database}",
+          "arn:aws:glue:${var.region}:${local.producer_catalog_id}:table/${p.producer_database}/${p.producer_table}",
+        ]
+      ]))
+    }
+  }
+
+  # The product's data is in S3 under a location Lake Formation holds, so Redshift asks Lake
+  # Formation for credentials as this role. The governed share never needed it: its data is in a
+  # Redshift datashare.
+  dynamic "statement" {
+    for_each = length(lookup(var.subscribed_products, each.key, [])) > 0 ? [each.key] : []
+
+    content {
+      sid       = "LakeFormationVendsTheSubscribedProductsData"
+      effect    = "Allow"
+      actions   = ["lakeformation:GetDataAccess"]
+      resources = ["*"]
+    }
+  }
+
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes
   # from a tag key and value. UNEXERCISED as of 2026-10-10 - the trail shows no `tag:GetResources`,
   # and the sqlworkbench refusals may have stopped the flow before it got here. The condition is
@@ -417,4 +477,79 @@ resource "aws_iam_role_policy_attachment" "project_access_portal" {
 
   role       = aws_iam_role.project_access[each.key].name
   policy_arn = aws_iam_policy.project_access_portal[each.key].arn
+}
+
+# --------------------------------------- the data transfer role (Stage 21 step 4.5, decision 3 (b))
+#
+# The role data lake access names when the federated catalog of Stage 21 step 4.1 is opened to the
+# Iceberg engines: AWS Glue and Amazon Redshift assume it to move data to and from S3. Its trust and
+# its four actions are AWS's prerequisites page's ("Prerequisites for managing Amazon Redshift
+# namespaces in the AWS Glue Data Catalog", read 2026-11-18), which grants no S3 action. The page
+# puts every action on `*`; the resources here are this account's catalog, the federated catalog
+# and the namespace's key. It exists only while `data_transfer_role_enabled` is true, for the
+# sitting, and the update-catalog call that names it is a command of that sitting.
+resource "aws_iam_role" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  name        = "${local.name}-data-transfer"
+  description = "Stage 21 step 4.5: the data transfer role data lake access names on the federated catalog ${var.federated_catalog_name}. Created for the sitting and removed after it."
+
+  assume_role_policy = data.aws_iam_policy_document.data_transfer_trust[0].json
+}
+
+data "aws_iam_policy_document" "data_transfer_trust" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  # AWS's trust policy as the page writes it, with no condition. Which source keys Glue and Redshift
+  # send on this assumption is unread, and a condition the service does not satisfy fails as an
+  # assume nobody can attribute; step 4.5 reads the caller in CloudTrail.
+  statement {
+    sid     = "GlueAndRedshiftAssumeThisRole"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["glue.amazonaws.com", "redshift.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  name   = "data-transfer"
+  role   = aws_iam_role.data_transfer[0].id
+  policy = data.aws_iam_policy_document.data_transfer[0].json
+}
+
+data "aws_iam_policy_document" "data_transfer" {
+  count = var.data_transfer_role_enabled ? 1 : 0
+
+  # The account's catalog, the federated catalog, its child catalogs (one per Redshift database) and
+  # their databases (one per schema), in the ARN forms of AWS's "Specifying AWS Glue resource ARNs".
+  # A Data Catalog operation needs its resource and every ancestor, so the account's catalog is listed.
+  statement {
+    sid     = "ReadTheFederatedCatalog"
+    effect  = "Allow"
+    actions = ["glue:GetCatalog", "glue:GetDatabase"]
+    resources = [
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog/${var.federated_catalog_name}",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog/${var.federated_catalog_name}/*",
+      "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/${var.federated_catalog_name}/*",
+    ]
+  }
+
+  # The namespace's key, the account data CMK. Its key policy delegates to IAM only for calls through
+  # Redshift Serverless (sandbox/data/'s AllowRedshiftServerlessViaServiceInThisAccount), so this
+  # statement reaches the key on that path alone. A call through S3, the path AWS's page writes into
+  # a customer managed key's policy for this role (GenerateDataKeyDecryptDataTransferRole), needs a
+  # statement in that key policy naming the role, which is sandbox/data/'s and is not written.
+  statement {
+    sid       = "UseTheNamespaceKey"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
+    resources = [local.data_key_arn]
+  }
 }

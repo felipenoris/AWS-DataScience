@@ -1,5 +1,9 @@
 # The workflows grant for SMUS project roles (Stage 6i decision 6; the Glue statement, Stage 10
-# decision 12, user 2026-10-16).
+# decision 12, user 2026-10-16; the training, transform and model statements and the registration in
+# an application's own group, Stage 17 step 9.5 and decision 7 (a)). It holds what a workflow's
+# operators need, and nothing only a notebook creates (decision 7 (a)). It holds no
+# datazone:StartDataSourceRun: a Sandbox project's data source imports on its schedule or on a
+# member's run in the portal, SMUS's own triggers (Stage 19 decision 17).
 #
 # SageMakerProcessingOperator describes the job name it proposes before it creates the job, and
 # counts only a ValidationException as "absent" (Amazon provider 9.32.0, the MWAA Serverless
@@ -14,7 +18,7 @@
 # untagged by a principal outside SMUS is describable by the project roles listed here.
 #
 # The boundary is untouched: awsds-sandbox-project-boundary denies no Describe call, and the jobs
-# the operator then creates still meet its four job denies.
+# the operators then create still meet its four job denies.
 
 # The description names the first statement only: it forces a new policy when it changes, and the
 # comment above each statement is where the grant is described.
@@ -66,6 +70,157 @@ data "aws_iam_policy_document" "workflows" {
       test     = "ForAllValues:StringEquals"
       variable = "aws:TagKeys"
       values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # SageMakerTrainingOperator describes the job name before CreateTrainingJob (SUP-268), and the
+  # blueprint's DescribeTrainingJob, like its DescribeProcessingJob, requires the caller's project tag.
+  # The pair exists while training_pair_enabled is true: it reaches every role listed, the role of the
+  # project where Stage 17's 2.2 reads the tag gap on a notebook's training job among them.
+  dynamic "statement" {
+    for_each = var.training_pair_enabled ? ["describe"] : []
+
+    content {
+      sid       = "DescribeATrainingJobNoProjectHolds"
+      effect    = "Allow"
+      actions   = ["sagemaker:DescribeTrainingJob"]
+      resources = [local.training_jobs]
+
+      condition {
+        test     = "Null"
+        variable = "aws:ResourceTag/AmazonDataZoneProject"
+        values   = ["true"]
+      }
+    }
+  }
+
+  # The training job's tags, authorized as sagemaker:AddTags under the same conditions as the
+  # processing job's, behind the describe's switch.
+  dynamic "statement" {
+    for_each = var.training_pair_enabled ? ["tag"] : []
+
+    content {
+      sid       = "TagATrainingJobWithTheCallersProject"
+      effect    = "Allow"
+      actions   = ["sagemaker:AddTags"]
+      resources = [local.training_jobs]
+
+      condition {
+        test     = "StringEquals"
+        variable = "aws:RequestTag/AmazonDataZoneProject"
+        values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+      }
+
+      condition {
+        test     = "StringEqualsIfExists"
+        variable = "aws:ResourceTag/AmazonDataZoneProject"
+        values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+      }
+
+      condition {
+        test     = "ForAllValues:StringEquals"
+        variable = "aws:TagKeys"
+        values   = ["AmazonDataZoneProject"]
+      }
+    }
+  }
+
+  # SageMakerTransformOperator describes the job name before CreateTransformJob (SUP-372), and the
+  # blueprint's DescribeTransformJob, like its DescribeTrainingJob, requires the caller's project tag.
+  statement {
+    sid       = "DescribeATransformJobNoProjectHolds"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeTransformJob"]
+    resources = [local.transform_jobs]
+
+    condition {
+      test     = "Null"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["true"]
+    }
+  }
+
+  # The transform job's tags, authorized as sagemaker:AddTags under the same conditions as the
+  # processing job's.
+  statement {
+    sid       = "TagATransformJobWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.transform_jobs]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # The model a task creates with the caller's project tag (app-ml's resolve), whose tags are
+  # authorized as sagemaker:AddTags under the same conditions.
+  statement {
+    sid       = "TagAModelWithTheCallersProject"
+    effect    = "Allow"
+    actions   = ["sagemaker:AddTags"]
+    resources = [local.models]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "aws:ResourceTag/AmazonDataZoneProject"
+      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "aws:TagKeys"
+      values   = ["AmazonDataZoneProject"]
+    }
+  }
+
+  # A versioned model package takes no tag argument and uses its group's tags (CreateModelPackage's
+  # API reference). The blueprint's SageMakerCreatePermissions admits the create where the version
+  # carries the caller's project tag, and whether SageMaker presents the group's tag at the create is
+  # unmeasured (Stage 17 verification lviii). This statement admits the register task's request in its
+  # application's `dev` group (model_applications): that group's versions, from the role of the
+  # project that owns it, with the status PendingManualApproval alone, the one the task names. The
+  # approval in a `dev` project is the member's, in the portal.
+  dynamic "statement" {
+    for_each = local.model_applications
+
+    content {
+      sid       = "RegisterAPendingVersionFor${statement.value.sid_suffix}"
+      effect    = "Allow"
+      actions   = ["sagemaker:CreateModelPackage"]
+      resources = [statement.value.model_versions]
+
+      condition {
+        test     = "StringEquals"
+        variable = "aws:PrincipalTag/AmazonDataZoneProject"
+        values   = [statement.value.project_id]
+      }
+
+      condition {
+        test     = "StringEquals"
+        variable = "sagemaker:ModelApprovalStatus"
+        values   = ["PendingManualApproval"]
+      }
     }
   }
 

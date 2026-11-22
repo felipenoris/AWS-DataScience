@@ -12,7 +12,7 @@
 #
 # A second host rather than a second service on the WireGuard one: that host receives untrusted UDP
 # from the open internet and this one parses untrusted internet responses. Separating them keeps a
-# compromise of either off the other, for one more t3.nano.
+# compromise of either off the other, for one more host.
 #
 # It is not a TLS-terminating inspector. It relays CONNECT, so it sees the host name and the byte
 # counts and never the content; an interception proxy would need a CA that every client trusts,
@@ -71,6 +71,12 @@ locals {
     }
   })
 
+  # The user data's step (0) - a 1 GiB swap file and update-motd masked, the wireguard module's
+  # commands (2026-11-22) - is argued in that module's main.tf, beside its own templatefile() call,
+  # and not in the script: EC2 caps user data at 16 KB, and this one carries squid.conf and the render
+  # script inside it, about 15.2 KB before the step. What is particular to this host: its first
+  # boot's dnf was OOM-killed on a t3.nano on 2026-09-06, and on a t3.micro, about 930 MiB,
+  # zram-generator creates no swap at all, so the file is the only swap there is.
   user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     squid_conf    = local.squid_conf
     render_script = local.render_script
@@ -161,7 +167,7 @@ resource "aws_iam_instance_profile" "this" {
 # ------------------------------------------------------------------------------- the host
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host proxy whose alarm is on the free basic status checks - CloudWatch spend is Stage 12's subject
-  # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the shape is the measured baseline of docs/PRICING.md 3
+  # checkov:skip=CKV_AWS_135:every t3 size var.instance_type admits is EBS-optimized by default (describe-instance-types EbsOptimizedSupport, read 2026-11-21)
   # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type
@@ -266,9 +272,12 @@ resource "aws_ssm_association" "reconfigure" {
 # On the status checks and not on traffic, the same judgement the tunnel's alarm records: an alarm
 # on "no requests for N minutes" is red every night and every weekend, and an alarm that is red
 # when nothing is wrong teaches its reader to ignore it.
+#
+# It notifies the account's alerts topic, production/foundation/'s awsds-<env>-alerts, which admits
+# this account's alarms (Stage 12 step 2.2).
 resource "aws_cloudwatch_metric_alarm" "health" {
   alarm_name          = "awsds-${var.env}-proxy-status-check"
-  alarm_description   = "The estate's single internet exit is failing its EC2 status checks (Stage 6c step 4.8)."
+  alarm_description   = "The estate's single internet exit is failing its EC2 status checks while running (Stage 6c step 4.8, Stage 12 step 2.2); a stopped proxy reads OK. Read it with ./aws/proxy.py; the host is stateless and rebuilds from production/proxy/ (docs/plan/runbooks/vpn.md section S1)."
   namespace           = "AWS/EC2"
   metric_name         = "StatusCheckFailed"
   statistic           = "Maximum"
@@ -276,10 +285,12 @@ resource "aws_cloudwatch_metric_alarm" "health" {
   evaluation_periods  = 3
   threshold           = 0
   comparison_operator = "GreaterThanThreshold"
-  # A stopped host produces no datapoints, and `missing` must not read as healthy: `breaching` is
-  # what makes "somebody stopped the proxy and forgot" visible. This alarm has no action wired,
-  # since D12 left the budget notifying nobody.
-  treat_missing_data = "breaching"
+  # A stopped host publishes no datapoints, and they read as healthy (Stage 12 decision due 1 (b)):
+  # a stopped proxy is D11's idle state, and a spoke's `make up` refuses while it is stopped
+  # (scripts/slices.py). A dead proxy and a stopped one read alike until a session starts it, as
+  # the tunnel's and GitLab's alarms do.
+  treat_missing_data = "notBreaching"
+  alarm_actions      = [data.terraform_remote_state.foundation.outputs.alerts_topic_arn]
 
   dimensions = {
     InstanceId = aws_instance.this.id

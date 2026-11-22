@@ -1,0 +1,54 @@
+# app-dbt - a dbt project run by a Bash task of a workflow on the worker, its lineage posted to the
+# domain (the infrastructure repository's Stage 20).
+#
+# Python 3.12 because the worker runs CPython 3.12. The three dependencies are what the Bash task runs:
+# dbt Core, its Athena adapter and OpenLineage's wrapper, which starts dbt and posts the run's events.
+# package-task builds the worker's archive from this project and its lock, without boto3, botocore and
+# PyYAML, which the worker carries. The dbt project, the transformer and dbt's console script travel in
+# the package src/app_dbt/. The development tools stay in the dev group, which package-task leaves out.
+
+[project]
+name = "app-dbt"
+version = "0.1.0"
+description = "A dbt model over the trades, built on Athena by a workflow's Bash task, its lineage posted to the domain"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dbt-core>=1.11,<1.12",
+    "dbt-athena>=1.11,<1.12",
+    "openlineage-dbt>=1.55,<2",
+]
+
+[dependency-groups]
+dev = ["jinja2>=3.1", "pytest>=8", "pyyaml>=6", "ruff>=0.12"]
+
+# The resolver sees nothing published after this instant, so a release reaches the archive no sooner
+# than two weeks after it appears: the delay the infrastructure repository gives an action it pins.
+# Moved forward deliberately, with `uv lock --upgrade` in the same commit.
+#
+# The lock resolves for Linux, where the worker and the pipeline run, and macOS, where the tests run
+# on the laptop. The gates' pip-audit fails when it audits fewer packages than the export pins, and
+# pip-audit 2.10.1 skips a pin whose marker the runner does not match: a lock for every platform pins
+# tzdata for Windows and httpx2-jsfetch for Emscripten, which no runner audits.
+[tool.uv]
+environments = ["sys_platform == 'linux'", "sys_platform == 'darwin'"]
+exclude-newer = "2026-11-03T00:00:00Z"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app_dbt"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP", "W"]
+
+# tests/simulation/ builds a worker's environment and starts moto: it runs by hand, never under pytest.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["simulation"]

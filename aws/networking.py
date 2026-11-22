@@ -37,8 +37,8 @@
 #   Before Stage 3: what networking already exists. The first run (2026-08-15) measured
 #   that every vended account carries an Account Factory VPC (172.31.0.0/16, private-only -
 #   docs/AWS_STATE.md C), which step 0 now removes. Principle 4 says private by default;
-#   D22 says Data Governance gets no VPC at all. Section 2 answers whether either sentence
-#   is true today.
+#   D22 gives Data Governance no VPC but Stage 6f step 11's. Section 2 answers whether
+#   either sentence is true today.
 #
 #   After each Stage 3 pass: the readings that would otherwise be one console tab per
 #   account - validation 2 (no route into 10.40.0.0/16), step 6.5 (10.90.0.0/24 in no
@@ -117,6 +117,11 @@ UNALLOCATED_CIDR = "10.40.0.0/16"
 # about the allocation table, which scripts/tfhygiene/backend.py's VPC_CIDRS owns.
 HUB_CIDR = "10.31.0.0/16"
 WIREGUARD_CIDR = "10.90.0.0/24"
+
+# Data Governance's one VPC, Stage 6f step 11's (D22 as amended 2026-10-26): the managed `Tooling`
+# template of the lake-publishing project takes a VPC. NT-1 notes this range in that account and
+# fails on any other project-range VPC there.
+DATA_GOVERNANCE_CIDR = "10.70.0.0/16"
 
 # INT-22's zone matrix, read by NT-12 (6c steps 2.4 and 2.6). Keyed by zone, valued by the VPC
 # ranges that must be associated - and by exactly those, because an absent association carries as
@@ -524,9 +529,8 @@ def main(argv: list) -> int:
         extra = ""
         if p == DATA_PROFILE:
             extra = (
-                " In THIS account the sentence is stronger: D22 says Data Governance "
-                "gets no VPC at all - today that sentence is an intention, not a "
-                "state (Lesson 5)."
+                " In THIS account the sentence is stronger: D22 gives Data Governance "
+                f"one VPC, {DATA_GOVERNANCE_CIDR}, Stage 6f step 11's, and no other."
             )
         if p == CANARY_PROFILE:
             extra = (
@@ -553,13 +557,21 @@ def main(argv: list) -> int:
                 "Factory (0.3) BEFORE the Staging vend, so the next account "
                 f"arrives without one.{extra}",
             )
+        elif p == DATA_PROFILE and vpc_cidr == DATA_GOVERNANCE_CIDR:
+            checks.note(
+                "NT-1",
+                f"project-range VPC in {p}",
+                f"{vpc} ({vpc_cidr}) - the lake-publishing pilot's (Stage 6f step 11, D22 "
+                "amended 2026-10-26): the managed Tooling template takes a VPC. A note "
+                "while the pilot stands; its rollback destroys it.",
+            )
         elif p == DATA_PROFILE:
             checks.fail(
                 "NT-1",
                 f"project-range VPC in {p}",
-                f"{vpc} ({vpc_cidr}) - D22 says Data Governance gets no VPC at "
-                "all. An intention is not a control (Lesson 5); this is the "
-                "measurement.",
+                f"{vpc} ({vpc_cidr}) - D22 gives Data Governance one VPC, "
+                f"{DATA_GOVERNANCE_CIDR} (Stage 6f step 11), and this is not it. An "
+                "intention is not a control (Lesson 5); this is the measurement.",
             )
         elif p == CANARY_PROFILE:
             checks.fail(
@@ -1473,7 +1485,8 @@ value of this run is section 2 (are there default VPCs?) and section 13.
         rep.text("""
 What the checks are, and where each comes from:
   NT-1  default and Account Factory VPCs flagged (Lessons 16, 17); a
-        project-range VPC in Data Governance (D22) or the canary (D29) FAILs
+        project-range VPC in Data Governance other than Stage 6f step 11's
+        (D22, amended) or in the canary (D29) FAILs
   NT-2  both DNS attributes on every non-default VPC (step 4.1)
   NT-3  no non-local route overlapping 10.40.0.0/16 (validation 2, D20);
         the 0.0.0.0/0 -> igw/nat internet exit is excluded - it cannot
@@ -1506,8 +1519,9 @@ What the checks are, and where each comes from:
     None of them gets a Stage 3 VPC; whether they hold a DEFAULT VPC is unmeasured
     here and readable only from CloudShell (`python3 aws/networking.py -`).
   - Every Sandbox beyond the first has no profile until Stage 14 vends it (D35).
-  - Data Governance IS measured and should show no VPC at all (D22) - the one
-    account where an empty section 2 is the passing answer.""")
+  - Data Governance IS measured and holds no VPC but Stage 6f step 11's
+    10.70.0.0/16 (D22, amended 2026-10-26): empty before that step's first
+    apply and after its rollback.""")
 
         # ==============================================================================
         rep.h1("14. Calls that failed")

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken; 8 waits for a second project. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b with a second project), 0.4's portal reading, 6.4 (the user's keep-or-drop of `lab`), and verifications x and xii. The audit export a DLP feed would read carries nothing while a workgroup exists (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters |
+| **Status** | **Passes 0-2 done; pass 3's negatives owed** ([log](../../log/log-stage-06h-redshift-connection.md)). Layer 3 on 2026-09-20, layers 1 and 2 on 2026-09-21, and the **access role** the portal's form demands applied 2026-10-09. On 2026-10-10 the user created the connection in the portal (`EXC-17`), and the project wrote and read `lab` through **both doors**, the Data page and JupyterLab over `5439`, with every layer read back on its own. **The doors resolve to different database users**, one per project and one per person, and decision 8a has a notebook chain through the access role so that both land on the per-project one. Decisions 1-7, 8a and 8b are taken, and on 2026-11-17 decision 8 as (a), the wide tag when a second project needs the warehouse (`test-experimentation` exists from 2026-10-15 and is in no map), and decision 3 as off; **decision 3 had been re-opened**: the connection object, readable since 2026-10-15, carries `lineageSync` enabled on a daily schedule the form never showed, and all eight runs to 2026-10-18 failed without minting a database session. **Decision 3 done 2026-11-19**: one `UpdateConnection` by Sandbox's `InfrastructureAccess`, a contributor of the project, with nothing up, set `lineageSync` off and the database to `sandbox`, and `WH-9` passes. **Owed**: step 5's negatives (5.2, 5.2a and 5.3 from the project, 5.4 as the persona, 5.1 and 5.2b from `test-experimentation`); the policy simulator read 5.3 and 5.4 as designed on 2026-10-18, so those two owe their refusals' wording, and the same reading found AWS's managed project policy granting `GetCredentials` and the Data API through layer 1's tag, which bears on decision 8; 0.4's portal half, 6.4 (the user's keep-or-drop of `lab`), the Query editor read opening on `sandbox` (decision 3's effect, in the warehouse sitting), and verifications x and xii. The audit export a DLP feed would read carries nothing while a workgroup exists (`EXC-16`). Two things this file said are corrected in place, each marked `[corrected 2026-09-20]`: `AUTHORIZATION` takes a **user**, not a role, and **layer 1 admits one project**, which adds **decision 8**. Originally written 2026-09-19 from the vendor documentation, in the same sitting as [Stage 5b](stage-05b-redshift-serverless.md) and [D40](../decisions/D40-redshift-warehouse.md). **The first sandbox database and the first connection**: one sandbox schema in the Sandbox warehouse, one SageMaker project given **write** on it, and every layer between the project and the table measured once. **No governed database exists yet, anywhere** — that class arrives at [Stage 9](stage-09-deployment-targets.md), so everything below is about the sandbox class and says so where the difference matters. AWS's managed project policy (v75) grants `GetCredentials` and the Data API through layer 1's tag, an input to decision 8 (PR #187). **Decision 8 (a)'s switch written and merged 2026-11-18** with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323): `sandbox/warehouse/`'s `all_projects_tag_enabled`, off by default, `WH-7` inverting under it; the warehouse sitting turns it on between 5.1 and 5.2b, per sitting or standing as the user chooses. **The warehouse sitting's rows are written** (2026-11-19, nothing up), in "The Sandbox warehouse sitting: 6h's items in order" before the deliverables, with every row steps 5 and 6 owe; that day's plans of `sandbox/warehouse/` read `No changes` with both switches off and one change with the tag on, and v77 of the managed policy reads as v75 did. |
 | **Prerequisites** | **[Stage 5b](stage-05b-redshift-serverless.md), applied** — the warehouse, its usage limit and its audit groups; without the usage limit this stage's first query is an uncapped one. **[6a](stage-06a-unified-studio.md)/[6d](stage-06d-unified-studio-remainder.md)** — a live project in Sandbox whose id and project role exist, and whose apps start (the `Tooling` blueprint's per-project SageMaker AI domain). **[6c](stage-06c-networking-hub.md) pass 5** — the project's app ENIs land in Sandbox's private tier, the same VPC as the workgroup, which is what makes the JupyterLab path possible at all. **And [5b](stage-05b-redshift-serverless.md) 1.10's endpoint group**, raised with `make up ENV=sandbox GROUPS=redshift`: without it a `redshift-serverless:GetCredentials` call — layer 2, and the whole IAM-credentials path — leaves through the proxy as a public request, which is 6e's *wrong door* repeated. The 5439 data path needs no endpoint, only the security group. **The compute slice must be up**: a `make down` leaves the namespace and removes the workgroup, so a connection to a destroyed workgroup fails the way a space started while `sandbox/egress` is down hangs |
 | **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D17](../decisions/D17-interactive-vs-runtime.md), [D18](../decisions/D18-data-scientist-access.md), [D26](../decisions/D26-unified-studio.md), [D31](../decisions/D31-approver-read.md), [D35](../decisions/D35-sandbox-cardinality.md), [D40](../decisions/D40-redshift-warehouse.md) |
 | **Proves** | — (no `INT-nn` row: the project, the workgroup and the database are all in `Sandbox`). What it proves that nothing before it has: the portal's **compute-connection** surface, the third way into data this estate has opened after the governed catalog path (D13) and Stage 16's S3 connection |
@@ -20,7 +20,7 @@ is attributable to one of them.
 
 **Everything here is a sandbox-class mechanism.** `objectives.md` (2026-09-20) makes the per database ×
 project grant *"the sandbox databases' rule… the only new rule here"*, and says the controls over governed
-data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a a governed schema
+data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a governed
 database**: that class is read through the federated catalog Lake Formation governs
 ([Stage 9](stage-09-deployment-targets.md) 9.5) and written by a pipeline, and reusing this stage's wiring
 there would put a Redshift `GRANT` beside a Lake Formation grant over governed data — the fork the brief
@@ -36,8 +36,8 @@ the database*, which is the same symptom three times over (Lesson 28's intersect
 
 | # | Layer | Written where | Grain | What its absence looks like |
 |---|---|---|---|---|
-| 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup**, and ***one project only*** *[corrected 2026-09-20]* — it is a tag key, so AWS's alternative for more than one is the wide form. Decision 8 | the compute does not appear in the project's dropdown at all |
-| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, and no `redshift-data:`, which neither door needed (2.2) | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted and to the per-project access role the form demands (3.1) | per **workgroup**, per **project role** | the connection is created and every query fails at authentication |
+| 1 | **The tag on workgroup *and* namespace** — `AmazonDataZoneProject=<projectId>` | `sandbox/warehouse/` (Terraform), from the authored map [5b](stage-05b-redshift-serverless.md) 2.2 built | per **workgroup**, and ***one project only*** *[corrected 2026-09-20]* — it is a tag key, so AWS's alternative for more than one is the wide form, decision 8 (a)'s, behind `sandbox/warehouse/`'s `all_projects_tag_enabled`, off by default | the compute does not appear in the project's dropdown at all |
+| 2 | **The IAM reach of the project role** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource`, and no `redshift-data:`, which neither door needed (2.2). **Two principals hold it differently** (simulated 2026-10-18): the access role, which the Data page calls `GetCredentials` as, holds this slice's policy alone; the project role, which a notebook calls it as, also carries AWS's `SageMakerStudioProjectUserRolePolicy`, whose `ComputeCredentials` and `RedshiftDataActions` grant `GetCredentials` and the Data API on a workgroup tagged with its project, so for that role this policy is the declared duplicate of a grant AWS's text carries and moves (open question 22) | `sandbox/warehouse/` beside the tag, attached to the project role the blueprint minted and to the per-project access role the form demands (3.1) | per **workgroup**, per **project role** | the connection is created and every query fails at authentication: on the Data page that is this slice's policy missing from the access role; from a notebook as the project role, AWS's policy answers for a tagged workgroup, so the symptom there means the tag is gone too |
 | 3 | **A database role per schema**, holding `USAGE, CREATE` on it, granted to each admitted project's database user — the schema itself carrying a `QUOTA` | SQL, run once per schema from the admin credential; one `GRANT ROLE` per admitted project | per **schema × project**, many-to-many | the project connects, sees the cluster, and the schema is invisible or read-only |
 
 **Layer 3 is the requirement's grain.** Layers 1 and 2 are gates in front of it, and they are per-warehouse:
@@ -77,7 +77,7 @@ It enters only if a sandbox schema ever has to be read from another namespace, w
 | `sandbox/warehouse/` (amended) | the project tag on workgroup **and** namespace, and the project role's IAM policy for layer 2 | `[P]` |
 | the domain, one connection | the project's Redshift compute connection — portal or `awscc_datazone_connection` (decision 1) | `[P]` |
 | `identity/sso/` (possibly amended) | only if decision 4 gives a persona a direct query path; **the default is that it does not** | `[P]` |
-| `aws/warehouse.py` (extended) | `WH-9`..`WH-12` — the tag pair, the project role's reach, the connection, and the database inventory with its grants | — |
+| `aws/warehouse.py` (extended) | `WH-9`, `WH-11`, `WH-12` and `WH-14` — the connection, the project role's reach, the database inventory with its grants, and whether a shared schema's tables are readable; the tag pair stays `WH-7`'s | — |
 | `runbooks/redshift-connection.md` (new) | the recurring procedure: adding a database, wiring a project, unwiring one | — |
 
 **Contracts this stage fixes, as applied 2026-09-20:** the one sandbox **database** `sandbox` (the container —
@@ -181,8 +181,14 @@ retyped. **Explanation:** all read-only.
   > and reads its identifier back, and the reason decision 2's fallback is a **purpose-made** Secrets Manager
   > secret rather than a typed password — a secret is at least one object, rotatable, revocable and nameable
   > in a policy. If IAM credentials turn out not to work same-account, that is verification (iii)'s answer and
-  > a finding worth its own line in `lessons.md`'s platform list, with its date.
-- **0.4 — [Claude] Read whether the domain restricts connection creation at all.** [6f](stage-06f-data-governance.md)
+  > a finding worth its own entry in `docs/AWS_SUPPLEMENT.md`, with its date.
+- **0.4 — the API half answered 2026-10-18: nothing at the domain level governs it.** DataZone's 14
+  authorization policy types (`list-policy-grants`' `--policy-type`) name no connection, and `CreateDomain`,
+  `UpdateDomain` and `CreateProjectProfile` carry no connection setting; `CreateConnection` takes a `scope`
+  of `DOMAIN` or `PROJECT`. A project owner created this stage's connection (3.2), and the user guide does not
+  say whether a contributor may. So layer 1's tag is the only thing between a member and this warehouse,
+  which is the argument for the per-project tag. **The portal half is the user's**: whether a contributor
+  can add a compute connection. **[Claude] Read whether the domain restricts connection creation at all.** [6f](stage-06f-data-governance.md)
   step 1 found that nothing at the domain level restricts a direct Share and that
   `ADD_TO_PROJECT_MEMBER_POOL` is open to every user. The same question applies to
   `datazone:CreateConnection`: if any project member may add a compute connection, then layer 1's tag is the
@@ -191,8 +197,8 @@ retyped. **Explanation:** all read-only.
 
 ### 1. The database, its schema, and the project's `GRANT`s
 
-**Action:** create `sbx_lab` with a named schema and grant the project's database user exactly what it needs
-to write. **Why:** this is layer 3, the requirement's own grain. **Explanation:** it is SQL, run once, from
+**Action:** create the database `sandbox` with a named schema, `lab`, and grant the project's database user
+exactly what it needs to write. **Why:** this is layer 3, the requirement's own grain. **Explanation:** it is SQL, run once, from
 the admin credential — there is no Terraform resource for a Redshift `GRANT`, and inventing one out of a
 `local-exec` would put a credential in a plan.
 
@@ -213,7 +219,8 @@ the admin credential — there is no Terraform resource for a Redshift `GRANT`, 
     of the data it will hold"*, with *"no necessary relation to any SageMaker project"*. So decision 6 is
     answered against both shapes this file used to offer, and the consequence is worth stating: **a schema name
     carries no authorization information at all**, which is what lets the same schema be shared and what makes
-    the map in `sandbox/warehouse/` the only place the schema × project relation is written down.
+    the `GRANT ROLE` statements, and their rows in `docs/AWS_STATE.md`'s register, the only place the schema ×
+    project relation is written down. `sandbox/warehouse/`'s map is per project and names no schema.
   - **`AUTHORIZATION` does not name a project, and it takes a USER rather than a role**
     *[corrected 2026-09-20]*. The first attempt named a Redshift **role** and the service answered
     `ERROR: user "sbx_lab_owner" does not exist` — Redshift roles cannot own a schema. So the owner is a
@@ -292,15 +299,17 @@ the two cannot drift by an edit that still plans clean.
   the tag `AmazonDataZoneProject=<projectId>` on **both** the workgroup and the namespace (the documented
   requirement names both objects) and to one IAM policy attached to that project's role.
   **The wide form stays refused**: `for-use-with-all-datazone-projects=true` appears nowhere, and `WH-7`
-  fails if it does.
-- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and the Data API path is not granted; 3.4's refusal, if it comes, is what decides whether the family joins. **3.4 needed none** (2026-10-10): the Data page reaches the database through `sqlworkbench`, so the family stays out. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
+  fails if it does. Decision 8 (a), taken 2026-11-17, admits it behind `all_projects_tag_enabled`, off by
+  default (pull request #323, 2026-11-18), and `WH-7` then expects it on both objects and neither tag on
+  the admin secret.
+- **2.2 — Done 2026-09-21, and the `redshift-data:` family was LEFT OUT.** So the JDBC path is open and this slice grants no Data API path; 3.4's refusal, if it comes, is what decides whether the family joins. **3.4 needed none** (2026-10-10): the Data page reaches the database through `sqlworkbench`, so the family stays out. **AWS's managed policy grants it anyway** (simulated 2026-10-18, [log](../../log/log-stage-06h-redshift-connection.md)): `SageMakerStudioProjectUserRolePolicy` v75's `RedshiftDataActions` allows `redshift-data:ExecuteStatement` and five more on a workgroup tagged with the caller's project, and `ComputeCredentials` allows `GetCredentials` on the same tag, so layer 1's tag opens both to the admitted project without this policy. **[Claude] Write the project role's policy**, narrow and resource-scoped to this workgroup's ARN:
   `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListWorkgroups`, `ListTagsForResource`, and — only
   if 0.3's answer needs it — the `redshift-data:ExecuteStatement`/`GetStatementResult`/`DescribeStatement`
   family. **Nothing on the namespace's own management APIs**, no `UpdateWorkgroup`, and **no
   `secretsmanager:GetSecretValue`** on the admin secret: a project role that can read the admin credential
   has the admin's rights and layer 3 stops meaning anything.
-- **2.3 — Done 2026-09-21: both slices re-plan `No changes`.** The apply half-failed once, on the `5439` rule's *description*: **EC2 refuses a `>`**, the permitted set being `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`, and the apply is the only validator — the second description refusal in this pair of stages. `WH-11` is written (the previous pass deferred it for want of a project); `WH-7` had to be repaired first, its parser having required a quoted HCL map key. **[Claude⚡] Apply as `awsds-infra-sandbox-1`**, re-plan `No changes`, then read back: both tags
-  present on both objects (`WH-10`), the policy attached to the project role and **still inside the D13
+- **2.3 — Done 2026-09-21: both slices re-plan `No changes`.** The apply half-failed once, on the `5439` rule's *description*: **EC2 refuses a `>`**, the permitted set being `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*`, and the apply was then the only validator — the second description refusal in this pair of stages; `./scripts/check-sg-descriptions.py` refuses one before the apply since 2026-10-14. `WH-11` is written (the previous pass deferred it for want of a project); `WH-7` had to be repaired first, its parser having required a quoted HCL map key. **[Claude⚡] Apply as `awsds-infra-sandbox-1`**, re-plan `No changes`, then read back: both tags
+  present on both objects (`WH-7`), the policy attached to the project role and **still inside the D13
   boundary** (`get-role`, per role — `WH-11`). If 0.2 required a boundary amendment, it landed first, as its
   own module version.
 
@@ -326,9 +335,11 @@ picks one.
 - **3.2 — Done 2026-10-10 by the user: `redshift-serverless.redshift`, `Available`.** The first two
   attempts were refused because `Access role ARN` held the project role's own ARN; with
   `awsds-sandbox-warehouse-access-<project>`, applied 2026-10-09, the form accepted. **`Available` mints
-  no database session**: `pg_user` was unchanged until the first query. Which database the object names
-  was not recorded, and this identity cannot read it (`EXC-17`). The `dev` the dropdown offers confined
-  nothing: the Query editor lists `dev`, `sandbox` and `warehouse` alike, and 3.4's write landed in `lab`.
+  no database session**: `pg_user` was unchanged until the first query. The object names database `dev`:
+  the portal's `GetCredentials` carry `dbName: dev` (read 2026-10-17), and `get-connection` reads
+  `databaseName: dev` (2026-10-18). The `dev` confined nothing: the Query editor lists `dev`, `sandbox` and `warehouse` alike, and 3.4's write landed in `lab`. A session left on `dev` reads no governed share, for want of `TEMP` there (Stage 9 xxiv, 2026-10-26).
+  Since 2026-11-19 the object names `sandbox` and its sync is off, by decision 3's `UpdateConnection`
+  ([§P](../runbooks/redshift-connection.md) step 4a).
   **[user] Create the connection.** Measured at the form on 2026-09-21: the compute **did appear** in the
   dropdown, so layer 1 works; `Access role ARN` is mandatory and `AWS Secret` optional; there is **no
   `lineageSync` toggle**; and it is offered as database **`dev`**, while `lab` is in `sandbox` — a
@@ -357,9 +368,10 @@ picks one.
   and by the **project role** on a direct notebook session, so *whose identity reaches the database*
   depends on the door (verification v). **No provisioned-cluster API was called**, so 5b 1.10's third
   endpoint is not needed. The door half is in [6d's log](../../log/log-stage-06d-unified-studio-remainder.md)
-  for the same day: a space's `GetCredentials` took the `redshift-serverless` endpoint once it existed,
-  and the one call before it left through the proxy as a public request, because the house image's
-  `NO_PROXY` lacked the name — `default-v0.5.0` carries it.
+  for the same day, and the trail of 2026-10-17 counts it: AWS's image, which sets no proxy, took the
+  `redshift-serverless` endpoint twice, and the house image's environment sent its six calls through the
+  proxy as public requests, answered, the chained session's included, because its `NO_PROXY` lacked the
+  name — `default-v0.5.0` carries it, and has not been read from a space.
   **[Claude] Attribute the write in CloudTrail**, from the account's own trail: which principal called
   `GetCredentials`, and whether the session that wrote the table is the **project role** or something else.
   **Read two more things off the same trail while it is open**: whether anything called the *provisioned-cluster*
@@ -394,8 +406,8 @@ is where that either stands or is revisited with a reason.
   and no credential path, so every query on this warehouse arrives through a project — which is also what
   makes layer 3's register complete, because there is no second kind of grantee.
 - **4.2 — [Claude] If it is revisited**, the shape is a **separate database** with read-only grants and its
-  own `GRANT` register row, never a wider grant on `sbx_lab`: the project writes there and a persona reading
-  a project's working database is a cross-project read nobody approved.
+  own `GRANT` register row, never a wider grant on `lab`: the project writes there and a persona reading a
+  project's working schema is a cross-project read nobody approved.
 
 ### 5. The negatives — what must not work
 
@@ -406,8 +418,13 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 - **5.1 — [user] A second project cannot use the compute.** From a project **not** in 2.1's map, the compute
   does not appear and a hand-made connection to the same workgroup fails. This is layer 1 alone, and it is the
   reading that says the tag is a control rather than a label.
-  *(If no second project exists, this is deferred with a named owner rather than skipped — Stage 16 §T
-  deferred exactly this and said so.)*
+  A second project exists since 2026-10-15, `test-experimentation`, in no map, so 5.1 is runnable from it
+  with the compute up. **Its IAM half, simulated 2026-10-18**: that project's role reads `implicitDeny`
+  for `GetCredentials` and `redshift-data:ExecuteStatement` on a workgroup tagged for the first project,
+  and `allowed` for `GetCredentials` that arrives through `sqlworkbench` or the Data API
+  (`SageMakerStudioProjectUserRolePolicy` v75's `RssCreds`, any workgroup in any account); the same
+  policy grants it `sqlworkbench:CreateConnection` and `DriverExecute` with no condition. So the query-editor door is open to it at the IAM layer, and which
+  layer refuses a hand-made connection is this step's reading.
 - **5.2 — [user] The admitted project reaches the schema its map row names, and no other.** From the project
   that *is* admitted: the schema it holds the role for works; a **second schema in the same database**, whose
   role it does not hold, does not; and the namespace's own first database does not either. This is layer 3
@@ -420,16 +437,41 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   `ALTER DEFAULT PRIVILEGES` statements are owed. Record the verbs that worked and the verbs that did not.
 - **5.2a — [user] The quota refuses, and the project cannot raise it.** Write into the project's schema past
   its `QUOTA` from inside the project — the refusal arrives **at commit**, as documented — then attempt
-  `ALTER SCHEMA … QUOTA` as the project's own database user, which needs a superuser and must fail. Read
-  `SVV_SCHEMA_QUOTA_STATE` and `STL_SCHEMA_QUOTA_VIOLATIONS` afterwards. **This is the one control that bounds
+  `ALTER SCHEMA … QUOTA` as the project's own database user, which needs a superuser and must fail.
+  `SVV_SCHEMA_QUOTA_STATE` is refused even to a superuser (verification xiv), so the refusals' wording is
+  the reading. **This is the one control that bounds
   a free hand**, and it has never been exercised anywhere in this estate.
   > **Read this one carefully.** The cross-database page says an unconnected database gives *"read access
   > only"* in one bullet and *"you can write … from any other database that you have permissions to"* in the
   > next. So the expected answer is **nothing at all** (no grant, no access), and a *read* succeeding would
   > mean a default grant exists that 1.2's `REVOKE` did not reach. Either outcome is a finding; only one is
   > the design.
+- **5.3 — the decisions by simulation, 2026-10-18** (Lesson 22; the tables are in the
+  [log](../../log/log-stage-06h-redshift-connection.md)). `iam simulate-principal-policy` on the project
+  role and on its access role, which a notebook assumes (8a), with `aws:RequestedRegion`,
+  `aws:PrincipalArn` and the roles' and the secret's tags in the context, against a workgroup ARN with a
+  made-up id (the workgroup is down). `UpdateWorkgroup` and `DeleteUsageLimit` read `explicitDeny` from
+  the organization for both roles. With the carve-out's `InfrastructureAccess` ARN forced into the
+  context, the project role's reading becomes `implicitDeny` matching no statement; with the project
+  role's ARN forced onto `InfrastructureAccess`, its `allowed` becomes the organization's deny. So the SCP
+  verdict is 5b 3.2's `DenyRedshiftCostGuardTamperingExceptInfrastructure`, and no identity policy of
+  either role grants either action. `GetSecretValue` on the admin secret reads `implicitDeny` for both,
+  with the boundary and the SCPs admitting it. **The secret's tags are what keep it closed**: AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 allows `GetSecretValue` on a secret tagged with the caller's
+  project (`AllowGetSecretForRedShift`) or with `for-use-with-all-datazone-projects=true`
+  (`DataConnectionAllProjectResources`); the first tag simulated on the secret reads `allowed` for the
+  admitted project, the second for `test-experimentation`; and the Redshift-managed secret carries
+  neither, while its namespace carries the project's tag. Each verdict covers the identity policies, the D13 boundary (the access role
+  has none) and the SCPs, whose statement the simulator never names; it covers no RCP, no session tag and
+  no KMS key policy, and the secret has no resource policy. The refusals' wording is the real attempt's.
 - **5.3 — [user] The project cannot administer the warehouse**: `UpdateWorkgroup` denied (the policy does not
   grant it), `DeleteUsageLimit` denied (5b 3.2's SCP, if applied), and the admin secret unreadable.
+- **5.4 — the decision by simulation, 2026-10-18.** The same simulator on
+  `AWSReservedSSO_DataScientistAccess_*` in Sandbox, whose inline policy equals the permission set's in
+  Identity: `GetCredentials` reads `explicitDeny` matching `DenyMintingARedshiftDatabaseSession`,
+  `redshift-data:ExecuteStatement` the same statement, and the control, `GetWorkgroup`, `allowed` by
+  `ReadRedshiftServerlessStatus`; the organization admits all three. The persona's real call, and with it
+  verification viii's wording, stays the user's.
 - **5.4 — [user] The persona cannot mint a database session**: `redshift-serverless:GetCredentials` as
   `DataScientistAccess` is denied by an **explicit** deny in an identity-based policy,
   `DenyMintingARedshiftDatabaseSession` in the persona set (written at 5b). Its wording differs from an
@@ -450,9 +492,10 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   prevents it. The runbook also carries **adding a schema**, which is now a distinct procedure from adding a
   project: a schema is created once with its theme, its owner role, its `_rw` role and its 1 TB quota, and
   projects come and go against it.
-- **6.2 — Done 2026-10-10**: `WH-11` and `WH-12`, plus `WH-14`, which the plan did not have; `WH-9` is a
-  permanent note, because `datazone list-connections` is refused to `InfrastructureAccess` by DataZone's
-  own authorization layer; `WH-10` was not written, because `WH-7` already compares the tag pair on both
+- **6.2 — Done 2026-10-10**: `WH-11` and `WH-12`, plus `WH-14`, which the plan did not have. `WH-9` reads
+  the connection object since 2026-10-18: `datazone list-connections`, refused to `InfrastructureAccess` by
+  DataZone's own authorization layer three times, answers since Sandbox's `InfrastructureAccess` role was
+  made contributor to both Sandbox projects on 2026-10-15, as a group profile. `WH-10` was not written, because `WH-7` already compares the tag pair on both
   objects with the authored map. `./aws/warehouse.py --sql`: 14 pass, 2 notes.
   **[Claude] Extend `./aws/warehouse.py`** with `WH-9`..`WH-12` (the connection, the tag pair, the
   project role's reach and boundary, the database/grant inventory).
@@ -463,9 +506,163 @@ refuses, and none of these has ever been measured on this surface. **Explanation
   connection), `docs/GOVERNANCE.md` (the warehouse's row in §Accounts, and the fact that a Redshift grant is a
   fourth permission system with no LF-Tag), `docs/AWS_STATE.md` (the grant register's new table, and the
   residuals), `docs/NETWORK.md` §6 if the security group changed, and `CLAUDE.md`.
-- **6.4 — [user] Keep or drop `sbx_lab`.** It has no hourly meter; its storage is cents. The connection has no
-  meter either. **The thing with a meter is `lineageSync`**, if 3.2 turned it on.
+- **6.4 — [user] Keep or drop `lab`.** It has no hourly meter; its storage is cents. The connection has no
+  meter either. **The thing with a meter is `lineageSync`**: 3.2 turned it on, and decision 3 turned it off
+  on 2026-11-19.
 - **6.5 — [Claude] The log**, at the user's request.
+
+### The Sandbox warehouse sitting: 6h's items in order
+
+Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orchestrating session runs
+([`promotion.md`](../runbooks/promotion.md) §N.6 item 9): `make hub-up`, then `make up ENV=sandbox
+GROUPS=redshift`. It holds every row step 5 and step 6 still owe, not only the two §N.6 item 9 names:
+5.2, 5.2a's owed half, 5.3 and 5.4 from the admitted project and the persona, then 5.1 before decision 8
+(a)'s wide tag and 5.2b after it, the Query editor opening on `sandbox`, 0.4's portal half and 6.4. Its
+values, read that day (the log): `sandbox/warehouse/` plans `No changes` with both switches off,
+`0 to add, 1 to change` (the namespace's tags) with `all_projects_tag_enabled=true`, `2 to add` with
+`data_transfer_role_enabled=true` alone and `2 to add, 1 to change` with both, so every plan of the slice
+names both switches (Lessons 51 and 69), and each count holds again since Stage 19's access-role
+statement (PR #339) was applied from `main` on 2026-11-20 at 15:57 UTC, re-planned `No changes`;
+`SageMakerStudioProjectUserRolePolicy` is at v77 on both project
+roles and its Redshift statements read as v75's did on 2026-10-18; the first database is `warehouse`, the
+schema `lab` holds `QUOTA 1 TB`, the role is `sbx_lab_rw`, and `test-experimentation` (`4gqfau9xuo6e4w`)
+is in no map. The rows need a JupyterLab space in each project, on `ml.t3.medium`.
+
+**Before it, with nothing up**:
+
+1. **[Claude] The readings**, done 2026-11-19 (the log): the plans above, run from `main`; the managed
+   policy's version and statements.
+2. **[user] Decision 8 (a)'s window**: the wide tag on for 5.2b and off before Stage 21's rows, or left
+   standing after 5.2b with `WH-7`'s wide expectation the standing one
+   ([`waiting-on-the-user.md`](../waiting-on-the-user.md)). Step 9 follows the answer.
+3. **[user] The identities**: `eighth-experimentation`'s contributor signed in from a browser profile of
+   its own for step 10 (6d 7.6's), and the Data Scientist User signed in for step 5 (SSO user Data
+   Scientist User, Sandbox Account 1, `DataScientistAccess` through `awsds-scientist-sandbox`).
+
+**In the sitting**, after 5b's steps 1 and 2:
+
+1. **[user; Claude] The Query editor's first session opens on `sandbox`** (decision 3). It is the
+   sitting's first editor session, so it runs before 5b's step 3 opens the editor: the user opens
+   `eighth-experimentation`'s Query editor on the warehouse and notes the database it shows before
+   choosing any. **[Claude]** reads the session from the connection log, with the `q` helper of [Stage
+   21](stage-21-redshift-s3-data-products.md) pass 2's first block:
+
+   ```bash
+   q "select record_time, event, username, database_name, application_name from sys_connection_log where record_time > '<the open>' order by record_time"
+   ```
+
+   `sandbox` is decision 3's effect; `dev` or `warehouse` means the editor keeps a database of its own.
+2. **5.2, the admitted project reaches `lab` and nothing else** (verification vii). **[Claude⚡]** On the
+   user's word, a second schema the project holds no role for, as the admin:
+
+   ```bash
+   q "CREATE SCHEMA neg52 QUOTA 1 GB"
+   ```
+
+   ```bash
+   q "CREATE TABLE neg52.t AS SELECT 1 AS x"
+   ```
+
+   **[user]** In the editor, as the project's user: `CREATE TABLE lab.neg52_ctl AS SELECT 1 AS x;` works,
+   `SELECT * FROM neg52.t;` is refused, and with the editor switched to database `warehouse`, `CREATE TABLE
+   public.neg52 (x INT);` is refused; then `DROP TABLE lab.neg52_ctl;` in `sandbox`. **[Claude]** reads each
+   wording, then **[Claude⚡]** `q "DROP SCHEMA neg52 CASCADE"`. A read or a create succeeding in `warehouse`
+   is a default grant 1.2's `REVOKE` missed.
+3. **[user] 5.2a's owed half** (verification xiv): `ALTER SCHEMA lab QUOTA 1 TB;` as the project's user, the
+   value the schema holds, so a success changes nothing. The expected refusal needs a superuser, and its
+   wording is the reading.
+4. **[user] 5.3 from the project's space**, a terminal in `eighth-experimentation`'s JupyterLab, as the
+   project role:
+
+   ```bash
+   aws redshift-serverless update-workgroup --workgroup-name awsds-sandbox-warehouse --max-capacity 8 --region us-west-2
+   ```
+
+   ```bash
+   aws redshift-serverless delete-usage-limit --usage-limit-id 00000000-0000-0000-0000-000000000000 --region us-west-2
+   ```
+
+   ```bash
+   aws secretsmanager get-secret-value --secret-id <the admin secret's ARN> --region us-west-2
+   ```
+
+   Each attempt changes nothing if it is let through: 8 is the maximum the workgroup holds, and the usage
+   limit's id is made up. The first two are expected to name an explicit deny in a service control policy
+   (`DenyRedshiftCostGuardTamperingExceptInfrastructure`), the third no identity-based policy allowing it.
+   A `ResourceNotFoundException` on the second means the service validates before it authorizes (Lesson
+   21); the real id is never sent, and the simulator's verdict of 2026-10-18 stands for it.
+5. **[user] 5.4 as the persona**, from the laptop (verification viii):
+
+   ```bash
+   aws redshift-serverless get-credentials --workgroup-name awsds-sandbox-warehouse --db-name sandbox --profile awsds-scientist-sandbox --region us-west-2
+   ```
+
+   The expected wording names an explicit deny in an identity-based policy,
+   `DenyMintingARedshiftDatabaseSession`.
+6. **[user] 5.1 from `test-experimentation`, before the tag** (verification vi): in its portal, the warehouse
+   absent from *Add compute*'s existing Redshift Serverless list, and a hand-made connection to
+   `awsds-sandbox-warehouse` attempted if the form takes the name. **[Claude]** reads the trail for its
+   project role, `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`: `GetCredentials`, `CreateConnection` and the
+   `sqlworkbench` calls with their error codes. A connection that is created is a finding: the owner
+   deletes it at once and `WH-9` reads one connection again (`EXC-17`).
+7. **[Claude⚡] The wide tag on**, on the user's word naming it, the other sessions told first, from a tree
+   on `main` (Lesson 79), as `awsds-infra-sandbox-1`:
+
+   ```bash
+   ./scripts/gen-backend-hcl.py sandbox warehouse && ./scripts/gen-tfvars.py sandbox warehouse
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse init -backend-config=backend.hcl -input=false
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse plan -input=false -var all_projects_tag_enabled=true -var data_transfer_role_enabled=false -out="$HOME/tmp/6h-tag-on.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse apply -input=false "$HOME/tmp/6h-tag-on.tfplan"
+   ```
+
+   The plan reads `0 to add, 1 to change, 0 to destroy` on `aws_redshiftserverless_namespace.this`, as on
+   2026-11-19. The workgroup takes the tag at the compute slice's re-apply, after 5b's step 2 re-plan:
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse-compute plan -input=false -out="$HOME/tmp/6h-compute-tag-on.tfplan"
+   ```
+
+   ```bash
+   AWS_PROFILE=awsds-infra-sandbox-1 terraform -chdir=terraform-live/sandbox/warehouse-compute apply -input=false "$HOME/tmp/6h-compute-tag-on.tfplan"
+   ```
+
+   Expected `0 to add, 1 to change, 0 to destroy`, the workgroup's tags alone, unmeasured; any other change
+   stops the step. `./aws/warehouse.py awsds-infra-sandbox-1` reads `WH-7` red between the two applies,
+   the tag on one object alone, and green after both.
+8. **5.2b, two projects on one schema.** **[user]** In `test-experimentation`'s JupyterLab, the direct
+   door of 3.3 ([`redshift-connection.md`](../runbooks/redshift-connection.md) §J, "The JupyterLab door,
+   from inside a space"), the project role's own session on database `sandbox`, `SELECT current_user`.
+   **[Claude]** reads that database user in `SVV_USER_INFO`, never spelling it (Lesson 85), then
+   **[Claude⚡]** on the user's word `q "GRANT ROLE sbx_lab_rw TO \"<that user>\""`. **[user]** Each project
+   creates a table of one row in `lab`, `lab.b52_eighth` from the editor and `lab.b52_test` from the
+   notebook; then each tries `SELECT`, `INSERT` and `DROP` on the other's table. **[Claude]** reads each
+   verb's wording and the owners in `pg_tables`. Each owner drops its table, and **[Claude⚡]** `q "REVOKE
+   ROLE sbx_lab_rw FROM \"<that user>\""`. The grant lives one step and is written in the log, not in the
+   grant register. The verbs answer 1.5's callout: whether the per-pair `ALTER DEFAULT PRIVILEGES` of
+   runbook §T are owed.
+9. **[Claude⚡] The wide tag off**, on the user's word, unless step 2 of "Before it" left it standing: step
+   7's commands with `-var all_projects_tag_enabled=false -var data_transfer_role_enabled=false` and the
+   plan files named `6h-tag-off` and `6h-compute-tag-off`, each `0 to add, 1 to change, 0 to destroy`;
+   `WH-7` green after both. Stage 21's rows run with the tag off.
+10. **[user] 0.4's portal half** (verification xi): `eighth-experimentation`'s contributor, in its own browser
+    profile, tries *Add compute*, existing Amazon Redshift Serverless, on `awsds-sandbox-warehouse`.
+    **[Claude]** reads `CreateConnection` in the trail with its caller and error code, and `WH-9`'s count.
+    A connection that is created is deleted by the owner at once.
+11. **[user] 6.4, keep or drop `lab`**, the sitting's last 6h row, after Stage 19's 5.4 and Stage 21's
+    rollback drop their tables.
+
+About 2 hours 20 minutes of 6h's rows: steps 1 and 3 to 5 about 30 minutes together, step 2 15, step 6 15,
+steps 7 and 9 15 each, step 8 30, step 10 15, step 11 a word. Verification x stays owed, since no row
+removes a project from the map, and xii waits for the bill after 2026-12-19.
 
 ---
 
@@ -484,7 +681,8 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 
 ## Validation
 
-1. `./aws/warehouse.py` — `WH-1`..`WH-12` pass; diff two runs across the stage.
+1. `./aws/warehouse.py --sql` — `WH-7`, `WH-11`, `WH-12` and `WH-14` pass and `WH-9` reads the connection; diff
+   two runs across the stage.
 2. `./aws/studio.py` — `US-8` still green: the project role carries the D13 boundary after 2.3's attachment.
 3. `./aws/datalake.py` — `DL-5`/`DL-6` unchanged; this stage touches no Lake Formation object, and the
    reading proves it.
@@ -495,7 +693,7 @@ refuses, and none of these has ever been measured on this surface. **Explanation
 
 | Item | Cost |
 |---|---|
-| `sbx_lab`, its schema and one small table | RMS at 0.024 USD/GB-month — cents |
+| the database `sandbox`, its schema `lab` and its tables | RMS at 0.024 USD/GB-month — cents |
 | The connection | free; it is a domain metadata object |
 | Every query in pass 2 and pass 3 | **1.44 USD/hour of query time**, 60-second minimum per query — so a dozen interactive queries are well under a dollar, and a **left-open transaction is 8.64 USD** before `SESSION TIMEOUT` ends it |
 | `lineageSync`, if enabled | a **recurring** query on a 1.44 USD/hour meter — the one line item that turns this stage into a standing cost (decision 3) |
@@ -520,13 +718,37 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    credential**: what this decision asked for and had no mechanism for. The form makes the access role
    **mandatory same-account** — which AWS's same-account procedure and the field's own help both deny — and
    marks the secret **optional**, so the purpose-made secret stays unbuilt. A typed password is refused.
-3. **`lineageSync`** (3.2). **Answered 2026-09-21: off, and free.** The form offers no toggle on this path,
-   so the scheduled query on the estate's most expensive meter cannot be turned on from the portal. Revisit
-   only if [6f](stage-06f-data-governance.md)'s lineage step asks for it through the API.
+3. **`lineageSync`** (3.2). **Taken 2026-09-21 as off; re-opened 2026-10-18, because the object carries it
+   on.** The form offers no toggle on this path, and the connection it wrote reads `lineageSync.enabled:
+   true` on `cron(43 3 * * ? *)` with a lineage job of its own: eight daily runs from 2026-10-11 to
+   2026-10-18 at 03:44:44Z, every one `FAILED`, and no `GetCredentials` at those times, the run of
+   2026-10-16 included, when a workgroup existed. So it has cost nothing, and the day a run succeeds it is a
+   scheduled query on the estate's most expensive meter. **Owed to the user**: switch it off, an
+   `UpdateConnection` by a project member, or keep it with the cost named. `WH-9` fails the day a run
+   completes. Revisit the sync itself only if [6f](stage-06f-data-governance.md)'s lineage step asks for it.
+   **Recommended on 2026-11-17**, by the plan's review: keep it, read at Stage 19's pass 5 before
+   2026-12-19. The connection's sync is SMUS's own lineage capture for Redshift, the intended path, and a
+   run bills only while the workgroup is up at 03:43 UTC, at 0.36 USD per RPU-hour (`PRICING.md`); `WH-9`
+   and `EXC-17` change with it.
+   **Taken 2026-11-17 by the user: off**, the option *"Desligar"* on a card at 22:28 UTC, against the
+   keep recommended the same day: an `UpdateConnection` by a project member, a full-replace call that
+   passes every field (Lesson 60); `WH-9` and `EXC-17` change with it. The same call names database
+   `sandbox` in place of `dev` (3.2), the user's choice of 22:30 UTC, *"Mudar para sandbox na mesma
+   chamada"*; if the service refuses the change, the person keeps selecting `sandbox` in the editor.
+   **Done 2026-11-19** by Claude, on the user's word in chat, *"Autorizo o updateconnection"*: one
+   `UpdateConnection` at 02:22:20 UTC as Sandbox's `InfrastructureAccess`, a contributor of the project,
+   with the workgroup destroyed, passing every field the object had ([§P](../runbooks/redshift-connection.md)
+   step 4a). The object reads `lineageSync.enabled: false`, its schedule and lineage job kept, and database
+   `sandbox`, both JDBC URLs following; nothing else changed. The service refused neither the contributor
+   (`SUP-157`) nor the absent workgroup (`SUP-387`). `WH-9` passes, and fails on an enabled sync or another
+   database. The schedule's next time, 03:43 UTC the same day, created no run (read at 03:50): the sync off
+   stops the runs, with the schedule and the job kept. The Query editor's opening on `sandbox` is read in
+   the warehouse sitting.
 4. **Whether a persona ever queries the warehouse directly** (step 4). **Taken 2026-09-20: no**, as 5b 2.3
    applied it: the persona keeps the read side and is denied `GetCredentials` and the `redshift-data:`
    family. Every query arrives through a project, which keeps the `GRANT` register complete and the shared
-   RPU meter attributable. 5.4 is the measurement still owed.
+   RPU meter attributable. 5.4 reads `explicitDeny` in the policy simulator (2026-10-18); the refusal's
+   wording is the measurement still owed.
 5. **~~One database per project, or shared databases with a schema per project~~ — answered by the brief**
    (2026-09-20): *a schema is a base*, one database holds them all, and **a schema may be shared with more than
    one project**. What remains is the mechanism, and it is 1.5's: **a database role per schema**, granted to each
@@ -535,8 +757,8 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 6. **~~The schema's name~~ — answered by the brief**: *"chosen when the schema is created, after the theme of the
    data it will hold"*, with no relation to a project. Both shapes this file offered — the project's name, the
    project id — are wrong. **The consequence to carry:** a schema name is not an authorization fact, so the
-   schema × project relation exists **only** in `sandbox/warehouse/`'s map and in the `GRANT ROLE` statements,
-   and `WH-12` comparing the two is the only thing that can find a drift.
+   schema × project relation exists **only** in the `GRANT ROLE` statements and their register rows, and a
+   reader comparing `WH-12`'s list of user-role grants with the register is the only thing that finds a drift.
 7. **~~The quota value~~ — answered by the brief: 1 TB.** What is left to decide is the **compensating control**,
    because at 1 TB the quota is a runaway guard and not a cost guard: one filled schema is **USD 24.58 a month**,
    half the D12 ceiling, and nothing bounds the *number* of schemas. Recommended: a **CloudWatch alarm on
@@ -597,25 +819,47 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
    `AmazonDataZoneProject` turned out to be a **single-valued tag key** on both the workgroup and the
    namespace. **At one project nothing is blocked**; the question arrives with the second. The options:
    **(a)** the wide `for-use-with-all-datazone-projects=true`, accepting that the compute-admission gate
-   becomes per-account and leaning on layers 2 and 3, which are per project role and per schema × project;
+   becomes per-account and leaning on layer 3, per schema × project, and on layer 2, per project on the
+   access role alone (below);
    **(b)** a second workgroup per project on the same namespace — but the **namespace** tag is single-valued
    too, so this probably does not work and would have to be measured before it is chosen; **(c)** one project
    per warehouse, which multiplies the `[E]` object rather than the data and spends a workgroup quota on a
    permission.
-   **Recommended: (a), with the argument written down rather than assumed.** A project whose role lacks
-   `GetCredentials` still cannot connect and a project without a `GRANT ROLE` still sees nothing, so the wide
-   tag widens a gate that has two narrower, genuinely per-project gates behind it — and `WH-7` would have to
-   change from *"the wide tag appears on neither object"* to *"it appears on both, and the authored map is the
-   register of who may actually connect"*, which is a real loss of one independent check. **Not taken now**:
-   there is no second project, and choosing the shape before the requirement has one is how an option gets
-   adopted for the wrong reason.
+   **Recommended: (a), with the argument written down rather than assumed.** A project without a
+   `GRANT ROLE` still sees nothing, and a project the map gives no access role cannot connect from the Data
+   page, so the wide tag widens a gate that has the schema `GRANT` behind it on every door and the access
+   role on the Data page alone — and `WH-7` would have to change from *"the wide tag appears on neither
+   object"* to *"it appears on both, and the authored map is the register of who may actually connect"*,
+   which is a real loss of one independent check. **Live and not taken**: a second project,
+   `test-experimentation`, exists since 2026-10-15 and is in no map. Whether it needs the warehouse is the
+   user's to say, and the shape follows that requirement rather than preceding it.
+   **Under (a) the project role's layer 2 is not per project** (simulated 2026-10-18): AWS's
+   `SageMakerStudioProjectUserRolePolicy` v75, on both Sandbox project roles, carries
+   `ExistingRedshiftCompute`, which allows `GetCredentials` and the Data API on a workgroup tagged
+   `for-use-with-all-datazone-projects=true` that carries no `AmazonDataZoneEnvironment` tag, and
+   `test-experimentation`'s role reads `allowed` for both under that tag. So with the wide tag every
+   project role holds layer 2, and layer 3 is the only per-project gate left.
+   With the wide tag, layer 2 holds for the Data page alone, whose `GetCredentials` the per-project access
+   role makes (3.1, `SMUS.md` §Connections) and no AWS policy grants; a direct notebook session or a Data
+   API call as the project role reaches the compute under `ExistingRedshiftCompute`, so for those doors the
+   schema `GRANT` is the only per-project gate. The register of who may connect is then the map's access
+   roles for the Data page and `WH-12`'s roles for everything else, `WH-7` inverts as written above, and
+   5.2b, a project in no map reading nothing from a notebook, is the check that carries the design. (b) and
+   (c) keep their objections.
+   **Taken 2026-11-17 by the user as (a)**, the option *"Tag ampla (caminho da AWS)"* on a card at 22:27 UTC,
+   AWS's managed policy's path: when a second project needs the warehouse,
+   `for-use-with-all-datazone-projects=true` goes on the workgroup and the namespace, every project role
+   reaches the compute under `ExistingRedshiftCompute`, the schema `GRANT` is the only per-project gate on
+   the notebook and Data API doors, `WH-7` inverts as written above, 5.1 is read before the tag changes and
+   5.2b after. Its switch, `sandbox/warehouse/`'s `all_projects_tag_enabled`, off by default, and `WH-7`'s
+   inversion were written 2026-11-18 on pull request #323.
 
 ## Verifications to answer while executing
 
 | # | Question | Step |
 |---|---|---|
-| i | **Answered 2026-10-10**: the boundary is **attached** to the project role (INT-15 holds, and the slice's own precondition checks it) and it **admits** `redshift-serverless:GetCredentials`: the project role called it from a space at 3.3 and was answered. `redshift-data:` is granted to no role, so the boundary's answer for that family is unread | 0.2 |
-| ii | **Answered 2026-09-21**: the compute is offered from a dropdown, as database `dev`; the form demands `Access role ARN`, leaves `AWS Secret` optional and offers no `lineageSync` toggle | 3.1, 3.2 |
+| i | **Answered 2026-10-10**: the boundary is **attached** to the project role (INT-15 holds, and the slice's own precondition checks it) and it **admits** `redshift-serverless:GetCredentials`: the project role called it from a space at 3.3 and was answered. The boundary admits `redshift-data:ExecuteStatement` too (simulated 2026-10-18), which AWS's `SageMakerStudioProjectUserRolePolicy` grants on a workgroup tagged with the project (2.2) | 0.2 |
+| ii | **Answered 2026-09-21**: the compute is offered from a dropdown, as database `dev`; the form demands `Access role ARN`, leaves `AWS Secret` optional and offers no `lineageSync` toggle. The object it wrote has `lineageSync` **enabled**, read 2026-10-18 (decision 3) | 3.1, 3.2 |
 | iii | **Answered 2026-10-10**: the user is `IAMR:` plus the `RedshiftDbUser` value the calling session carries — `IAMR:datazone_usr_role_<project>_<env>` through the access role, `IAMR:user-<Identity Center user id>@<project id>` on a direct notebook session, auto-created holding nothing. Read first on 2026-09-20: `pg_user` already carries `IAMR:AWSReservedSSO_InfrastructureAccess_<suffix>`, created by nobody and **`usesuper = true`**, so an `InfrastructureAccess` session that reaches the database by IAM is a **superuser** session | 1.4, 3.3 |
 | iv | **Answered 2026-10-10: both doors work**, JupyterLab over `5439` inside the VPC and the Data page through `sqlworkbench` | 3.3, 3.4 |
 | v | **Answered 2026-10-10: it depends on the door.** The access role calls `GetCredentials` on the Data page and on a notebook's chained session, the project role on a direct notebook session, and each lands on the database user its session's `RedshiftDbUser` names | 3.5 |
@@ -623,10 +867,10 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
 | vii | Does the admitted project reach `warehouse` — and if it reads it, which default grant did 1.2's `REVOKE` miss? | 5.2 |
 | xiii | **Answered 2026-10-10**: the role's `USAGE, CREATE` lets the project create tables in `lab` with no further grant, each owned by the database user that created it, and its sessions on `sandbox` needed nothing beyond the role. Reading another creator's tables needs the default privilege written for that creator (runbook §T) | 1.5, 3.3 |
 | xiv | **Mostly answered without the project.** It refuses **at commit**, with the wording in the log, and the usage **overshoots the quota inside the transaction**. `SVV_SCHEMA_QUOTA_STATE` **cannot be read at all** — refused to a superuser — so neither it nor the violations view is an instrument here. Owed: that `ALTER SCHEMA … QUOTA` fails for a non-superuser, which the project's own session can now attempt | 5.2a |
-| viii | Does the persona's `GetCredentials` refusal name the identity-based policy? The set carries an explicit `Deny`, `DenyMintingARedshiftDatabaseSession`, so it should | 5.4 |
+| viii | Does the persona's `GetCredentials` refusal name the identity-based policy? The set carries an explicit `Deny`, `DenyMintingARedshiftDatabaseSession`, so it should. **The decision is read, 2026-10-18**: the policy simulator returns `explicitDeny` matching that statement in the provisioned inline policy, with the organization admitting the call. The simulator gives no wording, so the persona's real call stays owed | 5.4 |
 | ix | **Answered: no, read 2026-10-17.** Nothing reaches the groups while a workgroup exists, so no session through either door has been logged; the only user records are the admin's Data API sessions of 2026-09-21 (`EXC-16`) | 3.6 |
 | x | Does removing a project from the map remove layers 1 and 2 — and does its layer-3 `GRANT` survive, as predicted? | 6.1 |
-| xi | Does anything at the domain level stop a project member creating a connection of their own? | 0.4 |
+| xi | Does anything at the domain level stop a project member creating a connection of their own? **The API half answered 2026-10-18: no** — no policy type and no domain setting governs `CreateConnection` (0.4). The portal half, whether a contributor can, is the user's | 0.4 |
 | xii | What did the stage's queries cost, read from the bill rather than predicted? **2026-10-10 burned 24,359 RPU-seconds = 2.44 USD by `ComputeSeconds`** (read by the hour on 2026-10-17): 109 in the morning session, whose 100 the log recorded as the day's, and 24,220 between 16:00Z and 18:59Z. The free trial absorbed it ([5b](stage-05b-redshift-serverless.md) verification xiii), so the bill can answer only after 2026-12-19 | 6.4 |
 | xv | **Answered 2026-10-17: yes.** All 148 `GetCredentials` of 2026-10-10 to 2026-10-16 carry one `sourceIdentity`, the data scientist's Identity Center user id: the portal's sessions, the space's project-role session and the chained `redshift-per-project` one, which carries it although §J passes none | 8a |
 
@@ -642,9 +886,10 @@ judgement** (1 and 2, below). Each is decided during the stage and written into
   one mattered.
 - **The tag is a selector written over an attribute** (Lesson 29): `AmazonDataZoneProject` is a tag AWS reads
   as an authorization input, so anything else that ever wears it — a copy, a restored namespace, a snapshot
-  clone — inherits the admission. `WH-7`/`WH-10` compare the live tags against the authored map for that
+  clone — inherits the admission. `WH-7` compares the live tags against the authored map for that
   reason, rather than merely asserting the map.
-- **`lineageSync` is a scheduled query on an hourly meter**, and it is a checkbox on the connection form.
+- **`lineageSync` is a scheduled query on an hourly meter**, a field the portal's form does not show and
+  writes on (`SUP-207`); decision 3 keeps it off, and `WH-9` fails on it.
   Nothing in AWS's UI says what it costs on Redshift Serverless; this file is the only place that does.
 - **The portal writes an object this repository did not author.** A connection created by hand is a
   `ManagedBy=console` object outside the seven Stage 2 names, so either it is adopted into Terraform (decision

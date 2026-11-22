@@ -32,8 +32,8 @@ provider "awscc" {
 # established. An alias exists here only to resolve the account a project profile provisions
 # into: each profile's environment configuration names that account, and aws/INDEX.md rule 1
 # keeps account ids out of tracked files. They create nothing, carry no default_tags, and their
-# profiles arrive from the generated tfvars (SMUS_MEMBERS in scripts/tfhygiene/backend.py),
-# never as literals here.
+# profiles arrive from the generated tfvars (SMUS_MEMBERS and SMUS_DEPLOYMENT_MEMBERS in
+# scripts/tfhygiene/backend.py), never as literals here.
 #
 # The alias keys are static while D35 says sandboxes multiply, because Terraform cannot for_each
 # a provider. Unit 2 adds an alias here by hand, the same seam data-governance/data/ carries.
@@ -44,6 +44,20 @@ provider "aws" {
   alias   = "sandbox"
   region  = var.region
   profile = var.members["sandbox"].profile
+}
+
+# The deployment members (SMUS_DEPLOYMENT_MEMBERS, Stage 19 decision 6 (b)): each holds one
+# deployment project, born of that account's own profile.
+provider "aws" {
+  alias   = "staging"
+  region  = var.region
+  profile = var.members["staging"].profile
+}
+
+provider "aws" {
+  alias   = "production"
+  region  = var.region
+  profile = var.members["production"].profile
 }
 
 

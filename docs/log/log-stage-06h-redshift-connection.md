@@ -2086,3 +2086,453 @@ sessions, 3.3 over `5439` and decision 8a's measurement among them, burned 24,22
 statement it was is not readable from the metric. The free trial absorbed all of it
 ([5b's log](log-stage-05b-redshift-serverless.md), 2026-10-17), so verification xii reads this figure
 and not the bill until 2026-12-19.
+
+## 2026-10-18 — the connection object is readable, its lineage sync is on, and 0.4's API half
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", with the environment down
+and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`), except the project-membership events, read as
+`awsds-infra-data` (account `<Data Governance Account>`, the same permission set) from the domain
+account's trail. All reads; the DataZone API model is the one the laptop's CLI carries, 2.37.12.*
+
+### `list-connections` answers, and a group explains why
+
+`datazone list-connections` answers this identity in both Sandbox projects: `eighth-experimentation`
+holds eleven connections, `redshift-serverless.redshift` among them, and `test-experimentation` nine,
+none of type `REDSHIFT`. It was refused three times before (2026-09-21, twice on 2026-10-10), and D41
+records it answering on 2026-10-15.
+
+The domain account's trail holds two `CreateProjectMembership` calls in the window, both by the domain
+execution role, which is how the portal's acts reach the API:
+
+| UTC, 2026-10-15 | Project | Member | Designation |
+|---|---|---|---|
+| 06:15:15 | `test-experimentation` | a DataZone group profile | `PROJECT_CONTRIBUTOR` |
+| 06:15:45 | `eighth-experimentation` | the same group | `PROJECT_CONTRIBUTOR` |
+
+The group's name is not readable to this identity: `GetGroupProfile` is refused by IAM, and
+`search-group-profiles` lists it with no name. Each project's other members are its owner, the data
+scientist, and its own project role. So that `InfrastructureAccess` reaches the projects through this
+group is an inference from the timing, the only membership change between the last refusal and the
+first answer.
+
+### The connection, field by field
+
+`get-connection` on `redshift-serverless.redshift`:
+
+| Field | Value |
+|---|---|
+| type, scope | `REDSHIFT`, `PROJECT` |
+| `environmentUserRole` | the project role |
+| access role | `awsds-sandbox-warehouse-access-<project>`, the one `sandbox/warehouse/` authors |
+| host, port, protocol | the workgroup's own host, `5439`, `JDBC` |
+| `databaseName` | **`dev`**, as the trail's `dbName` said on 2026-10-17; `jdbcUrl` and `jdbcIamUrl` end in `/dev` |
+| `redshiftTempDir` | `s3://awsds-sandbox-smus-projects/<domain>/<project>/dev/redshift-tmp/` |
+| `status` | `READY` |
+| `lineageSync` | **`enabled: true`**, schedule `cron(43 3 * * ? *)`, a lineage job of its own |
+
+**The form of 2026-09-21 showed no `lineageSync` toggle, and the object it wrote has the sync on.**
+`list-job-runs` on its job: eight runs, one a day from 2026-10-11 to 2026-10-18, each created at
+03:44:44Z and each `FAILED`, with no error text; `get-job-run` answers `ResourceNotFoundException` for
+every one of their ids. CloudTrail holds no `GetCredentials` at those times on any of the eight days,
+including 2026-10-16, when a workgroup existed from 01:55:53 to 04:23:30. The calls at 03:43:19 and
+03:44:35 on 2026-10-10 are the portal's own, with `dbName: dev`, before the first run. So the sync has
+minted no database session and cost nothing; the day a run succeeds it is a scheduled query on the
+warehouse's meter.
+
+**Decision 3 is re-opened, and it is the user's.** Switching the sync off is an `UpdateConnection` by a
+project member; keeping it means naming its cost. `EXC-17` is rewritten around the object rather than
+around its unreadability.
+
+### `WH-9` reads the connection
+
+`./aws/warehouse.py` lists each admitted project's `REDSHIFT` connections, reads each one and its
+lineage job's runs, and compares the workgroup, the host and the access role with what
+`sandbox/warehouse/` authors. It fails on a foreign access role or on a lineage run that completed,
+and notes a refused `list-connections` or a sync that is on with no run completed. Every branch was
+called with fabricated connections before the live run, as `WH-15`'s were:
+
+| Case | Verdict |
+|---|---|
+| `list-connections` refused | note |
+| no Redshift connection in the project | note |
+| the authored workgroup and access role, sync off | pass |
+| another access role | fail |
+| sync on, eight runs failed | note |
+| sync on, a run succeeded | fail |
+| sync on, runs unreadable | note |
+| Production | note: no project is admitted outside Sandbox |
+
+Live, 2026-10-18: **`note`**, *redshift-serverless.redshift (database dev): lineageSync ENABLED on
+cron(43 3 * * ? *), 8 run(s), none completed*.
+
+### 0.4 and verification xi — the API half
+
+Nothing at the domain level governs who creates a connection. Of DataZone's fourteen authorization
+policy types, the `--policy-type` values `list-policy-grants` accepts, none names a connection;
+`CreateDomain`, `UpdateDomain` and `CreateProjectProfile` carry no connection setting; and
+`CreateConnection` takes a `scope` of `DOMAIN` or `PROJECT`. 6f 1.1 read the policy grants that do
+exist on the root domain unit. A project owner created this connection; the user guide does not say
+whether a contributor may, and that is the portal half, the user's.
+
+### A second project exists
+
+`test-experimentation` (`4gqfau9xuo6e4w`) was created 2026-10-15 06:05:18Z, D41's `test` project, and
+is in no map: it holds no `REDSHIFT` connection, and the warehouse's tag names the first project only.
+So 5.1 and 5.2b can be run from it with the compute up, and decision 8 is live.
+
+### Validation 2-4, with the compute down
+
+| Instrument | Result |
+|---|---|
+| `./aws/studio.py` | `US-8` pass: *all 6 blueprint-provisioned role(s) bounded*. 16 pass, 2 notes; exit 1 only because five persona profiles hold no session |
+| `./aws/datalake.py` | `DL-5` and `DL-6` pass in both readings. 24 pass, 4 notes; exit 1 for the same profiles |
+| `./aws/warehouse.py`, without `--sql` | exit 0; Sandbox 7 pass, 9 notes, `WH-9` among the notes; Production 2 pass, 14 notes |
+
+`make check` is in the change that adds this entry.
+
+### The notebook door and an open transaction
+
+The 60-minute plateau of 2026-10-10, 17:57 to 18:56Z, began two minutes after a direct notebook
+session's `GetCredentials` and ended on no call, the length of the idle-session timeout (5b log, this
+date). The driver opens a transaction at the first statement, reads included (§J), and AWS bills an open
+transaction, so §J now says to end a cell's work with `commit()` or `rollback()` or to close the
+connection. Which session held the compute is not readable now.
+
+## 2026-10-18 — amendment: the group is Sandbox's `InfrastructureAccess` role
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", after the sessions "Stage
+6f: catalog readings and text" and "Stage 8: readings, NO_PROXY proposal, text fixes" reported the same
+group. The readings below are this session's own. It amends the entry above, whose "an inference from the
+timing" stays as written.*
+
+- `get-group-profile` on the group added on 2026-10-15 answers `awsds-infra-data` (account
+  `<Data Governance Account>`) and is refused to `awsds-infra-sandbox-1`. Its `rolePrincipalArn` is an
+  `AWSReservedSSO_InfrastructureAccess_<suffix>` role, and compared without printing either: the role's
+  account is `<Sandbox Account 1>` and its name is the role `awsds-infra-sandbox-1` signs in as, not Data
+  Governance's.
+- `list-connections` on `eighth-experimentation` as `awsds-infra-data`: *"User is not permitted to
+  perform operation: ListConnections"*.
+
+So the cause is read, not inferred: Sandbox's `InfrastructureAccess` role is a `PROJECT_CONTRIBUTOR` of
+both Sandbox projects, through a group profile, since 2026-10-15 06:15Z, and Data Governance's is still
+in no project. The stage file, `EXC-17`, the runbook and `WH-9`'s comment name the role.
+
+## 2026-10-18 — 5.3 and 5.4 by the policy simulator, and what AWS's project policy grants on the warehouse
+
+*Written by Claude, in the task `stages-06fgh-readings` the orchestrating session ran on the user's
+approval of 2026-10-18, with the environment down and no apply. Every reading is Claude's own, as
+`awsds-infra-sandbox-1` (account `<Sandbox Account 1>`, permission set `InfrastructureAccess`), and, for
+the permission set's own document, `awsds-infra-identity` (`<Identity Account>`, the same permission
+set). All reads: `iam simulate-principal-policy`, `iam get-role`, `list-role-tags`, `get-policy-version`
+and `get-role-policy`, `sso-admin` reads, `redshift-serverless get-namespace` and
+`list-tags-for-resource`, `secretsmanager describe-secret` and `get-resource-policy`. Account ids are
+replaced by the account's name.*
+
+### The method, and what a verdict covers
+
+- **The context of every call**: `aws:RequestedRegion=us-west-2`, without which the Control Tower Region
+  ceiling reads as an explicit deny (`lessons.md`'s platform list), and `aws:PrincipalArn`; on the project
+  roles, each role tag as `aws:PrincipalTag/<key>`; on a workgroup, `aws:ResourceTag/AmazonDataZoneProject`
+  = `avhvbqn37ty7m8`, the tag layer 1 puts on it; on the admin secret, its three tags as
+  `aws:ResourceTag/<key>`. The workgroup is `[E]` and was down, so its ARN carries a made-up id; every
+  policy on the path wildcards the id.
+- **What the simulator evaluates** (the IAM user guide's simulator page, read the same day): the identity
+  policies, the permissions boundary and the SCPs in scope, condition keys included, the SCPs' verdict as
+  one boolean, `AllowedByOrganizations`, that names no statement; no RCP. It reads no session tag and no
+  KMS key policy, and a role's simulation takes a resource policy only with an IAM user as caller. The
+  admin secret has no resource policy: `get-resource-policy` returns its ARN and name and no policy.
+- **When the organization denies, the simulator names no identity statement**: the persona's
+  `GetCredentials` without the Region key read `explicitDeny`, organizations `false`, nothing matched;
+  with the key, the inline policy's deny matched.
+
+### 5.3 — the project's two roles against the warehouse's administration
+
+| Principal | Action | Resource | Decision | Organizations | Boundary | Statement matched |
+|---|---|---|---|---|---|---|
+| project role | `redshift-serverless:UpdateWorkgroup` | the workgroup | `explicitDeny` | `false` | not reported | none |
+| project role | `redshift-serverless:DeleteUsageLimit` | `*` | `explicitDeny` | `false` | not reported | none |
+| project role | `secretsmanager:GetSecretValue` | the admin secret | `implicitDeny` | `true` | `true` | none |
+| project role | `redshift-serverless:GetCredentials`, the control | the workgroup | `allowed` | `true` | `true` | `MintADatabaseSessionOnThisAccountsWarehouse`; `SageMakerStudioProjectUserRolePolicy`'s `ComputeCredentials` |
+| access role | `UpdateWorkgroup` | the workgroup | `explicitDeny` | `false` | none attached | none |
+| access role | `DeleteUsageLimit` | `*` | `explicitDeny` | `false` | none attached | none |
+| access role | `GetSecretValue` | the admin secret | `implicitDeny` | `true` | none attached | none |
+| access role | `GetCredentials`, the control | the workgroup | `allowed` | `true` | none attached | `MintADatabaseSessionOnThisAccountsWarehouse` |
+
+The project role is `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` under
+`awsds-sandbox-project-boundary` v2; the access role is `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`,
+with no boundary. `UpdateWorkgroup` takes the `workgroup` resource type and `DeleteUsageLimit` none, so
+the second runs on `*` (the Service Authorization Reference for Redshift Serverless, read the same day).
+`GetSecretValue` with `aws:ResourceAccount` and `aws:PrincipalAccount` added read `implicitDeny` again.
+
+**Which SCP denies, read by moving the principal's ARN alone:**
+
+| Simulated role | `aws:PrincipalArn` in the context | `UpdateWorkgroup` | `DeleteUsageLimit` |
+|---|---|---|---|
+| project role | the `InfrastructureAccess` role's | `implicitDeny`, organizations `true`, boundary `true`, nothing matched | the same |
+| `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d` | its own | `allowed`, `AdministratorAccess` | `allowed`, `AdministratorAccess` |
+| the same | none | `allowed`, organizations `true` | not run |
+| the same | the project role's | `explicitDeny`, organizations `false` | `explicitDeny`, organizations `false` |
+
+`DenyRedshiftCostGuardTamperingExceptInfrastructure` is the only statement in this repository's SCPs on
+Sandbox's path that names either action, and it is conditioned on `aws:PrincipalArn`, so the
+organization's deny is that statement; the project role's own policies grant neither action. The
+simulator used the `aws:PrincipalArn` the context gave, and with none it evaluated the SCP as if the key
+carried the role's own ARN, since an absent key makes `ArnNotLike` true and the deny would apply. The
+page's list of keys the simulator populates does not name `aws:PrincipalArn`.
+
+### 5.4 — the persona
+
+`AWSReservedSSO_DataScientistAccess_37932702010107f8` in `<Sandbox Account 1>`. Its inline policy equals
+the permission set's in `<Identity Account>` (`sso-admin get-inline-policy-for-permission-set`, 21
+statements), beside `CloudWatchLogsReadOnlyAccess` v12 and `awsds-org-project-storage-vending` v1.
+
+| Action | Decision | Organizations | Statement matched (inline policy, line 1) |
+|---|---|---|---|
+| `redshift-serverless:GetCredentials` | `explicitDeny` | `true` | columns 4931-5235, `DenyMintingARedshiftDatabaseSession` |
+| `redshift-data:ExecuteStatement` | `explicitDeny` | `true` | the same columns |
+| `redshift-serverless:GetWorkgroup`, the control | `allowed` | `true` | columns 4625-4931, `ReadRedshiftServerlessStatus` |
+
+The stored policy is one line: re-minified in its stored order, `ReadRedshiftServerlessStatus` spans
+columns 4626-4930 and `DenyMintingARedshiftDatabaseSession` 4932-5234, one column inside each simulated
+span. The refusal's wording, verification viii, is the persona's real call.
+
+### What `SageMakerStudioProjectUserRolePolicy` v75 grants on the warehouse
+
+Both Sandbox project roles carry it. Each statement below was matched by its column span in the stored
+one-line document, the persona's method:
+
+| Statement | Grants | Condition | Simulated |
+|---|---|---|---|
+| `ComputeCredentials` | `redshift-serverless:GetCredentials`, with EMR and provisioned-cluster calls, on `*` | the resource's `AmazonDataZoneProject` equals the caller's | `allowed` for the admitted project's `GetCredentials` |
+| `RedshiftDataActions` | `redshift-data:ExecuteStatement`, `BatchExecuteStatement`, `DescribeTable`, `ListDatabases`, `ListSchemas`, `ListTables`, on `*` | the same | admitted project `allowed`; `test-experimentation` `implicitDeny`; an untagged workgroup `implicitDeny` for both |
+| `RssCreds` | `GetCredentials` on any workgroup in any account | `aws:ViaAWSService` true and `aws:CalledVia` naming `redshift-data.amazonaws.com` or `sqlworkbench.amazonaws.com` | `allowed` for `test-experimentation` on the first project's workgroup, through `sqlworkbench` |
+| `ExistingRedshiftCompute` | `GetCredentials`, the Data API, `GetWorkgroup`, `GetNamespace`, `ListTagsForResource` and provisioned-cluster calls, on `*` | `for-use-with-all-datazone-projects=true` and no `AmazonDataZoneEnvironment` tag | `allowed` for `test-experimentation`'s `GetCredentials` and `ExecuteStatement` |
+| `AllowGetSecretForRedShift` | `secretsmanager:GetSecretValue`, `PutSecretValue` on any secret | the secret's `AmazonDataZoneProject` equals the caller's, same account | the admin secret given that tag: `allowed` for the admitted project |
+| `DataConnectionAllProjectResources` | `GetSecretValue`, `PutSecretValue`, `glue:GetConnections` on `*` | `for-use-with-all-datazone-projects=true` | the admin secret given that tag: `allowed` for `test-experimentation` |
+
+The same policy grants `sqlworkbench:CreateConnection`, `DriverExecute` and eleven more query-editor
+actions on `*` with no condition (`SQLWorkBench`), and no `secretsmanager:TagResource`. The namespace
+carries `AmazonDataZoneProject=avhvbqn37ty7m8` among its tags; the Redshift-managed admin secret carries
+only `aws:secretsmanager:owningService`, `aws:redshift-serverless:namespaceArn` and `Redshift`, rotation
+on, next rotation 2026-10-20 01:59:59Z (`EXC-13`).
+
+What the readings change in the stage file: 2.2, whose Data API path AWS's policy grants; verification
+i's `redshift-data:` clause; 5.1's IAM half; and decision 8's argument for (a), whose layer 2 the wide tag
+grants to every project.
+
+## 2026-10-21 — `SMUS.md` and the runbook brought to the 2026-10-18 readings on 2026-10-20 (PR #217), recorded
+
+*Claude's sitting, no AWS call: the offline task of the orchestrating session "Stage 18 checklist" that
+opened PR #217 (merged 2026-10-20T21:52:20Z) carried this log's entries of 2026-10-18 into the documents
+of steps 6.1 and 6.3. It wrote no entry, under the rule of that day; this one is written on 2026-10-21
+from the PR's body and diff, with no AWS call either. The PR's 5b half is recorded in
+[the 5b log](log-stage-05b-redshift-serverless.md), the entry of the same date.*
+
+- **[Claude] [`docs/SMUS.md`](../SMUS.md) §Connections** (6.3): the Redshift row says `WH-9` reads the
+  connection object, which DataZone answers to Sandbox's `InfrastructureAccess` role since its contributor
+  membership of 2026-10-15, where it said no instrument reads it. The `lineageSync` paragraph says the
+  form's connection has the sync enabled and every run to 2026-10-18 failed, where it said the sync stays
+  off, and leaves decision 3 to the user. Layer 1's item no longer credits layer 2 with the requirement's
+  grain, and layer 2's says it is per project on the access role alone, AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 giving the project role its own reach.
+- **[Claude] [`runbooks/redshift-connection.md`](../plan/runbooks/redshift-connection.md) §O** (6.1):
+  layer 2's row names one policy on the project role and on its access role, v75 beside it on the project
+  role, and the grain per project on the access role alone. No decision 8 option is taken.
+
+## 2026-10-21 — decision 8's layer 2 brought to the v75 reading on 2026-10-20 (PR #224), recorded
+
+*Claude's sitting, no AWS call: the task session the orchestrating session "Stage 18 checklist" started
+for Stages 5b and 6h opened PR #224 (merged 2026-10-20T22:20:41Z), whose 6h half is decision 8's text and
+the access role's rows in `sandbox/warehouse/`'s README. It wrote no 6h entry, under the rule of that
+day; this one is written on 2026-10-21 by the orchestrating session from the PR's body and diff, with no
+AWS call either. The PR's `EXC-13` reading is in [the 5b log](log-stage-05b-redshift-serverless.md), the
+entry of 2026-10-20.*
+
+- **[Claude] Decision 8, layer 2** ([`stage-06h`](../plan/stages/stage-06h-redshift-connection.md)): the
+  options' lead-in and the recommendation called layers 2 and 3 "per project role" and "genuinely
+  per-project gates", against the v75 reading of 2026-10-18 further down the same paragraph. Both now say
+  layer 2 is per project on the access role alone, and the recommendation's gates are the schema `GRANT`
+  on every door and the access role on the Data page alone. Of the two lead-ins that pointed at the old
+  argument, "Under (a) the argument's layer 2 does not hold" now reads "Under (a) the project role's layer
+  2 is not per project", and "The recommendation stands as (a), on a narrower argument" is gone. The
+  recommendation stays (a); no option is taken, and decision 8 stays the user's.
+- **[Claude] The access role's rows** in
+  [`sandbox/warehouse/README.md`](../../terraform-live/sandbox/warehouse/README.md): one row each for
+  `aws_iam_role.project_access`, `aws_iam_role_policy_attachment.project_access_warehouse`,
+  `aws_iam_policy.project_access_portal` and that policy's attachment, and layer 2's row names its
+  `sts:AssumeRole`. The `projects` comment in `variables.tf` names the access role; only the comment
+  changed. PR #224's body reports the role's policies read in AWS, the slice's two policies with no inline
+  policy and no boundary, without the time, the identity or the commands; no log holds that reading.
+
+## 2026-11-17 — decisions 8 and 3 and the connection's database taken on cards, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 8**, at 22:27, on the card *"Como admitir um segundo projeto no warehouse do
+  Sandbox?"*: *"Tag ampla (caminho da AWS)"*, (a).
+- **[user] Decision 3**, at 22:28, on the card *"Manter o lineageSync diário da conexão Redshift do
+  Sandbox?"*: *"Desligar"*, against the keep recommended.
+- **[user] The connection's database**, at 22:30, on the card *"Trocar o banco dev da conexão Redshift do
+  Sandbox por sandbox?"*: *"Mudar para sandbox na mesma chamada"*. **[Claude]** One `UpdateConnection` by
+  a project member carries both, every field passed (Lesson 60); the waiting list holds it as the user's
+  act, and `WH-9` and `EXC-17` change with it.
+
+## 2026-11-18 — decision 8 (a)'s switch written and planned, not applied
+
+*Claude, a subagent of the orchestrating session, in a worktree of its own, on the laptop with nothing up;
+the orchestrating session reviewed the diff, pushed the branch and opened the pull request. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` and
+`awsds-infra-prod` for the instrument. Plans and reads only. Times are UTC.*
+
+- **[Claude] The code** (branch `claude/plano-estagios-execucao-5f64d8-warehouse-switches`, commit
+  `d9560cef`): `sandbox/warehouse/`'s `all_projects_tag_enabled`, default false, writes
+  `for-use-with-all-datazone-projects=true` on the namespace and, through the output `all_projects_tag`, on
+  the workgroup at `sandbox/warehouse-compute/`'s next apply; `projects` takes a second entry only beside it;
+  `AmazonDataZoneProject` is written only while the map holds exactly one entry. `./aws/warehouse.py`'s
+  `WH-7` expects, under the wide tag, `true` on every object that exists, the project tag for a map of one
+  and absent otherwise, and neither tag on the admin secret (`INV-20`); Production fails on either tag.
+- **[Claude] The plans**: `sandbox/warehouse/` from `main` at `df49898b`, 16:29:52, and from the branch with
+  the switch off, 16:55:04, each *"No changes. Your infrastructure matches the configuration."*; the down
+  `sandbox/warehouse-compute/` reads *"Plan: 2 to add, 0 to change, 0 to destroy."* from both trees, the
+  saved plans' `resource_changes` and `output_changes` identical address by address. With
+  `-var all_projects_tag_enabled=true`, 16:41:49: *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+  namespace's `tags` gaining the wide tag beside `AmazonDataZoneProject`. A two-entry map with the switch off,
+  16:43:26: *"Error: Invalid value for variable"*; with it on, 16:43:45: *"Plan: 7 to add, 2 to change, 0 to
+  destroy."*, the second project's resources and the namespace's tags without the project tag.
+- **[Claude] The instrument**: `./aws/warehouse.py` on both profiles from `main` (16:31:34) and from the
+  branch (16:51:41), each exit 0; the 34 check rows (14 pass, 20 note, 0 fail) byte-identical, the report
+  differing in one rewritten sentence. `WH-7`'s new branches passed 15 synthetic cases. `describe-secret` on
+  the admin secret, 16:59:04: the service's three tags alone (`INV-20`).
+- **[Claude] The gates**: `ruff check` and `ruff format --check` clean, `make check` *"check: OK"*,
+  `pre-commit run --files` on the 13 files passing.
+- **[Claude] The pull request**: [#323](https://github.com/felipenoris/AWS-DataScience/pull/323), mergeable
+  before the warehouse sitting since the switch off plans `No changes`; the sitting applies from `main`
+  (Lesson 79), 5.1 before the switch and 5.2b after. Per sitting or standing joins the waiting list's
+  decisions.
+
+## 2026-11-19 — decision 3 done: one `UpdateConnection`, `lineageSync` off and database `sandbox`
+
+*Claude, in a session the orchestrating session started for this decision, in a worktree of its own, on the
+laptop with nothing up. The infrastructure user, permission set `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account `Sandbox`) and `awsds-infra-data` (account `Data Governance`). One write,
+on the user's word in this session's chat; every other call a read. The DataZone model is the one the
+laptop's CLI 2.37.12 carries. Times are UTC.*
+
+- **[Claude] The connection**, `get-connection` at 02:08:58: `redshift-serverless.redshift`, id
+  `axsiuoykrswosw`, in `eighth-experimentation`, the one `EXC-17` names. Database `dev`, `jdbcUrl` and
+  `jdbcIamUrl` ending `/dev`; the authored access role; workgroup `awsds-sandbox-warehouse`, its host and
+  port `5439`; `lineageSync` enabled on `cron(43 3 * * ? *)`, job `ayya3b95j0zvo0`; status `READY`; an empty
+  `description`; no `credentials` and no `configurations`. `list-job-runs` at 02:11:51: 39 runs, one a day
+  from 2026-10-11 to 2026-11-18, each created at 03:44:44 and each `FAILED`. `GetWorkgroup` at the same
+  time: *"Serverless workgroup awsds-sandbox-warehouse not found."*; the namespace `AVAILABLE`.
+- **[Claude] The domain's RAM share**, as `awsds-infra-data` at 02:10:18: version 10 of
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`. `ram get-permission` names
+  `datazone:UpdateConnection` in versions 10, 11, 12 and 13, beside `CreateConnection`, `DeleteConnection`,
+  `GetConnection` and `ListConnections`; version 13 is version 12 plus `GetSystemTableExportConfiguration`
+  and the default since 2026-11-16 21:08:23, every earlier version `UNATTACHABLE` (read 02:17:48). The call
+  was held until the Stage 19 session's move of the share, to version 13 at 02:20:30 on the user's word in
+  its chat; read here at 02:21:41: version 13, `defaultVersion` true.
+- **[Claude] The command**: the reading turned by `jq` into a `--cli-input-json` file, in the procedure
+  that reads it (Lesson 61), now [`redshift-connection.md`](../plan/runbooks/redshift-connection.md) §P step
+  4a. The model declares the call `PATCH` on `ConnectionPropertiesPatch`. The file passes every field the
+  update takes and the object has (Lesson 60): `awsLocation`'s access role, account and Region,
+  `storage.workgroupName`, `host`, `port`, `databaseName` `sandbox`, and `lineageSync` with `enabled` false
+  and the schedule. Left out: the empty `description`, under the update's minimum of one character; the
+  absent `credentials` and `configurations`; the read-only `jdbcUrl`, `jdbcIamUrl`, `redshiftTempDir`,
+  `status` and `lineageJobId`. At 02:21:44 the connection read identical to 02:08:58 and the file
+  regenerated byte-identical.
+- **[user]** *"Autorizo o updateconnection"*, in this session's chat, after the command was shown. The
+  retry with database `dev`, decision 3's fallback, was not authorized and was not needed.
+- **[Claude] The other sessions told** at 02:21 to 02:22: Stage 20 8.3, Stage 17 9.5 and 10.4, Stage 19.
+- **[Claude] `update-connection`**, 02:22:19 to 02:22:20: exit 0, nothing on stderr. The response:
+  `databaseName` `sandbox`, `jdbcUrl` and `jdbcIamUrl` ending `/sandbox`, `lineageSync` `enabled: false` with
+  the schedule `cron(43 3 * * ? *)` and the job `ayya3b95j0zvo0`, status `READY`.
+- **[Claude] Read back**, `get-connection` at 02:22:55: four fields differ from 02:08:58, `databaseName`,
+  `jdbcUrl`, `jdbcIamUrl` and `lineageSync.enabled`, and every other field is identical, `redshiftTempDir`
+  among them; its `dev` segment is the environment's stage, the suffix of each project's Glue network
+  connections. `list-job-runs` at 02:22:57: the same 39 runs, all `FAILED`. No Glue connection mirrors the
+  DataZone one: Sandbox's Glue holds twelve `NETWORK` connections, two per project (02:23:17).
+- **[Claude] The trail**, at 02:26:56: one `UpdateConnection` at 02:22:20 in each account's trail,
+  Sandbox's naming the `AWSReservedSSO_InfrastructureAccess_<suffix>` role, no `errorCode`, the request
+  parameters the file's.
+- **[Claude] What no AWS page states**: DataZone accepted a contributor's `UpdateConnection` where it
+  refused the same contributor `UpdateProject` on 2026-11-18 (`SUP-157`, read again), and accepted the
+  update while the workgroup it names did not exist (`SUP-387`). `SUP-207` and `SUP-208` gain the readings.
+- **[Claude] `WH-9`**: `./aws/warehouse.py` without `--sql` at 02:23:52, exit 0, before the code change:
+  `pass`, *"redshift-serverless.redshift (database sandbox, lineageSync off): the authored workgroup and
+  access role"*; 15 pass, 19 note, 0 fail, where 2026-11-18 read 14, 20 and 0. The rule now fails on an
+  enabled sync, whether or not a run completed, and on a database other than `sandbox`; a refused
+  `list-connections` stays a note. Fourteen cases against the live facts at 02:30:00, the live object and
+  thirteen fabricated readings, each judged as expected; the live run at 02:30:20, exit 0, `pass` again
+  and the same counts. `ruff check` and `ruff format --check` clean.
+- **[Claude] Written**: this stage's decision 3, step 3.2, 6.4, the risk on `lineageSync` and the `Status`
+  row; §P's step 4 and its new step 4a, §G and §V's `WH-9` row in the runbook; `EXC-17`; `SUP-157`,
+  `SUP-207`, `SUP-208` and `SUP-387`; `docs/SMUS.md`'s two paragraphs on the sync; the waiting list's row removed and
+  its warehouse sitting brought to the change; `promotion.md` §N.6 item 9; Stage 21's three sentences on
+  the connection. Owed: the Query editor's first session opening on `sandbox`, which needs the workgroup
+  (§N.6 item 9).
+
+## 2026-11-19 — the lineage job after decision 3: no run at 03:43
+
+*Claude, in the session of decision 3, by a background read after its branch merged, as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+`Sandbox`). Reads only. Written into this log by the orchestrating session from that session's note, its
+branch being merged. Times are UTC.*
+
+- **[Claude] `list-job-runs`** on `ayya3b95j0zvo0` at 03:50:00: exit 0, 39 runs, each `FAILED`, the newest
+  created 2026-11-18 at 03:44:44; the list identical to 02:22:57's. No run on 2026-11-19, the first day
+  without one since 2026-10-11.
+- **[Claude] `get-connection`** at 03:50:02: identical to 02:22:55's, database `sandbox`, `lineageSync`
+  `enabled: false` with `cron(43 3 * * ? *)` and the job kept, `READY`.
+- **[Claude] The verdict**: `enabled: false` stops the runs, while the schedule and the job stay on the
+  object. `EXC-17` needs no change, its 39 runs to 2026-11-18 being what the reading shows; `SUP-207`
+  gains the reading. `WH-9` reads the runs only while the sync is on, so this reading is the one that shows
+  none.
+
+## 2026-11-19 — the warehouse sitting's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] `sandbox/warehouse/` planned from `main`**, `-input=false`, saved and not applied, the
+  slice that holds both decision 8 (a)'s switch and Stage 21 4.5's:
+
+  | UTC | Variables | Plan |
+  |---|---|---|
+  | 21:43:48 | none, both switches at their default `false` | `No changes` |
+  | 21:44:14 | `all_projects_tag_enabled=true` | `0 to add, 1 to change, 0 to destroy`: `aws_redshiftserverless_namespace.this`, its tags |
+  | 21:44:37 | `data_transfer_role_enabled=true` | `2 to add`: `aws_iam_role.data_transfer[0]`, `aws_iam_role_policy.data_transfer[0]` |
+  | 21:44:59 | both `true` | `2 to add, 1 to change, 0 to destroy` |
+
+  A plan naming one switch takes the other at its default, so each plan in the sitting names both.
+- **[Claude] `SageMakerStudioProjectUserRolePolicy`** read at 21:47:57: default version v77, updated
+  2026-11-13 at 20:47:08, attached to both Sandbox project roles (`test-experimentation`'s is
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`). It carries `ExistingRedshiftCompute`, `RssCreds`, `ComputeCredentials`,
+  `RedshiftDataActions`, `AllowGetSecretForRedShift` and `DataConnectionAllProjectResources`, the
+  statements 5.3, 5.4 and decision 8 rest on, and the simulator's verdicts on them read as on 2026-10-18.
+- **[Claude] What the rows rest on**, read from the code and the register: the namespace's first database
+  is `warehouse` (`first_database`), `lab` holds `QUOTA 1 TB`, so 5.2a's owed half is the `ALTER SCHEMA`
+  alone; `sandbox` holds no schema but `lab`, so 5.2 creates its second schema for the step; `WH-7` fails
+  while the wide tag is on one object alone, so it is red between the namespace's apply and the compute's
+  re-apply; the `redshift` endpoint group carries `redshift-serverless` alone.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: 6h's items in order" in the stage file,
+  before the deliverables, with every row steps 5 and 6 owe: the editor's first session, 5.2, 5.2a's owed
+  half, 5.3, 5.4, 5.1, the tag on, 5.2b, the tag off unless it stands, 0.4's portal half and 6.4.
+  §N.6 item 9 names 5.1, 5.2b and the editor alone.
+
+## 2026-11-20 — 5.2b's network door read in the code
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). No AWS call: `terraform-live/sandbox/warehouse/` read.*
+
+- **[Claude] The door**: `aws_vpc_security_group_ingress_rule.project_5439` (`security-group.tf`) is
+  created per entry of `var.projects`, whose default holds `eighth-experimentation` alone, and is the slice's
+  only ingress rule. The wide tag (`all_projects_tag_enabled`) writes `for-use-with-all-datazone-projects=true`
+  on the namespace and the workgroup and lets `projects` take a second entry; it opens no port. So
+  `test-experimentation`'s notebook, 5.2b's second project, opens no TCP connection to 5439 while that project
+  is out of `projects`, and 5.2b as written would read the network's timeout (Lesson 42). The user's choice,
+  in the waiting list's decision 8 row and `promotion.md` §N.12.4: `test-experimentation` in `projects`
+  within the wide tag's applies of the sitting's steps 5 and 9, or 5.2b re-specified.

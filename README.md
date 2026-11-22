@@ -2,19 +2,23 @@
 
 Blueprint for using AWS as a Data Science infrastructure provider.
 
-- `CLAUDE.md` — the working rules and the current position. Size-budgeted (75 KB, enforced by
-  `scripts/check-plan-refs.py`), so narrative that grows lives in `docs/plan/`.
+- `CLAUDE.md` — the working rules, the routing map and the current position. Size-budgeted (75 KB for the
+  file and 12 KB for its Current position, enforced by `scripts/check-plan-refs.py`), so narrative that
+  grows lives in `docs/plan/`.
 - `docs/` — the documentation tree, and the only place documentation lives: the plan core, `docs/plan/`,
   `docs/log/`, and the reference files named below. Everything outside it is code, configuration, or the
   working rules themselves.
-- `docs/GENERAL_PLAN.md` — the **plan core**: guiding principles, the account map, the two indexes
-  (stages and decisions), and the **write** map that says where new content goes. Read this first. The
+- `docs/GENERAL_PLAN.md` — the **plan core**: guiding principles, the route through the stages by
+  subject, the decisions that carry the design, and the **write** map that says where new content goes.
+  It carries no status. Read this first. The
   **read** map — which file answers which question — is kept only in `CLAUDE.md`, "What to read, and when".
 - `docs/plan/` — the plan itself, split so that a task reads only what it needs:
   - `docs/plan/objectives.md` — what the project must achieve, in the user's own words. The specification
     every stage is measured against, copied nowhere.
-  - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**.
-  - `docs/plan/decisions/` — one file per decision `D1`…`D38`, plus a one-line-per-decision `INDEX.md`. All
+  - `docs/plan/stages/` — one file per stage, each declaring the decisions it **consumes**; its header's
+    `Status` row is where the stage's status is written. `INDEX.md` lists the stages in dependency order,
+    with one word of state each.
+  - `docs/plan/decisions/` — one file per decision, `D1` onwards, plus a one-line-per-decision `INDEX.md`. All
     are settled; `D30` was settled as a *revert* and keeps its file, so the record shows what was tried.
   - `docs/plan/runbooks/` — a procedure followed in full and in order, rather than remembered:
     `break-glass.md`, when the Management account root may be used, what to do with it, and what watches
@@ -26,8 +30,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
     design), and the keys, where loss is recovery from the `[P]` secret and never rotation;
     `client-vpn-proxy-configuration.md`, the one a device's owner follows (the session up and down, the
     `.conf` with its four checks, the proxy on macOS and Linux); `sg-proxy.md`, the proxy inside a SageMaker
-    space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed; plus
-    `gitlab.md`, `sandbox-lake.md`, and `security-hub.md`, pausing and restoring the standard that bills.
+    space; `log-debugging.md`, how the estate's logs are read when a call has to be attributed;
+    `security-hub.md`, pausing and restoring the standard that bills; and one runbook per recurring
+    subject, each routed by `CLAUDE.md`'s read map: `gitlab.md`, `sandbox-lake.md`, `dev-env.md`,
+    `remote-ide.md`, `redshift-connection.md`, `serverless-workflows.md`, `sagemaker-application.md`,
+    `sagemaker-ai-ml.md`, `catalog.md`, `claude-code-sagemaker.md` and `promotion.md`. `buildbox.md` records a retired
+    host.
   - `docs/plan/architecture.md`, `docs/plan/conventions.md`, `docs/plan/integrations.md` (the `INT-nn` rows),
     `docs/plan/cost-model.md`, `docs/plan/open-questions.md`, `docs/plan/lessons.md`,
     `docs/plan/institutional-delta.md`, `docs/plan/threat-model.md` (the data-leakage channels and the
@@ -42,26 +50,32 @@ Blueprint for using AWS as a Data Science infrastructure provider.
 - `docs/PRICING.md` — per-unit AWS rates for `sa-east-1` and `us-west-2`, read from the AWS Price List bulk
   API. The cost figures in `docs/plan/cost-model.md` are order-of-magnitude estimates; these are measured.
   The cost model says what is consumed, `docs/PRICING.md` says what a unit of it costs.
+- `docs/AWS_SUPPLEMENT.md` — supplementary AWS documentation: what the services, Terraform and its providers
+  do that their documentation does not state, one `SUP-nnn` entry per behaviour, by service, each with the
+  measurement that showed it and the log that holds it. `./scripts/check-aws-supplement.py` checks its ids
+  and its index in `CLAUDE.md`.
 - `docs/log/` — record of every step performed manually through the console, one file per stage, mirroring
   `docs/plan/stages/` (`docs/log/log-stage-NN-*.md` ↔ `docs/plan/stages/stage-NN-*.md` — the same slug, with
-  a `log-` prefix, so the two files never share a name). `docs/log/INDEX.md` says what each file records, so
-  finding a step never means reading every log.
+  a `log-` prefix, so the two files never share a name). `docs/log/INDEX.md` says in one line what each file
+  holds, and a log's dated headings are its outline, so finding a step never means reading a log whole.
 - `terraform-live/` — the deployed tree: one folder per controlled account, sliced into independently
   applied units, each slice carrying a `[P]`/`[D]`/`[E]` layer. `terraform-live/README.md` explains how it
   is organised and what is in it today; the authoritative slice-by-slice layout is
-  `docs/plan/conventions.md` §6, so the two cannot drift. What lives here today: the five `bootstrap/`
-  slices and the two `identity/` slices of Stage 2 — `sso/`, the seven permission sets and their
-  assignments, and `org-policies/`, the ten organization policy documents (SCP, RCP, tag, declarative EC2)
-  with `POLICIES.md` indexing every statement and its reason; Stage 3's network in the three VPC accounts
-  (`foundation/` `[P]`; `egress/` and `probes/` `[E]`, destroyed between sessions); Stage 4's
-  `sandbox/vpn/`, the tree's first `[D]` slice, whose host moved to `production/vpn/` at 6c beside
-  `production/proxy/`; Stage 5a's three `data/` slices — the governed lake in `data-governance/`, and its
-  consumer half in `sandbox/` and `development/`, one module (`consumer-data`) applied twice, the second
-  destroyed 2026-09-06, so `sandbox/data/` is the only caller left; and Stage 6's five:
-  `production/registry/`, `data-governance/governance/` (the domain, the profiles and both grant layers),
-  `sandbox/sagemaker/` (the `sagemaker-prereqs` module; `development/sagemaker/` went with the account at
-  Stage 6b), and the `[E]` build host, which moved to Production at 6c step 5.8 and retired into Stage 7's
-  build runner (`production/runners/`) at its step 6.5.
+  `docs/plan/conventions.md` §6, so the two cannot drift. What lives here today, read with `make slices`
+  on 2026-11-17: forty-eight slices, thirty-six `[P]`, three `[D]` and nine `[E]`, in five account
+  folders. Every account has its `bootstrap/`; `identity/` holds `sso/`, the seven permission sets and
+  their assignments, and `org-policies/`, the ten organization policy documents (SCP, RCP, tag,
+  declarative EC2) with `POLICIES.md` indexing every statement and its reason. The network is the
+  `foundation/` VPCs, Production's hub (`networking/`, `workloads/`) and its two `[D]` hosts, `vpn/` and
+  `proxy/`, with the interface endpoints in the `[E]` `egress/` slices of Sandbox, Staging and Production
+  and Production's `workloads-egress/`. The governed lake is
+  `data-governance/data/`, its consumer half the three `data/` slices of Sandbox, Staging and Production
+  on one module (`consumer-data`), and its catalog `data-governance/governance/` (the domain, the
+  profiles and both grant layers) and `publishing/`. SageMaker Unified Studio is `sandbox/sagemaker/`
+  and, since Stage 19, each target's `studio/` and `chains/`; the supply chain is Production's
+  `registry/`, `pki/`, `tooling/` (GitLab, `[D]`) and `[E]` `runners/`; the warehouses are Sandbox's and
+  Production's `warehouse/` and `[E]` `warehouse-compute/`. The list with each slice's layer and contents
+  is `make slices`.
 - `terraform-modules/` — the reusable modules, consumed **by git tag, never by branch**. `terraform-live/`
   composes; it does not define. The first six arrived with Stages 3-4: `vpc`, `vpc-egress`, `s3-bucket`,
   `kms-key`, `iam-role`, `wireguard`; `consumer-data` is Stage 5a's. `wireguard` has called `iam-role` by
@@ -90,7 +104,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   placeholder, which [`awsds-workflows`](https://github.com/felipenoris/awsds-workflows) `render` fills on
   screen from read-only calls ([`serverless-workflows.md`](docs/plan/runbooks/serverless-workflows.md) §T).
   `app-etl/` is [Stage 8](docs/plan/stages/stage-08-cicd-pipelines.md) step 2.2's: the application
-  template's first content, pushed to GitLab's `awsds/app-etl`, which holds it since.
+  template's first content, pushed to GitLab's `awsds/app-etl`, which holds it since. `sandbox-ml/` is
+  [Stage 17](docs/plan/stages/stage-17-sandbox-machine-learning.md)'s: the files its exercise runs from a
+  space, the data, the training job, the registry, the serving, the pipeline and the knowledge base's
+  documents.
 - `ci-gates/` — the security gates every GitLab pipeline includes (Stage 8 step 5, decision 10):
   Secret Detection, `pip-audit`, `checkov` and the ECR scan gate, with the baselines of accepted findings
   beside them. Reviewed here, pushed to the GitLab project `awsds/ci-gates`, included at a commit.
@@ -142,7 +159,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
   two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
-  with the server's.
+  with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the deploy
+  role's grants in Staging's and Production's `foundation/` among them, and fails when one has diverged.
+  `deploy-application.py` and `model-chain.py` are the promotion's tools: the first runs the CI/CD CLI's
+  deploy into a deployment target's project from the release's bundle (Stage 19 step 4.9), the second
+  registers, approves and serves the model the release trains (Stage 10 steps 5.2 and 5.4); each has an
+  offline self-check in `make check`.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
@@ -152,11 +174,12 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   every hook and `make check` on each pull request with no AWS credential. It also carries **D11's lifecycle** since Stage 2
   step 8: `make slices` prints which slice is `[P]`, `[D]` or `[E]`; `make up ENV=<account-folder>` applies
   the ephemeral ones and starts the dormant ones; `make down ENV=…` reverses it; `make status` says what is
-  up and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
+  up, the Studio apps included, and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
   built, measured and torn down to USD 0.0000/h, with `foundation/` re-planning byte-identical and every
   `[E]` id new on the second `up`. The `[D]` rows — since 6c the two hub hosts, `production/vpn/` and
-  `production/proxy/` — are stopped by **`make hub-down`** rather than destroyed, and a spoke's `make up`
-  refuses while either is stopped. The refusals stand: a `[P]` slice, a missing `ENV`, `production/pki/`
+  `production/proxy/`, and since Stage 7 GitLab's `production/tooling/` — are stopped rather than
+  destroyed, by **`make hub-down`** and **`make gitlab-down`**, and a spoke's `make up` refuses while
+  either hub host is stopped. The refusals stand: a `[P]` slice, a missing `ENV`, `production/pki/`
   (D36) and `bootstrap/`, which holds its own state.
 - `pyproject.toml`, `.python-version`, `uv.lock` — every script in this repository but two is Python 3,
   run through uv. The scripts keep their paths and carry the shebang `#!/usr/bin/env -S uv run --quiet`,
@@ -191,7 +214,10 @@ network, and nothing else is conditioned on it ([D39](docs/plan/decisions/D39-ac
    tunnel down, because `VpcOnly` governs the app's traffic and never the user's ingress. The governed
    lake keeps a network deny of its own: it admits a consumer's gateway endpoint, a Data Governance
    principal or a service acting for its caller, and the laptop's one direct path, the data scientist's
-   drop-box write, by principal.
+   drop-box write, by principal. **The S3 console is a URL tool for the Production data scientist**
+   (read 2026-10-23, Stage 9 8.2): the bucket list and a bucket's root and settings pages refuse, and
+   the one page that works is the object listing under a prefix the persona is named for, reached by
+   its URL; everything else is the CLI.
 3. **The data-leakage circuit, by premise.** `docs/plan/objectives.md` grants an identity only on a
    laptop the institution monitors, carrying Microsoft 365 DLP, so what leaves through SageMaker, the
    console or the APIs lands on a managed device. The lab models that premise and does not enforce it,
@@ -314,17 +340,20 @@ Two refinements:
 - **Interactive compute lives only in the Interactive OU.** Since D26 the interactive surface is
   **SageMaker Unified Studio**: one DataZone V2 domain, *registered* in the Data Governance account
   because a domain is a registry of projects and data products rather than a runtime, and whose project
-  blueprints *provision compute* into Sandbox (`experimentation` profile) and nowhere else, enforced by a
-  Service Control Policy on the `Workloads` OU. *(There was a second target, `Development` with an
+  blueprints *provision interactive compute* into Sandbox (`experimentation` profile) and nowhere else,
+  enforced by a Service Control Policy on the `Workloads` OU. *(There was a second target, `Development` with an
   `engineering` profile; both went on 2026-09-06 — the profile destroyed at Stage 6b step 1.1, the account
   converted into `Staging`, which the same SCP now covers.)* Where the domain is registered and where code
   runs are two different questions, and only the second is an account-boundary question. SageMaker's
   *runtime* APIs — training and processing jobs, Model Registry, endpoints — do exist in Staging and
   Production, because that is where models are tested, retrained and served; the difference is that only a
-  pipeline submits to them. A domain or an account association in a deployment target would put unreviewed
-  code back inside the account boundary, which is what the split exists to prevent. What crosses instead
-  is a fixed artifact set (container image, workflow definition, per-workflow IAM role, orchestration
-  resource, log group, model package group — D28), carried by git and created by the pipeline.
+  pipeline submits to them. Since 2026-11-11 each target is associated with the domain and holds one
+  deployment project, where no person works and no space runs: the `Workloads` SCP still denies the
+  interactive surface and denies `datazone:*` to every person, and `<env>/studio/`'s person-session deny
+  refuses a person's session the writes there (Stage 19 decisions 6 (b) and 13 (b); D17 as amended
+  2026-11-17). What crosses is a fixed artifact set (D28: the container image, the workflow definitions,
+  the code their tasks read, the catalog's export), carried by the repository and its bundle and deployed
+  by the CI/CD CLI from the pipeline, each chain's state machine and schedule in `<env>/chains/`.
 
 ### 7. What crosses the boundary
 
@@ -333,12 +362,15 @@ Artifacts cross in one direction only, through the pipeline, and they pass throu
 - container images (ECR),
 - model versions (SageMaker Model Registry),
 - workflow definitions and application code (a Git tag),
-- the Terraform that instantiates them.
+- the bundle the CI/CD CLI makes from the tag and deploys into each target's deployment project (D41).
 
-The chain is **Sandbox → Staging → Production**. Staging receives the built artifact, runs the
-integration tests against a sampled or synthetic dataset, and is torn down again; only then does the
+The chain is **Sandbox → Staging → Production**. Staging receives the built artifact and runs the
+integration tests against the governed lake, read in place and read-only; only then does the
 **Deployment Manager**'s approval release the same artifact to Production. A failure in Staging stops the
-chain, and Production is never touched. Sandbox sits *before* the chain, not at its head: experimentation
+chain, and Production is never touched. Staging keeps the release between promotions: the CLI-made
+workflows and the chains are `[P]`, and the user's `make down` destroys `staging/egress/` alone (Stage 8
+decision 27).
+Sandbox sits *before* the chain, not at its head: experimentation
 graduates into an **engineering repository** through git — a rewrite and a review, not an automated lift —
 and only what lands in such a repository can be promoted.
 
@@ -364,8 +396,8 @@ tunnel with no browser grant (6c step 6.2).
 Data crosses in the other direction: the governed lake lives in the Data Governance account, and its catalog
 is shared read-only to Sandbox through Lake Formation, so that all interactive work happens
 against real data without making a copy of it. Production's job role holds the same share plus the *governed
-write* — production ETL is the lake's producer. Staging is not part of any share — it never holds governed
-data, for the reason given in the next section.
+write* — production ETL is the lake's producer. Staging holds the share read-only since 2026-10-22: it
+reads the lake in place and keeps no copy (Stage 9 decision 3, D20 as amended, `TM-25`).
 
 The two directions have two different approvers. The Deployment Manager approves what *moves along the
 chain*; the **Governance Manager** approves who may *read the data* — subscriptions in the SageMaker
@@ -459,14 +491,14 @@ reason this project has a `Workloads` OU rather than an `Environment=production`
 
 | The references recommend | This project | Verdict |
 |---|---|---|
-| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision compute into Sandbox and Development and nowhere else (D17, D21, D26) — enforced by two SCPs (Stage 1c step 7): the `Workloads` OU denies `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` **and `datazone:*` in full**, so a deployment target can neither host a domain nor associate itself to one; and the organization root denies `datazone:CreateDomain` everywhere except the `Data` OU, so "one domain, and it lives in Data Governance" is a control rather than a convention | **Adopted**, and made preventive rather than conventional |
+| Studio only in the development / data-science accounts | The interactive surface only in the **Interactive OU** — since D26, one SageMaker unified domain (DataZone V2) registered in **Data Governance**, whose project blueprints provision interactive compute into Sandbox and nowhere else since Development left at 6b (D17, D21, D26) — enforced by two SCPs (Stage 1c step 7): the `Workloads` OU denies `sagemaker:CreateDomain`, `CreateUserProfile`, `CreatePresignedDomainUrl` and `datazone:*` to every person, so a deployment target hosts no SageMaker AI domain and its deployment project, associated since 2026-11-11, runs no space (Stage 19 decisions 6 (b) and 13 (b)); and the organization root denies `datazone:CreateDomain` everywhere except the `Data` OU, so "one domain, and it lives in Data Governance" is a control rather than a convention | **Adopted**, and made preventive rather than conventional |
 | A staging / pre-production deployment target between development and production | The **Staging** account (D20) | **Adopted.** It was missing until 2026-08-08; the plan had tried to stand in for it with a Glue namespace inside Production, which shared an account and a blast radius with the thing it was meant to de-risk |
 | Data scientists get read-only access in staging | `DataScientistStagingAccess` — read, no write of any kind (D18) | **Adopted verbatim.** A staging environment a person can write to stops being evidence of what the pipeline does |
 | Environments expressed as Organizations OUs | OUs named for their policy sets (D23): `Workloads` holds Staging and Production, `Interactive` holds only a nested `Sandboxes` for the per-unit Sandbox accounts since 2026-09-06 — no account sits directly in it, `Data` holds Data Governance, `Security` holds Log Archive and Audit, and `Identity` holds the identity plane | **Adopted.** One SCP set per policy set, written once and inherited. Two of the OUs came from execution rather than design: `Identity`, because a foundational `Security` OU would not take the account, and `Sandboxes`, which groups a cardinality class and carries no policy of its own |
 | Model Registry and ECR in a Tooling / shared-services account | Both in the **Production** account (D14) | **Departure**, the main one remaining. No separate tooling account, on cost. The consequence: there is no boundary between what builds and what runs, so a compromise of GitLab is a compromise of Production |
 | A separate data lake / data management account | The **Data Governance** account (D22): the lake, its catalog, Lake Formation and the classification scheme, reached from every environment through cross-account shares | **Adopted** on 2026-08-08. It had been a departure; the section below on Data Governance vs. Production records why it stopped being one |
 | Experimentation and development as distinct accounts | **Sandbox** (experimentation — the unit of work is a notebook) and, until 2026-09-06, **Development** (the unit of work is a pipeline) | **Adopted 2026-08-08, reversed 2026-09-06** — the one recommendation this project took and later gave back. The boundary was real; what did not survive was the claim that it needs an AWS **account**. What is developed past the boundary is a *pipeline definition*, developed in git and executed into Staging, so the account stood empty. The distinction is kept and now runs between **Sandbox and a repository**; the section below records what it buys either way |
-| Staging holds data representative of production | Staging holds **sampled or synthetic data only**, never a copy of production | **Deliberate departure.** Staging is a deployment target where data scientists have read access and unattended tests run, so a full copy would make the less-defended of the two accounts the cheapest route to production data. The accepted cost: a test suite that catches permission, schema and wiring errors and misses whatever only appears at production distribution and volume |
+| Staging holds data representative of production | Staging **reads the governed lake in place, read-only, and holds no copy** (D20 as amended 2026-10-22) | **Followed, with no copy.** Staging is a deployment target where data scientists have read access and unattended tests run, so a copy would make the less-defended of the two accounts the cheapest route to production data. The read in place is `TM-25`'s accepted residual, scoped by `classification` with `restricted` excluded or filtered, and audited by Stage 11's data events |
 
 ### What the shape rests on
 
@@ -749,7 +781,8 @@ An account request is answered in this order (D34):
    association and a project profile). Naming that list makes the real cost of "just one more sandbox"
    visible at the moment somebody asks for it.
 4. **Quota headroom is a standing item, not a one-off pre-flight.** Keep slack for a failed provisioning that
-   has to be retried; a closed account holds both its slot and its e-mail address for roughly 90 days.
+   has to be retried; a closed account holds its slot for 90 days, and its e-mail address can never become
+   another account's primary address unless it is changed before the close (D34).
 
 ### 6. Why manual creation is safe, and the failure it introduces
 
@@ -793,7 +826,7 @@ forfeit (D34).
 | Rung | What it is | What it costs |
 |---|---|---|
 | 1. **Today** | Account Factory from the console, by the owner in §3 | nothing; the request has no diff and no review |
-| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one Terraform slice; a principal with Service Catalog rights **in Management**, which reopens the ownership question; and `prevent_destroy`, because terminating that resource **closes an account** |
+| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one Terraform slice; a principal **in Management** whose rights reach past Service Catalog, which reopens the ownership question; and `prevent_destroy`, because terminating that resource **unenrolls the account** without closing it, leaving it running outside every OU policy set |
 | 3. **AFT** (Account Factory for Terraform) | the full product: its own management account, pipelines, per-account customization repositories | a dedicated account slot plus metered services |
 
 **Rung 2 is what Stage 14 uses**, for the Sandbox class only. The account is still created *by Account

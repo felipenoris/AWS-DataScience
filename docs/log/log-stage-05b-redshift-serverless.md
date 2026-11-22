@@ -1063,3 +1063,317 @@ Free trial expiration December 19, 2026
   x reads it then.
 
 The console page: <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-console.html>.
+
+## 2026-10-18 — the plateau of 2026-10-10, a third reading of the runaway, and the residuals
+
+*Written by Claude, session "Stages 5b and 6h: warehouse readings and text", with the environment down
+and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`), except `WH-8` in three other accounts, read through their
+`awsds-infra-*` profiles. All reads: CloudTrail `lookup-events`, CloudWatch `get-metric-data` and
+`list-metrics`, `./aws/warehouse.py` without `--sql`.*
+
+### The 18:00Z hour of 2026-10-10 cannot say whether `max_query_execution_time` binds
+
+The hour's 13,733 RPU-seconds (6h log, 2026-10-17 amendment) is one plateau. Read per minute, the
+afternoon held two, each at about 241 RPU-seconds a minute (4 RPU), against the calls CloudTrail holds:
+
+| UTC, 2026-10-10 | Plateau | Calls around it |
+|---|---|---|
+| 16:18 → 16:56 | 39 minutes | `GetCredentials` by the project role through the endpoint at 16:15:23 and 16:55:03 (AWS's image); the Data API with the admin secret, 4 statements at 16:18:54-16:19:54 and 8 at 16:56:16-16:56:40 |
+| 17:57 → 18:56 | 60 minutes | `GetCredentials` by the project role through the proxy at 17:54:55 and 18:15:45 (the house image, a direct session, so the per-person non-superuser user); the Data API with the admin secret, 5 statements at 17:56:02-17:56:30 and 2 at 18:16:46-18:16:50 |
+
+- **Nothing was called at 18:56**, and the workgroup lived until 21:08:09. Sixty minutes is 3,600 s,
+  the idle-session timeout.
+- **No query of ten seconds or more completed since 2026-10-04**: `list-metrics` returns
+  `QueryDuration` and `QueriesCompletedPerSecond` with `LatencyRange=Short` alone. `QueriesRunning`
+  has no point between 17:30 and 19:30.
+- **Those two absences prove nothing on their own** (Lesson 62). The runaway of 2026-09-20, a
+  statement that ran 23,601 s, left `QueriesRunning` two points in 5-minute data (07:10 and 13:45) and
+  no `QueryDuration` above `Short`: a statement that never completes leaves neither.
+- **`ChargedSeconds`**, a metric CloudWatch publishes and AWS's metric list does not name, reads 480
+  for the 18:00 hour against `ComputeSeconds`' 13,733, while the runaway's hours read 14,400 on both.
+  Summed since 2026-09-19 it is 122,928 RPU-seconds = 12.2928 USD, against `ComputeSeconds`' 119,138 =
+  11.9138 USD, and the console's 12.10 USD consumed (2026-10-17) sits between the two. Which meter the
+  trial draws on is not settled by this; the bill after 2026-12-19 is (verification x).
+
+**Verdict.** The only non-superuser that could have run a long query in that hour is the per-person
+user of the 17:54:55 session. The plateau's shape, sixty minutes ending on no call and mostly
+uncharged, fits a session held open until the idle timeout better than a running query (inference).
+So the hour narrows nothing, and owed item 3 stands.
+
+### A third candidate for the runaway, from this stage's own record
+
+The runaway statement was `select count(*) from pg_attribute a, pg_attribute b, pg_attribute c`, and
+it read catalog tables alone. AWS, *Leader node–only functions*: such a query *"runs exclusively on the
+leader node"* ([`REFERENCES.md`](../REFERENCES.md), 2026-10-18). CloudTrail and the 5-minute
+`ComputeSeconds` place it against 5.1's breach:
+
+| UTC, 2026-09-20 | Reading |
+|---|---|
+| 07:08:08 | `UpdateUsageLimit`, 40 → 1 RPU-hour |
+| 07:13:09 → 07:15:15 | seven Data API statements: the runaway, then 5.1's breach readings, `select 1` finished and `CREATE TABLE` refused |
+| from about 07:14 | compute at base capacity: 227 RPU-seconds in the 07:10 interval, then 1,205 every 5 minutes |
+| 07:15:59 | `UpdateUsageLimit`, 1 → 40 |
+| 13:45 | `pg_terminate_backend`, after 23,601 s |
+
+So the statement kept running through the two minutes the workgroup was breached, while that breach
+refused every query needing the compute. That gives the two candidates of 2026-09-20 a third:
+
+| | |
+|---|---|
+| **(c)** | the statement never entered WLM, so neither the per-query limit nor the usage limit's refusal reached it. The query-monitoring page says nothing about leader-node queries either way (inference) |
+
+**The test changes with it**: the same statement as a non-superuser cannot separate (c) from the
+others. It has to be a long query over a user table, run as a non-superuser and as the admin:
+aborting for both is (c), for the non-superuser alone (a), for neither (b). The project's database
+users exist, so it needs only the compute up.
+
+**What it changes in the text**: the usage limit was not the guard that stopped the runaway, and the
+sentences that said it would have been are corrected in the stage file (status, 1.3, step 4, Risks),
+`runbooks/redshift-connection.md` §J, the comments on `sandbox/warehouse-compute/main.tf` and
+`sandbox/warehouse/variables.tf`, and `lessons.md`'s bullet. The same claim stands in four files other
+sessions hold, reported rather than edited: D40's *"The guard is therefore a hard one"*, Stage 9's
+two `max_query_execution_time` sentences, `cost-model.md`'s warehouse paragraph and
+`scripts/tfhygiene/layers.py`'s comment on the runaway.
+
+### `enable_large_strings_opt_in` came back empty, and the creates took it
+
+The six `CreateWorkgroup` calls since 2026-10-09, each sending the same nine declared parameters:
+
+| UTC | Provider | `configParameters` in the response |
+|---|---|---|
+| 2026-10-10 03:06:43, 16:03:33, 23:57:58; 2026-10-11 20:19:02 | 6.64.0 | nine |
+| 2026-10-16 01:55:53, 16:36:38 | 6.68.0 | ten: `enable_large_strings_opt_in`, value `""` |
+
+Both creates of 2026-10-16 succeeded, and no `UpdateWorkgroup` was called from 2026-10-09 to 2026-10-18.
+So the key returned as the AWS Health notice said, empty, and provider 6.68.0 created a workgroup that
+carries it. **Owed**: the re-plan against a live workgroup, which says whether the provider ignores it.
+
+### Step 4 — the residuals
+
+Written into the stage file and into `docs/AWS_STATE.md`'s Redshift section, each with what a reading
+shows. Two readings went into it:
+
+- `WH-8` in the accounts the script skips by default, `./aws/warehouse.py awsds-infra-staging
+  awsds-infra-data awsds-infra-identity`: **no namespace and no workgroup** in Staging, Data
+  Governance or Identity. No organization policy refuses `CreateNamespace` or `CreateWorkgroup`;
+  `DataScientistAccess` denies them in its own set.
+- the password line: no database password is issued (6h decision 2), and the admin's secret is
+  `EXC-13`.
+
+### `WH-6`'s third clause has no map to read
+
+The stage said `WH-6` reads that every schema in the sandbox database appears in the authored map.
+The map, `sandbox/warehouse/`'s `projects`, is keyed by project and names no schema, and no file
+authors the schema list in a form a script can read. So the clause is not implemented, and it cannot
+be without a new authored list; both stage files now say that `WH-12` lists the schemas and the
+user-role grants and the register is what they are read against.
+
+### The instruments with the compute down
+
+| Instrument | Result |
+|---|---|
+| `./aws/warehouse.py` | exit 0. Sandbox 7 pass, 9 notes: `WH-4`, `WH-4b`, `WH-5`, `WH-7`, `WH-8`, `WH-11`, `WH-1b` pass; Production 2 pass, 14 notes |
+| `./aws/studio.py` | `US-8` pass, *all 6 blueprint-provisioned role(s) bounded*. 16 pass, 2 notes; exit 1 only because five persona profiles hold no session |
+| `./aws/datalake.py` | `DL-5` and `DL-6` pass in both readings. 24 pass, 4 notes; exit 1 for the same profiles |
+
+### Dates to read later
+
+- **`EXC-13`**: the admin secret's first rotation is due by 2026-10-20 01:59:59Z, with no workgroup up.
+  The reading after that time is `describe-secret`'s `LastRotatedDate` and the rotation events in
+  CloudTrail.
+- **`EXC-16`**: the 30-day audit groups lose the records of 2026-09-20 and 2026-09-21 on 2026-10-20 and
+  2026-10-21, the only user records they ever held. They are tabulated in the 6h log, 2026-10-17.
+
+## 2026-10-18 — both alarms given `awsds-sandbox-alerts` as their action: planned, the apply refused
+
+*Written by Claude, session "Sandbox warehouse alarms to awsds-sandbox-alerts", with the environment
+down. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account `<Sandbox Account 1>`,
+permission set `InfrastructureAccess`): CloudWatch `describe-alarms`, SNS `get-topic-attributes`,
+`terraform plan`, `./aws/observability.py`. No apply ran.*
+
+### Before the change
+
+- **[Claude]** Both alarms read `OK`, `ActionsEnabled: true`, with no alarm, OK or insufficient-data
+  action. `awsds-sandbox-alerts`, created by `sandbox/observability/` at 20:54Z, reads
+  `SubscriptionsConfirmed` 0, `SubscriptionsPending` 1, `SubscriptionsDeleted` 1, and no KMS key.
+- **[Claude]** `./aws/observability.py awsds-infra-sandbox-1` at 21:07Z, exit 2, on two `OB-3` lines: the
+  five quota alarms `broken` (`awsds-sandbox-alerts: no confirmed subscription (1 pending)`), and
+
+  ```
+  fail    OB-3  alarm targets in awsds-infra-sandbox-1   2 alarms notifying nobody (awsds-sandbox-warehouse-compute-capacity, awsds-sandbox-warehouse-data-storage) while awsds-sandbox-quota-codeeditor-ml-t3-large (awsds-infra-sandbox-1) notifies: step 2 is half-built.
+  ```
+
+### The plan
+
+- **[Claude]** `sandbox/warehouse/` reads the topic from `sandbox/observability/`'s state
+  (`alerts_topic_arn`) and gives it to both alarms as `alarm_actions`; both descriptions lose their
+  "No action" sentence. `terraform plan -input=false -out=<a file outside the repository>`:
+  *"Plan: 0 to add, 2 to change, 0 to destroy."* The two are `aws_cloudwatch_metric_alarm.compute_capacity`
+  and `.data_storage`, updated in place: `alarm_actions` gains
+  `arn:aws:sns:us-west-2:<Sandbox Account 1>:awsds-sandbox-alerts`, and `alarm_description` changes. The
+  namespace, the admin secret, the security group and its ingress rule, the audit groups, the roles and
+  the policy attachments refreshed with no diff.
+
+### The apply was refused
+
+- **[Claude]** `terraform apply -input=false` on the saved plan, after a notice to the one busy peer
+  session, was refused before it ran by this session's auto-mode classifier ("Modify Shared Resources").
+  It was not retried, and both alarms still carry no action. The apply is the orchestrating session's;
+  the re-plan, the read-back and `OB-3` after it are owed with it.
+
+## 2026-10-18 — both alarms given `awsds-sandbox-alerts`: the apply, by the orchestrating session
+
+*The apply is the orchestrating session's ("Execução local no Mac"), from a detached worktree at `main`
+`df0d101` (PR #181 merged), as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1`, after the PR's own session had its apply refused. Its result is quoted as that
+session reported it. The read-back is Claude's, in the session "Stage 12: observability [P] slices,
+alarms, quotas, cost", read-only, at 21:23Z.*
+
+- **[Execução local no Mac] The apply**: plan *"0 to add, 2 to change, 0 to destroy"*,
+  `aws_cloudwatch_metric_alarm.compute_capacity` and `.data_storage`, `alarm_actions` and
+  `alarm_description`; apply 2026-10-18 21:19:18 to 21:19:28Z, *"Apply complete! Resources: 0 added, 2
+  changed, 0 destroyed."*; re-plan *"No changes"*; `describe-alarms` reads both `OK` with one action
+  each.
+- **[Execução local no Mac] `./aws/observability.py awsds-infra-sandbox-1` after it**, exit 2: `OB-3`
+  fails on *"7 alarms with a target that does not resolve ... awsds-sandbox-alerts: no confirmed
+  subscription (1 pending)"*, and the *"notifying nobody ... half-built"* line is gone.
+- **[Claude] Read back**: `awsds-sandbox-warehouse-compute-capacity` and `-data-storage` are `OK`,
+  `ActionsEnabled: true`, each with `awsds-sandbox-alerts` as its one alarm action, configuration updated
+  21:19:26Z. The topic reads `SubscriptionsConfirmed` 0, `SubscriptionsPending` 1,
+  `SubscriptionsDeleted` 1, and its one `email` subscription `PendingConfirmation`: the alarms reach a
+  person once the user confirms it.
+
+## 2026-10-20 — `EXC-13`'s first rotation succeeded with no workgroup
+
+*Written by Claude in a session the orchestrating session started for Stages 5b and 6h, with the
+environment down and no apply. Every reading is Claude's own, as `awsds-infra-sandbox-1` (account
+`<Sandbox Account 1>`, permission set `InfrastructureAccess`), from 22:02Z to 22:07Z: Secrets Manager
+`describe-secret`, CloudTrail `lookup-events`, Redshift Serverless `list-workgroups` and `get-namespace`.
+No secret value was read. The CLI printed its dates at -03:00; they are converted to UTC here. This
+answers the first of the 2026-10-18 entry's dates to read later.*
+
+### `describe-secret` on `redshift!awsds-sandbox-warehouse-dbadmin`, 22:02:43Z
+
+| Field | Value |
+|---|---|
+| `RotationEnabled` | `true` |
+| `RotationRules` | `rate(30 days)`, `AutomaticallyAfterDays: 30`, `Duration: 2h` |
+| `LastRotatedDate` | 2026-10-20T01:22:07Z |
+| `LastChangedDate` | 2026-10-20T01:22:07Z |
+| `LastAccessedDate` | 2026-10-10, the field's day granularity |
+| `NextRotationDate` | 2026-11-19T01:59:59Z |
+| `VersionIdsToStages` | `c0bb119e-6a9e-46dc-a162-f26e5d1ce306`: `AWSCURRENT`, `AWSPENDING`; `b7ac4764-7331-4816-afb0-957b8a9d65a9`: `AWSPREVIOUS` |
+| `OwningService` | `redshift` |
+
+On 2026-10-17 the same call read `LastRotatedDate` none and the next rotation due by
+2026-10-20T01:59:59Z.
+
+### CloudTrail, Secrets Manager, 2026-10-19 00:00Z to 2026-10-20 23:59Z
+
+Ten events, none with an error code, and no `RotateSecret` call:
+
+| UTC | Event | Caller |
+|---|---|---|
+| 2026-10-19 13:11:59 | `ListSecrets`, `GetResourcePolicy`, `DescribeSecret` | `AWSServiceRoleForAccessAnalyzer`, invoked by `access-analyzer.amazonaws.com` |
+| 2026-10-20 01:17:32 | `RotationStarted`, a service event | `secretsmanager.amazonaws.com` |
+| 01:18:06 | `PutSecretValue`, version `c0bb119e-…` staged `AWSPENDING`; `DescribeSecret` | `AWSServiceRoleForRedshift`, invoked by `redshift.amazonaws.com` |
+| 01:22:06 | `UpdateSecretVersionStage`, `AWSCURRENT` moved from `b7ac4764-…` to `c0bb119e-…`; `DescribeSecret` | the same |
+| 01:22:07 | `CompleteRotation`, `status: Succeeded`, `statusMessage: Rotation completed` | `redshift.amazonaws.com`, an `AWSService` identity |
+| 01:22:07 | `RotationSucceeded`, a service event | `secretsmanager.amazonaws.com` |
+
+### No workgroup existed
+
+- `list-workgroups` at 22:03Z: none. `get-namespace` at 22:07Z: `awsds-sandbox-warehouse` `AVAILABLE`,
+  admin `dbadmin`, the secret set.
+- CloudTrail, Redshift Serverless, 2026-10-16 to 2026-10-20: the last `CreateWorkgroup` at 2026-10-16
+  16:36:38Z, its `DeleteWorkgroup` succeeded at 21:17:34Z after two `ConflictException`s, and no
+  `CreateWorkgroup` since. After 2026-10-19 00:00Z the trail holds two `GetCredentials` from a portal
+  session of the access role, at 05:02:22Z and 05:19:21Z, both refused with `ResourceNotFoundException`
+  *"Serverless workgroup awsds-sandbox-warehouse not found."*, and one `ListWorkgroups` by
+  `InfrastructureAccess` at 2026-10-20 00:26:26Z. Nothing from Redshift Serverless around the rotation.
+
+### What it settles, and what it does not
+
+- **`EXC-13`'s prediction did not hold for the secret.** AWS's page, re-read today (*Managing Amazon
+  Redshift admin passwords using AWS Secrets Manager*, its considerations), still says a rotation
+  attempted with no workgroup associated fails and is not retried. The first scheduled one ran with no
+  workgroup, inside its two-hour window, and Secrets Manager recorded it as succeeded after Redshift's
+  service-linked role wrote and promoted the new version.
+- **Not read: the database half.** Whether the namespace's `dbadmin` password now equals `AWSCURRENT`
+  needs a database session, so a workgroup. The next `./aws/warehouse.py --sql` sends its statements
+  through the Data API with this secret: statements that run are the database following, and an
+  authentication failure is the two diverging.
+- **Written**: the stage file's status, 1.1 and step 4; `docs/AWS_STATE.md`'s `EXC-13`;
+  `sandbox/warehouse/README.md`'s section on the rotation.
+
+## 2026-10-21 — step 2.3 brought to the code and 2.2's layer 2, written on 2026-10-20 (PR #217), recorded
+
+*Claude's sitting, no AWS call: the offline task of the orchestrating session "Stage 18 checklist" that
+opened PR #217 (merged 2026-10-20T21:52:20Z) read the stage file against `identity/sso/`'s code and
+carried the 6h log's simulator reading of 2026-10-18. It wrote no entry, under the rule of that day; this
+one is written on 2026-10-21 from the PR's body and diff, with no AWS call either. The PR's 6h half is
+recorded in [the 6h log](log-stage-06h-redshift-connection.md), the entry of the same date.*
+
+- **[Claude] 2.3 marked done 2026-09-20, its text brought to `policies-data-scientists.tf`** as Pass 2
+  above records it: six reads on `*`, `ListUsageLimits` among them, where the step listed five on this
+  account's workgroup ARN, and two denies where it said `redshift-data:` nothing yet. The step cites 6h
+  decision 4 and the simulator's reading of 2026-10-18.
+- **[Claude] 2.2: layer 2 is per project on 6h 3.1's access role alone**, because AWS's
+  `SageMakerStudioProjectUserRolePolicy` v75 gives the project role its own reach on the warehouse,
+  through layer 1's tag, the wide tag and `sqlworkbench`. `sandbox/warehouse/README.md` and the comment on
+  `variables.tf`'s `projects` variable say the same.
+- **[Claude] [`docs/SMUS.md`](../SMUS.md)'s `RedshiftServerless` row**, 6.4's document: the usage limit
+  reads 10 RPU-hours, lowered on 2026-09-20, where it read 40.
+
+## 2026-11-17 — decision 9 taken on a card, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 9**, at 22:32, on the card *"Gerir o crédito gratuito do Redshift do Sandbox, que acaba
+  em 19/12?"*: *"Antecipar as sessões de warehouse"*, against the card's recommendation: the sittings that
+  raise Sandbox's warehouse run before 2026-12-19 (`runbooks/promotion.md` §N.6 item 9).
+
+## 2026-11-19 — the warehouse sitting's pre-flight, with nothing up
+
+*Claude, in the pre-flight session of the Sandbox warehouse sitting started by the orchestrating session,
+as the infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] `make status`** at 21:46:02: `estimated burn: USD 0.0000/h`. A first run, not finished after
+  300 seconds, was stopped and run again.
+- **[Claude] The plans from `main`**, each with `-input=false`, saved and not applied:
+  `sandbox/warehouse-compute/` at 21:43:14, `Plan: 2 to add, 0 to change, 0 to destroy`
+  (`aws_redshiftserverless_workgroup.this`, `aws_redshiftserverless_usage_limit.compute`);
+  `sandbox/warehouse/` at 21:43:48 with both switches off, `No changes`.
+- **[Claude] `CreateWorkgroup` and `UpdateWorkgroup` since 2026-10-19**, `lookup-events`: four creates,
+  2026-10-25 02:11:55, 2026-10-26 01:22:42, 2026-10-26 21:23:42 and 2026-10-30 16:04:42, each by
+  provider 6.68.0, each response carrying ten configuration parameters with `enable_large_strings_opt_in`
+  at `""`; no `UpdateWorkgroup`. Each destroy's `DeleteWorkgroup` answered `ConflictException` three to
+  five times, the `ok` 4 to 17 seconds after the first. No plan has run against a live workgroup, so the re-plan
+  of 2026-10-18 is still owed.
+- **[Claude] The admin secret**, `describe-secret`: last rotated 2026-11-19 at 00:23:23, with no
+  workgroup; rotation enabled, every 30 days in a 2-hour window, the next due 2026-12-19 at 01:59:59. The
+  database half of this second rotation is read by the sitting's first `./aws/warehouse.py --sql`.
+- **[Claude] The block written**: "The Sandbox warehouse sitting: 5b's items in order" in the stage file,
+  before the deliverables: the `--sql` read, the re-plan before 6h's re-apply of the compute slice, and the
+  `max_query_execution_time` test as a non-superuser and as the admin, between the candidates (a), (b) and
+  (c) of 2026-10-18.
+
+## 2026-11-19 — `promotion.md` §N.10 written from the pre-flight, nothing up
+
+*Claude, the orchestrating session, from the pre-flight session's report; no AWS call. Merged with pull
+request #340 on 2026-11-20 at 15:52:10. Times are UTC.*
+
+- **[Claude] §N.10, the Sandbox warehouse sitting**, written at 22:32: two days of about five hours, each
+  raised by `make hub-up` and then `make up ENV=sandbox GROUPS=redshift`. Day 1 opens with this stage's
+  rows (the `--sql` read, the `warehouse-compute/` re-plan, the `max_query_execution_time` test), then 6h's
+  (the editor on `sandbox`, the negatives 5.1 to 5.4, 5.2b with the wide tag, 0.4's portal half) and Stage
+  19's pass 5 to 5.3; day 2 holds Stage 21's passes 2 to 4, Stage 19's 5.4 with Stage 21's rollback, and
+  6h's 6.4. The cost written: about 0.22 USD/h before the spaces and about 1.7 USD/h while the warehouse
+  runs queries, about 8 USD for the sitting, between 5.5 and 12. §N.6 item 9 and §N.9.8 item 3 point to it.
+- **[Claude] §N.10.1, the acts before it**: release G and 4.12, 6h decision 8 (a)'s window, Stage 21 1.3's
+  wizard half and 4.5's write path, and Sandbox's free-trial balance; at 23:01, after the user chose Stage 19
+  5.2's door, its apply from `main`, done 2026-11-20 (Stage 19's log).

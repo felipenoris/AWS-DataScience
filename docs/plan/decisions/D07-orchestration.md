@@ -12,6 +12,13 @@ the `orchestration/` slice the pipeline applies, the shape of `terraform-referen
 `modules/orchestration/`. No DAG is ported to ASL, and design B leaves INT-14's ladder, whose terminal
 rung becomes the `CreateWorkflow` call from the release job (Stage 10 step 4.2).
 
+**Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decisions 6 (b) and 23
+(a), item 31):** the chain layer is `<env>/chains/` in both targets since 2026-11-16, `[P]` slices the user
+applies (`orchestration-v0.3.1`), and release T's `orchestration/` slices, which the pipeline applied, are
+retired (step 8 and item 31, 2026-11-16 and 2026-11-17). The workflows are the CI/CD CLI's, created by its
+deploy into each target's deployment project and run as the project role; each chain starts one workflow,
+and the schedules' minutes order them.
+
 **In one line:** One orchestrator runs the tasks, MWAA Serverless; (B) EventBridge Scheduler + Step Functions is the layer above it that schedules and chains the workflows (D41), no longer INT-14's fallback.
 
 **Related decisions:** [D5](D05-sagemaker-egress.md), [D17](D17-interactive-vs-runtime.md), [D26](D26-unified-studio.md), [D28](D28-workflow-contract.md), [D41](D41-sagemaker-application.md)

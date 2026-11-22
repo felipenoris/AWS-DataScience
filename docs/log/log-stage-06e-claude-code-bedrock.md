@@ -1679,3 +1679,95 @@ with each phase's stamp and totals; the other rows are left out.*
   `bedrock:InvokeModel` since 2026-09-12, so it no longer separates the two shapes. Stage 6e 3.1a and its
   row in *What the documentation changed* now say this; 3.1 stays a reading, because `simulate-custom-policy`
   still caps each policy at 2,000 characters and `InfrastructureAccess` still cannot produce the principal.
+
+## 2026-10-20 — `aws/bedrock.py` section 5 lists application inference profiles
+
+*Provenance. Claude, in a session of its own, as the infrastructure user with `InfrastructureAccess`
+through the five `awsds-infra-*` profiles. Every AWS call was a read. The change is on this
+session's branch; the fabricated `aws` it was exercised against lives in the session's scratchpad
+and is not tracked. Times are UTC.*
+
+- **[Claude] The run before the change**, `./aws/bedrock.py awsds-infra-data awsds-infra-identity
+  awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`, 00:30:04 to 00:31:31, exit 0.
+  Section 5 called `list-inference-profiles` with no type and listed 96 profiles in each account,
+  every one `SYSTEM_DEFINED`. `Sandbox Account 1` holds two application profiles (Stage 17's log,
+  2026-10-19), and the section showed neither.
+- **[Claude] The change.** Section 5 asks for each type by name through
+  `aws/awslib/inferenceprofiles.py`, which `aws/bedrock-usage.py` now reads too. An application
+  profile's row carries its id, type, status, model count and what it copies: the system-defined
+  profile listing exactly its model ARNs, or the model when it lists `us-west-2` alone. When neither
+  matches, the cell reads `-` and a line under the table says what the profile lists. No profile id
+  is in the code.
+- **[Claude] `BR-4` needs no type.** It looks for the scoped `us.` profiles, which are
+  system-defined, the type the call returns when it names none. It now reads section 5's
+  `SYSTEM_DEFINED` listing for its account instead of a call of its own, so the check and the table
+  read one answer.
+- **[Claude] Exercised against a fabricated `aws`** before the live run: copies of a `us.` profile,
+  of a `global.` profile and of a model in `us-west-2`; Regions no system-defined profile lists; two
+  models in one profile; model ARNs two system-defined profiles share; no application profile; each
+  type's call refused, which exits 1 with the call in section 10; a scoped profile missing, which
+  fails `BR-4` and exits 2. `bedrock-usage.py`'s `inference_profiles()` and `profile_route()`
+  returned what `main`'s returned on 841 inputs.
+- **[Claude] The run after the change**, the same five profiles, 00:36:52 to 00:38:25, exit 0, no
+  call failed. Section 5 in `Sandbox Account 1`:
+
+  ```
+  PROFILE ID    TYPE         STATUS  MODELS  COPIES
+  cp0gmvjv1h8q  APPLICATION  ACTIVE  3       us.anthropic.claude-haiku-4-5-20251001-v1:0
+  csu817ovl4kz  APPLICATION  ACTIVE  1       amazon.nova-lite-v1:0
+  ```
+
+  The other four accounts hold no application profile, and each account lists the same 96
+  system-defined ids as before. Outside section 5 the report is identical to the run before, checks
+  included: `BR-4` reads `3 of 3 in awsds-infra-sandbox-1`.
+- **[Claude] `./aws/bedrock-usage.py 2026-10-19T21:00Z 2026-10-19T22:20Z`**, stamped 00:38:12,
+  exit 0, *"all checks passed"*: the `cp0gmvjv1h8q (claude-haiku-4-5)` row, its `profile:` line and
+  `BU-5` read as Stage 17's log recorded them on 2026-10-19.
+- **[Claude] Outside this change.** `aws/bedrock-scope.py` also lists inference profiles with no
+  type. Its `BS-2` looks only for the scoped `us.` profiles, so it needs no type either.
+
+## 2026-10-20 — `aws/bedrock-scope.py` asks for the system-defined inference profiles by name
+
+*Provenance. Claude, in a session of its own, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1` on `Sandbox Account 1`. Every AWS call was a read. The change is on
+this session's branch; the `aws` shim on `PATH` that logged and refused one call lives in the
+session's scratchpad and is not tracked. Times are UTC.*
+
+- **[Claude] The run before the change**, `./aws/bedrock-scope.py` with `main`'s copy of the script,
+  01:09:26 to 01:09:57, exit 0. Its `list-inference-profiles` named no type. Every check passed:
+  `BS-2` read `3 profile(s)` `ACTIVE`, `BS-3` and `BS-4` the routing `us-east-1, us-east-2,
+  us-west-2`, `BS-5` three agreements `AVAILABLE`, `BS-6` mode `none` in 17 Regions.
+- **[Claude] The change.** `BS-2` reads the `SYSTEM_DEFINED` listing of
+  `aws/awslib/inferenceprofiles.py`, the type of the declared `us.` profiles, and keeps its note
+  when the call fails.
+- **[Claude] The run after the change**, 01:10:03 to 01:10:31, exit 0, no call failed. The report
+  is the one before, line for line, but its `generated` stamp. A third run through the shim,
+  stamped 01:11:49, logged the call as `list-inference-profiles --type-equals SYSTEM_DEFINED` and
+  wrote the same report.
+- **[Claude] The call refused** by the shim, stamped 01:12:17, exit 1: `BS-2` reads `note`,
+  *"the profile list did not read"*, section 5 names the call, and `BS-1` and `BS-3` to `BS-7`
+  pass as before.
+
+## 2026-11-17 — decision 6 taken on a card, and the review stopped, with no AWS call
+
+*Claude's sitting in a cloud session of the user's Claude project, no AWS call: the review of the plan's
+open decisions the user asked for at 22:01 UTC, one card per decision under the user's default of
+21:50 UTC (the path AWS suggests), recorded by pull request #317. Times are UTC.*
+
+- **[user] Decision 6**, at 23:45, on the card *"Ligar o aviso do orçamento de 50 USD, que hoje não avisa
+  ninguém?"*: *"Ligar aviso e detecção de anomalia"*. **[Claude]** The user's acts in Management's console
+  join the waiting list: an e-mail subscriber on the budget at 50, 80 and 100% of its ceiling, and Cost
+  Anomaly Detection beside it. D12 and Stage 12's 2.1 and decision due 2 read the notification half as
+  taken; the ceiling's number stays Stage 12's.
+- **[user] The review stops here**, at 23:46: *"Suba as decisões aqui no PR e vamos deixar as demais para
+  depois. Vamos finalizar esta sessão."* The decisions not yet put stay on the waiting list as they were.
+
+## 2026-11-20 — 6.4's baseline read with nothing up
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, read-only, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Times are UTC.*
+
+- **[Claude] `./aws/bedrock-usage.py`**, 2026-11-01 to 20:16: `amazon.nova-lite-v1:0` one invocation,
+  unpriced; `amazon.titan-embed-text-v2:0` four; the Claude Haiku 4.5, Opus 4.5 and Sonnet 4.5 profiles four
+  each; *"USD 0.0005 computed, not billed"*, all checks passed. `./aws/bedrock-scope.py` wrote its snapshot.
+  6.4's window, on `promotion.md` §N.9's day 3, starts from that month.

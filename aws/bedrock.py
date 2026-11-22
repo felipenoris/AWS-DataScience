@@ -15,8 +15,8 @@
 #   writes:   aws/output/bedrock.txt   (untracked - see .gitignore)
 #   reads:    bedrock:GetUseCaseForModelAccess, GetAccountDataRetention,
 #             GetModelInvocationLoggingConfiguration, ListFoundationModels,
-#             GetFoundationModelAvailability, ListInferenceProfiles, ListGuardrails,
-#             ListCustomModels, ListImportedModels, ListProvisionedModelThroughputs,
+#             GetFoundationModelAvailability, ListInferenceProfiles for each type,
+#             ListGuardrails, ListCustomModels, ListImportedModels, ListProvisionedModelThroughputs,
 #             ListMarketplaceModelEndpoints; iam:ListRoles and iam:ListAttachedRolePolicies for
 #             section 7; and sts:GetCallerIdentity. Every one is a read;
 #             this script never creates, updates or deletes anything and invokes no model.
@@ -58,7 +58,7 @@ import json
 import re
 import sys
 
-from awslib import context, profiles
+from awslib import context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
@@ -403,25 +403,53 @@ section 2's form reading is the instrument for the gate.""")
         # ------------------------------------------------------------------------------
         rep.h1("5. Inference profiles the account holds")
 
+        held: dict = {}  # profile -> type -> {id: (status, model ARNs)}, None when the call failed
         for c in live:
             cli = cli_for(c.profile)
             rep.h2(f"5.x {c.profile}  ({c.account})")
-            rep.show(
-                cli,
-                "bedrock",
-                "list-inference-profiles",
-                "--query",
-                "inferenceProfileSummaries[?status=='ACTIVE'].[inferenceProfileId,type,"
-                "length(models)]",
-                "--output",
-                "text",
-            )
+            found = {kind: inferenceprofiles.listing(cli, kind) for kind in inferenceprofiles.TYPES}
+            held[c.profile] = found
+            systems = found["SYSTEM_DEFINED"]
+            index = inferenceprofiles.by_model_arns(systems or {})
+            for kind, listed in found.items():
+                rep.line(cli.echo(inferenceprofiles.listing_args(kind)))
+                rep.line()
+                if listed is None:
+                    rep.line("!! COMMAND FAILED - see section 10")
+                elif not listed:
+                    rep.line("(empty result - the call succeeded and returned nothing)")
+                else:
+                    copies = kind == "APPLICATION"
+                    rows = ["PROFILE ID\tTYPE\tSTATUS\tMODELS" + ("\tCOPIES" if copies else "")]
+                    unread = []
+                    for pid, (status, arns) in sorted(listed.items()):
+                        row = f"{pid}\t{kind}\t{status}\t{len(arns)}"
+                        if copies and systems is None:
+                            row += "\tnot read"
+                        elif copies:
+                            _model, copied, lists = inferenceprofiles.source(arns, index)
+                            row += f"\t{copied or '-'}"
+                            if copied is None:
+                                unread.append(f"{pid}: {lists}")
+                        rows.append(row)
+                    rep.tabulate(rows)
+                    for line in unread:
+                        rep.line(line)
+                rep.line()
 
-        rep.text("""A SYSTEM_DEFINED profile is AWS's cross-region routing object and exists whether
-or not this account uses it; APPLICATION profiles are created by an account and are
-the ones an inference-profile ARN in a policy would be pinned to. The third column is
-how many foundation models the profile routes to - anything above 1 is a model
-processed outside this Region some of the time (Stage 6e step 7.3).""")
+        rep.text("""Each type is asked for by name: with no --type-equals the call returns the
+system-defined profiles alone (measured 2026-10-19, 96 of 96 in Sandbox while it held
+two application profiles).
+
+A SYSTEM_DEFINED profile is AWS's cross-region routing object and exists whether or
+not this account uses it. An APPLICATION profile is created in the account, and a
+call through it names the profile's ARN rather than a model: enabling a model for the
+SageMaker Unified Studio playground created one on 2026-10-19. COPIES is what an
+APPLICATION profile was created from, read back: the system-defined profile listing
+exactly the same model ARNs, or the model when the profile lists this Region alone;
+`-` and a line under the table when neither matches. MODELS counts model ARNs, one
+per Region the profile routes to - anything above 1 is a model processed outside this
+Region some of the time (Stage 6e step 7.3).""")
 
         # ------------------------------------------------------------------------------
         rep.h1("6. Bedrock resources that would be billing")
@@ -642,25 +670,19 @@ The instrument for all of it is a call. Stage 6e steps 6 and 7.2a are where it l
                 )
 
         if anchor:
-            profs = cli_for(anchor.profile).call(
-                "bedrock",
-                "list-inference-profiles",
-                "--query",
-                "inferenceProfileSummaries[?status=='ACTIVE'].inferenceProfileId",
-                "--output",
-                "text",
-            )
-            have = set(profs.stdout.split()) if profs.ok else set()
+            # A `us.` profile is system-defined, so BR-4 reads section 5's listing of that type.
+            systems = held[anchor.profile]["SYSTEM_DEFINED"]
+            have = {pid for pid, (status, _arns) in (systems or {}).items() if status == "ACTIVE"}
             missing = [p for p in SCOPED.values() if p not in have]
             if not SCOPED:
                 checks.fail("BR-4", "the scoped set could not be read", scope_why)
-            elif profs.ok and not missing:
+            elif systems is not None and not missing:
                 checks.ok(
                     "BR-4",
                     "every scoped model has an ACTIVE us. profile",
                     f"{len(SCOPED)} of {len(SCOPED)} in {anchor.profile}",
                 )
-            elif profs.ok:
+            elif systems is not None:
                 checks.fail("BR-4", "a scoped model has no ACTIVE profile", ", ".join(missing))
 
             present = []

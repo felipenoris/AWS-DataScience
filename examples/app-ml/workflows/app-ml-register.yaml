@@ -1,0 +1,13 @@
+# {"register":{"x":120,"y":200}}
+app-ml-register:
+  dag_id: app-ml-register
+  tasks:
+    register:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      python_callable: app_ml_tasks.register
+      op_kwargs:
+        model_prefix: "{proj.connection.default.s3_shared.s3Uri}{env.MODEL_PREFIX}/"
+        group: "{env.MODEL_PACKAGE_GROUP}"
+        models: "{proj.connection.default.s3_shared.s3Uri}app-ml/models/"
+        serving_image: "{env.TRAINING_IMAGE_URI}"
+      retries: 0

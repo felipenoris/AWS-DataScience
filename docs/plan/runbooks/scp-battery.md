@@ -285,7 +285,7 @@ not *passed*.
 
 | Document | Probe | Denied | Allowed |
 |---|---|---|---|
-| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP | a list, empty or not — the namespace deny is not reaching reads |
+| workloads | `aws datazone list-domains --region us-west-2` | `AccessDenied` naming an SCP: the answer every principal but the three excepted ones reads, and the infrastructure user's too until Stage 19 step 4.1's apply on 2026-11-11 | a list, empty or not: the infrastructure user's answer since that step (the amendment below) |
 | workloads | `aws sagemaker create-space --domain-id d-0000000000000 --space-name awsds-canary-probe --region us-west-2` | `AccessDenied` | `ValidationException` / `ResourceNotFound` = SageMaker validated first, so **untested** |
 | workloads | `aws sagemaker start-session --resource-identifier arn:aws:sagemaker:us-west-2:<ACCT>:space/d-0000000000000/none` | `AccessDenied` | any validation error = untested |
 | data, identity | `aws ec2 run-instances --dry-run --image-id <REAL AMI> --instance-type t3.micro --subnet-id <REAL SUBNET>` | `UnauthorizedOperation`, naming the policy | `DryRunOperation` = allowed |
@@ -357,6 +357,34 @@ and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
 If the `inherit` row reads `ALLOWED` and the run stopped before the next row, put the mode back by hand:
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
 
+**The Stage 8 decision 29 amendment to `awsds-org-scp-baseline`** — `DenyDeployRoleAssumptionOutsideTheRegion`,
+applied 2026-10-27 at 02:58 UTC, **has one row in `probes.py`, on a role that exists, and it measures only when
+AWS issues an authorization id**. A row on a role of the prefix that exists in no account cannot reach it: the
+two calls below, from `awsds-policy-canary`, answered the same before and after the apply:
+
+| Probe (from `awsds-policy-canary`) | Before the apply, 02:32 UTC | After it, 02:59 to 03:09 UTC |
+|---|---|---|
+| `aws sts assume-role --role-arn arn:aws:iam::<ACCT>:role/awsds-deploy-battery-probe --role-session-name scp-battery --endpoint-url https://sts.amazonaws.com --region us-east-1` | `AccessDenied` *"is not authorized to perform: sts:AssumeRole on resource"*, no policy named | the same, at the battery's run and in 20 tries, CloudTrail recording that message in `us-east-1` |
+| the same with `--endpoint-url https://sts.us-west-2.amazonaws.com --region us-west-2` | the same | the same |
+
+The IAM simulator read the global call `explicitDeny` (`AllowedByOrganizations` false) and the regional one
+`allowed`, so the document says what it was written to say; the refusal of a role that does not exist hides the
+deny, and a row on one reads `ALLOWED` for ever (Lesson 50). The statement is measured by the job
+`sts-global-probe` on the deploy runner, whose role the deploy roles trust ([`promotion.md`](promotion.md) §N.8.2
+step 5). An existing role that does not trust the caller does not show it in STS's text either (2026-10-30, the
+user's `AssumeRole` of `awsds-deploy-prod` on both endpoints): the global refusal adds an authorization id, whose
+details (IAM's Access Troubleshooter, a preview: `aws iam-toolbox get-request-authorization-details` in
+`us-east-1`) name this statement in `p-1fp032g8` as the matched deny, and the regional refusal carries none.
+`classify` follows such an id since 2026-10-30, and the `root` phase's row on `awsds-deploy-prod` through the global
+endpoint reads `DENY-SCP` with the statement's Sid when the refusal carries one. AWS does not issue one on every
+refusal: the battery's first run of the row, at 06:25:03 UTC the same day, met a refusal with none, and the row
+read `DENY-NOT-SCP`, a note with an empty detail (25 as expected, 0 unexpected, 1 not measured). A regression
+never reads `DENY-SCP`, so that reading is a measurement and a note is none; the regional path has no row, its
+refusal carrying no id either way.
+
+In zsh the account goes into an ARN as `${ACCT}:role`: `$ACCT:r` is a modifier, and the malformed ARN it
+leaves is refused with `ValidationError` before authorization (2026-10-27).
+
 ### Phase 4b — re-probing an amended document, in place
 
 **An amendment is phase 4 with a shorter probe list.** Once a document sits on its real OU, the update
@@ -393,26 +421,117 @@ proves the regression half — adding the guard did not open the deny for people
 statements and `DenySageMakerServerlessInference`.** Run as `awsds-infra-prod` with `--phase ou`, after the
 `identity/org-policies/` apply and before `production/sagemaker/` is applied (Stage 9 step 3.4). Each deny
 row breaks one setting and keeps the other four, because AWS names the policy and never the statement
-(Lesson 20); the two allow rows are the same calls with nothing broken. Every call is `blocked`: the role,
-the image, the security group, the key and the model named do not exist, and the subnet is the account's
-own, so a VPC check that ran before authorization would read as a validation error, never as the deny.
+(Lesson 20); the allow rows are the same calls with nothing broken, and the processing job without
+isolation, which `DenySageMakerJobsWithoutNetworkIsolation` leaves out (Stage 20 decision 13). Every call
+is `blocked`: the role, the image, the security group, the key and the model named do not exist, and the
+subnet is the account's own, so a VPC check that ran before authorization would read as a validation
+error, never as the deny.
 
 | Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | Statement it answers |
 |---|---|---|
-| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` (authorized) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
+| `create-processing-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId` and `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized). The service checks the instance quota after authorization and before the role, and Production's processing quotas read 0 (2026-10-18), 8 for `ml.m5.large` and 4 for `ml.m5.2xlarge` since 2026-10-24 (the Stage 9 log) | none: the contrast, and the reading that `sagemaker:VolumeKmsKey` still populates where AWS's reference now lists `sagemaker:VolumeKmsKeyArn` (read 2026-10-16) |
 | the same, without `VpcConfig` | `AccessDenied` naming the policy | `DenySageMakerJobsOffVpc` |
 | the same, on `ml.m5.2xlarge` | `AccessDenied` | `DenySageMakerInstanceCeiling` |
-| the same, `EnableNetworkIsolation: false` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation` |
+| the same, `EnableNetworkIsolation: false` | `ValidationException` or `ResourceLimitExceeded` (authorized) | none: a contrast that stays authorized, a processing job being out of `DenySageMakerJobsWithoutNetworkIsolation` (Stage 20 decision 13) |
 | the same, `EnableInterContainerTrafficEncryption: false` | `AccessDenied` | `DenySageMakerJobsWithoutInterContainerEncryption` |
 | the same, without `VolumeKmsKeyId` | `AccessDenied` | `DenySageMakerJobsWithoutVolumeEncryption` |
+| `create-training-job` with `VpcConfig`, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` and `--no-enable-network-isolation` | `AccessDenied` | `DenySageMakerJobsWithoutNetworkIsolation`; the compliant training row below is its contrast |
 | `create-endpoint-config` with a `ServerlessConfig` variant | `AccessDenied` | `DenySageMakerServerlessInference` |
 | `create-endpoint-config` with an `ml.m5.large` variant | `ValidationException` (authorized) | none: the contrast for the serverless row |
+
+**The processing row without isolation reads `FAIL` until `identity/org-policies/` applies
+`sagemaker-denies-v0.3.0`'s list** (Stage 20 step 4.4): the attached document denies the call until then.
+The training row without isolation reads `DENY-SCP` before that apply and after it.
 
 **A `ValidationException` on a deny row records it untested, not passed** (the box above), and here no
 retry is safe: a role that exists would let an authorized call create a job, which makes the row
 `creates`, refused outside `Policy Canary`. The question then moves to Stage 10's first submitted job, read
 from CloudTrail. The compliant row turning into a deny is the finding that matters most: either the volume
 key stopped populating under its old name, or another statement reaches further than written.
+
+**The instance-preference rows ran on 2026-10-22**, in Stage 18 8.7's `--phase ou` (01:53Z, 47 as
+expected, 0 unexpected, 7 not measured), each as expected. Since 2026-09-15 a job may name up to five
+instance types as a preference list in place of `InstanceType`:
+`ProcessingResources.ClusterConfig.InstancePreferences` for a processing job,
+`ResourceConfig.InstancePreferences` for a training job, the list excluding `InstanceType` and the one
+`InstanceCount` staying on the cluster. `DenySageMakerInstanceCeiling` is `ForAnyValue:StringNotEquals` on
+`sagemaker:InstanceTypes`, which leaves alone a request in which the key is absent
+([`upstream-releases.md`](../upstream-releases.md), 2026-10-18), and SageMaker fills the key from the
+list: for both actions each list naming `ml.m5.2xlarge` answered `DENY-SCP`, and the list naming
+`ml.m5.large` alone reached authorization. The rows sit in `probes.py` beside the processing rows above,
+`blocked` for the same reason and each carrying the other four settings:
+
+| Probe (`aws sagemaker …`, from `awsds-infra-prod`) | Expected | What it answers |
+|---|---|---|
+| `create-processing-job`, the list naming `ml.m5.large` | `ResourceLimitExceeded` or `ValidationException` (authorized; `probes.py` reads either as authorized): SageMaker checks the quota of every listed type, and Production's processing quotas read 0 until 2026-10-24, 8 for `ml.m5.large` since | none: the contrast, which attributes the two rows below to the type rather than to the list's form |
+| the same, the list naming `ml.m5.2xlarge` | `AccessDenied` naming the `Workloads` document | `DenySageMakerInstanceCeiling` reads a list |
+| the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | the key carries every entry, not the first alone |
+| `create-training-job` with `VpcConfig`, isolation, inter-container encryption, `VolumeKmsKeyId`, the list naming `ml.m5.large` | `ValidationException` or `ResourceLimitExceeded` (authorized); Production's training quotas for the three `ml.m5` types read 0 (2026-10-20), 20 each since 2026-10-24, and whether this action checks them after authorization is unread | none: the contrast, for the rows below and for the training row without isolation above, and the battery's first training row |
+| the same, `ml.m5.2xlarge` as `InstanceType` | `AccessDenied` | none new: the control, which places authorization before the role and quota checks of this action |
+| the same, the list naming `ml.m5.2xlarge` | `AccessDenied` | the list, for the second action (Lesson 21) |
+| the same, the list naming `ml.m5.large`, then `ml.m5.2xlarge` | `AccessDenied` | every entry, for the second action |
+
+**An authorized deny row is a hole in the ceiling.** A processing row proves it with
+`ResourceLimitExceeded`, which follows authorization (2026-10-18), while the listed type's quota reads 0;
+since the quotas rose on 2026-10-24, `ml.m5.2xlarge`'s to 4, no reading here shows what an authorized
+deny row answers. A training row proves it by answering
+what the contrast row answers while the control reads `AccessDenied`. A `ValidationException` that names
+the list itself may precede authorization, and records the row untested. The key's population is a
+property of the request, so the answer carries to the D13 boundary, which composes the same statement
+([Stage 17](../stages/stage-17-sandbox-machine-learning.md) pass 2's training job).
+
+**The Stage 19 step 4.1 amendment — `DenyDataZoneEntirely` excepts three principals and
+`DenyDataZoneSubscriptionRequests` is new** (decision 13 (b), written 2026-11-11). The two halves are
+measured in two places, because the battery's own identity in the `Workloads` accounts, the
+infrastructure user, is one of the excepted principals (Lesson 22).
+
+The allow half and the subscription deny are rows of `probes.py`, run with `--phase ou` a minute or
+more after the apply (`SUP-350`):
+
+| Probe (from `awsds-infra-prod` and `awsds-infra-staging`) | Expected | Statement it answers |
+|---|---|---|
+| `aws datazone list-domains` | answers | `DenyDataZoneEntirely`'s `ArnNotLike`: the SSO `InfrastructureAccess` role is excepted |
+| `aws datazone create-subscription-request` on a domain, a listing and a project that do not exist | `AccessDenied` naming the `Workloads` document | `DenyDataZoneSubscriptionRequests`, which binds the excepted principals too. `blocked`: with the deny lifted DataZone's own layer answers *"User is not permitted to perform operation: CreateSubscriptionRequest"*, the wording that proves authorization was reached (the canary's answer with nothing parked, 2026-11-11; `SUP-354`) |
+| `aws sagemaker create-space` on a domain that does not exist | `AccessDenied` | none new: `DenyInteractiveSageMakerSurface` still binds both accounts |
+
+The deny half has no principal the battery can produce in those accounts, so it is read once, at the
+amendment, as the canary under a candidate parked on `Policy Test`: a throwaway policy holding the
+document's two DataZone statements, created, attached, probed, detached and deleted in one sitting as
+`awsds-infra-identity`, never left attached (`attachments.json`, `Policy Test`). The candidate is cut
+from the rendered document, so it cannot differ from what the apply will carry:
+
+```bash
+./terraform-live/identity/org-policies/render.py > /dev/null && jq '{Version, Statement: [.Statement[] | select(.Sid | startswith("DenyDataZone"))]}' aws/output/rendered-policies/awsds-org-scp-ou-workloads.json > aws/output/rendered-policies/candidate-workloads-datazone.json
+```
+
+```bash
+aws organizations create-policy --name awsds-canary-scp-workloads-datazone --type SERVICE_CONTROL_POLICY --description "candidate of DenyDataZoneEntirely's revision, parked on Policy Test for one battery" --content file://aws/output/rendered-policies/candidate-workloads-datazone.json --query Policy.PolicySummary.Id --output text --profile awsds-infra-identity
+```
+
+```bash
+aws organizations attach-policy --policy-id <the id> --target-id <Policy Test's id> --profile awsds-infra-identity
+```
+
+| Probe (from `awsds-policy-canary`) | With nothing parked | Under the candidate |
+|---|---|---|
+| `aws datazone list-domains` | an empty list | `AccessDenied` *"with an explicit deny in a service control policy"* naming the candidate: an SSO role that is not `InfrastructureAccess` is not excepted |
+| `aws datazone list-environment-blueprints --domain-identifier dzd_canaryprobe0000` | not run | the same refusal: the whole namespace, not one action |
+| `aws datazone create-subscription-request` on names that do not exist | DataZone's *"User is not permitted to perform operation"* | the same refusal |
+| `aws sts get-caller-identity`, `aws ec2 describe-vpcs` | answer | answer: the floor |
+
+```bash
+aws organizations detach-policy --policy-id <the id> --target-id <Policy Test's id> --profile awsds-infra-identity && aws organizations delete-policy --policy-id <the id> --profile awsds-infra-identity
+```
+
+**Measured 2026-11-11** ([the Stage 19 log](../../log/log-stage-19-smus-native-data-product.md)): the
+candidate `p-oktjrbxv` bound within ten seconds of its attach, every row read as the table says, and
+`list-domains` kept reading the refusal for 68 s after the detach (`SUP-350`), so the canary is read
+again before the sitting is called done. What the candidate cannot show is the exception itself, since
+`Policy Canary` holds none of the three roles: that is the allow half above, in the real accounts.
+
+**The allow half measured 2026-11-11 at 14:27 UTC**, 3 min 36 s after the apply: `--phase ou` read 52 as
+expected, 0 unexpected, 5 not measured, both `list-domains` rows `ALLOWED` and both
+`create-subscription-request` rows `DENY-SCP` naming `p-83t232f4`.
 
 **The Stage 6e decision 15 amendment — `awsds-org-scp-ou-interactive` gains
 `DenyBedrockInvocationOutsideTheScopedModels` and `DenyBedrockReadsOutsideTheRoutedRegions`.** Run as
@@ -426,7 +545,8 @@ step 6.4's measurement window.
 
 | Probe (from `awsds-infra-sandbox-1`) | Expected | Statement it answers |
 |---|---|---|
-| `aws bedrock-runtime invoke-model --model-id amazon.nova-lite-v1:0 … --region us-west-2` | `AccessDenied` naming the Interactive document | `DenyBedrockInvocationOutsideTheScopedModels`. Nova Lite needs no agreement, so with the deny lifted it answers |
+| `aws bedrock-runtime invoke-model --model-id us.amazon.nova-lite-v1:0 … --region us-west-2` | `AccessDenied` naming the Interactive document | `DenyBedrockInvocationOutsideTheScopedModels`, on the system profile's own pass. Nova Lite needs no agreement, so with the deny lifted it answers. The row invoked the foundation model `amazon.nova-lite-v1:0` until Stage 17 decision 23 (a) admitted that model's `us-west-2` ARN (written 2026-11-19) |
+| `aws bedrock-runtime invoke-model --model-id amazon.nova-lite-v1:0 … --region us-west-2` | answers | none: Stage 17 decision 23 (a)'s entry, and the contrast of the row above, the same model by the ARN the statement reads |
 | the same, on each profile the house image pins, read from `managed-settings.json` when `probes.py` is imported | answers | none: the contrast, and the reading that the scoped set is not dark. A gate refusal after authorization still reads `ALLOWED`; `./aws/bedrock-scope.py` `BS-5` reads the agreements |
 | `aws bedrock get-use-case-for-model-access --region eu-west-1` | `AccessDenied` naming the Interactive document | `DenyBedrockReadsOutsideTheRoutedRegions`, the only policy that can refuse it there: Control Tower's Region control exempts the action ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M5) and the model statement does not name it |
 | the same in `us-east-1` and `us-east-2` | answers | none: the routed Regions stay open, and the Control Tower exemption still holds |

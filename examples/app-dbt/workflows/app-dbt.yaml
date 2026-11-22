@@ -1,0 +1,48 @@
+# {"load":{"x":120,"y":200},"transform":{"x":420,"y":200}}
+app-dbt:
+  dag_id: app-dbt
+  tasks:
+    load:
+      operator: airflow.providers.amazon.aws.operators.glue.GlueJobOperator
+      job_name: app-dbt-{proj.id}
+      job_desc: The Glue job of the application app-dbt, created and updated by the workflow
+      script_location: "{proj.connection.default.s3_shared.s3Uri}app-dbt/glue/load.py"
+      iam_role_arn: "{proj.iam_role_arn}"
+      region_name: "{domain.region}"
+      update_config: true
+      script_args:
+        "--SOURCE_PATH": "{proj.connection.default.s3_shared.s3Uri}app-dbt/inbox/"
+        "--TABLE_DATABASE": "{env.PRODUCT_DATABASE}"
+        "--TABLE_NAME": trades
+      create_job_kwargs:
+        Command:
+          Name: glueetl
+          ScriptLocation: "{proj.connection.default.s3_shared.s3Uri}app-dbt/glue/load.py"
+          PythonVersion: "3"
+        GlueVersion: "6.0"
+        WorkerType: G.1X
+        NumberOfWorkers: 2
+        Timeout: 50
+        Connections:
+          Connections:
+            - datazone-glue-network-connection-{env.SUBNET_AZ1}-{proj.id}-dev
+            - datazone-glue-network-connection-{env.SUBNET_AZ2}-{proj.id}-dev
+        DefaultArguments:
+          "--custom-logGroup-prefix": datazone-{proj.id}-dev
+          "--datalake-formats": iceberg
+          # The Iceberg catalog the table is written through, then the OpenLineage listener that
+          # posts the job's lineage to the domain through the datazone endpoint, the settings of
+          # app-etl's transform task (Stage 19 decision 10); the account is a stage variable.
+          "--conf": "spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions --conf spark.sql.catalog.glue_catalog=org.apache.iceberg.spark.SparkCatalog --conf spark.sql.catalog.glue_catalog.catalog-impl=org.apache.iceberg.aws.glue.GlueCatalog --conf spark.sql.catalog.glue_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO --conf spark.sql.catalog.glue_catalog.warehouse={proj.connection.default.s3_shared.s3Uri}app-dbt/tables/ --conf spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener --conf spark.openlineage.transport.type=amazon_datazone_api --conf spark.openlineage.transport.domainId={domain.id} --conf spark.glue.accountId={env.ACCOUNT_ID} --conf spark.openlineage.facets.custom_environment_variables=[AWS_DEFAULT_REGION;GLUE_VERSION;GLUE_COMMAND_CRITERIA;GLUE_PYTHON_VERSION;] --conf spark.openlineage.columnLineage.datasetLineageEnabled=True --conf spark.glue.JOB_NAME=app-dbt-{proj.id}"
+        Tags:
+          AmazonDataZoneProject: "{proj.id}"
+      retries: 0
+    # dbt on the worker, from the archive: run-dbt.sh, started by bash from its full path so that the
+    # mode the extraction leaves plays no part, each value in single quotes; a command ending in .sh
+    # would be read as a template file's name. The workgroup is the project's project.athena
+    # connection's, which the CLI resolves at the deploy. The exit code is dbt's.
+    transform:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      dependencies: [load]
+      bash_command: "bash /usr/local/airflow/dags/run-dbt.sh --region '{domain.region}' --account '{env.ACCOUNT_ID}' --database '{env.PRODUCT_DATABASE}' --workgroup '{proj.connection.project.athena.workgroupName}' --domain '{env.LINEAGE_DOMAIN}' --names '{env.LINEAGE_NAMES}' --endpoint '{env.LINEAGE_ENDPOINT}' --attempts '{env.LINEAGE_ATTEMPTS}' --namespace '{env.LINEAGE_NAMESPACE}'"
+      retries: 0

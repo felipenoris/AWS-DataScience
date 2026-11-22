@@ -30,7 +30,7 @@ variable "environment_tag" {
 }
 
 variable "members" {
-  description = "The accounts a project profile may provision into (SMUS_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Staging and Production are absent by design (D28), not by omission."
+  description = "The accounts a project profile may provision into (SMUS_MEMBERS and SMUS_DEPLOYMENT_MEMBERS in scripts/tfhygiene/backend.py - D26/D35's decision, and Stage 18's for the second). Keyed by account folder, carrying the profile an aliased provider resolves the account id from. Production is absent by design (D28), and Staging outside Stage 18's window."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
@@ -45,6 +45,19 @@ variable "profiles_enabled" {
   description = "false until every member account's association has been accepted (SMUS_ASSOCIATED in backend.py). true is the pass 2c apply: the two project profiles, whose environment configurations name blueprints that must already be configured in the target account."
   type        = bool
   default     = false
+}
+
+variable "lake_publishing_enabled" {
+  description = "Stage 6f step 11's switch, from backend.LAKE_PUBLISHERS: true adds the `lake-publishing` profile, which provisions Tooling into this account (6f decision 1, shape (b)), and its create grant to the Governance Manager's group. Written after data-governance/publishing/'s first apply."
+  type        = bool
+  default     = false
+}
+
+variable "redshift_serverless_enabled" {
+  description = "Stage 21 decision 1 (b), for one sitting: true appends an ON_DEMAND RedshiftServerless configuration to the `experimentation` profile, its base and maximum capacity locked at 4 RPU (locals.tf). Applied after sandbox/sagemaker/'s own switch has configured the blueprint in Sandbox, and turned off before it. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
 }
 
 variable "domain_name" {
@@ -69,6 +82,51 @@ variable "max_ebs_volume_size_gb" {
   description = "The per-space EBS ceiling (Stage 6 step 1.5). A stopped app still bills its volume, monthly, which is why this is locked rather than defaulted."
   type        = number
   default     = 100
+}
+
+variable "sandbox_dev_env_version" {
+  description = "The house image version the SageMakerAIDomain blueprint pins in Sandbox's profile (6d decision due 15): terraform-live/sandbox/dev-env/'s awsds-sandbox-dev-env, whose versions the release pipeline registers (dev-env.md §B). Moved at a release, with an Update project per project."
+  type        = number
+  default     = 11
+}
+
+variable "form_type_owners" {
+  description = "The projects that may create metadata form types in the root domain unit (Stage 19 decision 4), keyed by the service's project id, each with the designation the grant admits. The projects are the portal's, not this slice's, so they are named here rather than looked up."
+  type        = map(string)
+  nullable    = false
+  default = {
+    # eighth-experimentation, D41's dev project and Stage 19's producer, read 2026-11-09: one owner.
+    avhvbqn37ty7m8 = "OWNER"
+  }
+
+  validation {
+    condition     = alltrue([for designation in values(var.form_type_owners) : contains(["OWNER", "CONTRIBUTOR"], designation)])
+    error_message = "A designation is OWNER or CONTRIBUTOR."
+  }
+}
+
+# Stage 19 step 4.5 - the projects the CI/CD CLI imports a bundle's catalog into, each a deployment
+# project (grants.tf). Written by hand once a project exists, as form_type_owners is.
+variable "catalog_import_projects" {
+  description = "The deployment projects whose owners hold the three grants the CI/CD CLI's catalog import checks on the root domain unit, by project id, with the designation that holds them."
+  type        = map(string)
+
+  # deploy-staging and deploy-production, created 2026-11-11 (Stage 19 step 4.6). OWNER is the
+  # designation the CLI names when it adds a missing grant itself, and the one the deploy role holds.
+  default = {
+    "5ido8bej1zoeq8" = "OWNER"
+    "d7qcazihvr3s7k" = "OWNER"
+  }
+
+  validation {
+    condition     = alltrue([for id in keys(var.catalog_import_projects) : can(regex("^[a-z0-9]{14}$", id))])
+    error_message = "A key is a DataZone project id, 14 lowercase alphanumerics, as `datazone list-projects` prints it."
+  }
+
+  validation {
+    condition     = alltrue([for designation in values(var.catalog_import_projects) : contains(["OWNER", "CONTRIBUTOR"], designation)])
+    error_message = "A designation is OWNER or CONTRIBUTOR."
+  }
 }
 
 variable "enable_trusted_identity_propagation" {

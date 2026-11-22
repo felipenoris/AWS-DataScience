@@ -22,4 +22,10 @@ locals {
     "/aws-glue/jobs/error",
     "/aws-glue/jobs/logs-v2",
   ])
+
+  # The groups' ARNs, built from the names: a policy document that referenced the group resources would
+  # be read only at the apply of any change to a group, and its role policy would plan as an update.
+  job_log_group_arns = [
+    for name in local.job_log_groups : "arn:${local.partition}:logs:${var.region}:${local.account_id}:log-group:${name}"
+  ]
 }

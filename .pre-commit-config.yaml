@@ -115,6 +115,45 @@ repos:
         pass_filenames: false
         files: ^terraform-live/[^/]+/bootstrap/
 
+      # Stage 8 step 4.1 and Stage 19 step 4.4 - the deploy role's grants, the job runtime's training
+      # image and the deployment project's prerequisites, each copied between Staging and Production.
+      - id: check-copies
+        name: the files copied across slices are still identical
+        entry: ./scripts/check-copies.py
+        language: system
+        pass_filenames: false
+        files: ^(terraform-live/(staging|production)/(foundation|sagemaker|studio)/.*\.tf|scripts/check-copies\.py)$
+
+      # Stage 10 steps 5.2 and 5.4 - the model chain's requests, built from stand-in values: a model
+      # without network isolation or a transform without the data key fails here, not at the
+      # Workloads OU's document in a pipeline job.
+      - id: model-chain-check
+        name: the model chain's requests carry the job settings
+        entry: ./scripts/model-chain.py --check
+        language: system
+        pass_filenames: false
+        files: ^scripts/(model-chain\.py|tfhygiene/(targets|projects)\.py)$
+
+      # Stage 19 step 4.9 - the leg's deploy against the template's manifest, offline: a target stage
+      # reading a variable the script does not fill, or a workflow naming one a stage does not
+      # declare, fails here and not at the CLI's first line in a pipeline job.
+      - id: deploy-application-check
+        name: the leg's deploy fills every variable the template's stages read
+        entry: ./scripts/deploy-application.py --self-check
+        language: system
+        pass_filenames: false
+        files: ^(examples/app-etl/(workflows/.*|manifest\.yaml)|scripts/deploy-application\.py|scripts/tfhygiene/projects\.py)$
+
+      # Stage 19 step 6.1 - the product road's rules in aws/catalog.py, on sample records and
+      # with no AWS call. Production lists no product before step 4.12, so a rule that stopped
+      # failing on a Share, or on a grant no subscription explains, fails here.
+      - id: catalog-self-check
+        name: the catalog's product road judges its sample records as written
+        entry: ./aws/catalog.py --self-check
+        language: system
+        pass_filenames: false
+        files: ^aws/(catalog\.py|awslib/.*\.py)$
+
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,
       # and for an [E] slice that is a bill nobody is told about. It fires on any .tf under
@@ -219,6 +258,16 @@ repos:
         language: system
         pass_filenames: false
         files: ^(terraform-live/production/(tooling|runners)/variables\.tf|scripts/check-gitlab-pins\.py|scripts/tfhygiene/hcl\.py)$
+
+      # docs/AWS_SUPPLEMENT.md is cited by id from prose and code, and indexed by CLAUDE.md's routing
+      # row. The hook fires on any text that may cite an entry, since a SUP-nnn that names nothing
+      # arrives through the citing file.
+      - id: check-aws-supplement
+        name: docs/AWS_SUPPLEMENT.md's ids resolve and CLAUDE.md indexes its sections
+        entry: ./scripts/check-aws-supplement.py
+        language: system
+        pass_filenames: false
+        files: (\.(md|tf|tftpl|py|sh)|^Makefile)$
 
       - id: checkov
         name: checkov (terraform)

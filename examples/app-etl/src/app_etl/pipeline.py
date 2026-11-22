@@ -2,7 +2,9 @@
 
 pyarrow reads the CSV and infers each column's type. The table keeps every row and those types. The
 summary carries the row count, the column names, the sum, minimum and maximum of every integer or
-floating-point column, and the input's sha256, so a summary names the exact bytes it describes.
+floating-point column, and the input's sha256, so a summary names the exact bytes it describes. A
+CSV the Glue job read from a governed table has its record beside it, `<stem>.source.json`: the
+table and the snapshot it was read at, which the summary carries as `source`.
 """
 
 from __future__ import annotations
@@ -52,11 +54,21 @@ def stem(name: str) -> str:
     return name[: -len(".csv")] if name.lower().endswith(".csv") else name
 
 
+def source_record(path: Path) -> dict | None:
+    """The record the Glue job leaves beside a CSV it read from a governed table; None beside one
+    it read from the inbox."""
+    record = path.with_name(f"{stem(path.name)}.source.json")
+    return json.loads(record.read_text()) if record.is_file() else None
+
+
 def process(path: Path, output: Path) -> dict:
     """Write `<stem>.parquet` and `<stem>.summary.json` into `output`, and return the summary."""
     data = path.read_bytes()
     table = read(data)
     summary = summarize(path.name, data, table)
+    record = source_record(path)
+    if record is not None:
+        summary["source"] = record
     pq.write_table(table, output / f"{stem(path.name)}.parquet")
     (output / f"{stem(path.name)}.summary.json").write_text(render(summary))
     return summary

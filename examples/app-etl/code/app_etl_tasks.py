@@ -1,15 +1,37 @@
-"""The worker's task: the run's report, from the summaries the processing job wrote.
+"""The worker's tasks: the run's report, the publication of the product, and the evaluation of a
+training job.
 
-`summarize` reads every `<name>.summary.json` under the prefix its ``op_kwargs`` name, the
-processing job's output, and returns the run's report as JSON text: the task's XCom, which the
-workflow's last task writes to S3. It runs on the MWAA Serverless worker with the boto3 the worker
-carries, so the code package is this file alone, zipped. What it prints lands in the workflow's
-log group, so it prints counts and names, never a value of the data.
+`summarize`, a task of app-etl, reads every `<name>.summary.json` under the prefix its ``op_kwargs``
+name, the processing job's output, and returns the run's report as JSON text: the task's XCom, which
+the workflow's next task writes to S3. `publish`, the last task of app-etl, puts the product the
+Glue job wrote into the SageMaker Catalog the way the tool intends (Stage 19 decisions 3 and 14): it
+runs the project's data source over the product's database, finds the asset the run imported for the
+table and publishes its latest revision as a listing, waiting for a listing revision `ACTIVE`, since
+the change set answers before the listing is active and fails later on its own. Where the workflow
+names a data product, the task then creates it over that asset, or revises it when its item or
+description changed, and lists it the same way: a data product's name is the domain's, so the one
+stage that lists the product owns its data product and no import carries one (decision 26). It
+runs as the project role through the `datazone` endpoint, in the domain and project the deploy
+substituted (`{domain.id}` and `{proj.id}`), and returns at once where the stage variable
+`PUBLISH_LISTING` is not `true`, the stages whose product is never listed. `evaluate`, a task of
+app-etl-train, reads the training job's final metrics and writes them beside its model as
+SageMaker's model-quality statistics, the file the pipeline's registration names as the version's
+`ModelMetrics` (Stage 10 step 5.2), with the rows of the batch transform's input, which the
+transform's check counts against.
+
+They run on the MWAA Serverless worker with the boto3 the worker carries, so a workflow's code
+package is this file alone, zipped under the workflow's name. What they print lands in the
+workflow's log group, so they print counts, names, identifiers and metrics, never a value of the
+data.
 """
 
 from __future__ import annotations
 
+import ast
 import json
+import os
+import re
+import time
 from operator import itemgetter
 from urllib.parse import urlparse
 
@@ -38,18 +60,20 @@ def summaries(outputs: str) -> list[dict]:
 
 
 def report(found: list[dict]) -> dict:
-    """The run's report: one entry per table, by input name, and the rows over all of them."""
+    """The run's report: one entry per table, by input name, with the governed table and snapshot
+    it was read from when its summary names them, and the rows over all of them."""
     tables = []
     for summary in sorted(found, key=itemgetter("input")):
         sums = {name: stats["sum"] for name, stats in summary["numeric"].items()}
-        tables.append(
-            {
-                "input": summary["input"],
-                "sha256": summary["sha256"],
-                "rows": summary["rows"],
-                "sums": sums,
-            }
-        )
+        entry = {
+            "input": summary["input"],
+            "sha256": summary["sha256"],
+            "rows": summary["rows"],
+            "sums": sums,
+        }
+        if "source" in summary:
+            entry["source"] = summary["source"]
+        tables.append(entry)
     return {"tables": tables, "rows": sum(table["rows"] for table in tables)}
 
 
@@ -61,3 +85,409 @@ def summarize(outputs: str, **context) -> str:
     result = report(found)
     print(f"{len(result['tables'])} table(s), {result['rows']} rows, under {outputs}")
     return json.dumps(result, indent=2, sort_keys=True) + "\n"
+
+
+# The publication: the worker's variables read for an identifier the deploy left empty, how long a
+# source run, the asset's search and a listing may take before the task fails, and the seconds
+# between two readings.
+DOMAIN_VARIABLE = "DataZoneDomainId"
+PROJECT_VARIABLE = "DataZoneProjectId"
+SOURCE_RUN_TIMEOUT = 600
+ASSET_TIMEOUT = 120
+LISTING_TIMEOUT = 120
+POLL_SECONDS = 5
+# The statuses a listing revision holds before ACTIVE, read 2026-11-10: CREATING on a first
+# publication and UPDATING on a republication, the second absent from the API's model.
+LISTING_PENDING = ("CREATING", "UPDATING")
+
+
+def project_context(domain: str = "", project: str = "") -> tuple[str, str]:
+    """The domain and the project the task publishes in: the values the deploy substituted, or, for
+    one it left empty, the worker's variable of that name."""
+    found = []
+    for value, variable in ((domain, DOMAIN_VARIABLE), (project, PROJECT_VARIABLE)):
+        value = str(value or "").strip() or os.environ.get(variable, "").strip()
+        if not value:
+            raise RuntimeError(
+                f"no {variable}: the deploy substituted none and the worker carries none"
+            )
+        found.append(value)
+    return found[0], found[1]
+
+
+def find_source(datazone, domain: str, project: str, database: str) -> str:
+    """The id of the project's one Glue data source whose filter names `database`."""
+    found = []
+    paginator = datazone.get_paginator("list_data_sources")
+    for page in paginator.paginate(domainIdentifier=domain, projectIdentifier=project, type="GLUE"):
+        for item in page.get("items", []):
+            source = datazone.get_data_source(
+                domainIdentifier=domain, identifier=item["dataSourceId"]
+            )
+            glue = source.get("configuration", {}).get("glueRunConfiguration", {})
+            databases = [f["databaseName"] for f in glue.get("relationalFilterConfigurations", [])]
+            if database in databases:
+                found.append(item["dataSourceId"])
+    if len(found) != 1:
+        raise RuntimeError(
+            f"{len(found)} data source(s) over {database} in the project, one expected"
+        )
+    return found[0]
+
+
+def run_source(datazone, domain: str, source: str, timeout: int = SOURCE_RUN_TIMEOUT) -> str:
+    """One run of the source, followed to SUCCESS; any other end, or `timeout` seconds, fails."""
+    run = datazone.start_data_source_run(domainIdentifier=domain, dataSourceIdentifier=source)["id"]
+    deadline = time.monotonic() + timeout
+    while True:
+        state = datazone.get_data_source_run(domainIdentifier=domain, identifier=run)
+        status = state["status"]
+        if status == "SUCCESS":
+            counts = state.get("runStatisticsForAssets") or {}
+            print(f"source run {run}: SUCCESS, {json.dumps(counts, sort_keys=True)}")
+            return run
+        if status not in ("REQUESTED", "RUNNING"):
+            raise RuntimeError(f"source run {run} ended {status}: {state.get('errorMessage')}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(f"source run {run} still {status} after {timeout} s")
+        time.sleep(POLL_SECONDS)
+
+
+def names_table(external: str, project: str, database: str, table: str) -> bool:
+    """Whether a Glue table asset's external identifier, the table's ARN, names `database/table`.
+    A project's data source suffixes the ARN's last segment with `.<project id>`, read 2026-11-10:
+    `arn:aws:glue:<region>:<account>:table/app_etl/trades_notional.<project id>`."""
+    return external.split("/")[-2:] in ([database, table], [database, f"{table}.{project}"])
+
+
+def find_asset(
+    datazone, domain: str, project: str, database: str, table: str, timeout: int | None = None
+) -> dict:
+    """The project's one inventory asset for `database/table`. The search is DataZone's index, and
+    no reading dates when it answers for an asset its source run has just added, so an empty answer
+    is asked again until `timeout` seconds pass; two matches fail at once."""
+    deadline = time.monotonic() + (ASSET_TIMEOUT if timeout is None else timeout)
+    while True:
+        found = []
+        paginator = datazone.get_paginator("search")
+        pages = paginator.paginate(
+            domainIdentifier=domain,
+            searchScope="ASSET",
+            owningProjectIdentifier=project,
+            searchText=table,
+        )
+        for page in pages:
+            for item in page.get("items", []):
+                asset = item.get("assetItem") or {}
+                if names_table(asset.get("externalIdentifier") or "", project, database, table):
+                    found.append(asset)
+        if len(found) == 1:
+            return found[0]
+        if found or time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"{len(found)} asset(s) for {database}/{table} in the project, one expected"
+            )
+        time.sleep(POLL_SECONDS)
+
+
+def publish_asset(datazone, domain: str, asset: str, timeout: int | None = None) -> dict:
+    """The asset's latest revision published, and the listing revision past the change set's read
+    ACTIVE within `timeout` seconds. The change set answers a placeholder revision and the service
+    writes the publication as the next one, read 2026-11-10: on the first publication revision 1
+    stayed CREATING and revision 2 was ACTIVE 0.8 s on; on a republication revision 3 went
+    UPDATING, then ACTIVE still carrying the previous asset revision, and revision 4 was ACTIVE with
+    the new one 0.9 s on. So the listing is read at its latest revision, and neither the change
+    set's revision nor an older one, the previous publication, is taken for it."""
+    change = datazone.create_listing_change_set(
+        domainIdentifier=domain, entityIdentifier=asset, entityType="ASSET", action="PUBLISH"
+    )
+    listing, asked = change["listingId"], int(change["listingRevision"])
+    timeout = LISTING_TIMEOUT if timeout is None else timeout
+    deadline = time.monotonic() + timeout
+    while True:
+        latest = datazone.get_listing(domainIdentifier=domain, identifier=listing)
+        revision, status = latest["listingRevision"], latest["status"]
+        if int(revision) > asked:
+            if status == "ACTIVE":
+                listed = (latest.get("item") or {}).get("assetListing") or {}
+                carried = listed.get("assetRevision")
+                print(f"listing {listing} revision {revision}: ACTIVE, asset revision {carried}")
+                return {"listing": listing, "listing_revision": revision, "asset_revision": carried}
+            if status not in LISTING_PENDING:
+                raise RuntimeError(f"listing {listing} revision {revision} is {status}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"listing {listing} not ACTIVE past revision {asked} after {timeout} s:"
+                f" its latest is revision {revision}, {status}"
+            )
+        time.sleep(POLL_SECONDS)
+
+
+# The data product (Stage 19 decision 26): a data product's name is unique within the domain, so the
+# one project that lists the product creates its data product, and a create whose name another
+# product holds answers ConflictException naming that product, read 2026-11-16: "Conflict with
+# dataProduct 5070mjwdvjwp3k". An identifier is letters, digits, `_` and `-` (the API's pattern).
+PRODUCT_CONFLICT = re.compile(r"Conflict with dataProduct ([\w-]+)")
+
+
+def error_code(error: Exception) -> str:
+    """The service's error code on an exception a boto3 call raised; empty on any other."""
+    response = getattr(error, "response", None) or {}
+    return str((response.get("Error") or {}).get("Code") or "")
+
+
+def find_data_product(datazone, domain: str, project: str, name: str) -> str:
+    """The id of the project's data product named `name`, empty when the project holds none; two of
+    that name fail."""
+    found = []
+    paginator = datazone.get_paginator("search")
+    pages = paginator.paginate(
+        domainIdentifier=domain,
+        searchScope="DATA_PRODUCT",
+        owningProjectIdentifier=project,
+        searchText=name,
+    )
+    for page in pages:
+        for item in page.get("items", []):
+            product = item.get("dataProductItem") or {}
+            if product.get("name") == name:
+                found.append(product["id"])
+    if len(found) > 1:
+        raise RuntimeError(f"{len(found)} data products named {name} in the project, one expected")
+    return found[0] if found else ""
+
+
+def conflicting_product(datazone, domain: str, project: str, name: str, error: Exception) -> str:
+    """The id of the data product a create of `name` conflicted with, where the project holds it and
+    the search has not indexed it yet. A product another project holds, or one this project cannot
+    read, fails: the name is the domain's, so this project cannot hold its own."""
+    match = PRODUCT_CONFLICT.search(str(error))
+    if not match:
+        raise RuntimeError(f"data product {name}: {error}") from error
+    product = match.group(1)
+    try:
+        held = datazone.get_data_product(domainIdentifier=domain, identifier=product)
+    except Exception as e:
+        raise RuntimeError(
+            f"data product {name} is {product}, which this project cannot read ({error_code(e)}):"
+            " a data product's name is the domain's, so that product is deleted or this one renamed"
+        ) from e
+    owner = held.get("owningProjectId")
+    if owner != project:
+        raise RuntimeError(
+            f"data product {name} is {product} of project {owner}: a data product's name is the"
+            " domain's, so that product is deleted or this one renamed"
+        )
+    return product
+
+
+def ensure_data_product(
+    datazone, domain: str, project: str, name: str, description: str, asset: str
+) -> dict:
+    """The project's data product `name`, `asset` its one item and `description` its description:
+    created when the project holds none, revised when its item or description differs, else left as
+    it is."""
+    items = [{"itemType": "ASSET", "identifier": asset}]
+    described = {"description": description} if description else {}
+    product = find_data_product(datazone, domain, project, name)
+    if not product:
+        try:
+            made = datazone.create_data_product(
+                domainIdentifier=domain,
+                owningProjectIdentifier=project,
+                name=name,
+                items=items,
+                **described,
+            )
+        except Exception as e:
+            if error_code(e) != "ConflictException":
+                raise
+            product = conflicting_product(datazone, domain, project, name, e)
+        else:
+            print(f"data product {name}: created {made['id']}, revision {made['revision']}")
+            return {
+                "data_product": made["id"],
+                "data_product_revision": made["revision"],
+                "data_product_change": "created",
+            }
+    held = datazone.get_data_product(domainIdentifier=domain, identifier=product)
+    holds = sorted(
+        str(item.get("identifier"))
+        for item in held.get("items") or []
+        if item.get("itemType") == "ASSET"
+    )
+    if holds == [asset] and (held.get("description") or "") == description:
+        print(f"data product {name}: {product}, revision {held['revision']}, unchanged")
+        return {
+            "data_product": product,
+            "data_product_revision": held["revision"],
+            "data_product_change": "unchanged",
+        }
+    revised = datazone.create_data_product_revision(
+        domainIdentifier=domain, identifier=product, name=name, items=items, **described
+    )
+    print(f"data product {name}: {product}, revised to revision {revised['revision']}")
+    return {
+        "data_product": product,
+        "data_product_revision": revised["revision"],
+        "data_product_change": "revised",
+    }
+
+
+def publish_data_product(
+    datazone, domain: str, product: str, revision: str, timeout: int | None = None
+) -> dict:
+    """The data product published, and its listing ACTIVE within `timeout` seconds. How a data
+    product's listing revisions follow the change set is unmeasured, and an asset's take the change
+    set's answer as a placeholder (publish_asset). So a revision past the change set's is taken once
+    ACTIVE, the change set's own once ACTIVE with the product's `revision`, and an older one never:
+    it is the previous publication."""
+    change = datazone.create_listing_change_set(
+        domainIdentifier=domain,
+        entityIdentifier=product,
+        entityType="DATA_PRODUCT",
+        action="PUBLISH",
+    )
+    listing, asked = change["listingId"], int(change["listingRevision"])
+    timeout = LISTING_TIMEOUT if timeout is None else timeout
+    deadline = time.monotonic() + timeout
+    while True:
+        latest = datazone.get_listing(domainIdentifier=domain, identifier=listing)
+        current, status = latest["listingRevision"], latest["status"]
+        listed = (latest.get("item") or {}).get("dataProductListing") or {}
+        carried = listed.get("dataProductRevision")
+        later, same = int(current) > asked, int(current) == asked
+        if status == "ACTIVE" and (later or (same and str(carried) == str(revision))):
+            print(f"listing {listing} revision {current}: ACTIVE, data product revision {carried}")
+            return {
+                "data_product_listing": listing,
+                "data_product_listing_revision": current,
+                "data_product_listed_revision": carried,
+            }
+        if (later or same) and status not in (*LISTING_PENDING, "ACTIVE"):
+            raise RuntimeError(f"listing {listing} revision {current} is {status}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"listing {listing} not ACTIVE with data product revision {revision} from revision"
+                f" {asked} after {timeout} s: its latest is revision {current}, {status},"
+                f" carrying {carried}"
+            )
+        time.sleep(POLL_SECONDS)
+
+
+def publish(
+    database: str,
+    table: str,
+    publish_listing: str,
+    domain: str = "",
+    project: str = "",
+    data_product: str = "",
+    data_product_description: str = "",
+    **context,
+) -> str:
+    """The product `database.table` imported and listed in the catalog of `domain` by `project`, the
+    deploy's `{domain.id}` and `{proj.id}`, and, where `data_product` names one, its data product
+    over the asset, created or revised and listed; the identifiers as JSON text, the task's XCom.
+    Nothing when `publish_listing`, the stage variable, is not `true`."""
+    if str(publish_listing).strip().lower() != "true":
+        print(f"publishing off in this stage (PUBLISH_LISTING={publish_listing!r}); nothing listed")
+        return json.dumps({"published": False}) + "\n"
+    import boto3
+
+    domain, project = project_context(domain, project)
+    datazone = boto3.client("datazone")
+    source = find_source(datazone, domain, project, database)
+    run = run_source(datazone, domain, source)
+    asset = find_asset(datazone, domain, project, database, table)
+    result = {
+        "published": True,
+        "domain": domain,
+        "project": project,
+        "data_source": source,
+        "source_run": run,
+        "asset": asset["identifier"],
+        **publish_asset(datazone, domain, asset["identifier"]),
+    }
+    done = f"published {database}.{table}: asset {result['asset']}, listing {result['listing']}"
+    name = str(data_product or "").strip()
+    if name:
+        description = str(data_product_description or "").strip()
+        result |= ensure_data_product(
+            datazone, domain, project, name, description, asset["identifier"]
+        )
+        result |= publish_data_product(
+            datazone, domain, result["data_product"], result["data_product_revision"]
+        )
+        done += f"; data product {result['data_product']}, listing {result['data_product_listing']}"
+    print(done)
+    return json.dumps(result, indent=2, sort_keys=True) + "\n"
+
+
+# The training job's final metric the evaluation reports, as XGBoost names it with a validation
+# channel and `eval_metric: rmse`.
+VALIDATION_METRIC = "validation:rmse"
+
+
+def model_quality(training: dict) -> dict:
+    """SageMaker's model-quality statistics for a regression, from a training job's description."""
+    metrics = {m["MetricName"]: m["Value"] for m in training.get("FinalMetricDataList", [])}
+    if VALIDATION_METRIC not in metrics:
+        raise RuntimeError(f"{training['TrainingJobName']} reports no {VALIDATION_METRIC}")
+    return {
+        "version": 0.0,
+        "regression_metrics": {
+            "rmse": {"value": metrics[VALIDATION_METRIC], "standard_deviation": "NaN"}
+        },
+    }
+
+
+def training_job_name(training: str | dict) -> str:
+    """The job's name in the train task's XCom, which reaches a template as JSON text.
+
+    The worker renders an XCom as the JSON of its value (read 2026-10-24 in Staging: indexing the
+    training operator's XCom failed on a string), so the text is decoded until the operator's dict
+    appears; a dict, and the Python literal a template renders one as, are read too.
+    """
+    value = training
+    for _ in range(3):
+        if not isinstance(value, str):
+            break
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            try:
+                value = ast.literal_eval(value)
+            except (ValueError, SyntaxError) as exc:
+                raise RuntimeError("the train task's XCom is neither JSON nor a literal") from exc
+    try:
+        return value["Training"]["TrainingJobName"]
+    except (KeyError, TypeError) as exc:
+        shape = sorted(value) if isinstance(value, dict) else type(value).__name__
+        raise RuntimeError(f"the train task's XCom names no training job: {shape}") from exc
+
+
+def evaluate(training: str, batch: str, models: str, **context) -> str:
+    """The evaluation of the job the train task's XCom names, written to
+    `<models><job>/evaluation.json`; its JSON."""
+    import boto3
+
+    training_job = training_job_name(training)
+    training = boto3.client("sagemaker").describe_training_job(TrainingJobName=training_job)
+    if training["TrainingJobStatus"] != "Completed":
+        raise RuntimeError(f"{training_job} is {training['TrainingJobStatus']}, not Completed")
+    s3 = boto3.client("s3")
+    batch_bucket, batch_key = split_uri(batch)
+    body = s3.get_object(Bucket=batch_bucket, Key=batch_key)["Body"].read()
+    rows = body.decode().count("\n")
+    evaluation = model_quality(training)
+    evaluation["awsds"] = {
+        "training_job": training_job,
+        "model_data": training["ModelArtifacts"]["S3ModelArtifacts"],
+        "batch_rows": rows,
+    }
+    bucket, prefix = split_uri(models)
+    key = f"{prefix}{training_job}/evaluation.json"
+    s3.put_object(Bucket=bucket, Key=key, Body=json.dumps(evaluation, indent=2).encode())
+    rmse = evaluation["regression_metrics"]["rmse"]["value"]
+    print(f"{training_job}: {VALIDATION_METRIC} {rmse}, {rows} batch row(s), s3://{bucket}/{key}")
+    return json.dumps(evaluation, sort_keys=True) + "\n"

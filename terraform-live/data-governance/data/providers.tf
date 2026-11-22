@@ -47,3 +47,9 @@ provider "aws" {
   region  = var.region
   profile = var.producers["production"].profile
 }
+
+provider "aws" {
+  alias   = "staging"
+  region  = var.region
+  profile = var.consumers["staging"].profile
+}

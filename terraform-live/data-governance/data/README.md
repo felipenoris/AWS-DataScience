@@ -12,6 +12,7 @@ What lands here by pass:
 | 1 | the account data CMK (`alias/awsds-data-data`); the five buckets with the perimeter and drop-box statements; the settings resource (admins + parameters + emptied defaults, **before any database**); registrations + the LF-Tag ontology; databases `raw`/`curated`/`dropbox`; the sample Iceberg table with its `restricted` column; the maintenance role, its LF grants, two on-demand crawlers, the compaction optimizer |
 | 2 | step 6 — the governance manager's own grants (`governance.tf`); the consumer TBAC grants are pass 3's, with the shares they ride on |
 | 3 | step 7 — the cross-account shares (`shares.tf`) + the INT-11 after-reading |
+| Stage 11 pass 1 | steps 2.1a and 2.1b — the data cells filters and their cross-account grants (`filters.tf`); nothing is created while `filter_shares` is empty, which it is until the user names the reading principal |
 
 ## The first apply is two steps
 
@@ -82,8 +83,9 @@ is how the first governed `INSERT` failed the day before — and legible only in
 
 | Resource / attribute | What it does once applied |
 |---|---|
-| `aws_lakeformation_data_lake_settings` · `admins` | `InfrastructureAccess` **alone** (decision 5). The governance manager is absent — an approver who can already grant everything exercises no control (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger |
+| `aws_lakeformation_data_lake_settings` · `admins` | `InfrastructureAccess` **alone** (decision 5). The governance manager is absent — an approver who can already grant everything exercises no control (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger. Stage 18 read it in `Staging`: the fulfilment acted as the publishing project's role and took no seat (2026-10-22), while the first `Tooling` environment's provisioning seated two SMUS roles by a full replace of these settings (2026-10-19), which this resource, with no `ignore_changes`, would plan to remove, as `sandbox/data/`'s first plan did on 2026-08-26. **The trigger fired with Stage 6f decision 1 (2026-10-26)**: behind `LAKE_PUBLISHERS` the list also names `awsds-data-smus-provisioning` and `awsds-data-smus-manage-access` (`publishing.tf`), declared before the publishing project's first environment writes them, so its re-plan reads the full replace (6f step 11.4); each seat can grant itself anything in `raw` and `curated` (`TM-27`) |
 | — · `parameters` | `CROSS_ACCOUNT_VERSION = 4`, `SET_CONTEXT = TRUE`, written **from the reading** and never from memory. This resource **replaces the whole structure**: naming admins while omitting parameters resets the version to 1, after which every share appears to succeed and never arrives (INT-11, the silent failure `DL-5` brackets) |
+| — · `allow_full_table_external_data_access` | `true` (Stage 9 decision 13): Lake Formation vends S3 credentials for a whole registered table to a caller holding full-table permissions on it, outside an integrated engine, which is the one mode a consumer's Glue Spark job writes `curated` in (Stage 9 2.4, 2.5; Stage 10's workflows). The owner's flag is the one the vend reads: Production's alone, on from 2026-10-23 to 2026-10-25, left the first write refused *"Verify the data lake settings for account"*. The residual is `TM-26`: `awsds-prod-job-exec` and `DataScientistProdAccess` hold full-table `SELECT` on `curated` through the shares and can read a table's objects by a direct vend, logged as `GetDataAccess` in their account's trail |
 | — · the two default-permission blocks | **Omitted**, which clears them (measured). Their applied state grants `ALL` to `IAM_ALLOWED_PRINCIPALS` *at creation time*, so a database created before this lands is born deferring to plain IAM — D13 as decoration, with no error anywhere |
 | `aws_lakeformation_resource.raw` / `.curated` | Registers the two prefixes: reads stop being "whoever holds `s3:GetObject`" and become "the engine asks Lake Formation". **`dropbox`, `artifacts` and `logs` stay unregistered by design** — D13's non-registered class, plain IAM/bucket-policy control. Deregistration is denied by the Data OU SCP |
 | `aws_lakeformation_lf_tag.classification` | `public` / `internal` / `restricted` / `personal` — the DLP dimension. The default grant reaches the first two read-only; the other two travel only on enumerated grants |
@@ -102,6 +104,7 @@ a database carries is what every future table there starts with.
 | database `dropbox` | `layer=dropbox`, `classification=internal` | Same rationale — user-supplied arrivals. Its own database so crawler-inferred tables do not wear `raw`'s value wrongly |
 | database `curated` | `layer=curated` — **no `classification`** | **Fail-closed by absence**, the designed asymmetry: an untagged curated table matches **no** TBAC expression and is therefore invisible to the default grants. Tables here are classified explicitly at creation |
 | table `curated.sample_trades` | `classification=internal` | Declares its own, since the database carries none |
+| table `curated.trades` | `classification=internal` | Stage 9 step 2.1: the table the governed write lands in (2.4's producer, 2.5's pickup), declared before its first write with the columns of `app-etl`'s input, its classification approved with the apply that created it, on 2026-10-22 |
 | column `sample_trades.counterparty` | `classification=restricted` | **Most-specific wins.** This is the column the classification pair proves against: absent from a default session's result *and* from its column list, present after the explicit grant |
 
 ## `kms.tf` — the account data key policy
@@ -136,7 +139,7 @@ The branches of `DenyOutsideTrustedNetworks`:
 
 | Branch | Condition | The rule behind it |
 |---|---|---|
-| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted |
+| 1 | `aws:SourceVpce` ∈ `trusted_vpce_ids` — the consumers' **gateway** endpoint ids | **Never the `[E]` interface endpoints** ([Lesson 3](../../../docs/plan/lessons.md), INT-05): those change id on every `make up` and live in accounts this policy could never repair itself against. Anchored on `[P]` state, read live, never pasted. Each consumer's from the slice `backend.py` names for it (`DATA_CONSUMER_VPC_SLICE`): `foundation/` for Sandbox and Staging, `workloads/` for Production, whose `foundation/` is VPC-SharedServices (Stage 9 step 1.4) |
 | 2 | `aws:PrincipalAccount` = this account | The stage's own "looser and easier to get right" option, taken over naming the maintenance role alone: the crawler runs in Glue with no VPC (D27's collision), and the infrastructure user works from any network. A role-only branch would lock the account's own administrator out of its own lake |
 
 **No branch names an address** ([D39](../../../docs/plan/decisions/D39-access-by-identity.md)). The one laptop path the lake carries, D18's drop-box write, is admitted by principal on the drop-box alone (below).
@@ -156,7 +159,7 @@ build.
 
 | `Sid` | Principal | Grants | The asymmetry |
 |---|---|---|---|
-| `AllowInteractiveWriterPutOnly` | Sandbox root, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally. **The resource half of a cross-account permission** — the identity half (`WriteIngestionDropBox` + the KMS pair, mirrored scoping) lives in `identity/sso/`, Stage 5a pass 4c. **Exercised 2026-08-20** (Stage 5a pass 4d), and the asymmetry holds in **three** verbs: `PutObject` succeeds while `GetObject`, `ListObjectsV2` and `DeleteObject` are each denied *implicitly*. The delete matters as much as the read — a writer that can retract is a writer that can launder. The proof object is uncollectable until Stage 9's pickup exists (`AWS_STATE.md` `EXC-02`); a second uncollected object no log entry names is a finding |
+| `AllowInteractiveWriterPutOnly` | Sandbox root, `ArnLike` to the writer roles | `s3:PutObject` on the dated prefix | **No read-back, no list, no delete.** Confirmation is the `PutObject` response; re-uploading a corrected file is an ordinary overwrite and versioning keeps the prior copy internally. **The resource half of a cross-account permission** — the identity half (`WriteIngestionDropBox` + the KMS pair, mirrored scoping) lives in `identity/sso/`, Stage 5a pass 4c. **Exercised 2026-08-20** (Stage 5a pass 4d), and the asymmetry holds in **three** verbs: `PutObject` succeeds while `GetObject`, `ListObjectsV2` and `DeleteObject` are each denied *implicitly*. The delete matters as much as the read — a writer that can retract is a writer that can launder. An object the pickup does not consume stays until a deliberate cleanup, as `EXC-02`'s proofs did until 2026-10-24; an uncollected object no log entry names is a finding |
 | `AllowProductionPickupReadDelete` | Production root, `ArnLike` to `awsds-prod-job-exec` | `GetObject` + `DeleteObject` | Reads **and** empties — a letterbox nobody empties fills up. Stage 9's half |
 | `AllowProductionPickupList` | idem | `ListBucket`, `s3:prefix` scoped | Listing is separate because it is a **bucket** action, not an object one |
 | `AllowMaintenanceSchemaRead` | the maintenance role | `GetObject` + `ListBucket` | Reads to infer schema, **cannot delete**. Same-account IAM would suffice (its inline policy carries the read); the statement is here so the whole asymmetry is readable in **one place** |
@@ -252,13 +255,17 @@ governance-manager session answers it (the pages, and how they were read, are in
 ## `shares.tf` — the cross-account shares (pass 3, step 7)
 
 One grant per consumer account per resource type. The principal is an **account**, resolved from the
-aliased providers so no account id enters a tracked file. Production is absent by design — its share
-carries the governed write and arrives with Stage 9.
+aliased providers so no account id enters a tracked file. The consumers are Sandbox, Staging (read-only,
+Stage 9 decision 3) and Production, whose read rides beside the governed write below; the two Stage 9
+consumers' grants were applied on 2026-10-22.
 
 | Grant | Expression | Permission | Why that shape |
 |---|---|---|---|
 | `share_databases` | `layer ∈ {raw, curated}` | `DESCRIBE` **+ grant option** | The container, metadata only. It may **not** carry the classification gate: `curated`'s database has no `classification`, so an expression naming it would not match — and a database that does not match cannot be resource-linked, which is the whole consumer side |
 | `share_tables` | `layer ∈ {raw, curated}` **AND** `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` **+ grant option** | The rows. Two `expression` blocks in one grant is an **AND**; two separate grants would be an OR and would share the drop-box back |
+
+| `production_write_database` | named: database `curated` | `DESCRIBE` **+ grant option** | Stage 9 step 2.1, D22: Production is the lake's only producer. Named rather than an expression, the exception Stage 5a decision 5 reserves: an expression over `classification` alone matched the drop-box (Lesson 29), and a write is the more dangerous direction |
+| `production_write_tables` | named: every table of `curated` | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE` **+ grant option** | The governed write. `ALTER` rides with it, since an Iceberg commit rewrites the table's metadata; no `CREATE_TABLE`, since a curated table is declared in `catalog.tf` first. Production's administrator regrants it to `awsds-prod-job-exec` alone (`production/data/`, 2.3) |
 
 **The grant option is required.** A cross-account grant lands on the *account*; nothing inside it can
 use the share until that account's own data lake administrator passes it on, and an administrator can
@@ -282,3 +289,62 @@ or `classification` value joining every consumer share by inheritance is the wid
 resource policy (the version 1/2 path). Measured 2026-08-19 — `glue:GetResourcePolicy` →
 `EntityNotFoundException` — and the grants then produced four **ACTIVE** RAM shares, held by both
 consumers with no invitation, which is the falsifier not firing.
+
+## `publishing.tf` — the catalog road's declared half (Stage 6f decision 1, step 11)
+
+The lake-publishing pilot: `governed-lake`, a SageMaker project in this account, publishes
+`curated.trades`, and DataZone grants each approved subscription (`GOVERNANCE.md` §Grants, the catalog
+road). This file declares what DataZone needs and does not write; the fulfilment's own grants, RAM share
+and per-resource catalog policies are DataZone's, registered by reading (6f decision 2, 2026-10-27): the
+subscription is each grant's record, and `./aws/catalog.py` `CT-10` fails on a grant on a published table
+that neither this file nor an approved subscription explains.
+**Applied 2026-10-26**: the seats at 6f 11.3 (20:16 UTC: 1 changed, the admin list alone, `DL-5`
+holding), and the publisher's grant at 11.5 (21:06 UTC: 2 added) to `governed-lake`'s role,
+`datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo`, `lake_publisher_role`'s default.
+
+| Resource / object | What it does once applied | The constraint behind its shape |
+|---|---|---|
+| `data.aws_iam_role.smus_seat` → `admins` | adds the two SMUS service roles of `data-governance/publishing/` to the settings above, behind `lake_publishing_enabled` | read by name, so a seat whose role does not exist yet fails at plan, naming it (measured 2026-10-26, before 11.2) |
+| `aws_lakeformation_permissions.publisher_database` | `DESCRIBE` on `curated` to the publishing project's role, named in `lake_publisher_role` | the data source lists the table's database as that role; preconditions refuse a role while `LAKE_PUBLISHERS` is empty or one outside `awsds-data-project-boundary` |
+| `aws_lakeformation_permissions.publisher_tables` (one per `published_tables` entry) | `DESCRIBE` and `SELECT` **+ grant option** on `curated.trades` to the same role | DataZone's terms for publishing a Glue table, named rather than tagged since DataZone documents no LF-TBAC support for the assets it manages; the grant option bounds what a subscription, or any session of the role, can regrant |
+| `local.declared_classifications` → `publisher_tables`' precondition | each lake table's classification as this slice assigns it, the table's and its columns' together; a table enters `published_tables` only when every value is `public` or `internal` | 6f decision 2: DataZone fulfils by name and reads no LF-Tag, so a `restricted` column on a published table reaches every subscriber whole. A table with no entry is refused too. Measured 2026-10-27: `sample_trades` added in the working copy is refused at plan on `counterparty` |
+
+## `warehouse-share.tf` — the governed warehouse's share into the catalog (Stage 9 step 9.5)
+
+Production's datashare `trades_lf` reaches this catalog as a federated database (decision 5's shape (ii),
+decision 14), and the lake's TBAC grants reach it as they reach `curated`: Sandbox's account read it
+through its tag grants alone (9.7). The producer's half, the authorization, is
+`production/warehouse/datashare.tf`. Written 2026-10-25 from the objects made by hand that day.
+
+| Resource / object | What it does once applied |
+|---|---|
+| `data.aws_redshift_data_shares.visible` | lists the shares this account sees; the share is the ARN ending in `/trades_lf`, since the ARN carries Production's namespace id, which no state here holds |
+| `aws_redshift_data_share_consumer_association.trades_lf` | the share associated with this account's Data Catalog (`consumer_arn` the catalog's ARN), `ACTIVE`. Adopted from the association of 2026-10-25 01:52 UTC by an `import` block, removed after the apply; a producer-side revoke deletes it, and this slice's apply re-created it on 2026-10-26 at 22:01 UTC (verification xxiv). While the share is revoked, the data source above lists null and no plan of the slice runs |
+| `aws_glue_catalog_database.governed_trades` | the federated database over the share (`connection_name` `aws:redshift`), with no description, which the API refuses beside a federation source, and no `create_table_default_permission`, the account's default list being empty (Recipe D). Its tables are the share's, `trades.trades_notional` today. Adopted the same way; the import plan adds the provider's five default tags and nothing else |
+| — by hand: the registration | `register-resource` on the datashare's ARN, no role, `HybridAccessEnabled` and `WithPrivilegedAccess` false (2026-10-25 01:52 UTC), read back with `describe-resource`; `list-resources` does not list it. `aws_lakeformation_resource` has no importer (the provider's source at v6.60.0), deregistering is denied by the Data OU SCP, and a second registration of the ARN is a conflict, so the registration stays by hand until the provider gains an importer |
+| — by hand: the LF-Tag assignments | `layer=curated` on `governed_trades` and `classification=internal` on `trades.trades_notional` (2026-10-25 01:54 UTC), the values `catalog.tf` gives a curated table; `aws_lakeformation_resource_lf_tags` documents no import, so the assignments are read with `get-resource-lf-tags`, not declared |
+
+## `filters.tf` — the data cells filters (Stage 11 pass 1, steps 2.1a and 2.1b)
+
+The explicit `restricted` grant, narrowed. The default share above carries `classification ∈ {public,
+internal}`, so `counterparty` reaches a consumer only through a grant in two hops: this slice grants
+`SELECT` through a filter to the consumer **account** with the grant option, and that account's
+administrator regrants it to one principal (`consumer-data`'s `data_cells_filter_grants`). Column
+restrictions the LF-Tag ontology already expresses stay on the tag-scoped grants; a filter carries only
+a column subset or a row predicate within one table.
+
+**Declared and not applied.** A filter is created only when `filter_shares` names a consumer account
+for it, and the map is empty: who reads a filter inside Sandbox is the user's choice (Stage 11 log,
+2026-10-18). With the map empty the slice plans `No changes`; a plan with Sandbox in it reads `4 to
+add` (measured 2026-10-18, not applied).
+
+| Object | What it holds or grants | The constraint behind its shape |
+|---|---|---|
+| filter `awsds-flt-sample_trades-counterparty` | `curated.sample_trades`: `trade_id`, `trade_date`, `instrument`, `counterparty`; all rows | Column restriction: the restricted column without `quantity` and `price`. An **include** list, because a column filter granted with the grant option takes no exclude list, and a column added to the table joins no filter by itself |
+| filter `awsds-flt-sample_trades-trade-id-le-6` | all six columns; rows where `trade_id <= 6` | Row restriction. On `trade_id` because PartiQL row filters take no `DATE`; AWS's page also says a row filter on a table containing an unsupported type is an error, and this table carries `trade_date date`, which the first apply settles. The 12 rows' ids are recorded nowhere, so 2.3 compares against an unfiltered count of the same predicate |
+| `filter_share` (one per consumer × filter) | `SELECT` **+ grant option** to the consumer account | The grant option is the only way that account's administrator can pass the filter on, and it reaches principals in that account only |
+
+**A row filter narrows nothing for a principal holding an unfiltered `SELECT` on the same table**: AWS
+documents the all-rows grant as prevailing. `DataScientistAccess` holds one through the default share,
+so the row filter discriminates only for a reader the default share does not reach. The filter names
+are the contract `./aws/dlp.py` `DP-2` reads (`awsds-flt-<table>-<what>`).

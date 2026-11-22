@@ -2,32 +2,35 @@
 
 | | |
 |---|---|
-| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version a release adds and the retirement of old ones, moving a space to another version, and the detach. The build and the push are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
-| **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read also touches Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
-| **The rules** | **The domain is the blueprint's object, not Terraform's.** `Tooling` provisions the SageMaker AI domain per project, so the attachment (§C6) is a hand step against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
+| **Scope** | The house image as SageMaker AI sees it: the `[P]` slice that registers it in a member account (`sandbox/dev-env/`), the attachment that makes it appear in the portal's image list, the version a release adds and the retirement of old ones, the hand cleanup of versions and their ECR images, moving a space to another version, and the detach. The build and the push are [`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)'s; the naming rule is [`docs/SMUS.md`](../../SMUS.md)'s. This file is what runs **per account and per release**, forever |
+| **Operator** | The **infrastructure user** — account **Sandbox** (or the member account being configured), permission set **`InfrastructureAccess`**, profile `awsds-infra-sandbox-1`. §C's registry read and §B's hand cleanup also touch Production through `awsds-infra-prod`, and one SSO login covers both. Every write is authorized per occurrence. §C6 is the one act this repository does not own in code |
+| **The rules** | **The domain is the blueprint's object, not Terraform's.** A project's domain is the `SageMakerAIDomain` blueprint's since 6d decision 16 (a), and its template writes the attachment from the profile's parameters, which are Terraform's (`data-governance/governance/`); the three `Tooling` domains `AWS_STATE.md` `EXC-26` keeps carry it from §C6's hand step, against a live object and never an `import` (Lesson 17). **A registered version is frozen to a digest**: SageMaker resolves the tag once, at `CreateImageVersion`, and a rebuilt tag would not move it — the repositories are tag-immutable anyway. **Half a proxy environment is worse than none** (§E) |
 | **The picture around it** | Why there is a house image at all: [D17](../decisions/D17-interactive-vs-runtime.md) and `gitlab/awsds/dev-env/README.md`. What a space reaches once it starts: [`docs/NETWORK.md`](../../NETWORK.md) and [`sg-proxy.md`](sg-proxy.md). What the portal does with the image: [`docs/SMUS.md`](../../SMUS.md), *Custom images (BYOI)* |
-| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and rewritten 2026-10-15 for [Stage 8](../stages/stage-08-cicd-pipelines.md) decisions 7 and 18: a release adds a version, the domain attaches the image with no version number, and a retirement deletes old versions. Every behaviour §B rests on was measured that day on a probe image (the Stage 8 log). Exercised in its earlier form, a version replaced and the domain detached and re-attached around it: §C in full on `default-v0.1.1`, the replace on `default-v0.2.0` to `v0.5.0` and on `default-v0.7.1`, the first release by the pipeline, §X step 1, §V. §B's register and retire jobs ran on `default-v0.7.3` (2026-10-15), version 8 offered by the version-less attach with no domain write. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, and the reconciliation reading §C7 ends on (step 2.4). The vendor pages are the 2026-09-10, 2026-09-11 and 2026-10-14 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
+| **Written** | 2026-09-10 at [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) step 2, and rewritten 2026-10-15 for [Stage 8](../stages/stage-08-cicd-pipelines.md) decisions 7 and 18: a release adds a version, the domain attaches the image with no version number, and a retirement deletes old versions. On 2026-11-18, for 6d decision 16 (a), a project's domain came to pin the profile's version, so a release moves the pin (§B). Every behaviour §B rests on was measured that day on a probe image (the Stage 8 log). Exercised in its earlier form, a version replaced and the domain detached and re-attached around it: §C in full on `default-v0.1.1`, the replace on `default-v0.2.0` to `v0.5.0` and on `default-v0.7.1`, the first release by the pipeline, §X step 1, §V. §B's register and retire jobs ran on `default-v0.7.3` (2026-10-15), version 8 offered by the version-less attach with no domain write. §B's hand cleanup ran on 2026-11-03: versions 7-10 retired and 22 images deleted. Unexercised, and each says so in place: the console route of §C6, §X steps 2-3, the reconciliation reading §C7 ends on (step 2.4), and §B's pin on a living blueprint environment (6d 2.7 step 8). The vendor pages are the 2026-09-10, 2026-09-11 and 2026-10-14 rows of [`docs/REFERENCES.md`](../../REFERENCES.md) |
 
 ---
 
 ## O. The objects, and who owns each
 
-Four objects stand between a container in ECR and a data scientist choosing it in the portal. Only the
-first three are this repository's.
+Four objects stand between a container in ECR and a data scientist choosing it in the portal. The
+first three are this repository's, and so is the fourth on a project's blueprint domain, through the
+profile.
 
 | Object | What it is | Owner |
 |---|---|---|
 | **Image** | the named thing a domain attaches. Account-scoped, versionless, carries a `RoleArn` | `sandbox/dev-env/`, Terraform |
-| **Image version** | one immutable pointer at one container image. Numbered by the service, 1 upwards | the **release pipeline**: `awsds/dev-env`'s `register` job creates it, its `retire` job deletes it (§B; Stage 8 decision 18) |
+| **Image version** | one immutable pointer at one container image. Numbered by the service, 1 upwards | the **release pipeline**: `awsds/dev-env`'s `register` job creates it, its `retire` job deletes it (§B; Stage 8 decision 18). A shorter history is §B's hand cleanup |
 | **App image configuration** | how a space starts that container: entrypoint, arguments, environment. One per app type | `sandbox/dev-env/`, Terraform |
-| **`CustomImages` on the domain** | the list a space's image picker is built from | the **`Tooling` blueprint**, and §C6 by hand |
+| **`CustomImages` on the domain** | the list a space's image picker is built from | on a blueprint domain, the **`SageMakerAIDomain` template** from the profile's pin, `var.sandbox_dev_env_version` in `data-governance/governance/`; on the three `Tooling` domains of `AWS_STATE.md` `EXC-26`, §C6 by hand |
 
 The seam is the fourth row, and it is a per-app-type field of the domain's **user settings** —
 `JupyterLabAppSettings.CustomImages`, `CodeEditorAppSettings.CustomImages`. A **space** carries no image
 *list*: `SpaceSettings.CodeEditorAppSettings` is a different shape, with neither `CustomImages` nor
 `LifecycleConfigArns`, so what the picker **offers** is decided on the domain alone. An entry with no
 `ImageVersionNumber` offers **every version** of the image, newest first, each labelled `<display name>
-v<n>` (measured 2026-10-15), which is how this estate attaches it (§C6).
+v<n>` (measured 2026-10-15), which is how the `Tooling` domains carry it (§C6). A blueprint domain's
+entry names the profile's version, so its picker offers that version alone (§C6), and a release reaches
+it by moving the pin (§B).
 
 **What a space runs is decided on the space.** Its `DefaultResourceSpec` names one image and one
 version, written when the space is created, and it **overrides the domain default** from then on
@@ -126,6 +129,12 @@ A role with no ECR reach registers nothing: the version would land `CREATE_FAILE
 
 ### 6. Attaching the image to the domain
 
+**A blueprint domain takes no step here.** Since 6d decision 16 (a) a project's domain is the
+`SageMakerAIDomain` blueprint's, and its template writes `CustomImages` and `DefaultResourceSpec` from
+the profile's parameters with the pinned version ([`docs/SMUS.md`](../../SMUS.md), *Custom images*).
+This section is the `Tooling` domains' route: the three `AWS_STATE.md` `EXC-26` keeps carry the entry it
+wrote, with no version number, and a release writes to none of them.
+
 **The CLI route ran on 2026-09-10 and the block survived it.** `awsds-sandbox-dev-env` version 1 was
 attached to both app settings in one `update-domain`; the domain came back `InService` with no
 `FailureReason`, and the before/after diff of the whole `DefaultUserSettings` showed **only the two
@@ -186,17 +195,17 @@ aws sagemaker describe-domain --domain-id <domain-id> --profile awsds-infra-sand
 ```
 
 The only differences must be the entries you added. **Measured** on the attach of 2026-09-10, the
-re-attaches on versions 2, 5, 6 and 7 (2026-09-11 to 2026-10-15), and the four writes of the probe
-image on 2026-10-15: each time the diff carried nothing but `CustomImages`, and the domain came back
+re-attaches on versions 2, 5, 6 and 7 (2026-09-11 to 2026-10-15), the four writes of the probe
+image on 2026-10-15 and the attach to `app-etl-dev`'s domain on 2026-11-14: each time the diff carried nothing but `CustomImages`, and the domain came back
 `InService` with no `FailureReason`.
 
 **No `ImageVersionNumber`, by Stage 8 decision 7 (taken 2026-10-15).** The slice's `custom_images`
 output carries none, so the attach writes entries the portal reads as *every version of the image*.
 Measured on a probe image that day: the picker listed each version, newest first, as `<display name>
 v<n>`; a version created afterwards appeared at the top with no domain write; and a new space pinned the
-version it was created on. So this attach is the last domain write a release needs. What a review gate
-guards is the version's existence, and the steward's `release-gate` precedes it (§B). With a number, the
-picker offers that version alone, and every release costs this write again.
+version it was created on. So on a `Tooling` domain this attach is the last domain write a release
+needs. What a review gate guards is the version's existence, and the steward's `release-gate` precedes it
+(§B). With a number, the picker offers that version alone, and every release costs this write again.
 
 **A SMUS space reads the user-settings block, measured 2026-09-10.** The experiment had its control:
 `DefaultSpaceSettings` carried no `CustomImages` and no `CodeEditorAppSettings` at all, read after the
@@ -275,8 +284,13 @@ So [`gitlab/awsds/dev-env/dev-env/Dockerfile`](../../../gitlab/awsds/dev-env/dev
 two files the variables alone do not cover — `/etc/apt/apt.conf.d/01proxy` and a sudoers `env_keep`,
 because `sudo` resets the environment (measured 2026-09-08, and true under every candidate).
 
-**The list is a dated literal in the Dockerfile**, Sandbox's, read on 2026-10-10 (70 entries,
-sha256 `aafa08da98a61f5c`): the output `no_proxy_all_groups` of `<account>/egress`, verbatim. The image
+**The list is a dated literal in the Dockerfile**, Sandbox's: the output `no_proxy_all_groups` of
+`<account>/egress`, verbatim. Version 11, `default-v0.10.0` (2026-10-26), bakes the reading of 2026-10-26 (73 entries,
+sha256 `61f1e1646df12c14`, the `mwaa` group's `airflow-serverless.us-west-2.api.aws` the newest), as
+the copy under `gitlab/` does; version 10, `default-v0.9.1`, baked the reading of
+2026-10-18 (72 entries, sha256 `6faf2e4761622508`, the `mlflow` group's names among them), and version 9,
+`default-v0.8.0`, the reading of 2026-10-10 (70 entries, sha256 `aafa08da98a61f5c`), both deleted on
+2026-11-03 (§B, *A hand cleanup*). The image
 serves every session, so it carries every optional endpoint group's names whatever `GROUPS=` a session
 names. Without them, a session that turns a group on sends that group's calls out through the proxy as
 public calls; with them, a session that leaves it off times out on those names. The output reads each
@@ -337,10 +351,17 @@ CloudTrail shows and the space does not.
 
 A steward approves a digest at the `release-gate` of the GitLab project `awsds/dev-env`, and its
 `register` job creates the release's image version in every target account (Stage 8 decisions 7 and 18,
-taken 2026-10-15). Nothing in this repository changes and no domain write follows: each domain attaches
-the image with no version number (§C6), so the portal offers the new version at once, at the top of the
-picker, and a new space created on it pins it. A **list change** reaches the same place by a longer road,
-§E's chain, because the proxy environment is baked at build time.
+taken 2026-10-15). A blueprint domain offers the version its profile pins (6d decision 16 (a)), so the
+release reaches a project's domain when the pin moves in `data-governance/governance/` and the project's
+owner presses *Update project* (steps 5 and 6). The three `Tooling` domains of `AWS_STATE.md` `EXC-26`
+attach the image with no version number (§C6) and offer the new version at once, at the top of the
+picker. A new space pins the version it is created on. A **list change** reaches the same place by a
+longer road, §E's chain, because the proxy environment is baked at build time.
+
+A release's tag pipeline runs on all three runners: `build-images` and the two scans on the build runner,
+`release-gate` on the test runner, `register` and `retire` on the deploy runner. Its GitLab session is
+therefore `make gitlab-up BUILD=1` ([`gitlab.md`](gitlab.md) §U), and without the flag the chain stops at
+`build-images`, *stuck* with no runner to take it.
 
 ### The release, and the reading that ends it
 
@@ -362,6 +383,20 @@ picker, and a new space created on it pins it. A **list change** reaches the sam
    ```bash
    aws sagemaker describe-image-version --image-name awsds-sandbox-dev-env --version-number <n> --profile awsds-infra-sandbox-1 --query '[ImageVersionStatus,ContainerImage]' --output text
    ```
+5. **The pin**, in a worktree: `var.sandbox_dev_env_version` in
+   `terraform-live/data-governance/governance/variables.tf` set to the version `register` created, and a
+   pull request. Its plan, as the infrastructure user in Data Governance (`awsds-infra-data`, permission
+   set `InfrastructureAccess`), reads `1 to change`: the profile's two image lists and two default ARNs.
+   The apply runs after the merge, from `main` (Lesson 79), on the user's word naming it.
+6. ***Update project*, per project**, by its owner in the portal, a contributor's press being refused
+   (`SUP-157`). The press re-deploys the project's `SageMakerAIDomain` environment with the profile's
+   parameters. Whether it moves a living environment's locked pin is unmeasured: it did not carry
+   `Tooling`'s locked `enableSpaces` (`SUP-380`), and the next release is the first reading (6d 2.7
+   step 8).
+7. **`US-13` green**: `./aws/studio.py awsds-infra-data awsds-infra-sandbox-1` compares the profile's pin
+   with the newest `CREATED` version and each blueprint domain's `ImageVersionNumber` with the pin. A
+   domain behind it names the project whose owner has not pressed; until every one has, `retire` keeps
+   the version that domain names, and its spaces start.
 
 By hand, step 2 is the same script, from a checkout of `awsds/dev-env` or from its copy here, as the
 infrastructure user; the target the deploy runner finds by its profiles' names is named instead:
@@ -372,14 +407,14 @@ python3 gitlab/awsds/dev-env/release/versions.py register --target awsds-infra-s
 
 The deploy role holds what the script calls and nothing else: the image's versions created, read and
 deleted, their aliases, and every space and domain read (Stage 8 step 4.2, INT-18). Its ceiling denies
-every domain write, every space write and every role change, so the one domain write per domain
-(§C6) and the moves below stay the steward's.
+every domain write, every space write and every role change, so the one domain write per `Tooling`
+domain (§C6) and the moves below stay the steward's, and the pin is the infrastructure user's.
 
 **The readings behind this order**, all measured 2026-10-15 on a probe image (the Stage 8 log):
 
 | Reading | What it settles |
 |---|---|
-| An entry with no `ImageVersionNumber` makes the picker list every version, newest first, `<display name> v<n>`; a version created afterwards appears with no domain write | a release needs no domain write |
+| An entry with no `ImageVersionNumber` makes the picker list every version, newest first, `<display name> v<n>`; a version created afterwards appears with no domain write | a release needs no write on a `Tooling` domain |
 | The portal's `CreateSpace` carries the chosen version's ARN, and the space keeps it while newer versions arrive | a release reaches an existing space only when the space moves |
 | `update-domain` on `CustomImages` was accepted with apps running, four times | no app is deleted around a domain write (§C6) |
 | `VendorGuidance` `TO_BE_ARCHIVED` and `ARCHIVED` change nothing in the picker, and an archived version still starts the space that names it | archiving retires nothing |
@@ -400,6 +435,93 @@ What it would delete, read without deleting anything:
 ```bash
 python3 gitlab/awsds/dev-env/release/versions.py retire --dry-run --target awsds-infra-sandbox-1
 ```
+
+### A hand cleanup of the versions and their ECR images
+
+The pipeline bounds the history without emptying it. `retire` keeps 10 versions, and each repository's
+lifecycle policy (`terraform-modules/ecr-repo/`) expires untagged images after 14 days and tagged ones past
+the newest 30. Each release adds a `dev-env` and a `base` image to Production's registry. A shorter history
+is cut by hand by the infrastructure user: `awsds-infra-sandbox-1` deletes the versions and
+`awsds-infra-prod` deletes the images. The stewards' `DevEnvStewardAccess` is denied both deletes
+(`DenyShippingTheArtifactItApproves`). The first cut ran on 2026-11-03 (the Stage 8 log): versions 7-10
+were retired and 22 images deleted. `dev-env` went from 44.7 GB of unique layers to 9.9 GB, and `base`
+from 7.8 GB to 3.8 GB.
+
+A deletion is final: a version or a pin names a digest, and a rebuild from the same git tag gives a new
+one.
+
+**1. Read what names an image besides a version.** `retire` reads spaces and domains. Every image kept is
+the newest one or one these readers name:
+
+| Reader | What it pins | How to read it |
+|---|---|---|
+| A space, or a domain entry with a number | a version | the dry run below lists it, and `retire` keeps its version |
+| The `SageMakerAIDomain` profile | `var.sandbox_dev_env_version` (`data-governance/governance/`), the version a new project's domain is created with | the variable's value. `retire` does not read it, and with no blueprint domain alive nothing keeps that version |
+| A workflow in Sandbox | a `dev-env` digest in a processing task's `ImageUri` | the first command below |
+| An application's Dockerfile | a `base` digest in its `FROM` | the second command below, for `examples/app-etl/`. Every application project on GitLab carries its own Dockerfile |
+
+The readings of 2026-11-03:
+- The 6i workflows `demo-devenv-job` and `demo-devenv-deps` run `dev-env` `default-v0.5.0`
+  (`sha256:8ec04e35…`).
+- `examples/app-etl/Dockerfile` is `FROM` `base` `default-v0.6.0` (`sha256:94359041…`).
+
+Both images were kept. A `base` image is also read when its own release reruns with `SKIP_BASE=1`, which
+only the newest release does.
+
+```bash
+for A in $(aws mwaa-serverless list-workflows --profile awsds-infra-sandbox-1 --query 'Workflows[].WorkflowArn' --output text); do printf '%-50s ' "${A##*/}"; aws mwaa-serverless get-workflow --workflow-arn "$A" --profile awsds-infra-sandbox-1 --query WorkflowDefinition --output text | grep -o -E 'awsds-prod-ecr-[a-z-]+@sha256:[0-9a-f]{12}' | sort -u | tr '\n' ' '; echo; done
+```
+
+```bash
+git grep -n -E 'awsds-prod-ecr-(base|dev-env)@sha256:[0-9a-f]{64}' -- ':!docs'
+```
+
+**2. Measure what a cut frees.** Images in one repository share layers, so the sizes `describe-images`
+reports overstate what the repository stores. On 2026-11-03, `dev-env` read 86.6 GB summed against 44.7
+GB of unique layers. The first command writes each image's layers from its manifest. The second sums the
+repository, and the third sums the tags that stay. Run the pair per repository, and regenerate the file
+each time:
+
+```bash
+R=awsds-prod-ecr-dev-env; for T in $(aws ecr describe-images --repository-name $R --profile awsds-infra-prod --query 'imageDetails[].imageTags[0]' --output text); do aws ecr batch-get-image --repository-name $R --image-ids imageTag=$T --profile awsds-infra-prod --accepted-media-types application/vnd.oci.image.manifest.v1+json --query 'images[0].imageManifest' --output text | jq -r --arg t "$T" '(.layers + [.config])[] | "\($t) \(.digest) \(.size)"'; done > "$HOME/tmp/layers.txt"
+```
+
+```bash
+awk '!seen[$2]++ {s += $3} END {printf "stored: %.1f GB\n", s / 1e9}' "$HOME/tmp/layers.txt" && awk -v keep="<tag> <tag>" 'BEGIN {n = split(keep, k, " "); for (i = 1; i <= n; i++) K[k[i]] = 1} K[$1] && !seen[$2]++ {s += $3} END {printf "kept: %.1f GB\n", s / 1e9}' "$HOME/tmp/layers.txt"
+```
+
+Whether ECR bills a shared layer once is not measured here. The next bill's `TimedStorage-ByteHrs` line
+for ECR answers it.
+
+**3. Retire the versions first**: the dry run, then the same command without `--dry-run`. `--keep`
+counts from the newest and is at least 1. A version that step 1's profile pin names must fall inside the
+kept range, or the cut waits until the pin moves. The versions go before their images: a version whose
+digest is gone stays in the picker, and what a space created on it does is not measured.
+
+```bash
+python3 gitlab/awsds/dev-env/release/versions.py retire --keep <n> --dry-run --target awsds-infra-sandbox-1
+```
+
+**4. Delete the images, each named by tag and digest.** Print the candidates in the form the call takes,
+remove the lines to keep, and write the rest into the call:
+
+```bash
+aws ecr describe-images --repository-name <repository> --profile awsds-infra-prod --query 'sort_by(imageDetails,&imagePushedAt)[].[imageTags[0],imageDigest]' --output text | awk '{print "imageTag=" $1 ",imageDigest=" $2}'
+```
+
+```bash
+aws ecr batch-delete-image --repository-name <repository> --profile awsds-infra-prod --output json --image-ids imageTag=<tag>,imageDigest=<sha256:digest> imageTag=<tag>,imageDigest=<sha256:digest> | jq -c '{deleted: [.imageIds[].imageTag], failures}'
+```
+
+The written list is what the user authorizes, so it is never a set computed from a keep list. Claude
+Code's auto-mode classifier refused that form on 2026-11-03 (*Unverifiable Deletion Scope*). `failures`
+must come back empty; it did for both repositories that day.
+
+**5. Read it back**: `list-image-versions` (§B, *The release, and the reading that ends it*, step 4), `describe-images` on both
+repositories, and `./aws/devenv.py`, whose `DE-5` reads the newest version's digest from the registry.
+`DE-2` fails while `sandbox/egress` is down (`AWS_STATE.md`). The entry goes to the Stage 8 log, whose
+plan holds the retirement. The tag table in `gitlab/awsds/dev-env/README.md` is GitLab's history and stays
+as it is.
 
 ### Moving a space to another version
 
@@ -463,8 +585,9 @@ Step 1 ran on 2026-09-11 and on 2026-10-15, as the detach half of the replace §
 2. `terraform apply -destroy` on the slice, or delete the resources from the code and apply. The
    versions are not in the slice's state, and `DeleteImage` deletes every version of the image with it,
    as the probe image's deletion did on 2026-10-15.
-3. The ECR image is not this slice's to remove: the repository's lifecycle policy expires it, and
-   `gitlab/awsds/dev-env/README.md` owns that rule.
+3. The ECR image is not this slice's to remove. The repository's lifecycle policy
+   (`terraform-modules/ecr-repo/`) expires it past the newest 30 tags, and a cut by hand is §B, *A hand
+   cleanup of the versions and their ECR images*.
 
 ## V. Reading it back, and what each instrument proves
 
@@ -473,12 +596,13 @@ Step 1 ran on 2026-09-11 and on 2026-10-15, as the detach half of the replace §
 | Is the version registered, and against which digest? | `aws sagemaker describe-image-version --image-name awsds-sandbox-dev-env --version-number <n>` | `ImageVersionStatus: CREATED` and `ContainerImage` naming the `sha256:` the steward pushed; `register` fails on any other |
 | Which versions are held, and which release is each? | `aws sagemaker list-image-versions --image-name awsds-sandbox-dev-env`, then `list-aliases --version-number <n>` | the history the picker offers; each version's alias is its release's semver, from version 8 on (version 7 predates decision 18) |
 | Do the configurations exist, and do they carry an environment? | `aws sagemaker describe-app-image-config --app-image-config-name awsds-sandbox-dev-env-jupyterlab` | the app type binding; today an empty `ContainerConfig` is the expected reading (§E) |
-| Does the domain offer the image? | `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | the attachment, which no Terraform state records |
+| Does each domain offer the image, at which version? | `./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`, `US-13`; or `describe-domain … --query 'DefaultUserSettings.JupyterLabAppSettings.CustomImages'` | on a blueprint domain the version it pins, against the profile's pin and the newest `CREATED` version; on a `Tooling` domain the entry with no number, which no Terraform state records |
 | Did the registration read the repository across the boundary? | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=BatchGetImage --profile awsds-infra-prod` | the image role as `AWSAccount`/`…:SageMaker` on `awsds-prod-ecr-dev-env` (§C5) |
 | Did a **space** pull it, and which version? | the same lookup, in the window a space started | the project role rather than the image role, and **by digest** rather than by tag, which names the version the space resolved — measured 2026-09-10, both app types, and 2026-10-15 for a pinned, an archived and an aliased version |
 | Is the baked `NO_PROXY` still the account's? | `./aws/devenv.py`, `DE-1`..`DE-3`, `DE-6` | the **recipe** against the account's `no_proxy_all_groups`, name by name and both ways; `DE-6` that the last apply's endpoints answer for no name that list lacks. An image built from an older checkout passes these |
 | Does the image the registry holds carry it? | `./aws/devenv.py`, `DE-5` | the **bytes**: the latest version's digest, its manifest, its config blob hash-checked, and the six variables in its `Env`. Verified both ways 2026-09-12 — `v0.4.0` bakes all six, `v0.1.0` none |
 | Which image is a space **running**? | `describe-app … --query ResourceSpec`, or `cat /opt/awsds-proxy.txt` inside it | the only reading that separates this image from AWS's distribution in the same picker, and `describe-app` still answers after the app is deleted (§C7) |
+| What does each repository store, and what would a cut free? | §B, *A hand cleanup*, step 2 | the unique layers, read from each image's manifest; the sizes `describe-images` reports count a shared layer once per image |
 | Does every space still name a version that exists? | the `describe-space` loop in §B, *Moving a space*, or `release/versions.py retire --dry-run` | a space's own copy of the version number, which overrides the domain default; a space naming a deleted version does not start (`EXC-09`), and `retire` keeps every version a space names |
 
 ## F. Failures, and what each one is

@@ -94,6 +94,35 @@ data "aws_iam_policy_document" "job" {
     resources = ["*"]
   }
 
+  # An Iceberg commit ends in glue:UpdateTable, the metadata pointer moved on the Glue table, and
+  # IAM is evaluated beside Lake Formation's ALTER (Lesson 28): the lake's curated tables, addressed
+  # in the lake account's catalog. The lake account is read from its state (producer-proof.tf), never
+  # pasted.
+  statement {
+    sid     = "CommitTheIcebergWrites"
+    effect  = "Allow"
+    actions = ["glue:UpdateTable"]
+    resources = [
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:database/${data.terraform_remote_state.lake.outputs.database_names["curated"]}",
+      "arn:${local.partition}:glue:${var.region}:${local.lake_account_id}:table/${data.terraform_remote_state.lake.outputs.database_names["curated"]}/*",
+    ]
+  }
+
+  # A Glue job given a network connection reads it as this role before it starts: Glue's
+  # GlueJobRunnerSession called glue:GetConnection four times in Staging on 2026-10-19, as the role
+  # of Stage 18 4.4's job. Read-only and held to this account's connections; step 2.4 decides
+  # whether the producer has one.
+  statement {
+    sid     = "ReadTheJobsConnection"
+    effect  = "Allow"
+    actions = ["glue:GetConnection"]
+    resources = [
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:catalog",
+      "arn:${local.partition}:glue:${var.region}:${local.account_id}:connection/*",
+    ]
+  }
+
   # ------------------------------------------------ the account's buckets (steps 1.1 and 1.2)
   statement {
     sid    = "ReadAndWriteTheAccountBuckets"
@@ -208,7 +237,7 @@ data "aws_iam_policy_document" "job" {
       "logs:PutLogEvents",
     ]
     resources = flatten([
-      for group in aws_cloudwatch_log_group.job : [group.arn, "${group.arn}:*"]
+      for arn in local.job_log_group_arns : [arn, "${arn}:*"]
     ])
   }
 
@@ -228,6 +257,18 @@ data "aws_iam_policy_document" "job" {
         "Glue",
       ]
     }
+  }
+
+  # Stage 9 step 9.4: the warehouse load, app-etl's Glue job awsds-<env>-app-etl-load, reads the
+  # workgroup's endpoint and asks for temporary credentials on its database, then connects on its port
+  # from the job's security group (9.1). workgroup/* because the id changes on every re-create of the
+  # [E] compute; the session lands on the database user 9.3 created, IAMR:awsds-prod-job-exec, which
+  # holds the schema's writes through its role, and the admin secret stays closed to this role.
+  statement {
+    sid       = "ConnectToTheGovernedWarehouse"
+    effect    = "Allow"
+    actions   = ["redshift-serverless:GetCredentials", "redshift-serverless:GetWorkgroup"]
+    resources = ["arn:${local.partition}:redshift-serverless:${var.region}:${local.account_id}:workgroup/*"]
   }
 
   # ----------------------------------------------------------------- a job inside the VPC
@@ -290,12 +331,14 @@ data "aws_iam_policy_document" "job" {
 # ------------------------------------------------------------------- the job log groups
 #
 # Declared before any job runs, with a retention: the service that creates its own group gives it none
-# (EXC-10). The names are the ones each service writes to by default.
+# (EXC-10). The names are the ones each service writes to by default. Each group is encrypted under the
+# account data key, which CloudWatch Logs uses as its own service principal under production/data/'s
+# AllowCloudWatchLogsForTheJobAndWorkflowGroups, scoped by the group's ARN as encryption context.
 resource "aws_cloudwatch_log_group" "job" {
-  # checkov:skip=CKV_AWS_158:the account data CMK is production/data/'s and arrives at pass 3 with the CloudWatch Logs statement step 1.1 lists; the groups move under it then, and carry the AWS-owned key until that apply
   # checkov:skip=CKV_AWS_338:retention is 30 days, Stage 3 decision 3's figure; the audit trail of record is CloudTrail, org-wide and Object-Locked since Stage 1d
   for_each = local.job_log_groups
 
   name              = each.value
   retention_in_days = var.log_retention_days
+  kms_key_id        = data.terraform_remote_state.data.outputs.data_key_arn
 }

@@ -1,9 +1,12 @@
 # deploy-role.tf - Stage 8 step 4.1 in Staging: awsds-deploy-staging, the promotion chain's role for
 # steps 3.1-3.4 (INT-08), and the misuse alarm with the alerts topic it reaches (4.6, decision 5).
 #
-# What it applies from the deploy runner: staging/egress/, which since 6c is interface endpoints and
-# the DNS Firewall with no NAT, and staging/app/* (step 3.2). The egress half of its grant is below;
-# the application half lands with staging/app/app-etl/ (step 3.0).
+# What it does from the deploy runner: the CI/CD CLI's deploy into deploy-staging and the leg around it
+# (Stage 19 steps 4.8 and 4.9), the start of the chains in staging-test, and the model chain's jobs. It
+# applies no slice and writes no state: staging/egress/ is the user's `make up` / `make down` since
+# decision 27 (2026-10-24), and the leg reads it before it writes (scripts/check-egress.py). Its grants
+# are the inline document apply-application (apply-application.tf) and the managed policy
+# deploy-project.tf attaches.
 #
 # The trust names the runner's role in the runner's home, built from the runner's name and the home's
 # account id, which the alias below resolves (aws/INDEX.md rule 1). Production/foundation/ must exist
@@ -33,161 +36,89 @@ locals {
     CostCenter = "stage-08"
   }
 
+  # The names apply-application.tf and deploy-project.tf read, the same in production/foundation/.
+  partition      = data.aws_partition.current.partition
+  account_id     = data.aws_caller_identity.current.account_id
   region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
+
+  # Production's model registry (production/sagemaker/registry.tf): the deploy runner's home is that
+  # account (D14), so the alias above resolves its id.
+  registry_account_id = data.aws_caller_identity.deploy_runner.account_id
+  registry_env        = one([for k, v in var.deploy_runner : v.env])
 }
 
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.5.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; applies staging/egress/ and staging/app/* slices"
+  description     = "Stage 8's Staging leg (INT-08, steps 3.1-3.4) - assumed only by the deploy runner's role; deploys into deploy-staging through the CI/CD CLI, reads staging/egress/"
   env             = var.env
   runner_role_arn = local.deploy_runner_role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["staging/egress/", "staging/app/"]
-  state_read_keys = ["staging/foundation/terraform.tfstate"]
+  state_prefixes  = []
+  state_read_keys = [for s in ["foundation", "sagemaker", "data", "egress"] : "staging/${s}/terraform.tfstate"]
 
   inline_policies = {
-    "apply-egress" = data.aws_iam_policy_document.apply_egress.json
+    "apply-application" = data.aws_iam_policy_document.apply_application.json
   }
-
-  application_boundary_name = "awsds-${var.env}-app-boundary"
 
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# What staging/egress/ (vpc-egress) creates and reads: interface endpoints in this VPC, the DNS
-# Firewall's lists, rule group, rules and association, its query log and the log group that receives
-# it, and the organization id the endpoint policies carry. Resolver rules and resolver endpoints are
-# absent on purpose: a deploy role that could forward this VPC's DNS elsewhere could open a channel the
-# firewall exists to close.
-data "aws_iam_policy_document" "apply_egress" {
-  # checkov:skip=CKV_AWS_111:two writes take no ARN of this account - route53:AssociateVPCWithHostedZone acts on the zone AWS owns for each endpoint, and the CloudWatch Logs delivery calls take no resource at all; every other write is scoped to this account's ARNs
-  # checkov:skip=CKV_AWS_356:idem
+# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys,
+# the approval of a version in this account's own registry, and the chain's machine it starts in
+# staging-test and follows to its end (Stage 10 decision 19).
+data "aws_iam_policy_document" "apply_application_in_this_account" {
+  # checkov:skip=CKV_AWS_356:ListModelPackages on "*": the Service Reference gives it the type model-package, and which ARN the service evaluates is unread (Stage 17 9.1); the registry's resource policy names this role
+
+  # Step 3.2: the approved version, read in production/sagemaker/registry.tf's groups, whose resource
+  # policy admits this role to the same two actions (Stage 9 step 3.2).
   statement {
-    sid    = "ReadTheNetworkAndTheOrganization"
-    effect = "Allow"
-    actions = [
-      "ec2:DescribeAvailabilityZones",
-      "ec2:DescribeInstances",
-      "ec2:DescribeNetworkInterfaces",
-      "ec2:DescribePrefixLists",
-      "ec2:DescribeRouteTables",
-      "ec2:DescribeSecurityGroups",
-      "ec2:DescribeSubnets",
-      "ec2:DescribeVpcAttribute",
-      "ec2:DescribeVpcEndpointServices",
-      "ec2:DescribeVpcEndpoints",
-      "ec2:DescribeVpcs",
-      "organizations:DescribeOrganization",
-    ]
-    resources = ["*"]
+    sid       = "ReadTheApprovedModelVersions"
+    effect    = "Allow"
+    actions   = ["sagemaker:DescribeModelPackage"]
+    resources = ["arn:${local.partition}:sagemaker:${data.aws_region.current.region}:${local.registry_account_id}:model-package/awsds-${local.registry_env}-model-*/*"]
   }
 
   statement {
-    sid    = "ManageTheInterfaceEndpoints"
+    sid       = "ListTheModelVersions"
+    effect    = "Allow"
+    actions   = ["sagemaker:ListModelPackages"]
+    resources = ["*"]
+  }
+
+  # Stage 17 step 9.5: app-ml's versions in this account's group (staging/sagemaker/registry.tf), which
+  # the register task proposes PendingManualApproval as the deployment project's role and staging-test
+  # approves. No CreateModelPackage: a task registers (Stage 17 decision 16 (b)).
+  statement {
+    sid    = "ApproveTheModelATaskRegisters"
     effect = "Allow"
     actions = [
-      "ec2:CreateVpcEndpoint",
-      "ec2:DeleteVpcEndpoints",
-      "ec2:ModifyVpcEndpoint",
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:ec2:${local.region_account}:vpc-endpoint/*",
-      "arn:${data.aws_partition.current.partition}:ec2:${local.region_account}:vpc/${module.vpc.vpc_id}",
-      "arn:${data.aws_partition.current.partition}:ec2:${local.region_account}:subnet/*",
-      "arn:${data.aws_partition.current.partition}:ec2:${local.region_account}:security-group/*",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-ml",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-ml/*",
     ]
   }
 
   statement {
-    sid       = "TagTheEndpoints"
+    sid       = "StartTheChainInTheLeg"
     effect    = "Allow"
-    actions   = ["ec2:CreateTags", "ec2:DeleteTags"]
-    resources = ["arn:${data.aws_partition.current.partition}:ec2:${local.region_account}:vpc-endpoint/*"]
+    actions   = ["states:StartExecution"]
+    resources = ["arn:${local.partition}:states:${local.region_account}:stateMachine:awsds-${var.env}-chain-*"]
   }
 
-  # An interface endpoint with private DNS associates a zone AWS manages with the VPC, on the caller's
-  # authority.
   statement {
-    sid       = "AssociateTheEndpointZones"
+    sid       = "FollowTheChainInTheLeg"
     effect    = "Allow"
-    actions   = ["route53:AssociateVPCWithHostedZone"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid    = "ManageTheDnsFirewallAndItsQueryLog"
-    effect = "Allow"
-    actions = [
-      "route53resolver:AssociateFirewallRuleGroup",
-      "route53resolver:AssociateResolverQueryLogConfig",
-      "route53resolver:CreateFirewallDomainList",
-      "route53resolver:CreateFirewallRule",
-      "route53resolver:CreateFirewallRuleGroup",
-      "route53resolver:CreateResolverQueryLogConfig",
-      "route53resolver:DeleteFirewallDomainList",
-      "route53resolver:DeleteFirewallRule",
-      "route53resolver:DeleteFirewallRuleGroup",
-      "route53resolver:DeleteResolverQueryLogConfig",
-      "route53resolver:DisassociateFirewallRuleGroup",
-      "route53resolver:DisassociateResolverQueryLogConfig",
-      "route53resolver:GetFirewallDomainList",
-      "route53resolver:GetFirewallRuleGroup",
-      "route53resolver:GetFirewallRuleGroupAssociation",
-      "route53resolver:GetResolverQueryLogConfig",
-      "route53resolver:GetResolverQueryLogConfigAssociation",
-      "route53resolver:ListFirewallDomains",
-      "route53resolver:ListFirewallRules",
-      "route53resolver:ListTagsForResource",
-      "route53resolver:TagResource",
-      "route53resolver:UntagResource",
-      "route53resolver:UpdateFirewallDomains",
-      "route53resolver:UpdateFirewallRule",
-      "route53resolver:UpdateFirewallRuleGroupAssociation",
-    ]
-    resources = ["arn:${data.aws_partition.current.partition}:route53resolver:${local.region_account}:*"]
-  }
-
-  statement {
-    sid    = "TheFirewallLogGroup"
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:DeleteLogGroup",
-      "logs:DeleteRetentionPolicy",
-      "logs:ListTagsForResource",
-      "logs:ListTagsLogGroup",
-      "logs:PutRetentionPolicy",
-      "logs:TagLogGroup",
-      "logs:TagResource",
-      "logs:UntagLogGroup",
-      "logs:UntagResource",
-    ]
-    resources = [
-      "arn:${data.aws_partition.current.partition}:logs:${local.region_account}:log-group:/awsds/${var.env}/dns-firewall",
-      "arn:${data.aws_partition.current.partition}:logs:${local.region_account}:log-group:/awsds/${var.env}/dns-firewall:*",
-    ]
-  }
-
-  # The query log writes through a log delivery the caller creates, and the delivery edits the log
-  # group's resource policy; none of these calls takes a resource ARN.
-  statement {
-    sid    = "DeliverTheQueryLog"
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogDelivery",
-      "logs:DeleteLogDelivery",
-      "logs:DescribeLogGroups",
-      "logs:DescribeResourcePolicies",
-      "logs:GetLogDelivery",
-      "logs:ListLogDeliveries",
-      "logs:PutResourcePolicy",
-      "logs:UpdateLogDelivery",
-    ]
-    resources = ["*"]
+    actions   = ["states:DescribeExecution", "states:GetExecutionHistory"]
+    resources = ["arn:${local.partition}:states:${local.region_account}:execution:awsds-${var.env}-chain-*:*"]
   }
 }
 

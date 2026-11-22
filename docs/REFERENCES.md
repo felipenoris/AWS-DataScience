@@ -45,7 +45,12 @@
 - `awsds-workflows`: <https://github.com/felipenoris/awsds-workflows>. Renders a serverless workflow's
   definition and packages its tasks' code; installed by git URL from `main`, never by name, and since
   2026-10-12 the tool of `docs/plan/runbooks/serverless-workflows.md` (§T). Its documentation, in
-  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>.
+  Portuguese, read 2026-10-12 at `937a66a` and `3499530`: <https://felipenoris.github.io/awsds-workflows/>;
+  its section *O plano do Terraform* read 2026-10-24 at `ff25eae`. Its PR #23, merged 2026-10-24 as
+  `ff25eae`, writes Stage 10 2.3's rules (2c), `lint-plan`, and (6), and the `manifest` rule's refusal of
+  a glob include: <https://github.com/felipenoris/awsds-workflows/pull/23>. Its PR #25, merged
+  2026-11-12 as `196acee`, makes the `manifest` rule admit `content.catalog` with `skipPublish` true and no
+  `assets.access` (Stage 19 item 23): <https://github.com/felipenoris/awsds-workflows/pull/25>.
 
 ## Organization and identity
 
@@ -115,6 +120,8 @@
 
 - Disabling an IAM Identity Center user (the mechanism D33 cited; D34 withdrew the retirement of `AWS Control Tower Admin`, so no user in this design is scheduled for disabling): <https://docs.aws.amazon.com/singlesignon/latest/userguide/disableuser.html>.
 
+- `ListAccountAssignmentsForPrincipal` — every assignment of one user or group in one call, the reading `./aws/vending.py` `VN-6` takes; the page says it *"must be called from the management account"*, and it answered from the Identity Center delegated administrator on 2026-10-18 (Stage 14): <https://docs.aws.amazon.com/singlesignon/latest/APIReference/API_ListAccountAssignmentsForPrincipal.html>.
+
 - IAM OIDC identity providers (the issuer's discovery/JWKS URL must be publicly reachable — relevant to Stage 8 with a private GitLab): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html>.
 
 - AWS global condition context keys (`aws:ViaAWSService`, `aws:PrincipalIsAWSService`, `aws:SourceIp` caveats): <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html>.
@@ -168,6 +175,15 @@
 
 - IAM permissions boundaries: <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html>.
 
+- The IAM policy simulator (read 2026-10-18, for Stage 6h steps 5.3 and 5.4): it evaluates identity
+  policies, a permissions boundary and the SCPs in scope, their condition keys and resource scoping
+  included, reports an SCP's verdict without its statement, and supports no RCP. It populates the
+  principal keys `aws:PrincipalAccount`, `aws:PrincipalId`, `aws:PrincipalType`, `aws:Type`,
+  `aws:UserId` and `aws:UserName` and the three `aws:PrincipalOrg*` keys; every other key is the
+  caller's to supply. Measured the same day, the SCP evaluation read `aws:PrincipalArn` as the role's own
+  ARN when the context gave none:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html>.
+
 - Granting a user permissions to pass a role (`iam:PassRole`): <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html>.
 
 - `aws organizations` CLI reference (the calls `aws/list-identities.py` uses to walk the OU tree and list the accounts): <https://docs.aws.amazon.com/cli/latest/reference/organizations/>.
@@ -204,6 +220,81 @@
   <https://docs.aws.amazon.com/controltower/latest/userguide/account-auto-enrollment.html>,
   <https://docs.aws.amazon.com/controltower/latest/userguide/configure-auto-enroll.html> and
   <https://docs.aws.amazon.com/controltower/latest/APIReference/API_GetLandingZone.html>.
+
+- The Account Factory and account-closure readings behind Stage 14 steps 2 and 6 (read 2026-10-20):
+  - *The product and its keys*: `ProvisionProduct`'s sample input names `AccountEmail`, `AccountName`,
+    `ManagedOrganizationalUnit`, `SSOUserEmail`, `SSOUserFirstName` and `SSOUserLastName`, the OU's value
+    now `OU_NAME (OU_ID)` where it was `OU_NAME`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/automated-provisioning-walkthrough.html>.
+    The console procedure names the product `AWS Control Tower Account Factory`, wants an `AccountEmail` no
+    AWS account uses, and forbids TagOptions, notifications and a resource plan:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-as-end-user.html>; its portfolio is
+    `AWS Control Tower Account Factory Portfolio`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/controltower-walkthrough-cleanup-account-factory.html>.
+    The product's own parameters, the binding reading, come from `DescribeProvisioningParameters`:
+    <https://docs.aws.amazon.com/servicecatalog/latest/dg/API_DescribeProvisioningParameters.html>.
+  - *Who provisions*: the requester holds `CreateAccount` and `DescribeCreateAccountStatus`, at most five
+    account operations run at once, and the target OU has `AWSControlTowerBaseline` enabled:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/provision-and-manage-accounts.html>. A
+    Lambda function that provisions needs, beside `AWSServiceCatalogEndUserFullAccess`, `sso:` and
+    `sso-directory:` actions on `*` and `controltower:CreateManagedAccount`; Control Tower has
+    `CreateAccount` name the role it creates `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html>.
+  - *What terminating does*: Service Catalog's *terminate* does not close the account; it leaves its OU
+    and the landing zone: <https://docs.aws.amazon.com/controltower/latest/userguide/unenroll-with-sc.html>.
+    Unenrolling removes what Control Tower provisioned, `AWSControlTowerExecution` included, moves the
+    account to the root, and leaves the Account Factory SSO user's administrator access:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/unmanage-account.html>.
+  - *The auto-enrollment rung*: a newly created account, which lands in the root, is enrolled once moved
+    into a registered OU, and unenrolled by a move out:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/account-auto-enrollment.html>. Every enrolled
+    account holds `AWSControlTowerExecution`:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/services-that-can-integrate-CTower.html>
+    and <https://docs.aws.amazon.com/controltower/latest/userguide/awscontroltowerexecution.html>.
+    Enrollment neither creates nor removes a VPC, the default one included, while an account Account
+    Factory creates loses its default VPC:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/enroll-account.html>, in the governed Regions,
+    and neither page ties that to the network configuration:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/vpc-concepts.html>; a default VPC has an
+    internet gateway and a public subnet per Availability Zone, on `172.31.0.0/16`:
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc.html> and
+    <https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc-components.html>. `CreateAccount` and
+    `MoveAccount` are the management account's alone; `CreateAccount` defaults `RoleName` to
+    `OrganizationAccountAccessRole` and takes an address of 6 to 64 characters of 7-bit ASCII:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CreateAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_MoveAccount.html>. The service
+    reference gives `CreateAccount` no resource type and `MoveAccount` the account, OU and root ARNs, with
+    no condition key: <https://servicereference.us-east-1.amazonaws.com/v1/organizations/organizations.json>.
+    Re-registering an OU updates its enrolled accounts:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/nested-ous.html>.
+  - *The Terraform resources*: `aws_servicecatalog_provisioned_product`, whose `name` and
+    `notification_arns` force a replacement and whose delete is `TerminateProvisionedProduct`, retried with
+    `IgnoreErrors` on failure (the provider's source at v6.69.1):
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/servicecatalog_provisioned_product>
+    and <https://github.com/hashicorp/terraform-provider-aws/blob/v6.69.1/internal/service/servicecatalog/provisioned_product.go>.
+    `aws_organizations_account` removes the account from the organization on destroy unless
+    `close_on_deletion` is set, and cannot read `role_name` back:
+    <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/organizations_account>.
+    `prevent_destroy` does not protect a resource whose block is removed:
+    <https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle>.
+  - *Closing*: an Account Factory account is unenrolled before its close; closed while enrolled it reads
+    *Suspended* and *Enrolled* and blocks its OU's re-registration for the 90 days:
+    <https://docs.aws.amazon.com/controltower/latest/userguide/delete-account.html>. The post-closure
+    period is 90 days, a closed member account counts toward the quota until it ends, and the address
+    registered at closure can never be another account's primary e-mail:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-closing.html>. `CloseAccount` goes
+    through `PENDING_CLOSURE` to `SUSPENDED`, and after 90 days Management's event history records
+    `AccountDepartedOrganization` with `departureMethod:CLEANED`:
+    <https://docs.aws.amazon.com/organizations/latest/APIReference/API_CloseAccount.html> and
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_close.html>. The quota
+    table: a closed account counts until permanently closed, three close at once, 250 in 30 days below
+    1,250 members, and a created account is removed after four days at the earliest:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html>. Removing a
+    created account takes a support plan, verified contacts and a payment method of its own:
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_accounts_remove.html>. A member
+    account's root address is changed from Management with `StartPrimaryEmailUpdate` and
+    `AcceptPrimaryEmailUpdate`, under Account Management's trusted access:
+    <https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user-email.html>.
 
 - The IAM, KMS and STS readings behind Stage 9 pass 1's roles and alarm (read 2026-10-16):
   - *KMS alias authorization*: `kms:ResourceAliases` controls access to a key by its aliases, and an
@@ -263,6 +354,48 @@
   checksum in the lock file, so a module folder, which commits none, downloads its providers. The CI
   fills the cache one folder at a time on this reading:
   <https://developer.hashicorp.com/terraform/cli/config/config-file>.
+
+- Terraform and its providers, read 2026-10-18 for `docs/plan/upstream-releases.md`: Terraform's
+  releases `v1.15.9` to `v1.16.6` and `v1.17.0-rc2`, the PR adding `lifecycle { destroy = false }` and
+  1.16.6's checksums: <https://github.com/hashicorp/terraform/releases>,
+  <https://github.com/hashicorp/terraform/pull/38784>,
+  <https://releases.hashicorp.com/terraform/1.16.6/terraform_1.16.6_SHA256SUMS>; the `aws` provider's
+  releases `v6.61.0` to `v6.69.1` and the PR making `rotation_enabled` settable:
+  <https://github.com/hashicorp/terraform-provider-aws/releases>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49659>; the `awscc` provider's releases
+  `v1.99.0` to `v1.106.0`: <https://github.com/hashicorp/terraform-provider-awscc/releases>; the `aws`
+  provider's open MWAA Serverless issue and PRs: <https://github.com/hashicorp/terraform-provider-aws/issues/45254>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49927>,
+  <https://github.com/hashicorp/terraform-provider-aws/pull/49929>; the `aws-ia` SMUS module at `v0.2.1`
+  (2026-08-17), which D26 does not consume: <https://github.com/aws-ia/terraform-aws-sagemaker-unified-studio/releases>.
+
+- Terraform and its providers, read 2026-11-13 for `docs/plan/upstream-releases.md`: Terraform's releases
+  `v1.16.7` and `v1.17.0` to `v1.17.2`, with the entries 1.17.0's notes cite for `-minimal-refresh` and for
+  variables in provider requirements: <https://github.com/hashicorp/terraform/releases>,
+  <https://github.com/hashicorp/terraform/issues/35290>, <https://github.com/hashicorp/terraform/issues/39153>;
+  the `aws` provider's releases `v6.70.0` to `v6.73.0`, with the entries their notes cite for 6.73.0's fix of
+  the TLS handshake timeouts of 6.71.0 and 6.72.0 and for the two fixes in resources the tree declares:
+  <https://github.com/hashicorp/terraform-provider-aws/releases>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/50816>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/50626>,
+  <https://github.com/hashicorp/terraform-provider-aws/issues/47190>; its MWAA Serverless PRs of the entry
+  above, #49929 closed unmerged on 2026-11-09; the `awscc` provider's releases `v1.107.0` to `v1.110.0` and its
+  generated documentation at `v1.110.0` for the workflow, the MLflow App, the project membership and the
+  connection: <https://github.com/hashicorp/terraform-provider-awscc/releases>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/mwaaserverless_workflow.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/sagemaker_mlflow_app.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/datazone_project_membership.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.110.0/docs/resources/datazone_connection.md>;
+  CloudFormation's template reference for the workflow and the MLflow App, with no `Environment` and no key:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>,
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-sagemaker-mlflowapp.html>.
+
+- Terraform's `state pull`, `plan` and `apply` pages (read 2026-11-21, for the laptop's move to 1.17.2):
+  `state pull` converts the state to the running binary's version before it prints it, and the `plan` and
+  `apply` pages name no version for a saved plan file (`SUP-403`):
+  <https://developer.hashicorp.com/terraform/cli/commands/state/pull>,
+  <https://developer.hashicorp.com/terraform/cli/commands/plan>,
+  <https://developer.hashicorp.com/terraform/cli/commands/apply>.
 
 ## Networking and access
 
@@ -421,6 +554,25 @@
 
 - Update dnf on an Amazon Linux instance without internet access — AL2023's default `mirrorlist=` URL points into the regional repository bucket itself (`al2023-repos-<region>-de612dc2`, the S3 dualstack hostname), so the S3 gateway endpoint carries the whole package path; only a repo file referencing `cdn.amazonlinux.com` needs internet (Stage 3): <https://repost.aws/knowledge-center/ec2-al1-al2-update-yum-without-internet>.
 
+- Amazon Linux 2023's Squid, read 2026-11-21 for the proxy host's replacement (Stage 12 step 2.2): the
+  AL2023.12 package list as of 2023.12.20261021 has `squid` `6.13-1.amzn2023.0.6`, full support to
+  2029-06-30; release 2023.12.20261112's core updated packages list `squid-6.13-1.amzn2023.0.7`; the
+  2023.12.20261120 release, the new image's, lists none:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261112.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261120.html>.
+
+- Amazon Linux 2023's memory floor, zram and update-motd, read 2026-11-22 for the hub hosts' sizes
+  (`SUP-405`, `SUP-406`): the system-requirements page gives 512 MB as the minimum, says a `dnf upgrade`
+  between some releases can need more, and turns zram swap on by default since AL2023.3 for instance types
+  under 800 MB, naming the nano sizes; the page on package updates names no update-motd; issue 441 on
+  AWS's AL2023 tracker (opened 2023-09-09, open) has `update-motd.service` refresh the message at a reboot
+  or once a day:
+  <https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html>,
+  <https://docs.aws.amazon.com/linux/al2023/ug/managing-repos-os-updates.html>,
+  <https://github.com/amazonlinux/amazon-linux-2023/issues/441>.
+
 - ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
 
 - VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.
@@ -447,9 +599,23 @@
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
 - Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
-  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
-  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
-  <https://www.squid-cache.org/Doc/config/acl/>.
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The pages for Squid
+  6.9 and 5.10, read 2026-11-21, give `acl aclname dstdomain [-n] .foo.com ...`, the flag before the
+  names, which `render-squid.sh.tftpl` writes on the allow-list planes for `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>,
+  <https://www.squid-cache.org/Versions/v6/cfgman/acl.html>,
+  <https://www.squid-cache.org/Versions/v5/cfgman/acl.html>.
+
+- Amazon EC2 user data — *"User data is limited to 16 KB, in raw form, before it is base64-encoded"*
+  (read 2026-11-21); the proxy host's rendered user data is 15,148 bytes with `TM-01`'s `-n`
+  (`log-stage-11-dlp.md`, 2026-11-21):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html>.
+
+- Amazon Linux 2023 release notes — the 2023.12.20260917 release, the proxy host's image, names no Squid
+  update, and the AL2023.12 package list describes 2023.12.20261021 (read 2026-11-21, the Squid row not
+  reached), so the host's Squid version is unread:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20260917.md>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>.
 
 - Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
   IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and
@@ -475,6 +641,12 @@
 - SageMaker IAM condition keys (`sagemaker:VpcSubnets`, `NetworkIsolation`, `InstanceTypes`, `VolumeKmsKey`): <https://docs.aws.amazon.com/sagemaker/latest/dg/security_iam_service-with-iam.html>.
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
+
+- SageMaker `DescribeApp` and ListApps's `AppDetails`, read 2026-11-21 for `SUP-229`: DescribeApp's
+  `CreationTime` says an application restarted within 24 hours of its last shutdown is an update that keeps
+  its metadata; `AppDetails` gives only the creation time:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeApp.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_AppDetails.html>.
 
 - SageMaker Pipelines (a D7 option): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
 
@@ -536,14 +708,112 @@
   Redshift databases when added to Amazon DataZone"*; from *"Spark ETL job runs in AWS Glue (v5.0 and
   higher) console or notebooks"* configured to send events; and through the OpenLineage-compatible
   APIs for *"transformations in Amazon S3, AWS Glue, and other services"*. **The automatic half is
-  switched on in the blueprint**: *"domain administrators can configure lineage while setting up data
-  lake and data warehouse built-in blueprints which ensures that all data source runs created from
-  those resources are enabled for automatic lineage capture"* — Terraform here, never a console
-  toggle. Two node types, **dataset** (auto-generated with a Glue or Redshift icon for published
+  configured with the blueprints** on the page's account: *"domain administrators can configure lineage
+  while setting up data lake and data warehouse built-in blueprints which ensures that all data source
+  runs created from those resources are enabled for automatic lineage capture"*, a console option on
+  the blueprint's Region (*Import data lineage*). On this domain the setting is the connection's
+  `glueLineageSyncEnabled` (read 2026-10-18), not a field of the blueprint configuration. The page
+  also says `GetLineageNode` and `ListLineageNodeHistory` are open to every domain user and that
+  `PostLineageEvent` is authorized by IAM at the API Gateway layer. Two node types, **dataset** (auto-generated with a Glue or Redshift icon for published
   assets, created by hand for anything else) and **job (run)**, keyed by a `sourceIdentifier` whose
   shape is given per type. The page names no orchestrator, so whether MWAA Serverless emits anything
   is unanswered and is [Stage 10](plan/stages/stage-10-orchestration-promotion.md) step 3.3:
   <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-data-lineage.html>.
+- Automate lineage capture from tools, SageMaker Unified Studio, read 2026-10-19 for Stage 18 step 7.1:
+  the Spark settings a Glue job carries to post lineage, `spark.extraListeners` naming
+  `io.openlineage.spark.agent.OpenLineageSparkListener`, `spark.openlineage.transport.type=amazon_datazone_api`,
+  the domain, the account, the job name and two facet settings, with OpenLineage built into Glue 5.0 and
+  later for Spark DataFrames only:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-tools.html>.
+- Troubleshooting data lineage, SageMaker Unified Studio, read 2026-10-19 for Stage 18 step 7.1: *"If the
+  AWS Glue ETL is in VPC, make sure the Amazon DataZone VPC endpoint is deployed in that VPC"*; a graph
+  shows only when a node is an asset; a job reading S3 paths yields S3 dataset nodes; the driver logs
+  *"Successfully posted a LineageEvent"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-lineage-troubleshooting.html>.
+- The lineage section of the SageMaker Unified Studio user guide, read 2026-11-16 for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md), whose first question lists the capture mechanisms from
+  these pages. The overview, *"an OpenLineage-compatible feature"* fed by OpenLineage-enabled systems, by
+  the APIs and by data connections:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage.html>.
+  - The support matrix, in two tables. Tools: a JupyterLab notebook on a Glue or an EMR Serverless Spark
+    session *"Automated"* (*"Spark DataFrames only; remote workflow execution"*), Visual ETL *"Automated"*
+    in Glue's compatibility mode and *"Not supported"* in fine-grained mode, the query editor on Amazon
+    Redshift *"Automated"*. Services: a Glue crawler and Amazon Redshift *"Automated by default in
+    SageMaker Unified Studio"* (*"Redshift System tables will be used to retrieve user queries and lineage
+    is generated by parsing those queries"*), *"AWS Glue jobs in AWS Glue console"* and EMR *"Not automated
+    by default"* (EMR Serverless 7.5+, EMR on EC2 7.11+, EMR on EKS 7.12+). No row for Athena, dbt, Airflow
+    or MWAA:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-support-matrix.html>.
+  - Data lineage support: *"capture and store lineage events beyond what is available in Amazon SageMaker
+    Unified Studio"*; *"The custom transport was merged into OpenLineage version 1.33.0"*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-support.html>.
+  - What is OpenLineage?: *"Currently, Amazon SageMaker Unified Studio only supports RunEvents."*;
+    *"OpenLineage 1.22.0+ versions are supported."*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-what-is-openlineage.html>.
+  - Automate lineage capture from data connections, for Glue (Lakehouse) and Amazon Redshift connections
+    alone: *"For every connection created, lineage is not automatically enabled."*; the switch is *Import
+    data lineage* under the data source's connection details; *"Lineage is captured only for crawlers which
+    imported less than 250 tables in a crawler run."*; a Redshift run is daily, from the system tables,
+    with a first pull about 5 minutes after enabling and *"You can configure specific time
+    programmatically"*, no API named:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-data-connections.html>.
+  - Automate lineage capture from tools, read again: *"LineageEvent has a size limit of 300KB."*; a
+    notebook session names its job in a `%%configure` cell; *"for AWS Glue Spark executions in notebooks,
+    lineage capture is automated when scheduled with workflow in shared environment using remote
+    workflows"* (the URL two rows above).
+  - The `sourceIdentifier` of a node: a job is `<namespace>.<name>`, a job run
+    `<job's namespace>.<job's name>/<run_id>`; a dataset becomes a Glue table's ARN through its symlink when
+    the event's `environment-properties` carries `GLUE_VERSION` and its like; a namespace beginning
+    `redshift` becomes a Redshift ARN, `redshift-serverless` in it giving
+    `arn:aws:redshift-serverless:<region>:<account>:table/<workgroup>/<database>/<schema>/<table>`; the
+    page's example for a serverless workgroup has the namespace
+    `redshift://<workgroup>.<account>.<region>.redshift-serverless.amazonaws.com:5439` and the name
+    `<database>.<schema>.<table>`, and the convention it quotes for the namespace is
+    `provider://{cluster_identifier or workgroup}.{region_name}:{port}`; *"In all other cases, dataset
+    nodes' sourceIdentifier is populated using <namespace>/<name>"*; no word on Athena, Trino, Iceberg,
+    dbt or letter case:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-sourceIdentifier-attribute.html>.
+  - Linking dataset nodes with assets: the link is made *"based on the sourceIdentifier value"*, which an
+    asset carries as `AssetCommonDetailsForm::sourceIdentifier`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-linking-nodes.html>.
+  - Permissions and authorization: `GetLineageNode`, `ListLineageNodeHistory` and `QueryGraph` come with
+    `AmazonSageMakerDomainExecution`, so every user of a domain reads the graph; `ListLineageEvents` and
+    `GetLineageEvent` need their own allow; posting needs `datazone:PostLineageEvent`, authorized *"at API
+    Gateway layer"*; the Redshift capture asks the connection's credentials for the `sys:operator` role and
+    `SELECT` on the tables:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-permissions.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-authorization.html>.
+  - Publishing lineage programmatically, the operations `PostLineageEvent`, `GetLineageEvent`,
+    `ListLineageEvents`, `DeleteLineageEvent`, `QueryGraph`, `GetLineageNode` and `ListLineageNodeHistory`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-apis.html>.
+  - The authorization and API pages read again 2026-11-21, for Stage 20's 3.4 and xv: neither names who may
+    call `DeleteLineageEvent` or what it removes (`SUP-401`), nor a check of a posted event against the
+    dataset's owning project (`SUP-402`).
+  - The graph in the portal: dataset, job and job-run nodes, column lineage *"when available in dataset
+    nodes"*, a node's versions; in IAM mode a server-side *Query Graph mode* of 1 to 5 hops and a
+    client-side *Event Timestamp mode*; a sample graph under *Try sample data lineage*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-visualizing-data-lineage-idc-mode.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-visualizing-data-lineage-iam-mode.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-sample-experience.html>.
+  - Troubleshooting, read again in its Markdown form. For an event published programmatically: *"Lineage
+    graphs are only visible in Amazon SageMaker Unified Studio if at least one node of the graph is an
+    asset."* and *"If not matching, fix the namespace and name of the dataset in the lineage event and
+    publish the lineage event again."* Under Glue's own jobs, the page's one mention of the symlink:
+    *"Check if your dataset node has glue arn prefix in the namespace of the node or in the "symlink" facet
+    of the node."* No word on Athena or dbt. The Redshift capture leaves out external tables, `COPY` and
+    `UNLOAD`, `MERGE` and `UPDATE`, events over 16 MB and datashares, and its runs are read with
+    `list-job-runs` and `get-job-run` on the connection's `lineageJobId` (the URL above).
+- The catalog's pages read again 2026-11-16 for Stage 20's runbook of the catalog (its step 1.5). New to
+  this file, an asset created by hand: an asset is *"an entity that presents a single physical data object
+  (for example, a table, a dashboard, a file) or virtual data object (for example, a view)"*, manual
+  publishing *"is a one-time operation"*, and the asset is *"stored in the inventory until you decide to
+  publish it"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-data-asset-manually.html>.
+  Read again under the URLs this file already holds: data products, their publication (*"Any unpublished
+  data assets that are in this data product will become published, but will only be available through this
+  data product."*), subscription, approval and republication; a Glue data source, with *Import data lineage*
+  under its connection; a metadata form. The pages on publishing, on subscribing to a managed asset and on
+  granting access did not load under the names asked for, and nothing here is quoted from them.
 - Amazon DataZone's Glue data source, read 2026-09-18 for Stage 6f step 3.1, and it carries three
   sentences the step needed. **A data source takes any database by name**: *"You can either choose an
   AWS Glue database from the dropdown or type a database name… If you want to bring assets from a
@@ -563,6 +833,168 @@
   `SELECT GRANTABLE` on the table:
   <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>.
 - Amazon DataZone concepts and managed-asset fulfilment (read 2026-09-13, for Stage 6f). The concepts page: *"An AWS account can be associated with one or more Amazon DataZone domain"*; an approved subscription is fulfilled *"by creating the necessary grants in AWS Lake Formation or Amazon Redshift"*, automatically only for managed assets (Glue tables, Redshift tables and views), with an EventBridge event for the rest; project members are owners, contributors, consumers, stewards and viewers: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>. The Glue-asset page: *"Access management for the AWS Glue Data Catalog assets using the AWS Lake Formation LF-TBAC method is not supported"*, cross-Region sharing is not supported, the table *"must be Lake Formation-managed"*, and the manage-access role needs `DESCRIBE` and `DESCRIBE GRANTABLE` on the database and `DESCRIBE`, `SELECT` and both grantable on the table: <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>. The SageMaker Unified Studio subscription page says a project is subscribed *"when the publisher approves your request"*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
+
+- Amazon DataZone and SageMaker Unified Studio, AI recommendations for names and descriptions (read
+  2026-10-18, for Stage 6f step 5.1; the page is `autodoc` in both guides). The feature is powered by
+  Amazon Bedrock and inherits its controls and automated abuse detection. US West (Oregon) is a
+  supported Region, and the pages use Bedrock's cross-Region endpoint for US East (Ohio) alone, plus,
+  on the Unified Studio page, for glossary-term generation in every supported Region. Business names
+  are switched on per data source (*automated business name generation*) or by the
+  `predictionConfiguration` flag of `CreateAsset`; the quotas are 50,000 name and 10,000 description
+  generations a month; a custom asset type takes the feature through the relational-table form; and a
+  suggestion nobody accepts stays out of a published asset:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/autodoc.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/autodoc.html>. The inputs are
+  in the launch post (AWS Big Data blog, 2024-04-02): the asset's table names, column names and the
+  producer's optional metadata, and no table rows unless the user puts them in the metadata; the model
+  is not named and the service manages the choice:
+  <https://aws.amazon.com/blogs/big-data/ai-recommendations-for-descriptions-in-amazon-datazone-for-enhanced-business-data-cataloging-and-discovery-is-now-generally-available/>.
+  The custom-asset post (2025-07-01) shows a table name, columns and types as the input of a custom
+  structured asset:
+  <https://aws.amazon.com/blogs/big-data/introducing-genai-powered-business-description-recommendations-for-custom-assets-in-amazon-sagemaker-catalog/>.
+  The pricing page prices descriptions by token (USD 0.015 input, 0.075 output per 1,000) and business
+  names as compute (USD 1.776 per unit, 0.2 free a month, per completed job):
+  <https://aws.amazon.com/datazone/pricing/>. Bedrock's abuse-detection page, read again, lists Claude
+  Fable 5 and 5.1 and most OpenAI models as the retention exceptions, and puts retained inputs of a
+  cross-Region request in the destination Regions:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/abuse-detection.html>.
+- Amazon DataZone authorization for the catalog calls (read 2026-10-18, for Stage 6f decision 5). Each
+  authenticated context maps to a user profile, IAM roles included, and the project designation (owner,
+  contributor, viewer) decides the action:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/security-authorization.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/user-management-portal.html>. Publishing needs
+  the owner or contributor designation, and the publisher may switch subscription approval off for an
+  asset: <https://docs.aws.amazon.com/datazone/latest/userguide/publishing-data-asset.html>. A request
+  needs membership of a project:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/subscribe-to-data-assets-managed-by-datazone.html>.
+  Approving, rejecting and revoking need membership of the owning project, and a request is approved at
+  creation when the requester is an owner or contributor of both the owning and the requesting project:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/approve-reject-subscription-request.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/revoke-subscription.html>. The connection
+  property behind the Glue lineage sync, which the API reference describes as lineage sync for tables
+  managed by Glue crawlers:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_LakehousePropertiesOutput.html>.
+- Approving a subscription with row and column filters in SageMaker Unified Studio (read 2026-10-27, for
+  Stage 6f decision 2 and Stage 11 decision 12). For a Glue table the filters applied to a subscription
+  are unioned into one Lake Formation data cells filter, and the subscriber project gets read-only
+  `SELECT` through it; for Redshift, a late-binding view:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>.
+- SageMaker Unified Studio workflows and the MWAA Serverless operators (read 2026-10-28, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) question 1): the editor's "over 80 tasks"
+  and its General Purpose group:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>;
+  the supported operators by family, the Catalog family holding `GlueCatalogCreateDatabaseOperator`,
+  `GlueCatalogCreateTableOperator`, `GlueCatalogDeleteTableOperator`, the partition sensor and the crawler
+  operators, and no DataZone operator:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>; the nineteen
+  operators announced 2026-07-08:
+  <https://aws.amazon.com/about-aws/whats-new/2026/07/apache-airflow-operators-amazon-sagemaker-unified-studio-workflows/>;
+  the provider's `GlueCatalogCreateTableOperator` (`database_name`, `table_name`, `table_input`,
+  `catalog_id`, `if_exists`), whose `execute` passes `DatabaseName`, `TableInput` and `CatalogId` alone:
+  <https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_api/airflow/providers/amazon/aws/operators/glue_catalog/index.html>,
+  <https://airflow.apache.org/docs/apache-airflow-providers-amazon/stable/_modules/airflow/providers/amazon/aws/operators/glue_catalog.html>;
+  Glue's `CreateTable` taking `OpenTableFormatInput` beside `TableInput`:
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html>.
+- Publishing, data products and subscriptions in SageMaker Unified Studio (read 2026-10-28, for Stage 19
+  questions 1 and 2). The data source's publishing setting and schedule, created by API with
+  `publishOnImport`: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-data-source.html>;
+  publishing from the inventory by an owner or a contributor, the latest revision alone:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/update-metadata.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-publishing.html>; data
+  products, "a single request", publishing one publishes its assets through it alone, republishing moves
+  the subscribers' access, the owning project grants:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/publish-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/review-grant-subscription-to-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/republish-data-product.html>;
+  approval by a member of the owning project, auto-approval when the requester is one, full or filtered
+  access: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/approve-reject-subscription-request.html>;
+  managed and unmanaged assets:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>;
+  a Glue asset's fulfilment, the publisher's grants, no LF-TBAC, the subscribed table queried from
+  Athena, Redshift or Spark:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>;
+  a Redshift asset's fulfilment, grants in one database, a datashare and a view across workgroups, the
+  authorization across accounts, no cross-Region:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>;
+  no subscription to a resource link:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>;
+  the DataZone APIs and the subscription target in a custom environment, Glue or Redshift:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataProduct.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateListingChangeSet.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartDataSourceRun.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataSource.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionRequest.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionTarget.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/configure-subscription-target-in-custom-environment.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-concepts.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/working-with-blueprints.html>.
+- `CreateDataProduct`'s prerequisites (re-read 2026-11-16, for Stage 19 decision 26 and `SUP-369`): a data
+  product's name unique within the domain, no existing data product of the same name; the reference's
+  duplicate example answers `ConflictException`, *"Conflict with dataProduct <id>"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataProduct.html>,
+  <https://docs.aws.amazon.com/boto3/latest/reference/services/datazone/client/create_data_product.html>.
+- Metadata forms in SageMaker Unified Studio (read 2026-11-08, for Stage 19 decision 4 and 1.3): a form
+  created from *Manage → Catalog management → Metadata forms*, enabled by default, its field types
+  `String`, `Integer`, `Long`, `Float`, `Double`, `Boolean`, `Date` and `Business glossary`, none
+  enumerated, each field optionally `Required`; a form made required on publishing by a domain unit's
+  metadata rule, the portal adding or prompting for it:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/metadata-rules-publishing.html>;
+  the catalog's items moved under *Manage* on 2026-09-17, 2026-10-08 and 2026-10-20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-metadata-form.html>
+  answered an empty page that day.
+- A metadata form's owning project (read 2026-11-10, for Stage 19 decision 4's owner question):
+  `CreateFormType` requires `owningProjectIdentifier`, *"the project that owns this metadata form type"*:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateFormType.html>; only a member of
+  the owning project creates, edits or deletes a form:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/create-metadata-form.html>; the *Metadata forms*
+  page lists every form in the domain, a form's display name and description change after creation and
+  its technical name does not, and a form is disabled and detached from every asset before it is deleted:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/standardize-metadata-forms.html>;
+  `DeleteFormType` requires the form type in use by no asset type and no asset:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteFormType.html>. None of these pages,
+  `update-metadata.html` included, says whether a project other than the owner may attach a form, and the
+  CLI offers `create-`, `get-` and `delete-form-type`, no update.
+- DataZone's IAM reach and its lineage lookup (read 2026-11-10, for Stage 19 verification ii's negative,
+  decision 17 and verification v): the Service Reference's DataZone JSON, `v1.5`, 278 actions, gives
+  `StartDataSourceRun` no resource type and no condition key and maps `datazone:projectId` to no action:
+  <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>; the HTML Service
+  Authorization Reference answered its title alone to the fetch:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>;
+  `StartDataSourceRun`'s page says nothing on who may call it:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartDataSourceRun.html>; `GetLineageNode`
+  takes a node's generated id or its `sourceIdentifier` (`SUP-347`):
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetLineageNode.html>.
+- The CI/CD CLI's catalog export and import (read 2026-10-28, for Stage 19 0.9 and pass 3): the
+  manifest's `catalog` content, the same-name assumption, the asynchronous listing failure, and the
+  stages in different domains, accounts and Regions:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/cli-commands.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/catalog-import-export-guide.md>;
+  the stages, each its own project, and the application resources the page names:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>; 1.0.9 still the
+  latest on PyPI: <https://pypi.org/project/aws-smus-cicd-cli/>. Read again 2026-11-11 for Stage 19
+  decision 18: the guide, the manifest's page and the user guide's page, on where the business catalog
+  is authored, what the export takes, how the import matches and publishes, and stages sharing a domain.
+- The lakehouse in SageMaker Unified Studio (read 2026-10-28, for Stage 19 question 3): catalogs mounted
+  as databases in Redshift, RMS and federated catalogs, the project profiles the lakehouse needs, *Query
+  with Amazon Redshift*, *Publish to catalog*:
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-how.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/onboarding-data-sagemaker-lakehouse.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-get-started.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/rms-integration.html>,
+  <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-publish.html>;
+  the blueprints `RedshiftServerless`, `LakehouseCatalog` and `DataLake`, and the SQL analytics profile:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sql-analytics.html>; the
+  Redshift compute connection and its prerequisites (the tags, the `RedshiftDbUser` tag across accounts,
+  the VPC rule): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-prerequisite-redshift.html>.
 
 - S3 Access Grants locations — registering a location (the location role's trust to `access-grants.s3.amazonaws.com`, the `s3:AccessGrantsInstanceArn` self-restriction pattern, and the KMS `Decrypt`/`GenerateDataKey` statement the location role needs for SSE-KMS data — Stage 16 step 2.1's shape); Access Grants assumes the location's role to vend a grantee's credentials, which is why the vended session's ARN names the access role: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location-register.html>, <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-location.html>. Read 2026-08-26.
 
@@ -780,6 +1212,19 @@
   `otherIndustryOption`, `useCases`) are in the API reference:
   <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
 
+- **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
+  `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one
+  `modelArn` per entry:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListInferenceProfiles.html>.
+
+- **`InvokeModel`'s errors**, read 2026-10-20 for the reading `lessons.md` records from Stage 17 decision
+  11, an unknown application inference profile id refused before authorization: the API reference lists
+  `AccessDeniedException` (403) and `ValidationException` (400), and the troubleshooting page gives each a
+  cause and a solution; neither page carries the message *"The provided model identifier is invalid"* or
+  says which check comes first:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModel.html>,
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/troubleshooting-api-error-codes.html>.
+
 - **Claude Code on Amazon Bedrock**, the vendor's own setup page (read 2026-09-11): the environment
   variables (`CLAUDE_CODE_USE_BEDROCK`, `AWS_REGION`, `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`,
   `ANTHROPIC_DEFAULT_HAIKU_MODEL`), the IAM policy with its four `bedrock:` actions and the marketplace
@@ -935,6 +1380,11 @@
   and managed, S3 Vectors, Aurora, Neptune Analytics, Pinecone, Redis, MongoDB Atlas)
   <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>.
 
+- **`IngestionJobStatistics`**, read 2026-10-20 for Stage 17's risk that a sync indexes part of the
+  runbooks: an ingestion job counts the source documents it scanned (new, updated and unchanged), indexed
+  as new or as modified, failed, skipped and deleted, and the metadata files it scanned and modified:
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_IngestionJobStatistics.html>.
+
 - **Amazon S3 Vectors** (read 2026-10-12), which names Amazon Bedrock in SageMaker Unified Studio
   knowledge bases among its uses <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html>.
 
@@ -1012,14 +1462,726 @@
     `DescribeModelPackage`, `DescribeModelPackageGroup` and `ListModelPackages` on another account's
     resources, decision 10's project-role half:
     <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>.
+- The SageMaker readings behind Stage 9 3.5's instance-preference rows and decision 1's scoping (read
+  2026-10-20):
+  - *Instance preference lists for processing jobs*: up to five types in `ProcessingClusterConfig`,
+    never beside `InstanceType`; SageMaker checks the quota of every listed type and refuses the request
+    when one falls short; no condition key is named:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/processing-job-instance-preferences.html>.
+  - *How Amazon SageMaker AI Processes Training Output*: `/opt/ml/model` and `/opt/ml/output/data` are
+    each copied as one compressed tar object to the S3 location the `CreateTrainingJob` request names,
+    which is why decision 1 scopes Staging's read to the model archive rather than the prefix:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo-output.html>.
+  - *The training storage paths*: `/opt/ml/output/data` (`SM_OUTPUT_DIR`) takes any output the script
+    saves and is written to S3 when the job ends, as `/opt/ml/model` (`SM_MODEL_DIR`) is:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-train-storage-env-var-summary.html>.
 - Data across accounts in SageMaker Unified Studio (read 2026-10-17, for Stage 18 steps 2.2, 7.2 and 7.3, and the question whether a Sandbox project reads what production writes). The association's share and its RAM permission: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; a governance-first account layout, a data mesh over the catalog, and two cross-account walkthroughs that create a project in each account: <https://aws.amazon.com/blogs/big-data/navigating-multi-account-deployments-in-amazon-sagemaker-unified-studio-a-governance-first-approach/>, <https://aws.amazon.com/blogs/big-data/implement-a-data-mesh-pattern-with-amazon-sagemaker-catalog-without-making-changes-to-your-applications/>, <https://aws.amazon.com/blogs/big-data/cross-account-lakehouse-governance-with-amazon-s3-tables-and-sagemaker-catalog/>, <https://aws.amazon.com/blogs/big-data/govern-amazon-redshift-data-across-accounts-with-sagemaker-unified-studio/>. Publishing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-data.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/troubleshooting-issues.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/hybrid-mode.html>, <https://docs.aws.amazon.com/datazone/latest/userguide/use-your-own-role.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/data-onboarding.html>. Subscribing: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-with-filters.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>, and the two managed policies that carry the cross-account calls: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneRedshiftManageAccessRolePolicy.html>. Lake Formation and Redshift with no DataZone: <https://docs.aws.amazon.com/lake-formation/latest/dg/crosss-account-how-works.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-permission-mode.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-add-catalog.html>, <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/consumer-account-setup.html>, <https://docs.aws.amazon.com/redshift/latest/dg/considerations.html>, <https://docs.aws.amazon.com/redshift/latest/dg/consumer-cluster-admin.html>, <https://docs.aws.amazon.com/id_id/sagemaker-unified-studio/latest/userguide/compute-prerequisite-athena.html>.
 - AWS's guidance on a non-production account reading production data (read 2026-10-17, for the same question): the ML platform whitepaper, which treats the data science account's copy as production data, the financial-services strategy, and three Well-Architected best practices, two of which ask for masked or sampled data outside production: <https://docs.aws.amazon.com/whitepapers/latest/build-secure-enterprise-ml-platform/aws-accounts.html>, <https://docs.aws.amazon.com/prescriptive-guidance/latest/strategy-unlock-value-data-financial-services/best-practices-ml-ops.html>, <https://docs.aws.amazon.com/wellarchitected/latest/analytics-lens/best-practice-2.2---create-test-data-and-provision-staging-environment..html>, <https://docs.aws.amazon.com/wellarchitected/latest/devops-guidance/anti-patterns-for-test-environment-management.html>, <https://docs.aws.amazon.com/wellarchitected/latest/machine-learning-lens/mlsec04-bp01.html>.
+- SageMaker Unified Studio's releases, read 2026-10-18 for `docs/plan/upstream-releases.md`. Custom Tooling blueprints, the announcement and the admin guide's template requirements: <https://aws.amazon.com/about-aws/whats-new/2026/10/sagemaker-custom-tooling-blueprints/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-custom-blueprints.html>. Trusted identity propagation from notebooks, and the three pages re-read the same day (the notebooks page now documents the native notebook experience and its TIP support; remote space connections are still unsupported in a TIP profile): <https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-sagemaker/>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/trusted-identity-propagation.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/configuring-sagemaker-unified-studio-remote-access.html>. Notebook kernels in the domain-level VPC: <https://aws.amazon.com/about-aws/whats-new/2026/04/sagemaker-unified-studio-vpc/>. CI/CD notebook promotion and manifest generation: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-cicd-notebook-ai-manifest/>. ODBC for BI tools: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-unified-studio-odbc-power-bi/>. Iceberg REST Catalog connections: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-iceberg-rest-iam-documentdb/>. Python and Bash operators in Workflows: <https://aws.amazon.com/about-aws/whats-new/2026/09/sagemaker-workflows-python-bash/>. Git in every project tool: <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-git/>. Identity and user management for both domain types: <https://aws.amazon.com/about-aws/whats-new/2026/05/smus-identity-user-management/>. Where the Data Agent stores and infers, and the native notebooks with the agent reaching Identity Center domains on 2026-04-23: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-data-storage.html>, <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-sagemaker-idc/>. The MLflow App's customer-managed key: <https://aws.amazon.com/about-aws/whats-new/2026/08/sagemaker-mlflow-custom-keys>. The admin guide's document history, with the managed-policy updates of 2026-08-24, 2026-09-14 and 2026-10-08: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>. AWS's post of 2026-08-06 on LF-TBAC grants to Identity Center groups through TIP: <https://aws.amazon.com/blogs/big-data/scaling-fine-grained-access-control-for-enterprise-lakehouse-using-sagemaker-unified-studio-and-aws-lake-formation/>. Instance preference lists for training and processing jobs: <https://aws.amazon.com/about-aws/whats-new/2026/09/amazon-sagemaker-training-processing-instance-pref-lists/>, <https://docs.aws.amazon.com/sagemaker/latest/dg/train-instance-preferences.html>.
+- A Glue table's subscription fulfilled across accounts (read 2026-10-21, for Stage 18 7.2 step 3 and
+  decision 12). Lake Formation's prerequisites: version 3 of the cross-account settings to share with an
+  IAM principal in another account, version 4 for hybrid access mode, no `IAMAllowedPrincipals` grant on
+  a resource in Lake Formation mode, and no sharing of a catalog under Glue's service-managed key:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-prereqs.html>. DataZone's
+  fulfilment conditions, the manage-access role's grantable `DESCRIBE` on the database and grantable
+  `DESCRIBE` and `SELECT` on the table, with no version named:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/grant-access-to-glue-asset.html>. A project's own
+  Glue database needs no added permission to publish from:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>.
+  DataZone's publication and grant errors and their fixes:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/troubleshooting-datazone.html>.
+- The managed blueprints' CloudFormation templates, read 2026-10-19 for Stage 18 decision 1: `get-environment-blueprint` returns `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that answers SigV4 only (a plain fetch returns `InvalidRequest`), read with `s3api get-object` as the infrastructure user in Data Governance: `v2/DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723.template.json` (159,043 bytes) and `v2/DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918.template.json` (245,988 bytes) in the bucket the alias `env-partner-blueprin-7y6few8bfipfncrikgx3ouh18fq66usw2b-s3alias` names. Read 2026-11-21 the same way as the infrastructure user in Sandbox, for [`SMUS.md`](SMUS.md) §Resource blueprints: `v2/DataZone-Amazon-SageMaker-S3Bucket-prod-20250923.template.json` (5,749 bytes).
+- Project membership in SageMaker Unified Studio, read 2026-10-20 for Stage 18 step 6.1 and its question iv:
+  a member is a Contributor or an Owner, and a member's analytics runs on IAM session credentials the
+  service generates for the project's context:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-project-members.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-authorization.html>.
+- What makes an `ON_DEMAND` tool available in a project, read 2026-10-19 for Stage 17 1.5. Updating a project, an admin's blueprint change reaching a project through the owner's *Actions → Update project*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/update-project.html>. The Generative AI application development profile, whose template enables seven Bedrock blueprints, `AmazonBedrockKnowledgeBase` among them: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/genai-application-development.html>. The DataZone calls on that path: `UpdateProject` (`projectProfileVersion`, `latest` alone) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_UpdateProject.html>, `CreateEnvironment` (`environmentConfigurationId`; `environmentBlueprintIdentifier` documented as V1-only, which the portal sends on this V2 domain without error) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateEnvironment.html>, `PutEnvironmentBlueprintConfiguration` (`enabledRegions` required, minimum 0 items) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_PutEnvironmentBlueprintConfiguration.html> and `ListEnvironmentBlueprintConfigurations` (no account filter) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ListEnvironmentBlueprintConfigurations.html>.
+- The portal's JavaScript, read 2026-10-19 for Stage 17 1.5, downloaded from its public CDN and never run; each path changes with a portal release. The main bundle, whose MLflow entries resolve the blueprint from the domain account's configurations: <https://a.b.cdn.console.awsstatic.com/a/v1/WEM6FZF2DHQXD46KL5UJ4ENIRJAVORMDCSYVJVKZIIQ3VJQMLLXA/index.js>. The Bedrock module, which opens the Generative AI menu only with all seven Bedrock types in the profile: <https://a.b.cdn.console.awsstatic.com/a/v1/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/App-D6IrICgA.js>.
+- The knowledge base's promotion and the menu it opens, read 2026-10-19 for Stage 17 7.0a and 7.2. The key permissions a provisioned resource needs, one policy for the Tooling blueprint naming no knowledge-base, OpenSearch Serverless or S3 Vectors statement: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>. The console's two model roles, the provisioning role that creates the inference profile a project needs to reach a model: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/AmazonDataZoneBedrockModelManagementRole.html>; the consumption role a model needs in the playground: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/AmazonDataZoneBedrockFMConsumptionRole.html>. The DataZone console's bundle, downloaded from its public CDN and never run, whose *Set up generative AI* Submit writes an OpenSearch Serverless encryption policy over `collection/bedrock-ide-*`: `a.b.cdn.console.awsstatic.com/a/v1/TDTEDU4FYQYQUV2Q7YXPJZAE2IFRJHB6CPMAXB2DTWLNL6YLKQAQ/main.js`; the path changes with a console release.
+- How a model reaches a SageMaker Unified Studio project, read 2026-10-19 for Stage 17 decision 13. The two model roles' managed policies, in the reference and in the admin guide: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelConsumptionPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelConsumptionPolicy.html>. Enabling models for projects and playgrounds in the *Amazon Bedrock models* tab, and the governance project an associated account's identity must join before it publishes models: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazon-bedrock.html>. The user guide's Bedrock page, where the administrator decides which models a user reaches: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock.html>. The foundation model required in each Region beside an inference profile, and `bedrock:InferenceProfileArn`: <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-prereq.html>. AWS's post of 2025-07-09 narrowing the provisioning role to chosen models: <https://aws.amazon.com/blogs/machine-learning/configure-fine-grained-access-to-amazon-bedrock-models-using-amazon-sagemaker-unified-studio>. The portal's model handler, downloaded from its public CDN and never run, whose project subscribes to a model's listing on first use: <https://a.b.cdn.console.awsstatic.com/a/v1/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/module-GY0Cw3hN.js>. The environment resource at the pinned `awscc` 1.98.0, with `environment_role_arn`: <https://raw.githubusercontent.com/hashicorp/terraform-provider-awscc/v1.98.0/docs/resources/datazone_environment.md>; the same provider's documentation tree, which holds no asset, listing or subscription resource: <https://github.com/hashicorp/terraform-provider-awscc/tree/v1.98.0/docs/resources>.
+
+- **SageMaker Unified Studio Git connections, cross-account Git, the release notes, and CodeConnections' GitLab self-managed host and connection sharing** — read 2026-10-25 for INT-13 (Stage 7 7.2), after the user read Production's host form listing its VPCs:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/git-connections.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/cross-account-git.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html> (2026-07-30),
+  <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-gitlab-managed.html>,
+  <https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-share.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/working-with-repositories.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/performing-git-operations.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/storage.html>. A host with a VPC
+  configuration in the GitLab's account, a connection authorized by one GitLab user, the connection shared by
+  RAM and enabled for every domain of the receiving account: the path INT-13's row now carries, with its cost.
+- **SageMaker Unified Studio's October 2026 releases** — read 2026-10-30 for
+  [`upstream-releases.md`](plan/upstream-releases.md), after the user saw RStudio, a deletable default space and an
+  assistant in the portal. The release notes, 2026-10-08 to 2026-10-29 (the `SageMakerAIDomain` blueprint, RStudio,
+  the redesigned catalog, the Spark History Server, light mode, custom designations):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; the blueprint's
+  parameters and RStudio's inline policy:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-ai-domain.html>; RStudio
+  spaces: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/rstudio.html>; the licence, from
+  Posit or AWS Marketplace, granted through License Manager in `us-east-1`:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-license.html>; License Manager at no charge:
+  <https://aws.amazon.com/license-manager/pricing/>; the code spaces page, still saying the default JupyterLab
+  space cannot be deleted: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/code-spaces-idc.html>;
+  the generative AI assistance page, Amazon Q and the Data Agent, unchanged:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>; the document history's
+  policy entries of 2026-10-27 and 2026-10-29:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; the designations
+  link, answering page-not-found on 2026-10-30:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; botocore's
+  changelog, 1.43.115 to 1.43.122, and the DataZone model the designation calls ran on:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>,
+  <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>; What's New,
+  light mode, the Glue catalog's OAuth and MLflow 3.16:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/smus-light-mode>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/glue-catalog-oauth-iceberg-rest/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/mflow-version-3-16/>. The blueprint's page read again
+  2026-11-18 for `SUP-379`: its sections are the profile's deployment settings, the parameters and RStudio's
+  inline policy, and it names no S3 path, prefix or `ProjectS3Path`.
+- **SageMaker Unified Studio's releases to 2026-11-12** — read 2026-11-13 for
+  [`upstream-releases.md`](plan/upstream-releases.md). The release notes' November entries, layout customization
+  for designations, the Glue Studio job migration tool, notifications for scheduled runs and the two Workday
+  connections: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>; the
+  designations pages, which now answer: a custom designation as a selection from a fixed permission set in six
+  categories, the DataAgent actions required in each, data sources left to IAM, and the RAM permission versions
+  an associated account needs:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; the
+  migration tool's page: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/job-migration.html>;
+  the admin guide's document history, with the domain execution policy's entries of 2026-11-05 and 2026-11-12
+  and, read again at 02:48 UTC on 2026-11-14, the two project policies' entries of 2026-11-13:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>; AWS's managed
+  policy reference, which gives each policy's version and edit time (v76, v47, v84 and v9 on the pages, v27 for
+  the domain execution policy; IAM listed v77, v48 and v85 that evening, `SUP-005`):
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectProvisioningRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy.html>,
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioDomainExecutionRolePolicy.html>;
+  What's New, the Workday integration and the console assistant's new name:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-analytics-workday-data-cloud/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/q-developer-renamed-aws-assistant/>.
+- **SageMaker Unified Studio's resource blueprints** — read 2026-11-20 for
+  [`upstream-releases.md`](plan/upstream-releases.md) and [`SMUS.md`](SMUS.md) §Resource blueprints, after the
+  user saw a project's *Resource blueprints* page. The release note of 2026-11-20, and the 2026-11-17 entry on
+  asset ownership transfer: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>;
+  What's New of the same day, found through the directory API:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-sagemaker-adds-new-capabilities/>; the admin guide's
+  overview, the three controls and the two project kinds:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprints.html>; the
+  provisioning role, a blueprint's own before the account's, the project execution role last:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprint-provisioning-role.html>;
+  the grants, a designation and a domain unit, at most 20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/grant-deploy-resource-blueprints.html>;
+  the *Default Project Profile* and `DISASSOCIATE`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/remove-project-profile.html>; the
+  blueprints each project kind deploys:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/available-resource-blueprints.html>;
+  the console's *Authorization* tab and the *Manage Environments* requirement:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the exports a custom Tooling blueprint owes the managed ones:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the *Manage environments* permission's actions:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the user
+  guide's page, *Blueprint deployments* and *Deploy*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploying-resources.html>. botocore
+  1.44.8's changelog entry, its PyPI upload time and its DataZone model, compared with 1.44.2's:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>, <https://pypi.org/pypi/botocore/1.44.8/json>,
+  <https://github.com/boto/botocore/blob/1.44.8/botocore/data/datazone/2018-05-10/service-2.json>.
+- Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
+- **RStudio on SageMaker AI, the pages 6d 2.6 item 5 rests on** — read 2026-10-31 before the user's licence and
+  policy acts. The licence, granted in `us-east-1` and accepted in the domain's Region after the console's
+  first-time onboarding: <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-license.html>; the network
+  page, a VPC-only domain needing interface endpoints for `sagemaker.api` and License Manager and an EFS:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-network.html>; the CLI page, the RStudioServerPro
+  app's licence call from the subnet and the service-managed groups:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-create-cli.html>; adding RStudio to a living domain,
+  every app deleted first and `AccessStatus` `DISABLED` on existing profiles:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-add-existing.html>; EFS creation after a domain's
+  birth (`HomeEFSCreation`, off by default for quick-setup domains since 2026-06-01):
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-automount.html>; the management index:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio-manage.html>; the concepts page, the `domain-shared`
+  server app, RSession and RSessionGateway: <https://docs.aws.amazon.com/sagemaker/latest/dg/rstudio.html>;
+  the RStudio space in the portal: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/rstudio.html>.
+- **The `SageMakerAIDomain` pilot's admin pages, and Kiro CLI** — read 2026-10-30 for 6d decision 15 and step
+  10. Enabling a blueprint from the console's *Blueprints* tab:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/enable-disable-blueprints.html>; a
+  blueprint's deployment settings in a profile, with the Editable box:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/add-blueprint-deployment-settings.html>;
+  its authorization by domain unit:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the managed blueprints' dependence on the Tooling environment's exports:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the Tooling parameters (`enableSpaces` among them):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>; the
+  supported-blueprints table, with the new row:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/supported-blueprints.html>; the KMS
+  statements a customer key needs, none new for this blueprint:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>.
+  Kiro CLI in a JupyterLab space, pre-installed, Builder ID or Identity Center, *"test network access from
+  your browser, not from the space"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/q-actions.html>; Kiro the IDE against
+  a space: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/kiro-for-smus.html>; Kiro's
+  login methods and the device flow: <https://kiro.dev/docs/getting-started/authentication/>; the community's
+  reading of *dispatch failure* as the HTTP client failing to send, behind a proxy or without a route:
+  <https://gist.github.com/Chen188/e7d1023c92efb84fa35f72a33a1d14ed>.
+
+- **The AI/ML and Generative AI menus of SageMaker Unified Studio, read again (2026-11-16, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s passes 9 and 10 and
+  [`runbooks/sagemaker-ai-ml.md`](plan/runbooks/sagemaker-ai-ml.md)).** Each page was read in its
+  Markdown form, the URL below with `.md` in place of `.html`, through a page-reading agent, unless the
+  HTML form is named; the stage log's entries of that day hold each sentence quoted.
+  - The user guide's table of contents: *AI and machine learning* holds *Amazon Bedrock in SageMaker
+    Unified Studio* and *Machine learning*, the second in two chapters, one for Identity Center-based
+    domains (JumpStart models, JupyterLab, training, inference endpoints, pipelines, the model registry,
+    MLflow, HyperPod clusters, Partner AI apps) and one for IAM-based domains (foundation models
+    discovered and deployed, MLflow, custom training jobs, registered models, Feature Store). The
+    chapter's opening page says nothing on which domain type offers which capability:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/toc-contents.json>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-identity-center-based-domains.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-iam-based-domains.html>.
+  - The Identity Center chapter, whose navigation is **AI/ML** and then *JumpStart models*, *Inference
+    endpoints*, *ML pipelines*, *Model registry* and *MLflow*. A pipeline is defined in the visual
+    designer or by a definition JSON, imported from a file and downloaded as one, the page stating
+    nothing on a schedule, a workflow or another account; *"For each run of the ML pipeline, create a
+    model version that you register in the model group you created in the first step."*; *"MLflow Apps
+    are the latest offering with faster startup times and cross-account sharing"*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-discover-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-build-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-train-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-deploy-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-pipelines.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-register-models.xml.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>.
+  - Outside the two chapters: the common use case *Train and deploy an XGBoost model*, which asks for a
+    project of the **All capabilities** profile with an MLflow tracking server, whose endpoint *"runs on
+    a dedicated `ml.m5.large` instance and incurs costs as long as it is in service"* and whose training
+    is followed under **AI/ML**, *Training jobs*; and the tutorial *Train an ML model*, a sample
+    notebook, *Customer Churn Prediction*, that saves `churn_prediction_model.pkl`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-xgboost-recipe.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/gs-ml.html>.
+  - The IAM chapter, whose navigation is **Models** with the tabs *Foundation Models* and *Registered
+    Models*, **Training Jobs** and **Feature Store**: *"Note that you can't create a new MLflow App in
+    Amazon SageMaker Unified Studio."*; *"The Feature Store interface described on this page is
+    available in Amazon SageMaker Unified Studio domains configured with AWS IAM."*, with the SDK *"in
+    any domain type"*; *"You cannot edit or delete features after the feature group is saved."*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/discover-foundation-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploy-foundation-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-monitor-training-jobs.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-registered-models.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/feature-store.html>.
+  - The release notes, entry of October 8, 2026: the chat playground, the image and video playground and
+    the shared apps and prompts are under **Playground**, and chat agent, flow, prompt and my apps under
+    **AI apps**:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  - Amazon Bedrock in SageMaker Unified Studio: two kinds of app, a chat agent app and a flow app; a
+    playground that *"doesn't support Provisioned throughput, custom models or imported models"*; a chat
+    agent app deployed by an alias and a version, eight aliases at most; a shared app published to the
+    catalog, whose snapshot stops being shared only with the app's deletion; an evaluation with no
+    human-based form, the Bedrock API listing every evaluation job *"in the AWS account that hosts the
+    project"*:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock-playgrounds.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-catalog.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-flows-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/evaluation.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/prompt-mgmt.html>.
+  - The export of an app: a zip of CloudFormation templates, `amazon-bedrock-ide-app-export-*.zip`,
+    deployed *"into your AWS account (or another AWS account, if you prefer)"* by a shell script over
+    the AWS CLI, with a role that carries `provisioning-inline-policy.json`, an S3 bucket and,
+    optionally, a KMS key tagged `EnableBedrock` `true`; a knowledge base's data source files and a
+    function's secrets are not exported; an app is saved and run before it is exported. The overview
+    names the script `deploy-app.sh` and the deployment page `deployApp.sh`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-export.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-export-chat-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-deploy-app.html>.
+  - Not read, each a client error in the Markdown form and a page with no body in the HTML form: *Create
+    a chat agent app with Amazon Bedrock* and the user guide's document history:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-chat-agent-app.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/doc-history.html>.
+  - The administrator guide's document history, whose two forms differ. The HTML form holds entries of
+    October 29, 2026: `SageMakerStudioProjectRoleMachineLearningPolicy` gained *"Amazon Bedrock
+    AgentCore permissions, most of which are limited to resources tagged with the user's project"*, and
+    `SageMakerStudioProjectUserRolePolicy` the passing of roles to AgentCore and the logs of its
+    runtimes. The Markdown form stops at June 29, 2026:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
+
+- **The evaluations of Amazon Bedrock in SageMaker Unified Studio and Amazon Bedrock's prompt datasets
+  (read 2026-11-19, for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 7.4).** Each
+  page was read in its HTML form through a page-reading agent.
+  - The IDE's evaluations are automatic alone: *"Amazon Bedrock in SageMaker Unified Studio doesn't
+    support Human-based evaluations."*, and no page names a judge model. The metrics are Toxicity,
+    Accuracy and Robustness; the tasks General text generation, Text summarization, Question and answer
+    and Text classification; a job takes up to 1000 prompts. The form's *Upload a dataset to S3* puts the
+    file in a bucket the IDE manages, whose location the project's **Data Store** shows, and *Choose a
+    dataset from S3* picks one already uploaded. A custom dataset is JSON lines, each line a `prompt`, a
+    `referenceResponse` (required for question and answer, and for accuracy and robustness) and an
+    optional `category`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/evaluation.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-jobs-management-create.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+  - Amazon Bedrock's own pages give an automatic job the same keys and a judge job an optional
+    `referenceResponse`. The judge models include Claude Haiku 4.5
+    (`anthropic.claude-haiku-4-5-20251001-v1:0`) and Nova 2 Lite, and not Nova Lite v1:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-judge.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation-judge.html>.
+    Not read, a page holding its title alone:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-evaluation-prompt-datasets-custom.html>.
+
+- **MLflow's release notes from 3.16.0 to 3.17.2 (read 2026-11-19, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)'s step 0.3 and
+  [`examples/sandbox-ml/`](../examples/sandbox-ml/README.md)).** GitHub's release pages, through a
+  page-reading agent; 3.16.0 and 3.17.0 read to about 60% of the page, the others whole, and v3.16.2 a
+  404. No release from 3.16.1 to 3.17.2 removes or deprecates a call the scripts make;
+  `mlflow.xgboost.log_model`'s positional `artifact_path` is in no note, and the signatures were read from
+  both versions installed:
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.16.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.0>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.1>,
+  <https://github.com/mlflow/mlflow/releases/tag/v3.17.2>.
+
+- **SageMaker AI's developer guide on Feature Store, MLflow and a container's network isolation, its
+  pricing page, and the XGBoost container's code (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 17, 20 and 21 and step 6.4).**
+  The guide's pages in their Markdown form.
+  - Feature Store: *"Create feature groups that can be configured to include an online or offline store,
+    or both."*; the offline store is Parquet in S3, and *"When you call `PutRecord`, your data is
+    buffered, batched, and written into Amazon S3 within 15 minutes."*; *"For batch ingestion, you can
+    configure a processing job to batch ingest your data into Feature Store"*; the managed policy
+    `AmazonSageMakerFeatureStoreAccess`; *"After they are created, feature groups are mutable and can
+    evolve their schema after creation."*, beside the portal page's sentence that a saved feature is
+    never edited or deleted:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-concepts.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-ingest-data.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-adding-policies.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/feature-store-offline.html>.
+  - MLflow: MLflow Apps are available in US West (Oregon), and *"All MLflow REST APIs are represented as
+    IAM actions under the `sagemaker-mlflow` service prefix."*:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>.
+    Not read, a client error: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-app.html>. The
+    pricing page: *"Customers pay for MLflow Tracking Servers based on compute and storage costs."*, and
+    no sentence on what an MLflow App bills:
+    <https://aws.amazon.com/sagemaker/ai/pricing/>.
+  - Network isolation: *"When you enable network isolation, your training and inference containers can't
+    make any outbound network calls to any service, including Amazon S3."*; *"No AWS credentials are
+    made available to the container runtime environment."*; *"SageMaker AI still handles all necessary
+    Amazon S3 download and upload operations using your SageMaker AI execution role."*:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
+  - The XGBoost container's `serve_utils.py`, at `master`: `get_loaded_booster` tries `pkl.load` on the
+    model file first and `Booster.load_model` after it, so a served archive is unpickled. The copy
+    inside the `3.0-5` image was not read:
+    <https://raw.githubusercontent.com/aws/sagemaker-xgboost-container/master/src/sagemaker_xgboost_container/algorithm_mode/serve_utils.py>.
+
+- **Amazon Bedrock for an application's model call: Agents Classic, a guardrail enforced in IAM and at
+  the account, inference profiles and the models of `us-west-2` (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 10 and its decisions 22 to 27).**
+  The pages in their Markdown form unless the HTML form is named.
+  - Agents Classic's maintenance mode: *"Amazon Bedrock Agents (launched November 2023) is now Amazon
+    Bedrock Agents Classic and will no longer be open to new customers starting on July 30, 2026."*;
+    *"Only CreateAgent and InvokeInlineAgent are restricted for accounts without prior usage."*, which
+    receive an `AccessDeniedException`; *"There is no exception process."*; *"We recommend that you
+    migrate your Amazon Bedrock Agents Classic workloads to Amazon Bedrock AgentCore."*; *"Knowledge
+    Bases continue to work and are not affected by maintenance mode."* The page states nothing on Amazon
+    Bedrock Flows or on prompt management:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html>.
+  - A guardrail enforced in IAM (HTML form): *"You can enforce the use of a specific guardrail for model
+    inference by including the `bedrock:GuardrailIdentifier` condition key in your IAM policy."*, for
+    `Converse`, `ConverseStream`, `InvokeModel` and `InvokeModelWithResponseStream`; the example for any
+    numbered version of one guardrail compares with `ArnLike` and a `:*` suffix; the limits are a role
+    that also calls `RetrieveAndGenerate`, `InvokeAgent` or `InvokeInlineAgent`, and the guardrail input
+    tags, which leave a prompt unassessed while *"the guardrail is always applied on the response"*:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html>.
+  - Guardrail permissions: `bedrock:ApplyGuardrail` to use one, and `CreateGuardrail`,
+    `CreateGuardrailVersion`, `DeleteGuardrail`, `GetGuardrail`, `ListGuardrails` and `UpdateGuardrail`
+    to manage one. Cross-Region guardrail inference is a guardrail profile's, a system-defined resource,
+    `us.guardrail.v1:0` routing a guardrail of `us-west-2` to `us-east-1`, `us-east-2` and `us-west-2`:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrail-profiles-permissions.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region-support.html>.
+  - Enforced guardrails: *"Account-level enforcement – Designate a particular version of a guardrail
+    within an AWS account for all Amazon Bedrock model invocations from that account."*; where a request
+    names a guardrail too, *"The net effect is a union of all guardrails, with the most restrictive
+    control taking precedence."*; *"Charges apply to each enforced guardrail according to its configured
+    safeguards"*; the organization's form is an Organizations policy of the type `BEDROCK_POLICY`. The
+    page names no IAM action for the configuration and no agent, knowledge base, flow or AgentCore, and
+    two other names tried for it returned a client error:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-enforcements.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutEnforcedGuardrailConfiguration.html>,
+    <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_bedrock.html>.
+  - Application inference profiles (the first in its HTML form): *"To create an application inference
+    profile for one Region, specify a foundation model. Usage and costs for requests made to that Region
+    with that model will be tracked."*; a profile is created over a foundation model where the model
+    supports on-demand inference in the Region, or over a cross-Region inference profile where the model
+    is served only through one:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-create.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-support.html>.
+  - The models by Region: one table for each model and one row for each Region, with the columns
+    In-Region, Geo and Global, read word for word to the Claude Haiku 5.5 table and no further. In
+    `us-west-2`: Amazon Nova Lite In-Region and Geo, Nova Micro Geo alone, Nova Pro Geo alone, Nova 2
+    Lite Geo and Global, Titan Text Embeddings V2 In-Region alone. The Nova user guide's Regions cell
+    lists no US West (Oregon) for Nova Pro, Nova Lite and Nova Micro but through cross-Region inference,
+    so the two pages disagree on Nova Lite:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html> (a stub that points at
+    the table),
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html>,
+    <https://docs.aws.amazon.com/nova/latest/userguide/what-is-nova.html>.
+  - Not read: the service authorization reference for Amazon Bedrock, a page with no body in the HTML
+    form and a client error in the Markdown form:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html>.
+
+- **Stage 17's preflights and the guardrail's API (read 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) steps 9.1, 10.1 and 10.2).**
+  - The Service Reference v1.5, the machine form of the authorization reference: `Converse` is authorized
+    as `bedrock:InvokeModel` and `ConverseStream` as `InvokeModelWithResponseStream`, each also listing
+    `ApplyGuardrail`, `InvokeTool` and `CallWithBearerToken`; `bedrock:GuardrailIdentifier` is carried by
+    the two invokes alone; `ApplyGuardrail` has no action-level condition key; `CreateGuardrail` takes
+    `aws:RequestTag/${TagKey}` and `aws:TagKeys` and has no `guardrail` resource; the three
+    enforced-configuration calls are authorized as themselves, with no resource type and no condition
+    key. For SageMaker, `ListModelPackages` has the resource type `model-package`, `CreateModelPackage`
+    and `UpdateModelPackage` take `sagemaker:ModelApprovalStatus`, and the job creates list
+    `sagemaker:VolumeKmsKeyArn`:
+    <https://servicereference.us-east-1.amazonaws.com/v1/bedrock/bedrock.json>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/sagemaker/sagemaker.json>. The HTML form of
+    Bedrock's page, its first 100,000 characters, has a body now:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrock.html>.
+  - The models by Region, the whole page: the `us-west-2` In-Region rows match `ListFoundationModels`;
+    some models are In-Region only through `bedrock-mantle`, which `vpc-egress` excludes, Claude Haiku
+    4.5, three Gemma 4, GPT-6 Astra, GPT-5.6 Terra and Luna, GPT-5.4, Grok 4.6 and Grok 4.3 among them:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html>.
+  - The guardrail's API: `GetGuardrail`'s `description` is the guardrail's, and `ListGuardrails` and
+    `GuardrailSummary` document none per version, so `app-genai` keeps its definition's hash in a tag too;
+    a Converse guard block is `{"guardContent":{"text":{"text":…}}}`, and once a request holds one only
+    those blocks are assessed; a masking ends with the stop reason `guardrail_intervened`; the Standard tier
+    requires cross-Region inference, so a guardrail with no guardrail profile is Classic; prompt attack's
+    output strength is `NONE`:
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetGuardrail.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListGuardrails.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GuardrailSummary.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConverseContentBlock.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConverseTextBlock.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_GuardrailConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-use-converse-api.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-tiers.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-sensitive-filters.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-prompt-attack.html>.
+  - boto3 1.43.1, the worker's, and its neighbours 1.43.0 and 1.44.4, for `app-genai`'s lock:
+    <https://pypi.org/pypi/boto3/1.43.1/json>.
+
+- **Amazon Bedrock AgentCore (read 2026-11-16, its rates 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 26 (a) and step 10.11).** The
+  developer guide and the API references in their Markdown form.
+  - The service and its Regions: Runtime is *"A secure, serverless runtime environment purpose-built for
+    deploying and scaling dynamic AI agents and tools."*, and the harness *"A managed agent loop that
+    lets you define and invoke AI agents with a single API call."* US West (Oregon) reads yes for the
+    harness, Runtime's microVMs and Instances, Memory, Gateway, Identity, the built-in tools,
+    Observability, Policy and Evaluations:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-regions.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/harness.html>.
+  - Runtime: *"In AgentCore Runtime, each user session runs in a dedicated microVM with isolated CPU,
+    memory, and filesystem resources."*; *"Sessions run for up to 8 hours on microVMs, or up to 14 days
+    on Instances."*; direct code deployment takes a zip of Linux arm64 dependencies in S3 (*"AgentCore
+    Runtime supports only the **arm64** architecture."*), 250 MB zipped and 750 MB unzipped at most, on
+    `PYTHON_3_10` to `PYTHON_3_14` or `NODE_22`:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agents-tools-runtime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-python.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-code-deploy-supported-runtimes.html>.
+  - The network: a runtime's `networkMode` is `PUBLIC` or `VPC`, and in VPC mode it *"does not have
+    internet access by default"*; US West (Oregon)'s supported zones are `usw2-az1`, `usw2-az2` and
+    `usw2-az3`; the network interfaces are the service-linked role
+    `AWSServiceRoleForBedrockAgentCoreNetwork`'s, and one *"may persist in your VPC for up to 8 hours
+    before it is automatically removed"*; the interface endpoints are `bedrock-agentcore`,
+    `bedrock-agentcore-control` and `bedrock-agentcore.gateway`, and they take endpoint policies:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/vpc-interface-endpoints.html>.
+  - The permissions: an execution role trusted by `bedrock-agentcore.amazonaws.com` under
+    `aws:SourceAccount` and `aws:SourceArn`; the caller's managed policy `BedrockAgentCoreFullAccess`,
+    which *"grants broad permissions including GetWorkloadAccessTokenForUserId, which allows issuing
+    workload access tokens using caller-supplied user identifier strings without IdP token
+    verification"*; the page states neither `iam:PassRole` nor the permission to invoke:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html>.
+    The service authorization reference (HTML form, read to about 90,000 characters, its condition-key
+    and resource-type tables not received): `CreateAgentRuntime` takes the condition keys
+    `bedrock-agentcore:subnets` and `bedrock-agentcore:securityGroups` and depends on `iam:PassRole`,
+    and no key for the network mode was seen:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonbedrockagentcore.html>.
+  - The API: `CreateAgentRuntime` and `UpdateAgentRuntime`, with a runtime's artifact (a container or a
+    code configuration), its network, protocol, lifecycle and authorizer configurations, and
+    `InvokeAgentRuntime`:
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateAgentRuntime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_UpdateAgentRuntime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_AgentRuntimeArtifact.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_NetworkConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_ProtocolConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_LifecycleConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_AuthorizerConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/APIReference/API_InvokeAgentRuntime.html>.
+  - The rates. The pricing page, its first 39,942 of 62,199 characters: *"Runtime microVMs v1 CPU
+    $0.0895 per vCPU-hour"*, *"v1 Memory $0.00945 per GB-hour"*, *"Billing is calculated per second,
+    using actual CPU and memory consumption, with a 1-second minimum"*; it states neither the Region of
+    its rates nor what a deployed runtime with no invocation bills:
+    <https://aws.amazon.com/bedrock/agentcore/pricing/>.
+    The Region's offer file, version `20261113204112`, published `2026-11-13T20:41:12Z`, 922 products,
+    read with no credential: the same two rates on Runtime's consumption-based rows, 0.1276 and 0.0169
+    USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
+    ([`PRICING.md`](PRICING.md)):
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+- SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
+  decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
+  and as a workflow's *Notebook Operator* and *Notebook Sensor*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks-schedule-runs.html>. The
+  run's API, with its compute, network and timeout:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_StartNotebookRun.html>. The RAM share of the
+  domain to `sagemaker.amazonaws.com` a SageMaker data source needs, under
+  `AWSRAMSageMakerServicePrincipalPermissionAmazonDataZoneDomain`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-sagemaker-data-source.html>.
+  RAM's pages for that share, read 2026-11-19 for Stage 17 3.3: `CreateResourceShare`, whose `sources`
+  takes accounts, ARNs, organization ids or paths against a confused deputy, and whose
+  `allowExternalPrincipals` defaults to `true`:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_CreateResourceShare.html>; a share with a
+  service principal admits no other principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-create.html>; the table of
+  shareable resources, which marks `datazone:Domain` as not shareable with a service principal:
+  <https://docs.aws.amazon.com/ram/latest/userguide/shareable.html>; and
+  <https://docs.aws.amazon.com/ram/latest/userguide/getting-started-sharing.html>.
+  The CI/CD CLI's repository, its guides and examples, `main` at `cdb8e3c18f` (2026-11-06):
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Read again the same day: the release notes, the
+  designations' examples, the Git connection pages and the `SageMakerAIDomain` blueprint's page, each listed
+  above.
+- The native notebook run's network (read 2026-11-18, for 6d decision 17 and step 4.7). The data type the
+  run's `networkConfiguration` takes, `networkAccessType` required and `vpcId` required with `VPC_ONLY`:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_NetworkConfig.html>. The run's compute, an
+  `instanceType` matching `(ml|sc)\.…`:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ComputeConfig.html>. Native notebook kernels in
+  the domain-level VPC, posted 2026-04-23, naming no API or console page:
+  <https://aws.amazon.com/about-aws/whats-new/2026/04/sagemaker-unified-studio-vpc/>. The notebooks page of
+  the user guide, which names no default network for a run:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>. Read again the same
+  night, each listed above: DataZone's service reference (version 1.5, `StartNotebookRun` with no condition
+  key and no resource type), `API_StartNotebookRun.html` and the admin guide's `network-isolation.html`.
+- The `RedshiftServerless` blueprint and the consumer's workgroup (read 2026-11-18, for Stage 21 1.3 and 1.5).
+  The workgroup's CloudFormation resource, `BaseCapacity`, `MaxCapacity` and `PricePerformanceTarget`:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-workgroup.html>.
+  The API's `CreateWorkgroup`:
+  <https://docs.aws.amazon.com/redshift-serverless/latest/APIReference/API_CreateWorkgroup.html>. The usage
+  limits page, which gives no range for the maximum RPU:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-workgroup-max-rpu.html>. The federated
+  catalog's deletion, `glue delete-catalog` alone:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/delete-rs-fed-catalog.html>. The admin guide's blueprints
+  page: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/blueprints.html>. The resource
+  provider's repository, which holds a README alone:
+  <https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-redshift-serverless>. Read again
+  the same day, each listed above: the key-permissions page (one Redshift statement,
+  `RedshiftCreateGrantKmsPermissions`), `create-ns-catalog.html` (its grant example spells
+  `--cli-input-cli-json`), `redshift-ns-prereqs.html` (the data transfer role's policy holds no S3 action),
+  `serverless_datasharing-register-namespace.html`, `iceberg-integration-register.html` (it spells
+  `NamespaceIdentifer`), `managing-namespaces-datacatalog.html`, `serverless-capacity.html`,
+  `serverless-billing.html`, `enable-disable-blueprints.html`, `supported-blueprints.html`, and AWS's SMUS-IaC
+  sample's `child-stacks/sus-blueprints-stack.yaml` at commit `21ac412` (2025-10-29), which attaches the Redshift
+  manage-access policy and the key statement and configures `Tooling`, `LakehouseCatalog` and `DataLake` alone.
+- The catalog's runbook, `catalog.md` (read 2026-11-17, for Stage 20 steps 1.5 and 1.6). Business
+  glossaries, the path *Manage → Catalog management → Business glossaries*, a term's README up to 4,096
+  characters, *Is A Type of* and *Has Types* at most 10 each, a term on at most 10 assets, and when a
+  glossary or a term can be deleted:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-business-glossaries.html>.
+  A subscription's revocation, *Revoke* under *Subscription requests → Access*, the option that keeps the
+  asset in the targets, and no re-approval after a revoke:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/revoke-subscription.html>. Read again
+  the same day, each listed above: the release notes (newest entry 2026-11-12), `update-metadata.html` (the
+  *Catalog scope* filter, the *History* tab, *Re-publish asset*, *Share* to at most 10 projects),
+  `create-data-source.html` (a database typed or picked from suggestions; a Redshift source takes include
+  filters alone), `standardize-metadata-forms.html`, `create-new-data-product.html`,
+  `publish-data-product.html`, the subscription and approval pages, and the lineage page's three node types;
+  `create-data-asset-manually.html` returned its title alone.
+- **SageMaker Unified Studio's forms of a data product beyond a Glue table (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) questions 2, 3, 5, 7 and 8).** The managed asset
+  types, *"Lake Formation-managed AWS Glue Data Catalog tables, AWS Glue Data Catalog views (Multi Dialect
+  Views), and Amazon Redshift tables and views"*, and a section on cross-Region subscriptions, *"across all
+  standard (non-opt-in) AWS Regions"* with the data lake or data warehouse blueprint enabled in both, which
+  contradicts the Glue and Redshift pages:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-unmanaged-asset.html>.
+  A Redshift asset's fulfilment into *"the Amazon Redshift Serverless workgroup created for the project"*: a
+  grant in one database, a view across databases, a datashare and a view across clusters, the same across
+  accounts, and *"Cross-Region data sharing using Amazon Redshift is not supported."*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-redshift-asset.html>.
+  A Glue asset's, read by *"Amazon Athena, Amazon Redshift, or Spark"*, with no cross-Region sharing and no
+  cross-account sharing of a federated catalog's assets:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/grant-access-to-glue-asset.html>. A
+  Redshift data source, which imports *"technical metadata of database tables and views"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-redshift-data-source.html>. A
+  Glue data source's catalog, picked from the dropdown or typed:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-source-glue.html>. Data
+  products, their creation and their subscription, no asset type named:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-data-product.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-to-data-assets-managed.html>.
+  The S3 Object Collection, its curation, and its subscription through S3 Access Grants, read-only or read and
+  write, with up to 20 minutes of access after a revocation:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-s3-publish.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/connecting-amazon-s3.html>. A
+  project's Redshift compute, created or connected, and the lakehouse page:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-add-new-redshift-serverless.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/adding-a-existing-compute-connection.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/compute-prerequisite-redshift.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/gs-admin-setup.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lakehouse.html>. Redshift lineage:
+  the support matrix, the capture from a data connection, the connection's credentials holding
+  *"`sys:operator` role"* and `SELECT` on all tables, and what the parser leaves out (external tables, `COPY`
+  and `UNLOAD`, `MERGE` and `UPDATE`, datashares, events over 16 MB):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-support-matrix.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-automate-capture-from-data-connections.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-permissions.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-lineage-troubleshooting.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-support.html>.
+  Domains, domain units, and owner and consumer projects:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/concepts.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/domain-units.html> and
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/what-is-sagemaker-unified-studio.html>.
+  `CreateSubscriptionTarget` and its form, which name no Redshift type:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateSubscriptionTarget.html> and
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_SubscriptionTargetForm.html>. What's New's
+  search renders by script and returned nothing to the fetcher; its recent feed and the Big Data Blog's index
+  held no post on how to organize these pieces: <https://aws.amazon.com/about-aws/whats-new/recent/feed/> and
+  <https://aws.amazon.com/blogs/big-data/>.
+- **The portal's *Create table → Redshift table* and a namespace's default IAM role (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) step 2.8).** The portal's page on creating a
+  table is an empty stub in every form read, English and Japanese, and the guide's PDF failed:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-new-catalog-table.html>. The
+  Query editor v2's load from a local file uploads to a bucket and runs a `COPY`, 100 MB at most, and names no
+  role: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-loading.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-loading-data-local.html> and
+  <https://aws.amazon.com/blogs/big-data/data-load-made-easy-and-secure-in-amazon-redshift-using-query-editor-v2/>.
+  `COPY`'s `IAM_ROLE default` uses *"the IAM role that is set as default and associated with the cluster"*,
+  and `DEFAULT_IAM_ROLE` *"returns none if there isn't any default IAM role associated"*:
+  <https://docs.aws.amazon.com/redshift/latest/dg/copy-parameters-authorization.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_DEFAULT_IAM_ROLE.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/default-iam-role.html> and
+  <https://aws.amazon.com/blogs/big-data/use-the-default-iam-role-in-amazon-redshift-to-simplify-accessing-other-aws-services/>.
+  A namespace's `DefaultIamRoleArn` beside its `IamRoles`, and the service's refusal of a default outside the
+  list:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-namespace.html>
+  and <https://github.com/hashicorp/terraform-provider-aws/issues/28980>. `ASSUMEROLE` held by `PUBLIC` until
+  revoked: <https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT-usage-notes.html>.
+- **Custom designations by API, and the versions of the domain's RAM permission (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 15 (d), 4.12 and xxvi).**
+  `CreateDesignation`, `GetDesignation` and `ListDesignations`: `policy` is a Cedar permit policy of up to
+  10,000 characters, deletion protection defaults to on, and no page shows a policy's syntax:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetDesignation.html>,
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ListDesignations.html>; the CLI's reference,
+  with no `--policy` example: <https://docs.aws.amazon.com/cli/latest/reference/datazone/create-designation.html>.
+  The designation permissions page, each category's choices by label with their API lists, and the managed
+  designations' Cedar text, which differs from what `get-designation` returns (`SUP-385`):
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the
+  designations page, the Data Agent required in every custom designation:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designations.html>; the examples:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/example-designations.html>; a
+  designation assigned when a member is added or edited, one by direct assignment and others inherited
+  through groups, read for 4.12's membership command:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/assign-designations.html>. The
+  action-group identifiers a custom designation's policy names (`SUP-384`), read from a designation made in
+  the portal (Classmethod, 2026-11-02):
+  <https://dev.classmethod.jp/en/articles/20261101-amazon-smus-custom-designations/>. The IAM reference,
+  served to the fetcher in part: the designation actions' access levels, and
+  `GetSystemTableExportConfiguration` in its summarised half alone:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondatazone.html>. RAM: a share
+  keeps its permission's version until it is moved, only the default version attaches, and an AWS managed
+  permission's move is final:
+  <https://docs.aws.amazon.com/ram/latest/userguide/security-ram-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update-permissions.html>,
+  <https://docs.aws.amazon.com/ram/latest/userguide/working-with-sharing-update.html>;
+  `AssociateResourceSharePermission` takes only the default version, and `ReplacePermissionAssociations`
+  moves every share of a permission asynchronously:
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_AssociateResourceSharePermission.html>,
+  <https://docs.aws.amazon.com/ram/latest/APIReference/API_ReplacePermissionAssociations.html>.
 
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
 
+- **A Glue Spark job writing a Lake Formation table: full-table access (read 2026-10-23, for Stage 9
+  step 2.4's proof job).** *"AWS Glue 5.0 and above supports Full Table Access (FTA) control in Apache
+  Spark"*, the mode that *"enables read and write operations from your AWS Glue Spark jobs on AWS Lake
+  Formation registered tables when the job role has full table access"*; fine-grained access reads only,
+  and *"a job cannot simultaneously run Full Table Access (FTA) and Fine-Grained Access Control (FGAC)"*.
+  Its first step is Lake Formation's application integration setting (*"allow third-party query engines
+  to access data without the IAM session tag validation"*, `AllowFullTableExternalDataAccess`), its IAM
+  need `lakeformation:GetDataAccess` beside the Glue catalog actions (`glue:UpdateTable` among them), and
+  its Lake Formation need *"ALL permission"* for a job that writes or deletes, `SELECT` for a read. The
+  Iceberg catalog's settings: `spark.sql.catalog.<name>.glue.lakeformation-enabled=true` with
+  `glue.id`/`glue.account-id`, `catalog-impl` `GlueCatalog`, `io-impl` `S3FileIO`, EMRFS's
+  `fs.s3.credentialsResolverClass` `AWSLakeFormationCredentialResolver` and the directory-object settings;
+  *"Full Table Access works exclusively with EMR Filesystem (EMRFS)"*:
+  <https://docs.aws.amazon.com/glue/latest/dg/security-access-control-fta.html>. The setting's page,
+  console and `put-data-lake-settings`, which says in neither which account's setting a cross-account
+  vend reads: <https://docs.aws.amazon.com/lake-formation/latest/dg/full-table-credential-vending.html>.
+
 - Redshift and the Glue Data Catalog, both directions (read 2026-09-13, for Stage 6f's institutional pattern). A Redshift provisioned cluster or serverless namespace registered to the Data Catalog becomes a federated catalog (namespace → multi-level catalog, database → catalog, schema → database, table → table), governed by Lake Formation and queried by Iceberg-compatible engines such as Athena and EMR Serverless: <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>. Redshift reads the Data Catalog through the `awsdatacatalog` database (RA3 or Serverless; `data_catalog_auto_mount`), and *"Queries against the `awsdatacatalog` database can only be read-only"*: <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>. The crawler's data stores: S3, DynamoDB, Delta Lake, Iceberg and Hudi natively; Amazon Redshift, Snowflake, Aurora, MariaDB, SQL Server, MySQL, Oracle and PostgreSQL over JDBC; MongoDB, MongoDB Atlas and DocumentDB through the MongoDB client: <https://docs.aws.amazon.com/glue/latest/dg/crawler-data-stores.html>.
+- Redshift as the warehouse for a Glue-catalog product (read 2026-10-28, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) question 3 and decision 9).
+  `awsdatacatalog` from a Serverless workgroup: the federated user, `USAGE` to `IAMR:`, read-only, the
+  `CREATE TABLE AS` example, `data_catalog_auto_mount`:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/query-editor-v2-glue.html>; the integrated data lake
+  query engine of RG and Serverless, no Spectrum charge:
+  <https://docs.aws.amazon.com/redshift/latest/gsg/data-lake.html>; Lake Formation vending to Spectrum,
+  permissions by database user, no role chaining:
+  <https://docs.aws.amazon.com/redshift/latest/dg/spectrum-lake-formation.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/c-getting-started-using-spectrum.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/RSPC-lf.html>; Iceberg v1 to v3 read, Lake
+  Formation fine-grained access on Iceberg, `INSERT INTO` or `CREATE TABLE AS` from an Iceberg table and
+  no `COPY` from one, Iceberg writes through `awsdatacatalog`:
+  <https://docs.aws.amazon.com/redshift/latest/dg/querying-iceberg.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-writes.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-writes-sql-syntax.html>; `COPY` from Parquet
+  and the auto-copy job on an S3 event integration:
+  <https://docs.aws.amazon.com/redshift/latest/dg/copy-usage_notes-copy-from-columnar.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/loading-data-copy-job.html>; zero-ETL sources, none of
+  them S3, Iceberg or a Glue table: <https://docs.aws.amazon.com/redshift/latest/mgmt/zero-etl-using.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/zero-etl-using.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/zero-etl-target.html>; materialized views over data lake
+  tables, incremental on Iceberg, Iceberg materialized views registered in the Data Catalog and refreshed
+  by hand, Lake Formation's changes unverified on a view:
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-create-sql-command.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-refresh.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-external-table.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-iceberg.html>; a namespace registered
+  as a federated catalog, mounted as an external database, its Region list without `US West (Oregon)`,
+  and its limits (no materialized view, no external schema):
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration_overview.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/query-redshift-fed-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-ns-catalog.html>. Prices: the Oregon
+  offer file (0.36 USD per RPU-hour, 0.024 per GB-month, 5.00 per TB of data scan):
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRedshift/current/us-west-2/index.csv>;
+  the pricing page (4 to 1024 RPUs, the 60-second minimum, Serverless data lake queries included in the
+  RPU-hours, no zero-ETL fee, the 300 USD trial): <https://aws.amazon.com/redshift/pricing/>,
+  <https://aws.amazon.com/redshift/free-trial/>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-billing.html>; the 4 RPU floor
+  (2025-06-30): <https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-redshift-serverless-4-rpu-capacity-option>;
+  DataZone's pricing (metadata 0.40 per GB-month with 20 MB free, requests 10.00 per 100,000 with 4,000
+  free, 1.776 per compute unit with 0.2 free, no charge for a subscription or a data product):
+  <https://aws.amazon.com/datazone/pricing/>; SageMaker's page naming the Catalog's charge:
+  <https://aws.amazon.com/sagemaker/pricing/>; Glue's catalog free tier and DPU-hour, Lake Formation
+  free, Athena's example rate: <https://aws.amazon.com/glue/pricing/>,
+  <https://aws.amazon.com/lake-formation/pricing/>, <https://aws.amazon.com/athena/pricing/>.
 
 - **Redshift Serverless — capacity, billing, network and audit (read 2026-09-19, for
   [D40](plan/decisions/D40-redshift-warehouse.md) and
@@ -1057,13 +2219,40 @@
   namespace can. The same page carries the metric list: `ComputeCapacity` (*"Average number of compute units
   allocated during the past 30 minutes"*), `ComputeSeconds`, `UsageLimitConsumed`/`UsageLimitAvailable`,
   `DataStorage`, `DatabaseConnections` and
-  `ExtraComputeForAutomaticOptimizationChargedSeconds`:
+  `ExtraComputeForAutomaticOptimizationChargedSeconds`; `ChargedSeconds`, which CloudWatch publishes for the
+  workgroup, is not on it (read 2026-10-18):
   <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-audit-logging.html>.
   *Cross-database queries*: the page carries **both** *"When you query database objects on any other
   unconnected databases, you have read access only to those database objects"* and *"You can write from
   databases that you are connected to, and also write from any other database that you have permissions to"* —
   which is why D40 puts the two classes of database in two accounts rather than in one namespace:
   <https://docs.aws.amazon.com/redshift/latest/dg/cross-database-overview.html>.
+
+- **Redshift — the admin secret's rotation (read 2026-10-20, for `EXC-13`'s first rotation).**
+  *Managing Amazon Redshift admin passwords using AWS Secrets Manager*: Redshift *"rotates the secret every
+  30 days by default"*, and among the considerations a serverless namespace with no workgroup associated
+  at a rotation means *"the rotation will fail and won't try to rotate it again"*. On 2026-10-20 the first
+  scheduled rotation ran with no workgroup and Secrets Manager logged `RotationSucceeded`
+  ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s log, 2026-10-20):
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/redshift-secrets-manager-integration.html>.
+
+- **Redshift — where a query runs, and the serverless per-query limit (read 2026-10-18, for
+  [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)'s owed reading of `max_query_execution_time`).**
+  *Leader node–only functions*: a query that references only `PG_` catalog tables, or no table, *"runs
+  exclusively on the leader node"*; one over user tables or `STL`/`SVV` views is distributed. The
+  2026-09-20 runaway read only `pg_attribute`:
+  <https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_functions_leader_node_only.html>.
+  *WLM query monitoring rules*: Serverless's `max_query_execution_time` is the query-execution-time
+  metric, and past it *"Amazon Redshift Serverless stops the query"*; the page says nothing about
+  leader-node queries or superusers:
+  <https://docs.aws.amazon.com/redshift/latest/dg/cm-c-wlm-query-monitoring-rules.html>.
+
+- **Redshift Serverless — the actions, resources and condition keys (read 2026-10-18, for
+  [Stage 6h](plan/stages/stage-06h-redshift-connection.md) 5.3's simulation).** `UpdateWorkgroup` and
+  `GetCredentials` take the `workgroup` resource type, whose ARN carries the workgroup id;
+  `DeleteUsageLimit` and `UpdateUsageLimit` take none, and the service defines no usage-limit resource
+  type, so a policy names them on `*`:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_redshift-serverless.html>.
 
 - **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
   [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the
@@ -1197,6 +2386,8 @@
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
+- Renaming an Iceberg table with Athena, and managing Iceberg tables (read 2026-11-21, for Stage 20 2.5's table swap): neither page names a permission or says how a rename is carried out, which the trail shows as a create and a delete after Glue's Iceberg REST endpoint refuses `renameTable` (`SUP-400`): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-alter-table-rename.html> and <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-managing-tables.html>. Glue's Iceberg REST pages, read again the same day, the connection page listing the endpoint's operations without `RenameTable`: <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html> and <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html>.
+
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.
 
 - Amazon S3 Tables (managed Iceberg with automatic maintenance — the AWS-native alternative to hand-rolled Iceberg buckets): <https://aws.amazon.com/s3/features/tables/>.
@@ -1292,7 +2483,48 @@
   only; the mechanism behind Stage 11 step 2:
   <https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering.html>.
 
-- Amazon S3 Bucket Keys (KMS cost reduction): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
+- Lake Formation data filtering limitations (read 2026-10-18, for Stage 11 2.1a/2.1b and decision 12): a
+  column filter granted with the grant option takes an include list; an all-rows grant prevails over
+  every row filter; a row filter granted to an account and regranted inside it intersects with the
+  principal's own; no cell-level security on resource links; 100 filters per principal per table:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering-notes.html>. PartiQL in row filter
+  expressions, whose type list has no `DATE` and which calls a row filter on a table containing an
+  unsupported type an error: <https://docs.aws.amazon.com/lake-formation/latest/dg/partiql-support.html>.
+  The four `lakeformation:` actions listed for querying a table with cell-level filtering:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/row-filtering-prereqs.html>.
+
+- Lake Formation row-level security policies (read 2026-10-20, for Stage 11 decision 12): a named
+  predicate over declared columns, attached to a table or an LF-Tag expression for a principal, under an
+  optional condition on IAM attributes (Identity Center attributes are not supported), or as the table's
+  default; an attachment scopes down `SELECT` from any grant, and `ALL` or `SUPER_USER` escapes it;
+  attachments in one account combine as a union, a data cells filter's rows included, and across a share
+  the producer's and the consumer's intersect; reads only, no column filtering; AWS recommends it over
+  data cells filters for rows, and warns that a tag-based attachment stops applying when its tag leaves
+  the table: <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-about.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-managing.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-granting.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-cross-account.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-sql-support.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-best-practices.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/rls-policies-limitations.html>. The data filtering
+  limitations page and the filtered-query page, read again the same day: an all-rows filter expression
+  still prevails over every other, and the four actions are the same. The API Reference has no page for
+  the operations yet, `API_AttachRLSPolicy.html` redirecting to its index:
+  <https://docs.aws.amazon.com/lake-formation/latest/APIReference/API_AttachRLSPolicy.html>; botocore's
+  model carries the eight:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
+  Neither provider carries RLS, at `aws` 6.69.1 and `awscc` 1.106.0 nor in either changelog's unreleased
+  section: <https://github.com/hashicorp/terraform-provider-aws/blob/main/CHANGELOG.md>,
+  <https://github.com/hashicorp/terraform-provider-awscc/blob/main/CHANGELOG.md>; nor does CloudFormation's
+  list of Lake Formation types:
+  <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_LakeFormation.html>. The
+  developer guide's document history ends at 2025-04-17 and dates no RLS change:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/doc-history.html>.
+
+- Amazon S3 Bucket Keys (KMS cost reduction; re-read 2026-10-20 for Stage 9 decision 1 and D31: with a
+  Bucket Key the KMS encryption context is the bucket ARN, so a key or IAM policy that names an object
+  ARN stops matching): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html>.
 
 - Amazon S3 Object Lock (immutable log archive): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
@@ -1300,6 +2532,138 @@
   the `aws-glue-service-resource` tag, which `awsds-prod-job-exec` copies without the policy's S3 and IAM
   reads (Stage 9 step 3.1):
   <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSGlueServiceRole.html>.
+
+- Read 2026-10-18 for `docs/plan/upstream-releases.md`: Redshift's system table integration with S3
+  Tables, its announcement and its guide: <https://aws.amazon.com/about-aws/whats-new/2026/08/redshift-long-term-system-table-retention/>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/system-table-s3-tables.html>; Glue 6.0's
+  announcement: <https://aws.amazon.com/about-aws/whats-new/2026/08/aws-glue-6-0-price-reduction-iceberg-v3>;
+  the offer files behind `docs/PRICING.md` §5's Glue 6.0 and S3 Tables rows, in both Regions:
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/us-west-2/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/sa-east-1/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-west-2/index.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/sa-east-1/index.json>;
+  Lake Formation's row-level security operations in botocore's model:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/lakeformation/2017-03-31/service-2.json>.
+
+- Read 2026-11-13 for `docs/plan/upstream-releases.md`: Lake Formation's user-defined function and
+  `AnyResource` shapes in botocore's model at `1.44.2`, against `1.43.122`:
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/lakeformation/2017-03-31/service-2.json>;
+  Athena's system tables, the announcement and the guide:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/athena-system-tables/>,
+  <https://docs.aws.amazon.com/athena/latest/ug/athena-system-tables.html>; Glue Data Catalog federation with an
+  external catalog's vended credentials, and Glue's 100 SaaS connectors:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/glue-catalog-vended-credentials-iceberg/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-glue-adds-100-new-native-connectors/>; AWS Sign-In's
+  OAuth token exchange, the announcement and the guide's overview, which names the IAM identity provider and
+  the role trust policy an exchange is validated against:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-signin-token-exchange/>,
+  <https://docs.aws.amazon.com/signin/latest/userguide/oauth-sign-in-overview.html>; Redshift's SUPER strings of
+  up to 16 million bytes:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-redshift-expands-super-to-16-million-bytes/>.
+
+- **Lake Formation-managed datashares, the step pages (read 2026-10-24, for [Stage 9](plan/stages/stage-09-deployment-targets.md)
+  step 9.5 and its decision 14).** The producer creates the share, adds the schema, sets `INCLUDENEW` and
+  grants usage to an account `VIA DATA CATALOG`, then authorizes `DataCatalog/<account>`; that account's
+  Lake Formation administrator associates the share with its catalog, registers it with
+  `register-resource` (no role), creates a federated database (`ConnectionName` `aws:redshift`) with
+  `CreateTableDefaultPermissions` empty, and grants on the database, its tables and columns, never a write;
+  a Redshift consumer mounts it with `CREATE DATABASE … FROM ARN '<database ARN>' WITH DATA CATALOG SCHEMA`
+  and reads with `SELECT` alone. An LF-Tag created in one account cannot be put on a resource shared from
+  another, a receiving account cannot pass a share on, and AWS's own example spans three accounts
+  (producer, a central account that registers and grants, the consumer). The pages say nothing of a
+  Serverless producer with no workgroup, and one page's sentence that `CREATE USER` users cannot read
+  meets two blogs whose `IAMR:` users do:
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-getting-started-producer.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-getting-started-consumer.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-considerations.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_DATASHARE.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_DATABASE.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/redshift-ds-prereqs.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/setup-ds-perms.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-rs-datashare.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>,
+  <https://aws.amazon.com/blogs/big-data/centrally-manage-access-and-permissions-for-amazon-redshift-data-sharing-with-aws-lake-formation/>
+  and
+  <https://aws.amazon.com/blogs/big-data/implement-tag-based-access-control-for-your-data-lake-and-amazon-redshift-data-sharing-with-aws-lake-formation/>.
+
+- AWS Glue's JDBC connections (read 2026-10-24, for Stage 9 step 9.4's warehouse load): Glue provides the JDBC libraries to its Spark jobs, and the Amazon Redshift driver it supports is `redshift-jdbc42-2.1.0.29` for Glue 5.0 and 5.1 and `2.1.0.16` for 4.0; Glue 6.0 has no row: <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-connect-jdbc-home.html>.
+
+- The Glue `Table` type's `IsRegisteredWithLakeFormation` (read 2026-11-14, for `SUP-364`): an optional
+  Boolean, whether the table is registered with Lake Formation; none of the four pages says which call
+  fills it, and no request parameter of `GetTables` or `GetTableVersions` is described as computing it:
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_Table.html>,
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTable.html>,
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTables.html> and
+  <https://docs.aws.amazon.com/glue/latest/webapi/API_GetTableVersions.html>.
+
+- **What the Glue Data Catalog holds, and Redshift data read by other engines (read 2026-11-17, for
+  [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) questions 1, 4 and 6).** Tables over S3 in Avro, CSV,
+  JSON, XML, Parquet and ORC, or in Iceberg (*"Specify creating a standard AWS Glue table, or a table in
+  Apache Iceberg format."*): <https://docs.aws.amazon.com/glue/latest/dg/tables-described.html>. The crawlers'
+  built-in classifiers, no image format among them:
+  <https://docs.aws.amazon.com/glue/latest/dg/add-classifier.html>. Glue for Spark's formats, and Delta Lake,
+  Hudi and Iceberg from Glue 3.0:
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-datalake-native-frameworks.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-delta-lake.html> and
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-hudi.html>. Data Catalog views,
+  which *"support multiple SQL query engines"*:
+  <https://docs.aws.amazon.com/glue/latest/dg/catalog-views.html>. The catalogs beside the default one and the
+  connections to external systems:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/bring-your-data-overview.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/federated-catalog-data-connection.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/catalog-federation.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register-s3-table-bucket-cat.html>,
+  <https://docs.aws.amazon.com/athena/latest/ug/gdc-register-rs.html> and
+  <https://docs.aws.amazon.com/athena/latest/ug/register-connection-as-gdc.html>. A namespace registered as a
+  federated catalog, read by Redshift with no switch (*"You don't need to enable data lake access to access
+  the federated catalogs using Amazon Redshift."*) and by other engines through data lake access, *"AWS Glue
+  creates a managed Amazon Redshift cluster"*; its prerequisites, the data transfer role among them; its
+  queries and limits:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-ns-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/redshift-ns-prereqs.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/query-redshift-fed-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-ns-catalog.html>,
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless_datasharing-register-namespace.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration-register.html>. An RMS catalog, served
+  by *"an Amazon Redshift managed serverless-workgroup"*, its tables reached only through the Iceberg REST
+  catalog's extension endpoint:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-rms-catalog.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html> and
+  <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html>. The datashare's road, read
+  again: <https://docs.aws.amazon.com/lake-formation/latest/dg/data-sharing-redshift.html>. Lake Formation's
+  page on accessing catalogs returned a client error as `.md`, and as `.html` the guide's title alone:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/access-catalogs.html>. AWS Glue's pricing page on the
+  managed workgroup, *"a service-managed Amazon Redshift Serverless workgroup is used for compute resources"*
+  at *"standard Amazon Redshift Serverless rates"*, read beside Redshift's and the lakehouse's:
+  <https://aws.amazon.com/glue/pricing/>, <https://aws.amazon.com/redshift/pricing/> and
+  <https://aws.amazon.com/sagemaker/lakehouse/pricing/>. S3 Metadata's object metadata in *"read-only, fully
+  managed Apache Iceberg tables"*:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html>.
+- **Glue's data quality monitoring of a catalog or a database, SageMaker Unified Studio's *Data profile*** —
+  read 2026-11-21 for [`upstream-releases.md`](plan/upstream-releases.md) and [`PRICING.md`](PRICING.md) §5,
+  after the user found the *Data profile* menu on a database. The guide's page and the pages on getting
+  started, authorization, troubleshooting, the API, encryption and the document history:
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-getting-started.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-authorization.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-troubleshooting.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-data-quality-api.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-encryption.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/doc-history.html>; SageMaker Unified Studio's release notes and
+  its profiling pages: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-catalogs-databases.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-schedule.html>; What's New:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/glue-catalog-data-quality-monitoring/>; the price, the
+  pricing page and the `us-west-2` offer file: <https://aws.amazon.com/glue/pricing/>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/us-west-2/index.json>; the project
+  role's managed policy, Sid `GlueDQVetl`:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>;
+  botocore's changelog: <https://raw.githubusercontent.com/boto/botocore/develop/CHANGELOG.rst>.
 
 ## Containers, CI/CD and orchestration
 
@@ -1392,6 +2756,12 @@
     iniconfig 2.3.1 on 2026-10-06, which `exclude-newer = "2026-09-29T00:00:00Z"` keeps out of the lock
     (it holds 25.0.1, 0.16.9 and 2.3.0): <https://pypi.org/pypi/pyarrow/26.0.0/json>, the same path for
     each package.
+  - The upper bounds behind the dev-env accepted list (read 2026-10-25, the `gates-v0.5.0` entries):
+    autogluon.multimodal 1.6.1 requires `Pillow<13,>=10.0.1`, `fsspec[http]<=2025.3` and `nltk<3.11,>=3.10`,
+    autogluon.core 1.6.1 `setuptools<82`: <https://pypi.org/pypi/autogluon.multimodal/1.6.1/json>,
+    <https://pypi.org/pypi/autogluon.core/1.6.1/json>; the fixed versions' upload dates, pillow 13.0.0 on
+    2026-10-16 and setuptools 84.1.0 on 2026-10-19: <https://pypi.org/pypi/pillow/13.0.0/json>,
+    <https://pypi.org/pypi/setuptools/84.1.0/json>.
 - The GitLab CI rules `scripts/check-gitlab-ci.py` encodes (read 2026-10-14, after pipeline #12 of
   `awsds/app-etl`; Stage 8 step 6.4):
   - The YAML reference: the global keywords are `default`, `include`, `stages`, `variables` and
@@ -1466,6 +2836,14 @@
   needed only for custom domains); the Pages domain must not be a subdomain of `external_url` (D36's
   two-apex rule); and access control is available in the Free tier
   (`gitlab_pages['access_control'] = true`): <https://docs.gitlab.com/administration/pages/>.
+
+- S3 Lifecycle, expiring objects (read 2026-10-18; Stage 7 step 8.2, the GitLab backups). In a
+  versioning-enabled bucket an `Expiration` action acts on current versions only and adds a delete
+  marker, which makes the current version noncurrent; `NoncurrentVersionExpiration` then deletes the
+  noncurrent versions for good; S3 may remove an object some time after its expiration date; and
+  `HeadObject` and `GetObject` return the date a current version expires (the `Expiration` header),
+  which is how the two backups were dated:
+  <https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html>.
 
 - GitLab releases and the generic package registry (read 2026-10-15, Stage 8 decision 20). A release
   holds links, not files; the release fields page points a release's binaries at the generic package
@@ -1556,6 +2934,20 @@
     `pages.internal`), the wildcard record + wildcard certificate shape, `pages_external_url` +
     `pages_nginx` TLS keys, and access control as a Free-tier feature (Stage 7 step 4):
     <https://docs.gitlab.com/administration/pages/>.
+  - *NGINX settings in Omnibus, GitLab 19.2 and later* — the GitLab vhost's settings under
+    `gitlab_rails['nginx']`, each service's vhost under its own key (`gitlab_pages['nginx']`,
+    `registry['nginx']`, `gitlab_kas['nginx']`), the daemon's settings still under `nginx[...]`, legacy
+    `nginx[...]` vhost keys carried forward with a deprecation warning, and an `nginx[...]` setting never
+    copied to a service's vhost; the SSL page's manual certificate takes
+    `gitlab_rails['nginx']['ssl_certificate']` the same way (the template's keys since 2026-11-10):
+    <https://docs.gitlab.com/omnibus/settings/nginx/>.
+  - *Omnibus's NGINX translation code* — `translate_service_nginx_settings` prints `pages_nginx has been
+    deprecated` and copies every `pages_nginx` key, `enable` included, to `gitlab_pages['nginx']` where
+    the new key is unset; `translate_client_settings` does the same from `nginx[...]` to
+    `gitlab_rails['nginx']`. Read at `master` (19.5.3) on 2026-11-10, while the Pages page above still
+    documents `pages_nginx`:
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/nginx/libraries/nginx.rb>,
+    <https://gitlab.com/gitlab-org/omnibus-gitlab/-/raw/master/files/gitlab-cookbooks/gitlab/libraries/gitlab_rails.rb>.
   - *Omnibus supported OSes* — Amazon Linux 2023 is supported since 16.3.0, amd64 and arm64, which is
     what lets the GitLab host keep the project's AL2023/SSM-parameter AMI pattern (Stage 7 step 1.2):
     <https://docs.gitlab.com/administration/package_information/supported_os/>.
@@ -1677,6 +3069,21 @@
     and Amazon Inspector v2
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonInspectorV2/current/us-west-2/index.json>.
 
+- The load history of GitLab and the runners, read 2026-10-24 against their instance types (Stage 7's and
+  Stage 8's logs):
+  - *GitLab installation requirements*: a single node's baseline is 8 vCPU and 16 GB; a memory-constrained
+    one runs with at least 8 GB; burstable types are discouraged for inconsistent performance; swap is
+    disabled where possible: <https://docs.gitlab.com/install/requirements/>.
+  - *Running GitLab in a memory-constrained environment*: 2 GB of RAM and 1 GB of swap at the least, and
+    what each setting saves (Puma's single mode 100-400 MB, the monitoring stack about 300 MB):
+    <https://docs.gitlab.com/omnibus/settings/memory_constrained_envs/>.
+  - *Burstable performance instances, key concepts*: T3, T3a, T4g and T8i launch `unlimited` with no launch
+    credits, accrue at most a day's earnings (864 credits for a `t4g.large`), and keep the balance for seven
+    days after a stop:
+    <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html>.
+  - *Amazon EC2 M8i and M8i-flex*: Xeon 6 at a sustained 3.9 GHz all-core turbo; M8i-flex from large to
+    16xlarge, at full compute performance 95% of the time: <https://aws.amazon.com/ec2/instance-types/m8i/>.
+
 - Amazon MWAA (Managed Workflows for Apache Airflow): <https://docs.aws.amazon.com/mwaa/latest/userguide/what-is-mwaa.html>.
 
 - Amazon MWAA pricing (environment fee billed hourly, at one-second resolution, for as long as the environment exists): <https://aws.amazon.com/managed-workflows-for-apache-airflow/pricing/>.
@@ -1726,24 +3133,28 @@
 
 - `awscc_mwaaserverless_workflow` - the Cloud Control (awscc provider) resource generated from that registry type: <https://registry.terraform.io/providers/hashicorp/awscc/latest/docs/resources/mwaaserverless_workflow>.
 
+- The IAM policy generator's service table, read for MWAA Serverless (`airflow-serverless`) on 2026-10-24: its condition keys are `aws:RequestTag/${TagKey}`, `aws:ResourceTag/${TagKey}` and `aws:TagKeys`, no service key, which `TagTheWorkflowsAtCreation` holds to `aws:RequestTag/Name` (Stage 10 1.5): <https://awspolicygen.s3.amazonaws.com/js/policies.js>.
+
 - Amazon MWAA Serverless key concepts (YAML workflows, per-workflow IAM role, EventBridge Scheduler underneath, no Airflow UI): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaas-concepts.html>.
 
 - Stage 10's documentation pass (read 2026-08-16):
   - *MWAA Serverless supported operators* — Amazon-provider operators only, no `PythonOperator`/`BashOperator`; ECS/EKS/Batch/Lambda/Glue/SageMaker are the code paths: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>. **Re-read 2026-10-10**: the page now lists `PythonOperator` and `BashOperator` beside the Amazon-provider operators, billed as managed tasks. The guide's document history dates the addition 2026-08-17, the day after the first reading: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>. **Re-read 2026-10-13**: `SageMakerNotebookOperator` "provides artifact execution functionality" for Unified Studio workflows, and `GlueJobOperator` "creates an AWS Glue job".
   - *The Amazon provider at 9.32.0, the version the worker pre-installs* (read 2026-10-13): `GlueJobOperator` runs `GlueJobHook.initialize_job`, which calls `get_job` on the named job before `start_job_run`, and `create_job` when the job is absent (`update_config` defaults to false); `has_job` treats only `EntityNotFoundException` as absent: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>. `SageMakerNotebookOperator` describes itself as Jupyter notebook artifact execution for Unified Studio workflows, and its hook calls the `sagemaker_studio` SDK's `execution_client.start_execution`: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker_unified_studio.py> and <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker_unified_studio.py>.
-  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
+  - *The Amazon provider at 9.32.0, `SageMakerTrainingOperator`* (read 2026-10-20, for Stage 10 step 1.3): `execute` hands `describe_training_job` to `_get_unique_job_name` while `check_if_job_exists` is true, its default, and `_check_if_resource_exists` counts only a `ValidationException` as absent; `action_if_job_exists` takes `timestamp`, the default, or `fail`; before the create, the hook's `check_training_config` heads each `S3DataSource` channel's bucket and key through the S3 hook, whose `check_for_bucket` returns false on a 403; `print_log` tails `/aws/sagemaker/TrainingJobs`; no code in the operators or the hook stops a training or processing job: <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>, <https://github.com/apache/airflow/blob/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/s3.py>. The API reference names `ResourceNotFound` as the error of `DescribeTrainingJob` and of `DescribeProcessingJob`: <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html>, <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html>. `HeadBucket` needs `s3:ListBucket`: <https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html>.
+  - *Using Python and Bash operators* (read 2026-10-10) — the code travels apart from the YAML, in the `Code` parameter (one `.py`, one `.sh` or a `.zip`; 250 MB per file and unzipped, 75 GB per account), versioned with the definition and readable back as `Code` and `CodeSnapshottedAt`; dependencies vendored at the archive root for Linux x86_64 and Python 3.12; a pre-installed set (Airflow 3.0.6, Amazon provider 9.32.0, boto3 1.43.1, dag-factory 1.0.0) that wins over any bundled version; no internet by default; a 1 vCPU / 3 GiB worker; the execution role's credentials available to the task: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>. **Re-read 2026-11-13**: the address answers with `custom-code-operators.html`, and the pre-installed set reads Amazon provider 9.38.0, with `apache-airflow-providers-duckdb` 0.2.1, `duckdb` 2.0.0 and `lz4` 4.4.4. **Re-read 2026-10-11**: `python_callable` takes `<module>.<function>`, and the code is extracted to `/usr/local/airflow/dags`, which is also a `BashOperator` script's working directory. Read again the same day for 6i's probe: the example's `bash_task` is an inline `bash_command` (`echo 'Hello from bash' && date`), and the operator's two accepted paths are `airflow.providers.standard.operators.bash.BashOperator` and `airflow.operators.bash.BashOperator`.
   - *`awscc_mwaaserverless_workflow`'s `code` attribute* — absent from the provider docs at `v1.98.0` (released 2026-08-19), present from `v1.99.0` (2026-08-28) (read at the release tags and the provider's changelog, 2026-10-10): <https://github.com/hashicorp/terraform-provider-awscc/blob/v1.99.0/docs/resources/mwaaserverless_workflow.md>.
   - *MWAA Serverless supported Airflow parameters* — the schedule lives in the YAML (`schedule`, cron); `retries` ≤ 3, `retry_delay` ≤ 300 s, `execution_timeout` ≤ 3 600 s; `catchup`, callbacks and `trigger_rule` are ignored: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>. **Re-read 2026-10-10**: `retries` defaults to 1, and the ignored lists also carry `deferrable`, `do_xcom_push` and `render_template_as_native_obj`, so a sensor holds its worker for the whole wait and a templated list arrives as a string.
   - *MWAA Serverless quotas* — 50 KB YAML, 60-minute task timeout, 100 workflows, 50 versions per workflow, 20 concurrent runs per workflow: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>.
   - *MWAA Serverless networking* — `NetworkConfiguration` optional; absent, tasks run in the service's VPC; set, ECS workers land in the customer's private subnets (≥ 2 AZs, self-referencing SG), with VPC endpoints for each service the tasks call under private routing: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/networking.html>.
   - *MWAA Serverless execution role* — trust `airflow-serverless.amazonaws.com`, one role per workflow, `logs:CreateLogStream`/`PutLogEvents` required: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>; the service-linked role `AWSServiceRoleForAmazonMWAAServerless`, auto-created at the first `CreateWorkflow` (Lesson 17): <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/using-service-linked-roles.html>.
-  - *MWAA Serverless observability* — run/task APIs, per-task log streams, the auto-created `/aws/mwaa-serverless/<id>/` group when none is named: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/observe-with-cloudwatch.html>; EventBridge events since 2026-06 (source `aws.airflow-serverless`, 15 detail types): <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-airflow-serverless.html> and <https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-mwaa-serverless-eventbridge/>.
+  - *MWAA Serverless observability* — run/task APIs, per-task log streams, the auto-created `/aws/mwaa-serverless/<id>/` group when none is named: <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/observe-with-cloudwatch.html>; EventBridge events since 2026-06 (source `aws.airflow-serverless`, 15 detail types): <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-airflow-serverless.html> and <https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-mwaa-serverless-eventbridge/>. **Re-read 2026-10-22** (Stage 10 step 3.1): every detail type carries the prefix `MWAA Serverless `, and the page's `{{MWAA Serverless Workflow Run State Change}}` is a placeholder, as the third-party update on the events says.
+  - *Cloud Control API's IAM actions* (read 2026-10-22, Stage 10 step 1.5): prefixed `cloudformation:`, with no resource-level permission and no service-specific condition key: <https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/security.html>.
   - *The actions, resources and condition keys of MWAA Serverless* (service prefix `airflow-serverless`; read 2026-10-16, for Stage 8 decision 19's role): one resource type, `workflow`, `arn:${Partition}:airflow-serverless:${Region}:${Account}:workflow/${WorkflowId}`, with `aws:ResourceTag/${TagKey}`; `ListWorkflows` and `CreateWorkflow` take no resource type, and `CreateWorkflow` the keys `aws:RequestTag` and `aws:TagKeys`; the workflow-scoped actions take `aws:ResourceTag`; `CreateWorkflow` and `UpdateWorkflow` need `iam:PassRole` with `iam:PassedToService = airflow-serverless.amazonaws.com`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_mwaa-serverless.html>. A third-party listing of the same actions, read first: <https://www.awsfundamentals.com/iam/airflow-serverless>.
-  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>.
+  - *The actions, resources and condition keys of Amazon DataZone* (read 2026-10-16, for the same role): `GetDomain` is the one action the CLI calls that takes a resource type (`domain`, `arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}`); the project, environment and connection reads take `*`: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>. Read again 2026-10-18 for [Stage 6f](plan/stages/stage-06f-data-governance.md) decision due 3: six condition keys, the three tag keys and `datazone:domainId`, `datazone:projectId` and `datazone:userId`, the last three on no action; `CreateAsset`, `CreateAssetRevision`, `CreateDataSource`, `UpdateDataSource`, `StartDataSourceRun`, `StartMetadataGenerationRun`, `AcceptPredictions` and `RejectPredictions` take no resource type and no key. The machine-readable copy agrees: <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>.
   - *The Python→YAML converter* — `python-to-yaml-dag-converter-mwaa-serverless` (dag-factory 1.0 target; AWS-provider operators only; no dynamic task mapping): <https://github.com/awslabs/python-to-yaml-dag-converter-mwaa-serverless>.
   - *Serverless workflows in SageMaker Unified Studio* — and the two-way sync ("create workflows in either platform and access them from both"): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-workflows.html> and <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows.html>.
   - *The OnDemand Workflows blueprint* — the provisioned-MWAA flavour of the Studio's Workflows tool, refused at Stage 10 step 0.4: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/modify-on-demand-workflows-blueprint.html>.
-  - *Serverless visual workflows* (read 2026-10-10) — the portal's editor offers `Python Operator` and `Bash Operator` under *General Purpose*; their files are uploaded in *Settings → Storage → Python/Bash Operator Files*, zipped, stored in an "operator files S3 location" and referenced from the definition; a task's return value is read downstream as `{{<task>.output}}`; "over 80 tasks": <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>. **Re-read 2026-10-11**: one uploaded file is stored as it is and several are zipped into one archive; only `.py`, `.sh` and `.zip` are accepted, the archive under 250 MB; no folder or existing S3 path is offered as a source; the *Python Callable* is a *File* and a *Function*, with *Op arguments* and *Op kwargs*; its dependency recipe, `pip install --target ./package`, carries no platform flag.
+  - *Serverless visual workflows* (read 2026-10-10) — the portal's editor offers `Python Operator` and `Bash Operator` under *General Purpose*; their files are uploaded in *Settings → Storage → Python/Bash Operator Files*, zipped, stored in an "operator files S3 location" and referenced from the definition; a task's return value is read downstream as `{{<task>.output}}`; "over 80 tasks": <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>. **Re-read 2026-10-11**: one uploaded file is stored as it is and several are zipped into one archive; only `.py`, `.sh` and `.zip` are accepted, the archive under 250 MB; no folder or existing S3 path is offered as a source; the *Python Callable* is a *File* and a *Function*, with *Op arguments* and *Op kwargs*; its dependency recipe, `pip install --target ./package`, carries no platform flag. **Re-read 2026-11-21**: its section *Import SageMaker Pipelines*, converting a pipeline in the account into a workflow once, in IAM domains alone (`docs/SMUS.md`, the workflow surface); the user guide's release notes date it 2026-06-04: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
   - *A serverless visual workflow, worked* — the portal's `S3 Key Sensor` task on a file under the project's `shared/` storage, then a Glue job and a notebook task, with the trigger left on *Manual only*: <https://aws.amazon.com/blogs/big-data/orchestrating-data-processing-tasks-with-a-serverless-visual-workflow-in-amazon-sagemaker-unified-studio/>.
   - *SageMaker network isolation* (read 2026-10-10) — an isolated container makes no outbound call, S3 included, and receives no AWS credentials; SageMaker downloads inputs and uploads outputs with the execution role, through the job's subnet when a VPC is set. The page names training jobs and models; the processing API carries the same `EnableNetworkIsolation` field: <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
   - *Processing inputs and outputs* (read 2026-10-10) — a `ProcessingInput` downloads an S3 URI into a container path and a `ProcessingOutput` uploads a container path to an S3 URI; both container paths must begin with `/opt/ml/processing/`, the rest of the name is the caller's, and symlinks are not followed on upload: <https://docs.aws.amazon.com/sagemaker/latest/dg/byoc-input-and-output.html>.
@@ -1755,7 +3166,7 @@
   - *Step Functions error handling* (`Retry`/`Catch`, the predefined error names): <https://docs.aws.amazon.com/step-functions/latest/dg/concepts-error-handling.html>; *execution-status events to EventBridge* (Standard only — B's failure rule): <https://docs.aws.amazon.com/step-functions/latest/dg/eventbridge-integration.html> and <https://docs.aws.amazon.com/eventbridge/latest/ref/events-ref-states.html>.
   - *EventBridge Scheduler* — what it is, and AWS's own recommendation of it over legacy scheduled rules: <https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html> and <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-rule-schedule.html>; templated targets (`states:StartExecution`, the `scheduler.amazonaws.com` execution role): <https://docs.aws.amazon.com/scheduler/latest/UserGuide/managing-targets-templated.html>; cron/timezone/DST semantics: <https://docs.aws.amazon.com/scheduler/latest/UserGuide/schedule-types.html>.
   - *Terraform resources for design B*: <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sfn_state_machine> and <https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/scheduler_schedule>.
-  - *Model Registry cross-account deployment* — the model-package-group resource policy, the ECR repository policy, the artifact S3/KMS, and the requirement that training `OutputDataConfig` name a KMS key: <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-deploy.html>; *approval statuses and `UpdateModelPackage`*: <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-approve.html>; *the `SageMaker Model Package State Change` EventBridge event* (duplicates possible): <https://docs.aws.amazon.com/sagemaker/latest/dg/automating-sagemaker-with-eventbridge.html>.
+  - *Model Registry cross-account deployment* — the model-package-group resource policy, the ECR repository policy, the artifact S3/KMS, and the requirement that training `OutputDataConfig` name a KMS key: <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-deploy.html>; *approval statuses and `UpdateModelPackage`*: <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-approve.html>; *the `SageMaker Model Package State Change` EventBridge event* (duplicates possible; read again 2026-10-18 for step 5.3's message: `resources` holds the package ARN, `detail` its `ModelPackageGroupName`, `ModelPackageVersion`, `ModelPackageArn`, `ModelPackageStatus`, `ModelApprovalStatus` and `UpdatedModelPackageFields`): <https://docs.aws.amazon.com/sagemaker/latest/dg/automating-sagemaker-with-eventbridge.html>.
   - *Serving shapes priced against D11/D12* — batch transform (per-job instances): <https://docs.aws.amazon.com/sagemaker/latest/dg/batch-transform.html>; Serverless Inference (scales to zero, no VPC configuration): <https://docs.aws.amazon.com/sagemaker/latest/dg/serverless-endpoints.html>.
   - *Prices measured for this pass* (Lesson 6, the bulk API): Step Functions <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonStates/current/us-west-2/index.json>, EventBridge/Scheduler <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSEvents/current/us-west-2/index.json>, and the SageMaker serving rows of `docs/PRICING.md` §8 <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonSageMaker/current/us-west-2/index.json>.
 
@@ -1764,7 +3175,7 @@
 - Announcement of Terraform support for SageMaker Unified Studio (2026-07): <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-unified-studio-terraform/>.
 
 - The SageMaker Unified Studio CI/CD CLI, `aws-smus-cicd-cli` (read 2026-10-13): a `manifest.yaml` names an application (`applicationName`), its content (`storage`, `git`, `workflows`, `quicksight`) and its stages, each stage one SMUS project whose `{proj.connection...}` placeholders resolve at deploy time; `bundle` packages an immutable artifact, `deploy` writes it to a stage and `test` validates it; Identity Center domains need extra one-time setup: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. Announced 2026-04-23: <https://aws.amazon.com/about-aws/whats-new/2026/04/amazon-smus-ci-cd-cli/>. The manifest schema at commit `3418ae1` (2026-10-05): `applicationName` and `stages` are the required fields, the name "not a SMUS resource"; `content` is optional, and the minimal manifest is a `storage` entry of code alone, with no workflow: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/manifest-schema.md>. The manifest guide separates content from activation, "how to run it (workflows, events, etc.)": <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/manifest.md>. The README's core concepts make an application the workload deployed and a workflow the orchestration that executes it, at deploy time or at run time: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/README.md>. The guide's activation section supports workflows and tests today, with events, CloudFormation and custom methods listed as future. The CLI is the manifest's only reader: `deploy` loads it, uploads the content to the project's S3, creates the workflows in MWAA Serverless and runs the bootstrap actions, so after a deploy no AWS service holds an application: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/architecture.md>. `test` runs the Python tests of a folder against the deployed bundle, and `run` starts a workflow: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/cli-commands.md>. A bootstrap action runs a workflow (`workflow.run`) or emits EventBridge events whose consumer the manifest does not define: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/3418ae1b07a99e53d4aea6ab8e9f3a0ece975b29/docs/bootstrap-actions.md>.
-- The SageMaker Unified Studio CI/CD feature's own pages (read 2026-10-13 to 2026-10-15, for D41): the overview, the key concepts (an application, its stages as projects, the bundle), the prerequisites, the deployment modes, the current limitations and the sample IAM policy, which lists no `airflow-serverless` action: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-key-concepts.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-prerequisites.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-deployment-modes.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-current-limitations.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-sample-iam-policy.html>. The manifest schema and guide at `main`, the versions the lab's 1.0.9 reads: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest-schema.md> and <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest.md>. Adding a member to a project, the step that lets an identity call the CLI against it: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-project-members.html>; the Identity Center domain's project setup in the administrator guide: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/setup-projects-idc-based-domains.html>. AWS's blog on AIOps with Unified Studio projects, part 2, the CLI in a pipeline: <https://aws.amazon.com/blogs/machine-learning/automate-aiops-with-sagemaker-unified-studio-projects-part-2-technical-implementation/>.
+- The SageMaker Unified Studio CI/CD feature's own pages (read 2026-10-13 to 2026-10-15, for D41): the overview, the key concepts (an application, its stages as projects, the bundle), the prerequisites, the deployment modes, the current limitations and the sample IAM policy, which lists no `airflow-serverless` action (read again 2026-10-22 for Stage 8 verification xix: 18 entries on `*`, five of them service wildcards): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-key-concepts.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-prerequisites.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-deployment-modes.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-current-limitations.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-sample-iam-policy.html>. The manifest schema and guide at `main`, the versions the lab's 1.0.9 reads: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest-schema.md> and <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/manifest.md>. Adding a member to a project, the step that lets an identity call the CLI against it: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-project-members.html>; the Identity Center domain's project setup in the administrator guide: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/setup-projects-idc-based-domains.html>. AWS's blog on AIOps with Unified Studio projects, part 2, the CLI in a pipeline: <https://aws.amazon.com/blogs/machine-learning/automate-aiops-with-sagemaker-unified-studio-projects-part-2-technical-implementation/>.
 - The CI/CD CLI's 1.0.9 wheel, read in its code (2026-10-15, for Stage 10 step 2.2): `bundle` reads a `content.storage` item from the manifest's folder when the item names no connection and downloads it from the stage's project storage when it names one, and `--local` only changes the default stage's name (`smus_cicd/cli.py`, `smus_cicd/commands/bundle.py`); `deploy` takes a connection-less item from the manifest's folder and reads a bundle archive only for an item that names a connection, a `git` source, a catalog export or notebooks (`smus_cicd/commands/deploy.py`, `smus_cicd/helpers/bundle_storage.py`); a workflow's `{env.VAR}` is written as `{{ params.VAR }}`, filled only by the `OverrideParameters` of a run the CLI starts from the stage's `environment_variables`, and a `${VAR}` in a workflow's YAML is left as written (`smus_cicd/helpers/context_resolver.py`, `smus_cicd/workflows/operations.py`); `bundle` builds nothing, copying each `include` path and only warning when one is missing, adds no `manifest.yaml` of its own, defaults to the `DEV` stage, and looks up the stage's project in DataZone even for local items, going on without its connections when the lookup fails (`smus_cicd/commands/bundle.py`, `smus_cicd/helpers/utils.py`): <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
 - The CI/CD CLI's 1.0.9 code and pages, read again 2026-10-17 for Stage 18's step 0.1 and its questions viii and ix: `run` starts the named workflow in every stage it targets, all of them when `--targets` names none, `destroy` removes what the manifest declares and, with `project.create: true`, the project, and `workflow.create` scans the project's whole storage root (`smus_cicd/commands/run.py`, `smus_cicd/helpers/destroy_validator.py`, `smus_cicd/helpers/project_manager.py`, `smus_cicd/commands/deploy.py`); the repository's README, which lets a project host one application or several, its quickstarts, which deploy several into one project, and its rollback guide, which calls `project.create: false` the typical production setup: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio>. The user guide's pages on the CLI's commands, on stages in other Regions and accounts, on its integrations and resources, and on a project: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cli-commands.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cross-region-cross-account.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-integration.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-additional-resources.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/projects.html>. AWS's Big Data blog of 2026-05-21, *"Each stage must map to a separate SageMaker Unified Studio project"*: <https://aws.amazon.com/blogs/big-data/automate-deployment-of-data-and-ai-applications-with-amazon-sagemaker-unified-studio-ci-cd-cli/>.
 - The quotas that bound applications in one account (read 2026-10-17, for Stage 18 step 5.4): SageMaker Unified Studio's, per account and Region, 1,000 projects and 1,000 environments: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/service-quotas.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/quotas.html>; DataZone's, 1,000 environments and 500 domain units per domain and 5 Git connections per project: <https://docs.aws.amazon.com/datazone/latest/userguide/datazone-limits.html>, <https://docs.aws.amazon.com/general/latest/gr/datazone.html>; MWAA's endpoints and quotas page, which lists no MWAA Serverless quota: <https://docs.aws.amazon.com/general/latest/gr/mwaa.html>.
@@ -1775,6 +3186,468 @@
 - Upgrading Amazon DataZone domains to SageMaker unified domains - the `domainVersion` V1/V2 distinction: <https://docs.aws.amazon.com/datazone/latest/userguide/upgrade-domain.html>.
 
 - AWS Step Functions: <https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html>.
+
+- The CI/CD CLI and the workflow service, read 2026-10-18 for `docs/plan/upstream-releases.md`: the
+  CLI's releases and its PyPI history, where 1.0.9 is the latest, and its open issues and specification
+  PR: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/releases>,
+  <https://pypi.org/pypi/aws-smus-cicd-cli/json>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/318>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/355>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/289>; the 1.0.9 sdist, read for the
+  network and key fallback (`helpers/datazone.py`, `bootstrap/handlers/workflow_create_handler.py`,
+  `helpers/airflow_serverless.py`) and for `project.name` (`application/application_manifest.py`):
+  <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>; Step Functions' integration release history and
+  its post on integrations added with no announcement:
+  <https://docs.aws.amazon.com/step-functions/latest/dg/awssdk-release-history.html>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/06/aws-step-functions-integrations/>; MWAA
+  Serverless's model in botocore and the `AmazonMWAA` offer of 2026-09-11:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/mwaa-serverless/2024-07-26/service-2.json>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonMWAA/current/us-west-2/index.json>.
+
+- The CI/CD CLI and the workflow service, read 2026-11-13 for `docs/plan/upstream-releases.md`. The CLI: PyPI,
+  where 1.0.9 is the latest; the comparison of `v1.0.9` with `main` (`cdb8e3c18f`), 82 commits in one example's
+  `requirements.txt`; and the `src/` tree, `27dafefa86` at both, read at `main` for the domain lookup, the
+  network and key fallback, the catalog import, the manifest's schema and `deploy`'s catalog summary:
+  <https://pypi.org/pypi/aws-smus-cicd-cli/json>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/compare/v1.0.9...main>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/tree/cdb8e3c18f37ea8c147bf3b92ac7957ac54568f1/src/smus_cicd>;
+  its open PR for deploys from `content.git`, whose diff rewrites the workflow scan's prefixes, and the issues
+  and the specification PR beside it: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/369>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/355>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/318>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/pull/289>. MWAA Serverless: the guide's document
+  history and its pages on environment variables, on connections and variables, on custom code and operators
+  and on the Airflow UI:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows-environment-variables.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/connections.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/custom-code-operators.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows-airflow-ui.html>; its
+  announcements of connections and variables, of custom and provider operators and of DuckDB operators:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/mwaa-serverless-connections-variables/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/mwaa-serverless-custom-operators/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-mwaa-serverless-duckdb-operators/>; its model in
+  botocore at `1.44.2`, with `Environment` and `CreateAirflowUiUrl`:
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/mwaa-serverless/2024-07-26/service-2.json>. The
+  Amazon provider at 9.38.0, the version the guide lists on the worker, against 9.32.0: the Glue and SageMaker
+  hooks identical, `GlueJobOperator` raising on a run that ends `STOPPED`:
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/glue.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/glue.py>,
+  <https://github.com/apache/airflow/blob/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>.
+
+- The CI/CD CLI's domain lookup and a space's `PATH` (read 2026-10-26, for [Stage 8](plan/stages/stage-08-cicd-pipelines.md)
+  decision 22's remedy and `examples/app-etl/scripts/dev-cli.sh`). The 1.0.9 wheel, its sha256 the house
+  lock's (`bd7258c0…4903`): `get_domain_id_by_name` lists domains through `resolve_domain_id`, every
+  caller reaches it through the module (`helpers/datazone.py`, `helpers/project_manager.py`,
+  `bootstrap/handlers/workflow_create_handler.py`, `helpers/context_resolver.py`), and `--version` prints
+  `aws-smus-cicd-cli <version>`: <https://pypi.org/pypi/aws-smus-cicd-cli/1.0.9/json>. The SageMaker
+  Distribution 4.5.2's `ENV PATH` (`/opt/conda/bin` after `/etc/sagemaker-inference-server`), its start
+  scripts, each running `micromamba activate base` before its server, `apply_patches.sh` (`pip show`
+  before the entrypoint's activation), the supervisord program and the server's
+  `terminado_settings`, `shell_command: ["/bin/bash"]`:
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/Dockerfile>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/entrypoint-sagemaker-ui-jupyter-server>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/start-sagemaker-ui-jupyter-server>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/entrypoint-sagemaker-ui-code-editor>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/usr/local/bin/start-sagemaker-ui-code-editor>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/patches/apply_patches.sh>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/supervisor/conf.d/supervisord-sagemaker-ui.conf>,
+  <https://raw.githubusercontent.com/aws/sagemaker-distribution/main/build_artifacts/v4/v4.5/v4.5.2/dirs/etc/sagemaker-ui/jupyter/server/jupyter_server_config.py>.
+  libmamba's activation at `micromamba-1.5.11`, the distribution's floor, and at `main`: the first
+  activation puts the prefix's `bin` ahead of the existing `PATH`, a reactivation removes it and puts it
+  first again, and the script exports `PATH` before it sources `etc/conda/activate.d/*.sh` in sorted order:
+  <https://raw.githubusercontent.com/mamba-org/mamba/micromamba-1.5.11/libmamba/src/core/activation.cpp>,
+  <https://raw.githubusercontent.com/mamba-org/mamba/main/libmamba/src/core/activation.cpp>. The micromamba
+  image the distribution starts from: `SHELL ["/usr/local/bin/_dockerfile_shell.sh"]`, which activates
+  only when `MAMBA_DOCKERFILE_ACTIVATE` is `1`, and `ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]`:
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/debian.Dockerfile>,
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_dockerfile_shell.sh>,
+  <https://raw.githubusercontent.com/mamba-org/micromamba-docker/main/_activate_current_env.sh>.
+  The report of the lookup, opened by the user from PR #269's draft the same day (open at 18:25:19 UTC):
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/issues/413>.
+
+- The CI/CD CLI's stages and AWS accounts (read 2026-11-13, for the user's question whether the tool
+  presupposes an account per stage; `main` at `cdb8e3c18f`, 82 commits after `v1.0.9`, still the latest
+  release). A stage maps to a project, and stage projects may sit in different domains, accounts and
+  Regions: <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/README.md>. The topologies
+  named are independent projects in one domain and in different domains, with dev and test in one
+  account and prod in another as a use case:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/architecture.md>. The reference
+  manifest holds `test` and `prod` as projects of one domain in one Region, and the prerequisite is an
+  AWS account with admin access:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/getting-started/admin-quickstart.md>.
+  The pipeline templates take a role per stage, their environments named `dev-aws-account`,
+  `test-aws-account` and `prod-aws-account`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/github-actions-integration.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/git-templates/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/.github/workflows/smus-multi-env-reusable.yml>.
+  The end-to-end example runs its stages in one account under one domain tag, with the stage in each
+  physical name (`bank_mktg_<stage>`), and moves a stage to its own account by the environment and role
+  its job assumes, the manifest and the commands unchanged:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/end-to-end-data-ml-pipeline/README.md>,
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/end-to-end-data-ml-pipeline/examples/mlops-pipeline/manifest.yaml>.
+  The catalog example's stages differ by domain tag and Region variable under one `${AWS_ACCOUNT_ID}`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/examples/catalog-import-export/manifest.yaml>.
+  One account and Region hold one Glue Data Catalog, so there the catalog guide's premise, the same
+  physical names in every stage (the entry of 2026-10-28), leaves the stages one table between them, and
+  the example's stage-named databases, which keep them apart, are names the import does not match. The
+  code reads no account from the manifest: `create_client` gives boto3 no credentials
+  (`helpers/boto3_client.py`), `resolve_domain_id` lists the caller's domains (`helpers/datazone.py`),
+  `${AWS_ACCOUNT_ID}` is the caller's from STS (`helpers/utils.py`), and GitHub's code search finds
+  `assume_role` in no file of `src`. The same search
+  finds `"associated account"`, `"account association"` and `"domain account"` in no file of the
+  repository, and `"cross-account"` in four. AWS's pages: a stage maps to a separate project and domain,
+  stages can be in different accounts and Regions, and each target's credentials are provided at deploy
+  time through IAM roles, OIDC federation or environment variables; the overview names an independent
+  project per stage, and the prerequisites and the limitations name no account:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-key-concepts.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-cross-region-cross-account.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-prerequisites.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/cicd-current-limitations.html>.
+
+- **The aws provider's state machine validation (read 2026-10-24, for [Stage 10](plan/stages/stage-10-orchestration-promotion.md)
+  step 1.5 and Stage 8's deploy roles).** `aws_sfn_state_machine` registers `stateMachineDefinitionValidate`
+  in its `CustomizeDiff`; when the definition is new or changed it calls `ValidateStateMachineDefinition`
+  and returns any error, an access denial included, so the deploy role needs
+  `states:ValidateStateMachineDefinition`, an action with no resource type, for every plan that creates or
+  changes a machine:
+  <https://raw.githubusercontent.com/hashicorp/terraform-provider-aws/v6.70.0/internal/service/sfn/state_machine.go>.
+
+- **Step Functions' `StartExecution` and an execution's name (read 2026-11-16, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) release F's `staging-test`).** On a Standard
+  machine a name and input equal to a running execution's return that execution; a closed execution's name
+  returns `400 ExecutionAlreadyExists`, reusable 90 days after the close, so a retried job that names its
+  executions after the pipeline is refused:
+  <https://docs.aws.amazon.com/step-functions/latest/apireference/API_StartExecution.html>.
+
+- **dbt in a workflow and its lineage in the catalog, AWS's own material (read 2026-11-16, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) question 4 and decisions 2 to 5).** The Big Data Blog's
+  post of 2025-06-24: dbt on Amazon Redshift run with `dbt-ol run`, *"just a wrapper on top of the standard
+  `dbt run` command"*; an HTTP transport to a proxy of API Gateway, SQS and a Lambda that may transform an
+  event before it posts it to the domain, the post's Airflow example needing the `name` and `namespace` of
+  its inputs and outputs changed; OpenLineage's own transport to the domain for *"cases where you don't
+  need additional controls on your OpenLineage event stream"*; the sample *"uses a public API endpoint with
+  no authentication or authorization mechanism"*:
+  <https://aws.amazon.com/blogs/big-data/capture-data-lineage-from-dbt-apache-airflow-and-apache-spark-with-amazon-sagemaker/>.
+  The announcements: the transport `AmazonDataZoneTransport` contributed to OpenLineage (2025-06-26), the
+  aggregated view of the graph with `QueryGraph` (2026-03-17, read 2026-11-08), and lineage in IAM-based
+  domains with `DeleteLineageEvent` (2026-07-07):
+  <https://aws.amazon.com/about-aws/whats-new/2025/06/amazon-sagemaker-custom-transport-openlineage-community-lineage-capabilities>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/03/amazon-sagemaker-unified-studio-aggregated-lineage/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/07/amazon-sagemaker-data-lineage-iam-domain>.
+  The Amazon MWAA guide's dbt page, written for provisioned MWAA: a startup script builds a virtual
+  environment with `dbt-core==1.9.4`, `dbt-redshift==1.9.1` and `dbt-postgres==1.9.0`, and a `BashOperator`
+  copies the project from the `dags` folder to `/tmp` and runs `dbt run` there; no word on lineage or on
+  MWAA Serverless:
+  <https://docs.aws.amazon.com/mwaa/latest/userguide/samples-dbt.html>.
+  The MWAA Serverless guide's page on custom code, read again under the URL the entry of 2026-11-13 holds:
+  *"Operators from Apache Airflow provider packages that aren't pre-installed, such as the HTTP, Snowflake,
+  or dbt providers."*; *"The pre-installed version takes precedence."*; a package built with `pip install`
+  under `--platform manylinux2014_x86_64 --python-version 3.12 --only-binary=:all:`; no operator named for
+  dbt Core and no word on OpenLineage.
+
+- **awslabs' `runner-dbt-aws-airflow` and AWS's posts on `dbt-glue` (read 2026-11-16, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) decisions 1 (c), 2 (d) and 5).** The runner, 1.0.0:
+  Airflow operators that run dbt in a Glue Spark job, a Glue interactive session, a Glue Python shell job,
+  EMR Serverless or an EMR step; it names MWAA and not MWAA Serverless; its `[lineage]` extra pins
+  `openlineage-python==1.50.0` and `openlineage-dbt==1.50.0`, wraps `dbt` in `dbt-ol` and posts to the
+  domain; *"Any failure in the OL pipeline is logged but does NOT change dbt's exit code"*; no renaming of
+  a dataset toward an asset's identifier:
+  <https://awslabs.github.io/runner-dbt-aws-airflow/>,
+  <https://awslabs.github.io/runner-dbt-aws-airflow/concepts/lineage/>.
+  The Big Data Blog's posts of 2022-04-21 and 2023-11-29: `dbt-glue`, built by AWS Professional Services
+  with dbt Labs, runs Spark SQL on Glue interactive sessions over the Glue Data Catalog, with Hudi, Delta
+  Lake and Iceberg and Lake Formation's permissions; a "trusted" adapter, *"not maintained by dbt Labs"*:
+  <https://aws.amazon.com/blogs/big-data/build-your-data-pipeline-in-your-aws-modern-data-platform-using-aws-lake-formation-aws-glue-and-dbt-core>,
+  <https://aws.amazon.com/blogs/big-data/build-and-manage-your-modern-data-stack-using-dbt-and-aws-glue-through-dbt-glue-the-new-trusted-dbt-adapter>.
+
+- **dbt's own pages (read 2026-11-16, for [Stage 20](plan/stages/stage-20-dbt-lineage.md) question 2 and
+  decisions 1 and 6).** The artifacts: `manifest.json`, written by every command that parses the project,
+  holds `parent_map`, *"the first-order parents of each resource"*, and `child_map`, and the page (updated
+  2026-09-08) never uses the word lineage; `run_results.json` and `catalog.json` sit beside it:
+  <https://docs.getdbt.com/reference/artifacts/manifest-json>,
+  <https://docs.getdbt.com/reference/artifacts/dbt-artifacts>.
+  Column-level lineage (updated 2026-10-01): in the hosted platform's Catalog, *"Requires an Enterprise or
+  Enterprise+ plan with Catalog access"*, or locally with dbt v2, *"Requires strict static analysis"*; the
+  page names no dbt Core:
+  <https://docs.getdbt.com/docs/explore/column-level-lineage>.
+  The versions (updated 2026-10-23): v1.12, released 2026-07-16, in active support until 2027-07-15; v1.11,
+  released 2025-12-19, in critical support until 2026-12-18; v2.0, released 2026-09-14; *"If your
+  organization has a strict requirement for an Apache 2.0 licensed runtime, install dbt OSS instead."*:
+  <https://docs.getdbt.com/docs/dbt-versions/core>.
+  dbt v2's supported features (updated 2026-10-29) name BigQuery, Databricks, Redshift, Snowflake,
+  ClickHouse, Apache Spark and DuckDB, and no Athena:
+  <https://docs.getdbt.com/docs/fusion/supported-features>.
+  The adapters for AWS: `dbt-athena`, maintained by dbt Labs (updated 2026-09-08); its configurations
+  (updated 2026-10-22), where under a workgroup with a default output location `s3_data_naming` *"ignores
+  any configured buckets and uses the location configured in the workgroup"* and *"dbt doesn't manage Lake
+  Formation permissions"*; Iceberg on AWS (updated 2026-09-25), through `dbt-athena` and Athena engine
+  version 3, as table and incremental materializations; `dbt-glue`, *"Maintained by: Community"*, *"dbt
+  support: Not Supported"*:
+  <https://docs.getdbt.com/docs/core/connect-data-platform/athena-setup>,
+  <https://docs.getdbt.com/reference/resource-configs/athena-configs>,
+  <https://docs.getdbt.com/docs/build/iceberg/adapters/aws-iceberg-support>,
+  <https://docs.getdbt.com/docs/core/connect-data-platform/glue-setup>.
+
+- **OpenLineage's naming, its dbt integration and its released code (read 2026-11-16, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.9 and 1.3 and decisions 3 to 5).** The naming
+  page (documentation version 1.55.0): Athena is `awsathena://athena.{region_name}.amazonaws.com` with
+  `{catalog}.{database}.{table}`, AWS Glue `arn:aws:glue:{region}:{account id}` with
+  `table/{database name}/{table name}`, Redshift `redshift://{cluster_identifier}.{region_name}:{port}`
+  with `{database}.{schema}.{table}`; no naming for a dbt job:
+  <https://openlineage.io/docs/spec/naming>.
+  The dbt integration's page: `dbt-ol` runs dbt's own subcommands and reads `target/` after dbt ends, or
+  dbt's structured logs under `--consume-structured-logs`; `OPENLINEAGE_URL` and `OPENLINEAGE_NAMESPACE`;
+  `athena`, `redshift`, `glue` and `duckdb` among its adapters; no word on a failed emission, on
+  `send-events` or on dbt v2:
+  <https://openlineage.io/docs/integrations/dbt>.
+  The released code, the 1.55.0 wheels of 2026-10-29 unpacked (`openlineage-dbt`,
+  `openlineage-integration-common`, `openlineage-python`) and the repository at `main`: the wrapper starts
+  `dbt` as a subprocess and returns its exit code; an Athena dataset carries a symlink of namespace
+  `arn:aws:glue:{region}:{account_id}` and name `table/{database}/{table}`; a Redshift dataset's namespace
+  is `redshift://{host}:{port}` from the profile; the transports `amazon_datazone_api` and `transform`;
+  `openlineage-sql` 1.55.0's Linux wheels are tagged `manylinux_2_28` alone:
+  <https://pypi.org/pypi/openlineage-dbt/1.55.0/json>,
+  <https://pypi.org/pypi/openlineage-integration-common/1.55.0/json>,
+  <https://pypi.org/pypi/openlineage-python/1.55.0/json>,
+  <https://pypi.org/pypi/openlineage-sql/1.55.0/json>,
+  <https://github.com/OpenLineage/OpenLineage>.
+
+- **What the worker's archive of dbt can hold (PyPI's JSON and Airflow's constraint file, read 2026-11-16,
+  for [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.10 and 0.13 and decisions 2 and 6).**
+  dbt-core 1.11.17 (2026-11-06) and 1.12.7 (2026-11-12); `dbt-athena` 1.11.1 (2026-09-07), whose wheel was
+  unpacked for its macros and its profile keys; `dbt-redshift` 1.11.2 (2026-11-04); `dbt-duckdb` 1.11.1
+  (2026-10-26); `dbt-core-experimental-parser` 2.0.11 (2026-11-03), which dbt-core 1.12.7 requires and
+  PyPI holds as a source distribution alone, its build downloading a `manylinux_2_28` wheel from dbt's
+  GitHub release; `duckdb` 2.0.0 (2026-10-21), its Linux x86_64 wheels tagged `manylinux_2_27` and
+  `manylinux_2_28`:
+  <https://pypi.org/pypi/dbt-core/json>, <https://pypi.org/pypi/dbt-athena/1.11.1/json>,
+  <https://pypi.org/pypi/dbt-redshift/json>, <https://pypi.org/pypi/dbt-duckdb/json>,
+  <https://pypi.org/pypi/dbt-core-experimental-parser/json>, <https://pypi.org/pypi/duckdb/2.0.0/json>.
+  Airflow 3.0.6's constraint file for Python 3.12 pins `click==8.2.1`, `protobuf==4.25.8`,
+  `sqlparse==0.5.3`, `mmh3==5.2.0`, OpenLineage's packages at 1.37.0 and
+  `apache-airflow-providers-dbt-cloud==4.4.2`, against dbt-core 1.11.17's floors `click>=8.3.0`,
+  `protobuf>=6.0` and `sqlparse>=0.5.5` and `dbt-athena` 1.11.1's `mmh3<4.2.0`:
+  <https://raw.githubusercontent.com/apache/airflow/constraints-3.0.6/constraints-3.12.txt>.
+
+- **dbt and OpenLineage after the lock (PyPI's JSON, dbt's changelogs and its versions page, read 2026-11-17,
+  for [Stage 20](plan/stages/stage-20-dbt-lineage.md) step 1.7).** `dbt-athena` 1.11.2 and `dbt-adapters`
+  1.24.6, uploaded 2026-11-17, the adapter requiring `dbt-adapters>=1.24.6` and keeping `pyathena<3.35`;
+  PyAthena 4.3.0 (2026-11-16); dbt-core 1.12.7 and 1.13.0b1 requiring `dbt-core-experimental-parser`, a
+  source distribution alone to 2.0.11; OpenLineage 1.55.0 the latest; dbt-core 1.11.17's changes and
+  `dbt-athena` 1.11.2's; the versions page, updated 2026-10-23:
+  <https://pypi.org/pypi/dbt-athena/json>, <https://pypi.org/pypi/dbt-athena/1.11.2/json>,
+  <https://pypi.org/pypi/dbt-adapters/json>, <https://pypi.org/pypi/dbt-adapters/1.24.6/json>,
+  <https://pypi.org/pypi/pyathena/json>, <https://pypi.org/pypi/dbt-core/1.11.17/json>,
+  <https://pypi.org/pypi/dbt-core/1.12.7/json>, <https://pypi.org/pypi/dbt-core/1.13.0b1/json>,
+  <https://pypi.org/pypi/openlineage-dbt/json>, <https://pypi.org/pypi/openlineage-sql/json>,
+  <https://raw.githubusercontent.com/dbt-labs/dbt-core/v1.11.17/.changes/1.11.17.md>,
+  <https://raw.githubusercontent.com/dbt-labs/dbt-adapters/stable/dbt-athena/CHANGELOG.md>,
+  <https://docs.getdbt.com/docs/dbt-versions/core>.
+
+- **The task cap, a job past it, and a job's network (read 2026-11-16, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.10, 0.12 and 0.14 and decisions 1, 2 and
+  13).** MWAA Serverless's pages, re-read in their Markdown form: the quotas table has two columns,
+  Resource and Default, a row *Maximum task execution timeout* of 60 minutes and no word on which quota
+  is adjustable beyond *"You can request increases for some quotas, but other quotas can't be
+  increased."*; the parameters page caps `execution_timeout` at 3,600 seconds, `retries` at 3 and
+  `retry_delay` at 300 seconds and names neither `wait_for_completion` nor a sensor's `mode`,
+  `poke_interval` or `timeout`; the operators page lists `GlueJobSensor` and
+  `SageMakerProcessingSensor`:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/mwaa-serverless-quotas.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/supported-airflow-parameters.html>,
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>.
+  Airflow's released wheels, read in their code: `apache-airflow-task-sdk` 1.0.6 (2025-08-29), whose
+  task runner fails a task for good on `AirflowSensorTimeout` and retries one ended by
+  `AirflowTaskTimeout`, and `apache-airflow-providers-amazon` 9.38.0 (2026-10-17), whose
+  `SageMakerProcessingOperator` has no `on_kill` and whose `GlueJobOperator` takes
+  `resume_glue_job_on_retry`:
+  <https://pypi.org/pypi/apache-airflow-task-sdk/1.0.6/json>,
+  <https://pypi.org/pypi/apache-airflow-providers-amazon/9.38.0/json>.
+  `dbt-glue`, with no release for dbt Core 1.11 (1.10.19 of 2026-02-18, then 1.12.3 and 1.12.4), and
+  `dbt-spark` 1.11.0 (2026-07-16), whose `session` extra asks `pyspark`:
+  <https://pypi.org/pypi/dbt-glue/json>, <https://pypi.org/pypi/dbt-spark/json>.
+  A processing job in a VPC, *"This allows the processing job to connect to resources that exist in
+  your VPC."*, on a page that names network isolation nowhere:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/process-vpc.html>. Network isolation, re-read: the
+  page names `CreateTrainingJob`, `CreateHyperParameterTuningJob` and `CreateModel` and no processing
+  job, *"No AWS credentials are made available to the container runtime environment."* and *"Network
+  isolation can be used in conjunction with a VPC."*:
+  <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
+
+- **What the Tooling blueprint lets an administrator add to a project role (read 2026-11-16, for the
+  user's question on a workflows grant for every project,
+  [Stage 20's log](log/log-stage-20-dbt-lineage.md)).** The managed blueprint's page lists ten
+  parameters, `enableNetworkIsolation` among them (*"Enables network isolation for training and
+  deployed inference containers."*), none adding a policy to a role it creates, and the regional
+  parameter `PermissionsBoundaryArn`, whose boundary the service attaches *"to all IAM roles
+  provisioned by the Tooling blueprint during project creation"*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/manage-tooling-blueprint.html>.
+  A custom Tooling blueprint's template creates the project role in an Identity Center domain
+  (*"your template creates the project role itself"*), and *"You can create a project with a project
+  profile that uses a custom Tooling blueprint only by using the API."*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-custom-blueprints.html>.
+- **A third party's test of lineage in an IAM-based domain (Classmethod, 2026-07-12, read 2026-11-08, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) decision 3).** An event posted by hand showed in the
+  portal only after a dataset took the namespace `arn:aws:glue:<region>:<account>:table` and the name
+  `<database>/<table>`, the ARN of a table that was an asset:
+  <https://dev.classmethod.jp/en/articles/20260712-amazon-sagemaker-data-lineage-iam-domain/>.
+- **The review of Stage 20's plan for execution (read 2026-11-17, for
+  [Stage 20](plan/stages/stage-20-dbt-lineage.md) steps 0.15, 0.16 and 3.4).** PyPI's metadata:
+  dbt-core 1.11.16 (2026-10-14) carries the floors of 1.11.17 (2026-11-06), `click>=8.3.0`,
+  `protobuf>=6.0` and `sqlparse>=0.5.5`; moto 5.2.5 (2026-10-27), whose server stood for Athena, Glue,
+  S3 and STS in the simulation; awscli 1.46.3 (2026-11-05), the newest PyPI carries, which read each
+  `aws` command of the plan:
+  <https://pypi.org/pypi/dbt-core/1.11.16/json>, <https://pypi.org/pypi/dbt-core/1.11.17/json>,
+  <https://pypi.org/pypi/moto/5.2.5/json>, <https://pypi.org/pypi/awscli/1.46.3/json>.
+  `awsds-workflows` at the commit the template's pipeline pins, installed from its archive:
+  <https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip>.
+  The AWS CLI v2 changelog to 2.40.4: *"Adds support for deleting lineage events in Amazon DataZone."*
+  under 2.35.5, `mwaa-serverless` first named under 2.31.38 and DataZone's lineage under 2.17.4:
+  <https://raw.githubusercontent.com/aws/aws-cli/v2/CHANGELOG.rst>.
+
+- **MWAA Serverless's operators and pre-installed packages, read again (2026-11-16, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) passes 9 and 10).** The operators page,
+  in its Markdown form, lists 25 entries whose name starts with `SageMaker`, `SageMakerNotebookOperator`
+  under *Analytics* and 24 under *Machine learning*, and 15 that start with `Bedrock`, three guardrail
+  operators (create, create version, delete) and four sensors among them. It lists no
+  `BedrockBatchInferenceOperator`, no `BedrockCreateEvaluationJobOperator` and no Feature Store or
+  MLflow operator, and its one version reference is a link to the Amazon provider's documentation at
+  9.38.0:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators.html>.
+  The page on Python and Bash operators differs between its two forms. The Markdown form's table of
+  pre-installed packages holds `apache-airflow` 3.0.6, `apache-airflow-providers-amazon` 9.32.0, `boto3`
+  and `botocore` 1.43.1, `dag-factory` 1.0.0, `pyyaml` unpinned, `lz4` 4.4.4 and five AWS cryptography
+  packages; the HTML form's holds the Amazon provider at 9.38.0, `apache-airflow-providers-duckdb` 0.2.1
+  and `duckdb` 2.0.0, and no cryptography package. Neither lists `mlflow`, `sagemaker` or
+  `sagemaker-studio`, and both say a pre-installed package takes precedence over the archive's:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/operators-python-bash-detail.html>.
+  The document history holds three entries, the latest of August 17, 2026, *"Python and Bash operator
+  support"*:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/doc-history.html>.
+
+- **The Amazon provider's SageMaker and Bedrock operators, in the released code (read 2026-11-16, for
+  `SUP-372` and `SUP-373`).** `operators/sagemaker.py`, `operators/bedrock.py` and `hooks/sagemaker.py`
+  at the tags `providers-amazon/9.32.0` and `providers-amazon/9.38.0`, the versions the service's page
+  names in its two forms: what the transform, model, endpoint, register and pipeline operators call,
+  `SageMakerStartPipelineOperator`'s `wait_for_completion` false by default, and what the Bedrock
+  invoke, retrieval and guardrail operators call and log. `operators/bedrock.py` holds three AgentCore
+  runtime operators at both tags, which the service's page does not list:
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/operators/bedrock.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.32.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/sagemaker.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/operators/bedrock.py>,
+  <https://raw.githubusercontent.com/apache/airflow/providers-amazon/9.38.0/providers/amazon/src/airflow/providers/amazon/aws/hooks/sagemaker.py>.
+
+- **The CI/CD CLI's documents, its `genai`, `ml/training` and `ml/deployment` examples and its released
+  wheel (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 16, 21, 22, 24 and 26 and
+  `SUP-374`).** The repository's raw files at `main`; GitHub's tree page refused the fetch.
+  - The README and the documents. "Supported AWS Services" lists SageMaker Training, SageMaker
+    Pipelines, Feature Store, Model Registry and Batch Transform under Machine Learning, and Amazon
+    Bedrock, Bedrock Agents, Bedrock Knowledge Bases and Guardrails under Generative AI; "What Can You
+    Deploy?" marks *"Feature Store (future)"* and *"Batch transforms (future)"*; *"A project can host a
+    single application or multiple applications depending on your architecture and CI/CD methodology."*;
+    the schema comments `storage` as *"Storage content (S3 files, data, models)"*. The examples guide
+    deploys the notebooks, ETL and generative AI examples into one project, `test-marketing`, the
+    generative AI one under a *"Project-specific IAM role with Bedrock permissions"* with the model a
+    stage variable, and gives the two ML examples a project each. No document names AgentCore:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/README.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/examples-guide.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/manifest.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/manifest-schema.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/connections.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/bootstrap-actions.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/cli-commands.md>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/docs/airflow-aws-operators.md>.
+  - The `genai` example, `IntegrationTestGenAIWorkflow`: one stage, `test`, the storage items
+    `agent-code` and `genai-workflows`, and one task, a notebook run by `SageMakerNotebookOperator`. The
+    notebook and its helpers call Amazon Bedrock Agents, create a guardrail, IAM roles, a Lambda
+    function, a knowledge base with its ingestion and an OpenSearch Serverless collection; the larger
+    helper was read to 39,844 of 126,207 characters. No file names AgentCore:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/workflows/genai_dev_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/workflows/bedrock_agent_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/bedrock_agent.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/bedrock_agent_helper.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/job-code/utils/knowledge_base_helper.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/genai/app_tests/test_genai_workflow.py>.
+  - The `ml/training` example: one task, a notebook that trains with the SageMaker SDK's `SKLearn`
+    estimator on `ml.m5.large`, tracks to an MLflow tracking server through the connection
+    `mlflow-server`, registers the model from the run itself through MLflow and copies the archive to
+    `ml/output/model-artifacts/latest/output/model.tar.gz`. The manifest holds the stages `dev` and
+    `test` and no `prod`, gives `dev` no deployment configuration and creates the MLflow connection in
+    `test`:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/workflows/ml_training_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/workflows/ml_training_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/code/sagemaker_training_script.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/training/app_tests/test_model_registration.py>.
+  - The `ml/deployment` example: the storage item `model-artifacts` names the connection
+    `default.s3_shared` and includes `ml/output/model-artifacts`, so `bundle` reads the trained model
+    from the `dev` project; `test` and `prod` write it to `ml/bundle/model-artifacts`, and the one task,
+    a notebook with `retries: 1`, deletes the endpoints earlier runs left, deploys an endpoint on
+    `ml.m5.large`, calls it and deletes nothing at its end. No example trains in `prod`:
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/manifest.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/workflows/ml_deployment_workflow.yaml>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/workflows/ml_deployment_notebook.ipynb>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/code/inference.py>,
+    <https://raw.githubusercontent.com/aws/CICD-for-SageMakerUnifiedStudio/main/examples/analytic-workflow/ml/deployment/app_tests/test_endpoint_deployment.py>.
+  - The wheel of 1.0.9 from PyPI (`commands/bundle.py`, `commands/deploy.py`, `helpers/deployment.py`,
+    `helpers/bundle_storage.py`): `bundle` reads a storage item that names a connection from the stage's
+    project, as its caller, through the `aws` CLI, and neither `bundle` nor `deploy` fails where the
+    item is missing:
+    <https://pypi.org/project/aws-smus-cicd-cli/1.0.9/>.
+
+- The CI/CD CLI's substitutions guide (read 2026-11-18, for the reading of the CLI's project handling of
+  2026-11-17 in [Stage 19](plan/stages/stage-19-smus-native-data-product.md)'s log, `SUP-375`): the
+  `{proj.*}` properties a workflow resolves at deployment, `id`, `name`, `domain_id`, `iam_role`,
+  `iam_role_arn`, `iam_role_name` and `kms_key_arn`, the connections' under
+  `{proj.connection.<name>.<property>}`, and no subnet or security group; unchanged since `487e489185`
+  (2026-03-24), `main` at `d768153d57`:
+  <https://github.com/aws/CICD-for-SageMakerUnifiedStudio/blob/main/docs/substitutions-and-variables.md>.
+
+- **AWS's path for a trained model, and what loads it (read 2026-11-17, for `TM-33`'s acceptance on
+  the condition that the path is AWS's, [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
+  9.5).**
+  - The CI/CD CLI's ML examples, re-read at `main`: `ml/training`'s script saves the model with
+    `joblib.dump` as `model.joblib`; `ml/deployment`'s `inference.py` loads it with `joblib.load` in
+    `model_fn`; its manifest declares `dev`, `test` and `prod`, the storage item `model-artifacts` on
+    `default.s3_shared` including `ml/output/model-artifacts`, and `test` and `prod` writing it to
+    `ml/bundle/model-artifacts`, `dev` with no deployment configuration. The URLs are the entry above.
+  - joblib's `load`, whose docstring warns that it relies on the pickle module and can execute arbitrary
+    Python code, and should never load files from untrusted sources:
+    <https://raw.githubusercontent.com/joblib/joblib/main/joblib/numpy_pickle.py>. The documentation's
+    persistence page answered 404 at `stable` and at `latest`.
+  - SageMaker AI's project templates: the templates register the models in the Model Registry and deploy
+    them, and the build, train and deploy template has a manual approval step between staging and
+    production; the page does not say that one version reaches both:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-projects-templates-sm.html>.
+  - The registry's approval: setting a version `Approved` can initiate CI/CD deployment, and
+    `PendingManualApproval` to `Approved` initiates it for the projects' templates:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry-approve.html>.
+
+- **botocore's service models and the MLflow client, from PyPI (read 2026-11-16 and 2026-11-17, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decisions 18 to 21, 26 and 27 and step
+  9.4).** The wheels of botocore 1.43.1, the version of the worker's `boto3`, and of 1.44.4.
+  `bedrock-agentcore` holds 54 operations, `InvokeAgentRuntime` and `InvokeHarness` among them, and
+  `bedrock-agentcore-control` 115, where `CreateAgentRuntime` takes a container or a
+  `codeConfiguration`; a harness's Bedrock model configuration holds no guardrail member. Bedrock holds
+  `PutEnforcedGuardrailConfiguration`, `ListEnforcedGuardrailsConfiguration` and
+  `DeleteEnforcedGuardrailConfiguration` at both versions. SageMaker: `CreatePipeline` takes a
+  definition or its S3 location, `CreateFeatureGroup` an offline store's S3 location and
+  `DisableGlueTableCreation`; a model package created in a group takes no tag (*"In this case, you
+  cannot supply a tag argument."*), a container definition carries `ModelDataETag`, and
+  `UpdateModelPackage` takes no description:
+  <https://pypi.org/project/botocore/1.43.1/>, <https://pypi.org/project/botocore/1.44.4/>.
+  The MLflow client for a worker's archive, resolved by `uv` on a build host: `mlflow-skinny` 3.10.1 and
+  `sagemaker-mlflow` 0.5.0, which `awsds-workflows package-task` wrote with their dependencies as
+  15,288,232 bytes, 42 distributions:
+  <https://pypi.org/project/mlflow-skinny/3.10.1/>, <https://pypi.org/project/sagemaker-mlflow/0.5.0/>.
 
 ## Security, monitoring and cost
 
@@ -1823,6 +3696,14 @@
   only `errorCode`. The page names no endpoint type, so whether a gateway endpoint is covered is not on it:
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-network-events-with-cloudtrail.html>.
 
+- CloudTrail's event history lookup (read 2026-10-21, for the `lookup-events` reads in `aws/`): two
+  lookups a second per account and Region, one lookup attribute per call, at most 50 events a page and a
+  `NextToken` while more remain. The only `ResourceName` example is a role name, and neither page says
+  which spelling an event's resources carry; an `AssumeRole` event's is the role's ARN (`lessons.md`,
+  CloudTrail):
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-cli.html>,
+  <https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_LookupAttribute.html>.
+
 - A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
   `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works
   by adding a route to your VPC's route table", with the bucket in the event's `resources` (read
@@ -1834,6 +3715,52 @@
   them (the read-only restriction applies to *management* events, which need
   `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`):
   <https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-service-event-cloudtrail.html>.
+
+- The channels `threat-model.md`'s `TM-22` to `TM-24` name, read 2026-10-20 for Stage 11:
+  - `TM-22`, ODBC and JDBC from a BI tool. The Athena ODBC 2.x driver's `SageMakerBrowserIdc` plugin
+    signs in to Identity Center in a browser and exchanges the token for credentials scoped to the
+    domain and the project's Athena environment; `SageMakerIam` takes the default credential chain:
+    <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-sagemaker-idc.html>,
+    <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-sagemaker-iam.html>; the release notes
+    adding both: <https://docs.aws.amazon.com/athena/latest/ug/odbc-v2-driver-release-notes.html>; the
+    JDBC 3.x plugins: <https://docs.aws.amazon.com/athena/latest/ug/jdbc-v3-driver-datazone-idc.html>,
+    <https://docs.aws.amazon.com/athena/latest/ug/jdbc-v3-driver-datazone-iamcp.html>. SageMaker Unified
+    Studio's pages name the calls, `RedeemAccessToken` trading an Identity Center access token for the
+    domain execution role's credentials, which call `GetEnvironmentCredentials`:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/query-with-odbc.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/query-with-jdbc.html>.
+  - `TM-23`, the SageMaker Data Agent. The project role needs DataZone's `SendMessage`, `GenerateCode`,
+    `StartConversation`, `GetConversation` and `ListConversations`, and an Identity Center domain turns
+    the agent off on its configuration page:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-security.html>; the
+    admin guide's `SageMakerDataAgentDeny` over the five actions, on the page already read for Amazon Q:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazonq.html>; geographic
+    cross-region inference, `us-east-1`, `us-west-2` and `us-east-2` for a United States domain:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-cross-region.html>;
+    prompts and generated code used to improve the service unless an AI services opt-out policy covers
+    DataZone:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-service-improvement.html>;
+    the storage page, read again:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-agent-data-storage.html>.
+  - `TM-24` and the two above, in IAM. The Service Authorization Reference's DataZone page and its
+    machine-readable copy: `CreateConnection`, `GetEnvironmentCredentials` (credentials that assume the
+    environment user role) and the agent's five actions take no resource type and no condition key, and
+    `RedeemAccessToken` is no action:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_datazone.html>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/datazone/datazone.json>. Glue's pair, where
+    `CreateConnection` takes an optional `connectionType` resource beside the required `rootcatalog`:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_glue.html>,
+    <https://servicereference.us-east-1.amazonaws.com/v1/glue/glue.json>; Glue's resource-ARN page does
+    not name that type: <https://docs.aws.amazon.com/glue/latest/dg/glue-specifying-resource-arns.html>.
+    DataZone's model in botocore, where the three Iceberg REST types are Glue connection types under
+    `props.glueProperties`:
+    <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>. The
+    managed policies that grant the calls: `SageMakerStudioProjectRoleMachineLearningPolicy` v45
+    (`DataZoneUserPermissions`), `SageMakerStudioProjectUserRolePolicy` v75 (`DataLakeAthenaPermissions`)
+    and `SageMakerStudioDomainExecutionRolePolicy` v23 (`GetEnvironmentCredentials`):
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectRoleMachineLearningPolicy.html>,
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>,
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioDomainExecutionRolePolicy.html>.
 
 - S3 Object Lock — governance vs. compliance mode, the distinction that decides whether an administrator of the Log Archive account can bypass it (`s3:BypassGovernanceRetention`): <https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html>.
 
@@ -1883,6 +3810,32 @@
   - AWS's blog on viewing SageMaker quota usage, which names no Studio app or job quota beyond a
     notebook instance's, so `OB-5` finds those by name and reads every name back:
     <https://aws.amazon.com/blogs/machine-learning/best-practices-for-viewing-and-querying-amazon-sagemaker-service-quota-usage>.
+
+- The pages Stage 12's observability slices were written against, read 2026-10-18:
+  - The same *Notifying users on alarm changes* page, whose confused-deputy example, `ArnLike` on
+    `aws:SourceArn` with the account's alarms and `StringEquals` on `aws:SourceAccount`, is the shape of
+    `CloudWatchAlarmsOfThisAccount` on both alerts topics:
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Notify_Users_Alarm_Changes.html>.
+  - `PutCompositeAlarm`: a rule names the alarms "that you have created", by name or ARN, up to 100
+    children; the page says nothing of another account's alarms (step 2.2):
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutCompositeAlarm.html>.
+  - The dashboard body: a metric widget may carry one alarm annotation and no `metrics` array, an
+    `alarm` widget takes 1-100 alarm ARNs, and a `log` widget's query starts with `SOURCE '<group>'`:
+    <https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Dashboard-Body-Structure.html>.
+  - Squid's `logformat` codes behind the proxy log's fields: `%<st` "Total size of reply sent to client
+    (after adaptation)", `%>st` the request received from the client:
+    <https://www.squid-cache.org/Doc/config/logformat/>.
+  - IAM Access Analyzer pricing: unused access at 0.20 per IAM role or user analyzed a month, "charges
+    occur once during setup, and then monthly on the first day of the month" (step 7.1):
+    <https://aws.amazon.com/iam/access-analyzer/pricing/>.
+  - Control Tower's AWS Backup integration, a landing-zone setting, and the resources it creates in a
+    Central Backup account and a Backup Administrator account of the Security OU (step 8.1):
+    <https://docs.aws.amazon.com/controltower/latest/userguide/backup.html> and
+    <https://docs.aws.amazon.com/controltower/latest/userguide/backup-resources.html>.
+  - The Price List offers for step 1's rows: `AmazonCloudWatch` for `us-west-2`, `sa-east-1` and the
+    global `aws-other` region (dashboards), and `AWSCostExplorer`, through the region index:
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/region_index.json> and
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>.
 
 - Track alerts through Amazon SNS in AWS Control Tower (the topics the landing zone creates, and the fact that the Audit account e-mail is subscribed to `aws-controltower-AggregateSecurityNotifications` by default): <https://docs.aws.amazon.com/controltower/latest/userguide/sns.html>.
 
@@ -1947,11 +3900,25 @@
   <https://docs.aws.amazon.com/guardduty/latest/ug/delegated-admin-designate.html>.
 
 - Permissions required to designate a delegated GuardDuty administrator account — the management
-  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and the only
-  principal the service creates is the service-linked role `AWSServiceRoleForAmazonGuardDuty`. Read
-  for Stage 15 step 5: `POLICIES.md`'s "carve out a named administration role" alternative has no
-  candidate among GuardDuty's own creations:
+  account needs `guardduty:EnableOrganizationAdminAccount` plus the Organizations reads, and
+  `iam:CreateServiceLinkedRole` on `AWSServiceRoleForAmazonGuardDuty` only to designate itself. Read
+  for Stage 15 step 5 with the two rows below: `POLICIES.md`'s "carve out a named administration role"
+  alternative has no candidate among GuardDuty's own creations:
   <https://docs.aws.amazon.com/guardduty/latest/ug/organizations_permissions.html>.
+
+- Service-linked role permissions for Malware Protection for EC2 — a second GuardDuty role,
+  `AWSServiceRoleForAmazonGuardDutyMalwareProtection`, trusted by
+  `malware-protection.guardduty.amazonaws.com`, created when the plan is first enabled, which it is by
+  default for an account new to GuardDuty, and not deleted when the plan is disabled. Read 2026-10-20
+  for Stage 15 step 5 and decision 1 (c):
+  <https://docs.aws.amazon.com/guardduty/latest/ug/slr-permissions-malware-protection.html>.
+
+- The two roles' managed policies, `AmazonGuardDutyServiceRolePolicy` v13 and
+  `AmazonGuardDutyMalwareProtectionServiceRolePolicy` v2: neither holds a `guardduty:` action, and the
+  first allows `iam:CreateServiceLinkedRole` for `malware-protection.guardduty.amazonaws.com`. Read
+  2026-10-20 for Stage 15 step 5:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyServiceRolePolicy.html>
+  and <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonGuardDutyMalwareProtectionServiceRolePolicy.html>.
 
 - Adding members to the GuardDuty organization — "There is an exception to the organization
   management account. Before the management account gets added as a GuardDuty member, it must have
@@ -1971,6 +3938,55 @@
   arrive on and must be switched off (Stage 15 step 3), and the switch is denied to Audit by
   `DenyGuardDutyTampering` (Stage 15 step 0, decision 1): <https://aws.amazon.com/guardduty/faqs/>.
 
+- Pricing in GuardDuty — the table of the plans enabled by default, re-read 2026-10-20 for Stage 15
+  step 0: EKS, S3, RDS and Lambda Protection and the GuardDuty-initiated scan of Malware Protection for
+  EC2 on; Runtime Monitoring, the on-demand scan and Malware Protection for S3 and for AWS Backup off; AI
+  Protection absent: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-pricing.html>. AI
+  Protection's pages enable it as an act, feature `AI_PROTECTION`, and state no default:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection.html> and
+  <https://docs.aws.amazon.com/guardduty/latest/ug/ai-protection-enable-multiple-accounts.html>.
+
+- GuardDuty Investigation (Preview), read 2026-10-20 for Stage 15 step 0 and verification ii: the
+  `AI_ANALYST` detector feature enabled as an act, through `UpdateDetector` or the console's
+  **Settings**, with no default stated; investigations created by the administrator alone, on Amazon
+  Bedrock models through cross-Region inference, `us-east-1`, `us-east-2` or `us-west-2` serving a
+  request from Oregon: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-investigation.html>.
+
+- GuardDuty policies in AWS Organizations, the `GUARDDUTY_POLICY` type, read 2026-10-20 for Stage 15
+  decision 4. The overview: per-Region enablement of the foundational detector and seven plans, scoped by
+  the attachment, the Regional auto-enable settings suspended once the type is enabled:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty.html>. The
+  syntax: a `default` block or one per Region, each feature `enabled` or `disabled`, a Region block
+  replacing the default rather than merging with it, and no key for the `AI_ANALYST` detector feature
+  (Stage 15 step 3):
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_syntax.html>.
+  Getting started, which admits as author the management account or an Organizations delegated
+  administrator for the type, and lists Management's `AWSServiceRoleForAmazonGuardDuty` among its checks:
+  <https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_guardduty_getting_started.html>.
+
+- GuardDuty's side of the same policies, read 2026-10-20 for Stage 15 decision 4. The prerequisites, the
+  delegated administrator and the delegation policy among them:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies.html>. A managed plan
+  read-only through the console and API, and policies authored by the delegated administrator alone:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-how-it-works.html>.
+  Management covered only once its service-linked role exists, a disabled plan turned off where it is on,
+  changes applied asynchronously, a detach that leaves GuardDuty on, and disabling the type restoring
+  auto-enable: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-considerations.html>.
+  A covered account that is not yet a member added as one, and `DescribeEffectivePolicy` callable from
+  any account: <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-review-impact.html>.
+  The console flow in the delegated administrator, a plan left unselected left unmanaged:
+  <https://docs.aws.amazon.com/guardduty/latest/ug/guardduty-organization-policies-create-console.html>.
+
+- `aws_organizations_policy`'s `type` validator, read 2026-10-20 for Stage 15 decision 4. The resource
+  validates against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/organizations/policy.go>.
+  The enum gains `GUARDDUTY_POLICY` in `service/organizations` v1.61.0 (2026-09-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/organizations/CHANGELOG.md>. Provider 6.68.0
+  is the first to require that version, 6.67.0 requiring v1.60.0:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.68.0/go.mod>. The resource's
+  documentation lists twelve values without it:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/organizations_policy.html.markdown>.
+
 - How EC2 instance stop and start works — Elastic IP addresses belong to the network interface, which is listed under "resources that persist" across a stop/start (and the address bills while the instance is stopped). Answers Stage 4 verification (ii) by documentation: "re-associate on start" is unnecessary code: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/how-ec2-instance-stop-start-works.html>.
 
 - Compatibility for changing the instance type — *"AMIs are specific to the architecture of the
@@ -1988,6 +4004,17 @@
   are not Elastic. Switching the VPN host's size is therefore a stop/start the Terraform provider
   performs in one apply, in either direction, with the `[P]` Elastic IP and every client `.conf`
   untouched: <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/change-instance-type-of-ebs-backed-instance.html>.
+
+- Modify an Amazon EBS volume using Elastic Volumes operations — its limitations: *"You can't decrease
+  the volume size."* The page's route to a smaller volume is a new one and an application-level copy
+  (`rsync`); GitLab's goes through its backup and restore instead, since the Terraform provider plans a
+  decrease as an in-place update (Stage 12 step 5.3, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modify-volume.html>.
+
+- Extend the file system after resizing an Amazon EBS volume — a larger volume needs its partition, when
+  it has one, then its filesystem extended on the instance, `xfs_growfs -d <mount point>` for XFS
+  (`runbooks/gitlab.md` §B, read 2026-11-09):
+  <https://docs.aws.amazon.com/ebs/latest/userguide/recognize-expanded-volume-linux.html>.
 
 - AWS: Denies access to AWS based on the source IP — the deny-by-IP example, with the note that "the policy does not deny requests made by AWS services using forward access sessions, as the original requester's IP address is preserved". That scopes Stage 4 step 8.1's `aws:ViaAWSService` carve-out: FAS flows survive the bare `NotIpAddress`, and the carve-out defends the on-behalf calls that are *not* FAS: <https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_aws_deny-ip.html>.
 
@@ -2272,6 +4299,7 @@
     - *AWS Systems Manager endpoints and quotas* — the per-Region list the SageMaker guide points the laptop at (`ssm`, `ssmmessages`, `ec2messages`, each with its `amazonaws.com` and, for `ssm`, an `api.aws` spelling): <https://docs.aws.amazon.com/general/latest/gr/ssm.html>.
     - *Attributes for access control* (IAM Identity Center) — the mechanism decision due 4's `IDC_UserName` rests on: attributes selected on the instance's *Settings → Attributes for access control* page (API `CreateInstanceAccessControlAttributeConfiguration`) arrive in the account as session tags, readable as `aws:PrincipalTag/<key>` in every IAM policy type; with the Identity Center directory as the source, the values come from the user's own attributes: <https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html> and <https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-abac.html>.
     - *`session-manager-plugin`, `websocketutil.go`* — the plugin dials with gorilla's `websocket.DefaultDialer`, whose `Proxy` is `http.ProxyFromEnvironment`: the data channel honours `HTTPS_PROXY` if the variable reaches the process, which is 7.5's measurement rather than a documented claim: <https://github.com/aws/session-manager-plugin/blob/mainline/src/websocketutil/websocketutil.go>.
+  - The pages read again on 2026-11-21, for 6d 7.6 and the Toolkit's listing: *Local IDE support*, *Set up Remote IDE* and *Connect your Remote IDE*. None states that `StartSession` on a Unified Studio space refuses every client but the AWS Toolkit and the web IDEs (`SUP-397`), which domain the Toolkit lists spaces from (`SUP-398`), or the deep link's browser refresh and its 40-second limit (`SUP-399`).
 
 - Workflows in SageMaker Unified Studio — the Workflows tool is Amazon MWAA, in both a *serverless* and a *provisioned* form, and existing MWAA environments can be connected to a project. It confirms D7/D28: the `CLAUDE.md` "workflows" feature and Stage 10's orchestration comparison are the same surface (`docs/plan/open-questions.md` item 15): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.
 
@@ -2457,6 +4485,86 @@
   forty run from `3.9.13` to `4.5.2`, the last published 2026-10-07 for every maintained minor at once
   (`3.9.14`, `4.0.13` … `4.5.2`), and no `4.6`, `5.x` or `4.15` exists:
   <https://api.github.com/repos/aws/sagemaker-distribution/releases>.
+- The sources of `docs/plan/upstream-releases.md`, read 2026-10-18: AWS What's New through its
+  directory API, the list of releases since 2026-08-01:
+  <https://aws.amazon.com/api/dirs/items/search?item.directoryId=whats-new-v2&sort_by=item.additionalFields.postDateTime&sort_order=desc&size=100&item.locale=en_US&page=0>;
+  botocore's changelog and its PyPI upload dates, which date each API change:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>, <https://pypi.org/pypi/botocore/json>;
+  DataZone's model in botocore:
+  <https://github.com/boto/botocore/blob/develop/botocore/data/datazone/2018-05-10/service-2.json>; the
+  AWS CLI v2 changelog, where 2.38.0 turns the CRT S3 transfer client on:
+  <https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst>; the policy generator's catalogue of actions and
+  condition keys, where `airflow-serverless` carries only the tag keys and `sagemaker:InstanceTypes` is
+  SageMaker's only instance key: <https://awspolicygen.s3.amazonaws.com/js/policies.js>. Bedrock product
+  attributes in Cost Explorer and Budgets:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-bedrock-attributes-in-cost-explorer/>. GuardDuty
+  through Organizations policies: <https://aws.amazon.com/about-aws/whats-new/2026/10/guardduty-org-enablement-policies/>.
+  Network access controls for the Identity Store:
+  <https://aws.amazon.com/about-aws/whats-new/2026/10/aws-identity-store-network-controls/>.
+
+- The sources of `docs/plan/upstream-releases.md`'s reading of 2026-11-13: What's New through the directory API
+  of the entry above; botocore's changelog from 1.43.123 to 1.44.2, its PyPI upload dates, and its models
+  compared between the tags `1.43.122` and `1.44.2`: <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>,
+  <https://pypi.org/pypi/botocore/json>,
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/datazone/2018-05-10/service-2.json>,
+  <https://github.com/boto/botocore/blob/1.44.2/botocore/data/sso-admin/2020-07-20/service-2.json>; the AWS CLI
+  v2 changelog to 2.40.2: <https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst>. IAM Identity Center's network
+  controls, on the guide's PrivateLink page: `VpceAccessRequired`, the endpoints a workforce sign-in uses, the
+  lockout check and the SCP key `sso:VpceAccessRequired`:
+  <https://docs.aws.amazon.com/singlesignon/latest/userguide/vpc-interface-endpoints.html>; the guide's document
+  history, which does not name them: <https://docs.aws.amazon.com/singlesignon/latest/userguide/doc-history.html>.
+  Security Hub CSPM through Organizations declarative policies:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/security-hub-cspm-org-policies/>. CloudWatch Logs'
+  account-level retention policies:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-cloudwatch-log-retention/>. Claude Fable 5.2 on
+  Bedrock, and AgentCore's Web Search API and Web Answer:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/claude-fable-5-2-aws/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-bedrock-agentcore-web-search-api/>,
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/web-answer-amazon-bedrock/>.
+
+- IAM's Access Troubleshooter (preview): the authorization id an access denied error carries,
+  `GetRequestAuthorizationDetails` in the Region of the denial, the 24 hours the details are kept, and the cases
+  with no id, read for Stage 8 decision 29 on 2026-10-30:
+  <https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_access-denied-authorization-id.html>; the API:
+  <https://docs.aws.amazon.com/iam-toolbox/latest/APIReference/API_GetRequestAuthorizationDetails.html>.
+
+- AWS's vulnerability reporting (read 2026-11-14, for Stage 19 decision 17 (d), the accounts having no
+  Premium Support subscription): the Vulnerability Disclosure Program on HackerOne, or
+  AWS Security's e-mail address, which the page names, for a submission outside it; a human acknowledgement within 24 hours; no
+  support plan named; nothing disclosed publicly before AWS addresses the report:
+  <https://aws.amazon.com/security/vulnerability-reporting/>.
+
+- **The retention of the log groups MWAA Serverless creates, and CloudWatch Logs' controls for it (read
+  2026-11-16, for [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 27).** A
+  workflow's execution role sends task logs to a log group the customer provides:
+  <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/get-started-execution-role.html>;
+  `CreateWorkflow`'s `LoggingConfiguration` is optional, and `LogGroupName` is required within it:
+  <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_CreateWorkflow.html>,
+  <https://docs.aws.amazon.com/mwaa-serverless/latest/APIReference/API_LoggingConfiguration.html>. A log
+  group keeps its events indefinitely by default, and an account-level retention policy
+  (`PutAccountPolicy` with `RETENTION_POLICY`: the whole account or log group name prefixes, up to 20 per
+  Region, 30 to 3653 days or `NEVER_EXPIRE`, `RETROACTIVE` or `NEW_ONLY`, in effect 24 hours after it is
+  put) replaces a group's own retention in both directions:
+  <https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html>,
+  <https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutAccountPolicy.html>.
+  AWS's baseline control asks 365 days by default and passes a group that never expires:
+  <https://docs.aws.amazon.com/config/latest/developerguide/cw-loggroup-retention-period-check.html>,
+  <https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html> (`CloudWatch.16`).
+  The older remediation, an EventBridge rule on `CreateLogGroup` starting a Lambda function that sets the
+  retention, existing groups included (AWS blog, 2022):
+  <https://aws.amazon.com/blogs/infrastructure-and-automation/reduce-log-storage-costs-by-automating-retention-settings-in-amazon-cloudwatch>.
+
+- **The AWS provider's road to `RETENTION_POLICY` (read 2026-11-19, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 27 (d) and `EXC-25`).** The
+  releases, 6.73.0 (2026-11-11) the newest: <https://github.com/hashicorp/terraform-provider-aws/releases>.
+  `aws_cloudwatch_log_account_policy` validates `policy_type` against the Go SDK's `PolicyType` enum:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/main/internal/service/logs/account_policy.go>.
+  The enum gains `RETENTION_POLICY` in `service/cloudwatchlogs` v1.91.0 (2026-10-30):
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/CHANGELOG.md> and
+  <https://github.com/aws/aws-sdk-go-v2/blob/main/service/cloudwatchlogs/types/enums.go>. The provider pins
+  v1.90.2 at `v6.73.0` and on `main`:
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.73.0/go.mod>. A draft PR documents the type
+  and moves no dependency: <https://github.com/hashicorp/terraform-provider-aws/pull/50873>.
 
 ## Databricks
 

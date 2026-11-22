@@ -4,12 +4,15 @@
 # it is.
 #
 #   register  creates the approved release's image version from the pushed digest, with the release's
-#             semver as an alias, and reads it back against that digest. The domain attaches the image
-#             with no version number, so the portal offers the new version at once and no domain write
-#             follows (dev-env.md §B)
+#             semver as an alias, and reads it back against that digest. A blueprint domain offers the
+#             version its project profile pins, so the release reaches a project when the pin moves in
+#             AWS-DataScience's data-governance/governance/ and the project's owner presses Update
+#             project; a Tooling domain attaches the image with no version number and offers the new
+#             version at once, with no domain write (dev-env.md §B)
 #   retire    deletes every version past the newest --keep that nothing names. A version a space or a
 #             domain still names stays and is listed: a space whose version is gone does not start
-#             (AWS_STATE.md EXC-09), and the steward moves it first
+#             (AWS_STATE.md EXC-09), a blueprint domain names the version its profile pins, and the
+#             steward moves either first
 #
 #   python3 release/versions.py register --tag <flavour>-v<semver>-<sha> --digest sha256:<64 hex>
 #   python3 release/versions.py retire --keep 10
@@ -28,7 +31,7 @@
 # Each target account holds one image named awsds-<env>-dev-env, found by name, so no account list lives
 # in this project: the targets are the deploy runner's profiles, which AWS-DataScience's
 # production/runners/ renders from its map of Sandbox units (D35). User profiles are not read for
-# references: SageMaker Unified Studio attaches images on the domain and pins versions on the space.
+# references: a space pins its version, and a domain names one only where its project profile pins it.
 
 from __future__ import annotations
 

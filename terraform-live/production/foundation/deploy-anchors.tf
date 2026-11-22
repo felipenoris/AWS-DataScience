@@ -69,6 +69,11 @@ locals {
   deploy_role_arns = values(local.deploy_role_arn_by_name)
 
   releases_bucket_arn = "arn:${data.aws_partition.current.partition}:s3:::awsds-${var.env}-releases"
+
+  # The names apply-application.tf and deploy-project.tf read, the same in staging/foundation/.
+  partition      = data.aws_partition.current.partition
+  account_id     = data.aws_caller_identity.current.account_id
+  region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
 }
 
 # ------------------------------------------------------------------- the runner's role (4.3)
@@ -131,8 +136,8 @@ module "deploy_runner_role" {
     })
 
     # Decision 14: a deploy job reads production/registry/'s state (the repository URLs and ARNs a
-    # dev-env or application slice names) through the runner's own profile, since no other account's
-    # deploy role can read this account's state bucket. One object, read only.
+    # dev-env/ slice names) through the runner's own profile, since no other account's deploy role can
+    # read this account's state bucket. One object, read only.
     "registry-state" = jsonencode({
       Version = "2012-10-17"
       Statement = [
@@ -272,32 +277,115 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
-# What it applies from the runner: production/app/* (step 3.6), and no other slice - the pipeline
-# never runs `make up` or `make down ENV=production`. The application half of its grant lands with the
-# first application slice (steps 2.4 and 3.0); until then it holds its state access and nothing else.
+# What it does from the runner: the CI/CD CLI's deploy into deploy-production and the leg around it
+# (Stage 19 steps 4.8 and 4.9), the governed warehouse's DDL and the model chain's jobs. It applies no
+# slice and writes no state - the pipeline never runs `make up` or `make down ENV=production`, and the
+# leg reads production/workloads-egress/ before it deploys (scripts/check-egress.py, decision 27). Its
+# grants are the inline document apply-application (apply-application.tf) and the managed policy
+# deploy-project.tf attaches.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.5.0"
 
   name            = var.deploy_role_name
-  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; applies production/app/* slices"
+  description     = "Stage 8's promotion into Production (INT-08, step 3.6) - assumed only by the deploy runner's role; deploys into deploy-production through the CI/CD CLI, reads production/workloads-egress/"
   env             = var.env
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
-  state_prefixes  = ["${var.account_folder}/app/"]
+  state_prefixes  = []
+  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data", "workloads-egress"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
-  application_boundary_name = "awsds-${var.env}-app-boundary"
+  inline_policies = {
+    "apply-application" = data.aws_iam_policy_document.apply_application.json
+  }
 
   misuse_alarm     = true
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
+# Production's statement in apply-application.tf's document: Stage 9 step 9.4's door to the governed
+# warehouse, the Data API with IAM authentication, the deploy runner's only path to the workgroup
+# (VPC-SharedServices and VPC-Workloads do not peer). workgroup/* because the id changes on every
+# re-create of the [E] compute, as the root SCP's DenyRedshiftCostGuardTamperingExceptInfrastructure
+# reasons; the admin secret stays closed to this role (6h decision 2), and the compute is raised and
+# taken down by hand, since that SCP exempts InfrastructureAccess alone.
+data "aws_iam_policy_document" "apply_application_in_this_account" {
+  statement {
+    sid    = "RunTheGovernedWarehouseDdl"
+    effect = "Allow"
+    actions = [
+      "redshift-data:ExecuteStatement",
+      "redshift-serverless:GetCredentials",
+    ]
+    resources = ["arn:${local.partition}:redshift-serverless:${local.region_account}:workgroup/*"]
+  }
+
+  # A statement is followed, read and cancelled on no resource: the Data API authorizes these three on
+  # "*" and scopes them by the statement's owner, so the role reaches its own statements alone (refused
+  # under the workgroup ARN on 2026-10-25, v0.4.2's production-warehouse-ddl).
+  statement {
+    sid    = "FollowItsOwnStatements"
+    effect = "Allow"
+    actions = [
+      "redshift-data:CancelStatement",
+      "redshift-data:DescribeStatement",
+      "redshift-data:GetStatementResult",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "redshift-data:statement-owner-iam-userid"
+      values   = ["$${aws:userid}"]
+    }
+  }
+
+  # Stage 10 step 5.2: the version of app-etl's model registered PendingManualApproval and approved at
+  # the pipeline's manual job, read back, and named by the batch transform's model. The group's resource
+  # policy names this role for the two writes (sagemaker/registry.tf), and inside the account it is this
+  # identity policy that admits them.
+  statement {
+    sid    = "RegisterAndApproveTheModel"
+    effect = "Allow"
+    actions = [
+      "sagemaker:CreateModelPackage",
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-etl",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-etl/*",
+    ]
+  }
+
+  # Stage 17 step 9.5: app-ml's versions, which the register task proposes PendingManualApproval as the
+  # deployment project's role and production-approve approves. No CreateModelPackage: a task registers
+  # (Stage 17 decision 16 (b)). The group's resource policy names this role for the approval
+  # (sagemaker/registry.tf).
+  statement {
+    sid    = "ApproveTheModelATaskRegisters"
+    effect = "Allow"
+    actions = [
+      "sagemaker:DescribeModelPackage",
+      "sagemaker:DescribeModelPackageGroup",
+      "sagemaker:ListModelPackages",
+      "sagemaker:UpdateModelPackage",
+    ]
+    resources = [
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-ml",
+      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-ml/*",
+    ]
+  }
+}
+
 # --------------------------------------------------------------- the alerts topic (decision 5)
 #
 # awsds-<env>-alerts: the misuse rule's target here, and the account's topic Stage 9, Stage 10 and
-# Stage 12 adopt. Its subscriber is the operator's address, which no tracked file may carry: it arrives
-# from an untracked alerts.auto.tfvars the user writes, and the check below says on every plan when it
-# has not.
+# Stage 12 adopt; production/observability/'s alarms publish to it. Its subscriber is the operator's
+# address, which no tracked file may carry: it arrives from an untracked alerts.auto.tfvars the user
+# writes, and the check below says on every plan when it has not.
 resource "aws_sns_topic" "alerts" {
   # checkov:skip=CKV_AWS_26:EventBridge cannot publish to a topic under the AWS-managed SNS key, whose policy admits no service, and a key of its own costs 1 USD a month per account; the messages are CloudTrail event metadata
   name = "awsds-${var.env}-alerts"
@@ -322,7 +410,20 @@ resource "aws_sns_topic_policy" "alerts" {
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }
-      }
+      },
+      # Stage 12 step 2.2: an alarm's notification is published by CloudWatch, which a topic policy
+      # admits only by name. The source conditions are CloudWatch's confused-deputy pair.
+      {
+        Sid       = "CloudWatchAlarmsOfThisAccount"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = "sns:Publish"
+        Resource  = aws_sns_topic.alerts.arn
+        Condition = {
+          ArnLike      = { "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:cloudwatch:${var.region}:${data.aws_caller_identity.current.account_id}:alarm:*" }
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      },
     ]
   })
 }

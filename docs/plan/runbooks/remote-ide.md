@@ -41,21 +41,32 @@ Measured 2026-09-11 from CloudTrail in Sandbox, two `StartSession` calls at 16:0
 **What this means for the controls the estate already has.** 1c withholds `sagemaker:StartSession` from
 the `Interactive` document and 6a step 3.2 put two tag-scoped denies into the six persona permission
 sets. Both are attached to personas; the caller here is a blueprint-authored project role, so **neither
-evaluates**, and the session worked with the laptop off the VPN entirely. The scoping the objective asks
-for is granted by nothing today (Lesson 18, with Lesson 28 underneath: the grant and the constraint live
-in different slices).
+evaluates**, and the session worked with the laptop off the VPN entirely (Lesson 18, with Lesson 28
+underneath: the grant and the constraint live in different slices). The scoping the objective asks for
+comes from AWS's own policy on the project role, whose only `StartSession` Allow is conditioned on the
+project and user tags (`RI-3`). Stage 6d 7.6 measured it on 2026-11-21: the role's calls on another user's
+space and on another project's space were refused *"because no identity-based policy allows the
+sagemaker:StartSession action"*, and the deep link on the user's own space was answered.
 
 **The Toolkit is not the persona path.** The AWS Toolkit's SageMaker panel signs in to the **SMUS domain**
 and receives project-role credentials; it does not use the laptop's persona role. The portal's deep link
 is the same principal by a different client — measured 2026-09-10 19:37:27Z, same role, same address, a
 Chrome user agent, refused with `ValidationException … does not have remote access enabled` because that
 space had the flag off. So both available methods put the project role in front of the call, from the
-user's own address.
+user's own address. A third client is refused even when IAM allows it: on a space of a domain Unified
+Studio created, a CLI `start-session` reads *"StartSession for SageMaker Unified Studio Domain is supported
+only from Unified Studio clients - AWS Toolkit and SageMaker Unified Studio Web IDEs"* (`SUP-397`), which
+rules out the SageMaker AI guide's SSH method for these spaces.
 
 **Two keys exist for scoping it**, and neither needs Identity Center *attributes for access control*:
 `aws:SourceIdentity` on the role session, and the space's `OwnershipSettings.OwnerUserProfileName`,
-which carries the same user id. A condition on the **D13 permissions boundary** is the one instrument
-this estate has that reaches a role the blueprint writes. The channel is reachable from any network,
+which carries the same user id. DataZone sets the first on the project-role sessions it opens for a
+member, a person or an IAM principal, and as `SYSTEM` for a data source's run; a job's sessions and a
+subscription fulfilment's carry none (Stage 18 6.2 and 7.2, 2026-10-21 and 2026-10-22), so a deny
+conditioned on its presence binds a member's and a data source's sessions, never a worker's or a
+fulfilment's. Such a condition reaches a role the blueprint writes from the **D13 permissions boundary**
+or from a policy a slice attaches to the role, the form of Stage 18's
+`awsds-staging-person-session-deny`, which refused a person's write. The channel is reachable from any network,
 and that is the design ([D39](../decisions/D39-access-by-identity.md)): what is left of decision due 4 in
 [Stage 6d](../stages/stage-06d-unified-studio-remainder.md) is the connection method, and whether the
 file channel in both directions (§N) is acceptable.
@@ -66,7 +77,9 @@ file channel in both directions (§N) is acceptable.
 **client's** commit, so the client's version is what the marketplace resolves extension builds against.
 Matching the version AWS pins in the image (`1.119.1`, read from
 `/opt/conda/share/sagemaker-code-editor/product.json` on 2026-09-11) is what keeps one extension set
-usable in both surfaces. A pinned client receives no fixes — stable was `1.137.0` on the day this was
+usable in both surfaces. That reading predates the house image's move to SageMaker Distribution
+`4.5.2-cpu` (`default-v0.5.0`, 2026-10-10), and this repository records none since, so read
+`product.json` in a space on version 11 before pinning a client. A pinned client receives no fixes — stable was `1.137.0` on the day this was
 written — so keep a current install for everything else and use the pinned one for this session. **The
 pin is a choice and not a prerequisite** — §E carries what it buys, what it costs, and the per-extension
 route that needs no pin at all. **What holds the pin differs by platform**: the Windows archive does not
@@ -171,12 +184,32 @@ does.
 connection. That message is the measurement: the server is **copied from the laptop**, because the
 space's own attempt to fetch it was refused (§N).
 
+**A space in the project's blueprint domain is not listed.** Toolkit 4.20.0 lists the spaces of the domain
+the project's `Tooling` environment names. Since Stage 6d 2.7 moved the spaces, `eighth-experimentation`
+lists none, and a project created since 2026-11-18 names no such domain (`SUP-398`, measured
+2026-11-21). Such a space is reached by the deep link below; a Toolkit release that reads the blueprint's
+domain brings this method back.
+
+**Or connect from the portal.** The space's *Open in VS Code* in the portal, the deep link, is the other
+method AWS offers, and the estate supports both (Stage 6d decision 4, taken 2026-11-17). Its caller is the
+same project role from the laptop's own address, with a browser's user agent (§I).
+
+**The link carries one session, and each later SSH connection asks the browser for another.** The first
+connection takes the link's session; the server's copy under `localServerDownload: always` is a second
+connection, and so is every reconnection. For each, the Toolkit opens the portal's refresh URL in the
+default browser and the connect script waits 40 seconds for the session to come back (`SUP-399`). On
+2026-11-21, on macOS, the first connection reached the space and the copy timed out with no second
+`StartSession` in the trail. Before pressing the link, bring to the front the browser profile signed in to
+the portal as the space's owner, and watch the tab the copy opens; Remote-SSH's *Retry* asks again.
+
 ### What the connection runs on the laptop, and what macOS adds to it
 
 Read from the Toolkit's source on 2026-09-11 (`awsService/sagemaker/`, `shared/sshConfig.ts`,
 `shared/utilities/cliUtils.ts`), because the pieces below are invisible from the UI and every one of
-them is a place a macOS session can fail. **None of it is exercised here** — the Windows session of
-7.8 is what this file measured.
+them is a place a macOS session can fail. The Windows session of 7.8 measured it first. On 2026-11-21 a
+macOS deep link ran it as far as the server's copy: the Toolkit downloaded and installed its own
+`session-manager-plugin` in 5 seconds, the connect script read the session from the local server, and
+SSH reached the space (Stage 6d's log).
 
 **The Toolkit checks its dependencies before it connects**: the *Remote - SSH* extension at or above a
 minimum version, an `ssh` on the path — macOS ships one — and a `session-manager-plugin`, which it
@@ -346,11 +379,12 @@ and 2026-09-19: `github.com` came off it on the first date and returned on the s
 ([`NETWORK.md`](../../NETWORK.md) ‖), so `git clone`, `fetch` and `push` from a space failed by decision
 in that window and work now. The procedure below stays written because it is the path for a host that
 still cannot reach GitHub, and because a redirect target such as `codeload.github.com` is refused even
-today. **This is the path for today and not the design.** The estate's GitLab is internal — it lands
-in `VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
-[INT-09](../integrations.md) already carries — so from
-[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) a space clones over private addresses with no laptop
-in the middle, and this section becomes the exception rather than the route.
+today. **This path is the exception, and the estate's GitLab the route.** GitLab is internal, in
+`VPC-SharedServices`, reached over the `Sandbox ↔ VPC-SharedServices` peering that
+[INT-09](../integrations.md) carries: since 2026-10-26 a space clones and pushes over private addresses
+with no laptop in the middle, with a persona's personal access token and git's credential helpers reset
+([`sagemaker-application.md`](sagemaker-application.md) §D step 1,
+[Stage 7](../stages/stage-07-gitlab-runners-ecr.md) verification xi).
 
 **A file arrives by drag and drop.** Drag it from the laptop's file manager — Explorer on Windows,
 Finder on macOS — onto the file tree of the **remote** window. It lands in the directory it is dropped
@@ -384,8 +418,8 @@ git clone project.bundle project
 
 `verify` is the instrument: it lists the refs the bundle holds and says whether the bundle is
 self-contained, which separates a file that did not arrive whole from a clone that is wrong. After the
-clone, `origin` is the bundle's path on disk. **The space holds no GitLab credential and a `push` reaches
-nothing**, which is a property of this path rather than a gap to repair.
+clone, `origin` is the bundle's path on disk, so **a `push` reaches nothing**: a property of this path
+rather than a gap to repair, since a push goes to GitLab by the route above.
 
 **Later commits travel as a second bundle**, cut from the point the space is already at:
 
@@ -412,6 +446,13 @@ One instrument per question, all read-only.
 aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=StartSession \
   --max-results 10 --profile awsds-infra-sandbox-1 --output json --query 'Events[].CloudTrailEvent' \
   | jq -r '.[] | fromjson | [.eventTime, .userIdentity.arn, .sourceIPAddress, .userAgent] | @tsv'
+```
+
+**Which domain holds the space**: a project created since 2026-11-18 holds the blueprint's domain
+alone, and the three of `AWS_STATE.md` `EXC-26` hold their `Tooling` domain beside it, so the id is read:
+
+```bash
+aws sagemaker list-spaces --profile awsds-infra-sandbox-1 --query "Spaces[?SpaceName=='<space>'].[DomainId,Status]" --output text
 ```
 
 **What the space is, and whether the flag is on**:
@@ -469,7 +510,27 @@ ls -lt "$HOME/Library/Application Support/Code/User/globalStorage/amazonwebservi
 
 `sagemaker.connect.log` carries the script's trace and `sagemaker-local-server.*.log` the server that
 vends the session. They are the instrument for a connection that fails before any AWS call appears in
-CloudTrail, which is where §F's timeout row sends you.
+CloudTrail, which is where §F's timeout row sends you. A deep link's connections also trace into the
+window's *Remote - SSH* output, under `~/Library/Application Support/Code/logs/<start>/window<n>/exthost/`.
+
+**Which deep link sessions the Toolkit holds** — the file also carries credentials, so read the states
+alone:
+
+```bash
+jq '.deepLink | map_values(.requests | map_values(.status))' ~/.aws/.sagemaker-space-profiles
+```
+
+`initial-connection` `consumed` and a later request `pending` is `SUP-399`'s state: the browser's refresh
+never came back.
+
+**Which domain the Toolkit listed** — Sandbox, the `aws-sdk-js` calls beside the portal's, which poll
+every few seconds while a portal tab is open:
+
+```bash
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=ListSpaces \
+  --start-time <ISO time> --profile awsds-infra-sandbox-1 --output json --query 'Events[].CloudTrailEvent' \
+  | jq -r '.[] | fromjson | select(.userAgent | test("aws-sdk-js")) | [.eventTime, .requestParameters.domainIdEquals] | @tsv'
+```
 
 **Which servers are running in the space, and where their extensions went** — from a terminal in the
 space:
@@ -487,7 +548,10 @@ ls ~/.vscode-server/extensions ~/sagemaker-code-editor-server-data/extensions
 | symptom | what it is |
 |---|---|
 | `ValidationException … does not have remote access enabled` | the flag is off on that space. Stop the space, turn Remote Access on in its details, start it |
-| an `AccessDenied` on `StartSession` naming an identity-based policy | the caller is a **persona**, not the project role — the persona sets hold no Allow. Read the caller before changing anything (§I) |
+| an `AccessDenied` on `StartSession` naming an identity-based policy | the caller is a **persona**, not the project role — the persona sets hold no Allow — or the project role on a space that is not its user's own in its own project, outside AWS's tag-conditioned Allow (6d 7.6, 2026-11-21). Read the caller and the space's owner before changing anything (§I) |
+| `ValidationException … supported only from Unified Studio clients - AWS Toolkit and SageMaker Unified Studio Web IDEs` | the call came from another client, a CLI or a `ProxyCommand` script, on a space IAM lets the caller reach: the service checks the client after IAM (`SUP-397`). Connect with the Toolkit or the deep link |
+| the Toolkit shows the project and no space, while the portal shows the space | the space is in the project's blueprint domain, which the Toolkit does not read (`SUP-398`). Use the deep link (§W) |
+| *"Error: Timed out after 8 attempts waiting for session to be ready."* in the Remote-SSH log, after *"Session not ready (HTTP 202)"* | a second SSH connection after a deep link, the server's copy or a reconnection, waited 40 seconds for a session the browser never brought back from the portal (`SUP-399`). Bring the browser profile signed in as the space's owner to the front and press *Retry* (§W) |
 | the connection hangs at `Copying VS Code Server to host` for many minutes on a first connect | expected: the laptop is transferring the server because the space's own download was refused (§N) |
 | a timeout with nothing in CloudTrail | the call never arrived. A permission failure is a response; a network failure is the absence of one (Lesson 42) |
 | `getaddrinfo ENOTFOUND <name>` inside the space | the process has **no** proxy variables, so it resolved the name itself and the DNS Firewall refused it. On `default-v0.2.0` and later the image carries them; on earlier images see [`sg-proxy.md`](sg-proxy.md) |

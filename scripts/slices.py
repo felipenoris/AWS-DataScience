@@ -4,9 +4,12 @@
 #   ./scripts/slices.py envs               the ENV values, and what each one acts on
 #   ./scripts/slices.py list [<env>]        the layer table, whole or for one account folder
 #   ./scripts/slices.py check               table vs. disk - runs inside `make check`
-#   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones
-#   ./scripts/slices.py down --env <env>    delete the Studio apps, destroy [E], stop [D]
-#   ./scripts/slices.py status [--env <env>] what is up, and the hourly burn
+#   ./scripts/slices.py up   --env <env>    start the [D] slices, apply the [E] ones, by rank
+#   ./scripts/slices.py down --env <env>    delete the Studio apps, then destroy [E] and stop [D],
+#                                           by rank descending
+#   ./scripts/slices.py status [--env <env>] what is up, the Studio apps, the portal's EMR
+#                                           Serverless applications and OpenSearch Serverless
+#                                           collections, and the hourly burn
 #
 #   exit: 0 clean | 1 something failed | 2 a usage or refusal error
 #
@@ -31,11 +34,21 @@
 #                                       ENV=production` that stopped the proxy would blackhole
 #                                       every peer session's spoke; GitLab's session (`make
 #                                       gitlab-up`/`gitlab-down`) is `--only tooling,egress,runners`
-#   7. up never applies an application  layers.is_refused on the slice name: the pipeline applies
-#      or orchestration slice           it with the release it runs (Stage 8 step 2.4)
+#   7. retired                          held the application and orchestration slices from `up`;
+#                                       no account holds one since Stage 19 item 31
 #   8. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
 #      sandbox/ slice                   CI never applies into the account people work in (2.4,
 #                                       decision 18)
+#   9. an [E] slice held from up        layers.HELD_FROM_UP, keyed (account, slice), while the [P]
+#      until its [P] state exists       state it reads is unapplied (Stage 9 pass 6's compute, held
+#                                       until 2026-10-23); the table is empty today. `down` is unaffected
+#  10. no pipeline profile applies a    layers.pipeline_refusal, when --profile names a deploy role:
+#      deployment target's slice        the leg deploys through the CI/CD CLI (Stage 19 item 31), and
+#                                       every shared slice is the user's make up/down in every account
+#                                       (Stage 8 decision 27, 2026-10-24)
+#  11. the warehouse's compute is       layers.OPT_IN_BY_GROUP: `up` without --only raises
+#      opt-in                           `warehouse-compute` only when --groups names `redshift`,
+#                                       the group that creates its API endpoint. `down` is unaffected
 #
 # How it authenticates: AWS_PROFILE is set on each command, from backend.PROFILES or from --profile
 # (Stage 8 step 4.4, the deploy runner's profiles), and no credential is ever exported into this
@@ -51,6 +64,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from tfhygiene import backend, layers
@@ -74,9 +88,15 @@ def run(cmd: list, env_extra: dict | None = None, dry: bool = False, capture: bo
 
 
 def prepare(sl: layers.Slice, dry: bool, profile: str | None = None) -> bool:
-    """The two generated files and `init`. Both generators read one table (step 2.6)."""
-    for gen in ("gen-tfvars.py", "gen-backend-hcl.py"):
-        res = run([f"./scripts/{gen}", sl.account, sl.name], dry=dry, capture=True)
+    """The two generated files and `init`. Both generators read one table (step 2.6).
+
+    A deploy role's profile runs on the deploy runner, whose AWS configuration holds none of
+    backend.PROFILES, so its tfvars name the runner's own profile for the registry's state
+    (`gen-tfvars.py --pipeline`, Stage 8 decision 14).
+    """
+    pipeline = ["--pipeline"] if profile in layers.deploy_profiles() else []
+    for gen, flags in (("gen-tfvars.py", pipeline), ("gen-backend-hcl.py", [])):
+        res = run([f"./scripts/{gen}", *flags, sl.account, sl.name], dry=dry, capture=True)
         if res is not None and res.returncode != 0:
             print(res.stderr.strip(), file=sys.stderr)
             return False
@@ -170,6 +190,10 @@ def instance_states(
 HUB_ENV = "production"
 HUB_SLICES = ("vpn", "proxy")
 EGRESS_SLICE = "proxy"
+# The two power states that say nothing about a host: a read that failed, and a read that
+# --dry-run printed and did not run. Neither is a finding, and neither is "running".
+UNREADABLE = "UNREADABLE"
+NOT_RUN = "not run (--dry-run)"
 
 
 def hub_state(dry: bool) -> list:
@@ -186,7 +210,7 @@ def hub_state(dry: bool) -> list:
         states = instance_states(HUB_ENV, name, dry)
         tag = instance_name(HUB_ENV, name)
         if states is None:
-            out.append((name, tag, "-", "UNREADABLE"))
+            out.append((name, tag, "-", NOT_RUN if dry else UNREADABLE))
         elif not states:
             out.append((name, tag, "-", "absent"))
         else:
@@ -207,6 +231,9 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
     a legitimate `make up ENV=sandbox` impossible for the person it is meant to protect. A read
     that fails is reported and waved through; a read that succeeds and says `stopped` stops the
     apply. The two nothings are told apart, and only one of them is a finding (Lesson 13).
+
+    Under --dry-run the reads are printed and none runs, so the rows read `not run` and the
+    refusal is not evaluated; UNREADABLE is reserved for a read that was attempted and failed.
     """
     if env == HUB_ENV and only and set(only) & set(HUB_SLICES):
         return True
@@ -215,9 +242,10 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
         " out, in another account:"
     )
     rows = hub_state(dry)
-    stopped = [r for r in rows if r[0] == EGRESS_SLICE and r[3] not in ("running", "UNREADABLE")]
+    unread = (UNREADABLE, NOT_RUN)
+    stopped = [r for r in rows if r[0] == EGRESS_SLICE and r[3] not in ("running", *unread)]
     for slice_name, tag, iid, state in rows:
-        if state in ("running", "UNREADABLE"):
+        if state in ("running", *unread):
             mark = ""
         elif slice_name == EGRESS_SLICE:
             mark = "  <-- this one"
@@ -225,7 +253,12 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
             mark = "  (the private network only - no refusal, D39)"
         print(f"    {tag:<22} {state} {iid}{mark}")
     if not stopped:
-        if any(r[3] == "UNREADABLE" for r in rows):
+        if any(r[3] == NOT_RUN for r in rows):
+            print(
+                "    NOT READ - --dry-run printed the reads above and ran none, so this refusal\n"
+                "    is not evaluated."
+            )
+        elif any(r[3] == UNREADABLE for r in rows):
             print(
                 "    NOT READ - no session on the hub account, so this refusal is waived rather\n"
                 "    than failed. `make hub-up` from an identity that has one if a spoke misbehaves."
@@ -240,12 +273,29 @@ def refuse_if_hub_down(env: str, dry: bool, only: list | None = None) -> bool:
     return False
 
 
-def dormant(
-    env: str, action: str, dry: bool, only: list | None = None, profile: str | None = None
-) -> None:
-    """[D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body.
+def dormant_rows(env: str, only: list | None) -> tuple:
+    """([D] rows this run acts on, [D] rows refusal 6 leaves alone), for one env.
 
-    The instances are found by Name tag, not by state file (instance_name above), with two
+    Refusal 6 (Stage 7 step 1.6): the hub pair is every other account's dependency, so
+    `make up`/`make down ENV=production` leave it alone and say so. `make hub-up` and
+    `make hub-down` reach it through `--only`, which narrows and never widens.
+    """
+    declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
+    if only is not None:
+        return [s for s in declared if s.name in only], []
+    if env == HUB_ENV:
+        return (
+            [s for s in declared if s.name not in HUB_SLICES],
+            [s for s in declared if s.name in HUB_SLICES],
+        )
+    return declared, []
+
+
+def dormant(sl: layers.Slice, action: str, dry: bool, profile: str | None = None) -> bool:
+    """Start or stop one [D] row's host; False when a read or the call failed.
+
+    [D] is stop/start and never destroy (D11). Stage 4 step 1.3 gave this hook its body. The
+    instance is found by Name tag, not by state file (instance_name above), with two
     consequences. It keeps working when the slice's state is empty: it finds nothing and says
     which of the two nothings it found. And it cannot destroy - the only mutating calls below
     are start-instances and stop-instances - so half of refusal 5 is structural rather than a
@@ -256,75 +306,52 @@ def dormant(
     tagged X" and "already stopped" are different findings: the first means the slice was
     never applied or its host is gone, the second means the hook had nothing left to do.
     """
-    declared = [s for s in layers.for_env(env) if s.layer == layers.DORMANT]
-    if only is not None:
-        declared = [s for s in declared if s.name in only]
-    elif env == HUB_ENV:
-        # Refusal 6 (Stage 7 step 1.6): the hub pair is every other account's dependency, so
-        # `make up`/`make down ENV=production` leave it alone and say so. `make hub-up` and
-        # `make hub-down` reach it through `--only`, which is the branch above.
-        left = [s for s in declared if s.name in HUB_SLICES]
-        declared = [s for s in declared if s.name not in HUB_SLICES]
-        for s in left:
-            print(
-                f"    {s.path}: refusal 6 - the hub is not {'started' if action == 'up' else 'stopped'}"
-                f" by ENV={env}; `make hub-{'up' if action == 'up' else 'down'}` is its target"
-            )
-    if not declared:
-        print(f"  [D] none declared in {env} - nothing to {'start' if action == 'up' else 'stop'}")
-        return
-
-    profile = profile or backend.profile(env)
+    profile = profile or backend.profile(sl.account)
     verb, wanted, ready = (
         ("start", "running", "stopped") if action == "up" else ("stop", "stopped", "running")
     )
+    name = instance_name(sl.account, sl.name)
+    found = instance_states(sl.account, sl.name, dry, profile)
+    if found is None:
+        if dry:  # the command above was printed and not run
+            print(f"    would {verb} whatever is tagged {name} and currently {ready}")
+            return True
+        return False
 
-    for sl in declared:
-        name = instance_name(env, sl.name)
-        found = instance_states(env, sl.name, dry, profile)
-        if found is None:
-            if dry:  # the command above was printed and not run
-                print(f"    would {verb} whatever is tagged {name} and currently {ready}")
-                continue
-            raise SystemExit(1)
+    if not found:
+        print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
+        return True
 
-        if not found:
-            print(f"    no instance tagged {name} - {sl.path} is not applied, or its host is gone")
-            continue
+    todo = [i for i, st in found if st == ready]
+    for i, st in found:
+        if st == wanted:
+            print(f"    {i} already {wanted}")
+        elif st != ready:
+            # pending or stopping: acting now races the transition, so it is reported.
+            print(f"    {i} is {st} - transitional, left alone; re-run when it settles")
+    if not todo:
+        return True
 
-        todo = [i for i, st in found if st == ready]
-        for i, st in found:
-            if st == wanted:
-                print(f"    {i} already {wanted}")
-            elif st != ready:
-                # pending or stopping: acting now races the transition, so it is reported.
-                print(f"    {i} is {st} - transitional, left alone; re-run when it settles")
-        if not todo:
-            continue
-
-        res = run(
-            [
-                "aws",
-                "ec2",
-                f"{verb}-instances",
-                "--region",
-                backend.REGION,
-                "--instance-ids",
-                *todo,
-            ],
-            env_extra={"AWS_PROFILE": profile},
-            dry=dry,
-            capture=True,
-        )
-        if res is not None and res.returncode != 0:
-            print(f"    FAILED to {verb} {', '.join(todo)}", file=sys.stderr)
-            print(res.stderr.strip(), file=sys.stderr)
-            raise SystemExit(1)
-        print(
-            f"    {verb}ped {', '.join(todo)}  ({name})"
-            if verb == "stop"
-            else f"    started {', '.join(todo)}  ({name})"
-        )
+    res = run(
+        [
+            "aws",
+            "ec2",
+            f"{verb}-instances",
+            "--region",
+            backend.REGION,
+            "--instance-ids",
+            *todo,
+        ],
+        env_extra={"AWS_PROFILE": profile},
+        dry=dry,
+        capture=True,
+    )
+    if res is not None and res.returncode != 0:
+        print(f"    FAILED to {verb} {', '.join(todo)}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return False
+    print(f"    {'stopped' if verb == 'stop' else 'started'} {', '.join(todo)}  ({name})")
+    return True
 
 
 def studio_apps(env: str, dry: bool) -> int:
@@ -456,6 +483,18 @@ def cmd_updown(args) -> int:
             )
             return 2
         take = [sl for sl in take if sl.name in only]
+    elif action == "up":
+        # Refusal 11: `--groups` is the Makefile's GROUPS, the same list it hands Terraform as
+        # TF_VAR_optional_service_groups. `--only` above is explicit and skips this.
+        groups = [g.strip() for g in (args.groups or "").split(",") if g.strip()]
+        kept = []
+        for sl in take:
+            reason = layers.opt_in_refusal(sl.name, groups)
+            if reason:
+                skipped.append((sl, reason))
+            else:
+                kept.append(sl)
+        take = kept
 
     # --profile (Stage 8 step 4.4): the deploy runner names the role it acts as, since its AWS
     # configuration holds the deploy roles' profiles and none of backend.PROFILES. Refusal 8 is read
@@ -487,40 +526,78 @@ def cmd_updown(args) -> int:
             # make a no-op `make down` fail on credentials, which is a target that reports a
             # problem it does not have. It rides on the session the destroy already needs.
             print("    skipped - nothing to destroy in this env, so this run opens no session")
+        elif profile in layers.deploy_profiles():
+            # Refusal 8 keeps a deploy profile in the Workloads accounts, where the OU's
+            # DenyInteractiveSageMakerSurface refuses CreateDomain and CreateApp, and the hook signs
+            # in with backend.PROFILES, which the deploy runner does not hold (pipeline #68,
+            # 2026-10-24).
+            print(
+                "    skipped - a deploy profile acts in a Workloads account, which runs no Studio app"
+            )
         elif studio_apps(args.env, args.dry_run) != 0:
             return 1
 
-    # The [D] hook runs on the side of the [E] loop its rank says it should. Stage 4 step 1.3
-    # put `vpn` at 40, below `egress` at 50: "the tunnel is the first thing up and the last thing
-    # down". An operator on the monitored profile sends every AWS call through the tunnel and the
-    # proxy, so stopping the hosts and only then destroying slices over the AWS API would strand
-    # the destroys. The constraint is that route, never a policy: no permission set needs the
-    # tunnel (D39).
-    #
-    # A rank is not an intention (Lesson 5): it decides the order inside the [E] loop, and it
-    # has to decide which side of that loop the hook sits on too.
-    def run_dormant() -> None:
-        print("\n  dormant [D] (step 8.2):")
-        dormant(args.env, action, args.dry_run, only=only, profile=profile)
-
-    # The hub check goes before the [D] hook and before the first apply (step 7.2), because a
+    # The hub check goes before the first start and the first apply (step 7.2), because a
     # refusal after either would leave the env half-raised, which is worse than not starting.
     if action == "up" and not refuse_if_hub_down(args.env, args.dry_run, only):
         return 1
 
-    if action == "up":
-        run_dormant()
-
+    # One sequence for both layers: the [D] rows and the [E] rows, ascending by rank on `up` and
+    # descending on `down`, so a host starts and stops where its rank puts it among the applies
+    # and the destroys, never as a block on one side of them. The rank is the only order
+    # (Lesson 5), and layers.RANKS says what each one buys: `vpn` 40 and `proxy` 41 under every
+    # [E] slice, so a run holding both starts the tunnel first and stops it last, the route an
+    # operator on the monitored profile reaches AWS by (D39: a route, never a policy); `tooling`
+    # 52 over `egress` 50 and under `runners` 57, so GitLab's host starts after the `ssm`
+    # endpoint its agent registers through exists and before the runners that wait for its
+    # sign-in page, and stops before that endpoint is destroyed.
+    hosts, left = dormant_rows(args.env, only)
+    verb, done = ("start", "started") if action == "up" else ("stop", "stopped")
     print(
-        f"\n  ephemeral [E] ({len(take)}), in {'reverse ' if action == 'down' else ''}dependency order:"
+        "\n  dormant [D] (step 8.2): "
+        + (
+            f"{len(hosts)} to {verb}, each where its rank falls among the [E] slices below"
+            if hosts
+            else f"none declared in {args.env} - nothing to {verb}"
+        )
     )
-    if not take:
-        print("    none - every [E] slice in this env is refused above, so this half is a NO-OP.")
-    for sl in take:
-        print(f"\n  --- {sl.path}")
+    for s in left:
+        print(
+            f"    {s.path}: refusal 6 - the hub is not {done} by ENV={args.env};"
+            f" `make hub-{action}` is its target"
+        )
+
+    sequence = sorted(
+        [*hosts, *take], key=lambda s: (s.rank, s.account, s.name), reverse=(action == "down")
+    )
+    print(
+        f"\n  [D] hosts and [E] slices ({len(sequence)}), in"
+        f" {'reverse ' if action == 'down' else ''}dependency order:"
+    )
+    if not sequence:
+        print("    none - every slice in this env is refused above, so this target is a NO-OP.")
+
+    def halt(i: int, what: str) -> int:
+        # What was not done is printed beside what failed (Lesson 13). A [D] host left running
+        # by a failed `down` is on purpose: the fix may need the private network, or the
+        # monitored profile's route to AWS, and a stop would close both.
+        rest = ", ".join(s.path for s in sequence[i + 1 :]) or "none"
+        print(
+            f"\n  HALTED at {sequence[i].path}: {what}. The rows after it are untouched: {rest}."
+            f"\n  Re-run `make {action}` once it is fixed.",
+            file=sys.stderr,
+        )
+        return 1
+
+    for i, sl in enumerate(sequence):
+        if sl.layer == layers.DORMANT:
+            print(f"\n  --- {sl.path}  [D] {verb}")
+            if not dormant(sl, action, args.dry_run, profile):
+                return halt(i, f"its host was not {done}")
+            continue
+        print(f"\n  --- {sl.path}  [E] {'destroy' if action == 'down' else 'apply'}")
         if not prepare(sl, args.dry_run, profile):
-            print(f"    init failed for {sl.path}", file=sys.stderr)
-            return 1
+            return halt(i, "init failed")
         # -input=false makes an unset variable an immediate error, not a prompt that waits on stdin
         # holding the state lock (Lesson 47). The approval is a separate prompt that only
         # -auto-approve skips, so without AUTO apply and destroy still ask for a yes. The Terraform
@@ -537,21 +614,7 @@ def cmd_updown(args) -> int:
             cmd, env_extra={"AWS_PROFILE": profile or backend.profile(sl.account)}, dry=args.dry_run
         )
         if res is not None and res.returncode != 0:
-            # The host is left running on purpose when a destroy fails: the fix may need the
-            # private network, or the monitored profile's route to AWS, and this hook would close
-            # both.
-            print(
-                "\n  dormant [D]: NOT stopped - an [E] destroy failed above and the fix may",
-                file=sys.stderr,
-            )
-            print(
-                "  need the tunnel. Re-run `make down` once it is fixed.",
-                file=sys.stderr,
-            )
-            return 1
-
-    if action == "down":
-        run_dormant()
+            return halt(i, f"terraform {cmd[2]} failed above")
     return 0
 
 
@@ -570,6 +633,190 @@ def managed_resources(module: dict) -> int:
     """
     n = sum(1 for r in module.get("resources", []) if r.get("mode") == "managed")
     return n + sum(managed_resources(c) for c in module.get("child_modules", []))
+
+
+# --------------------------------------------------------------- the Studio apps, for `status`
+#
+# A Studio app is started from the portal by a person, so no slice holds it and `terraform show`
+# never counts it: on 2026-11-18 a JupyterLab space billed 0.050 USD/h while `make status` read
+# 0.0000 (6d 2.7 step 5's log). `status` reads the apps from the API in every account it covers,
+# prices each from the table below and adds it to the burn. Deleting them stays `make down`'s,
+# through down-studio-apps.py.
+#
+# The statuses that bill, with the word `status` prints: Pending and InService, and Deleting until
+# the delete finishes, which is why down-studio-apps.py waits on it. Failed and Deleted bill nothing.
+#
+# The time an app bills from. `CreationTime` is the first CreateApp under the app's ARN (domain,
+# space, type, name): an app created again within 24 hours of its last shutdown counts as an update
+# and keeps it (the DescribeApp reference), across a space deleted and made again under the same
+# name too (SUP-229). The space's own creation bounds that second case; a restart inside one space
+# is dated by CloudTrail's CreateApp alone, so the spend printed is an upper bound.
+BILLING_APP_STATUSES = {"Pending": "pending", "InService": "UP", "Deleting": "deleting"}
+
+# USD per hour by app type and instance type: the measured us-west-2 rows "SageMaker Studio
+# JupyterLab / CodeEditor" of docs/PRICING.md 3 and 8 (Lesson 6). An app on a pair with no row
+# prints "rate unmeasured" and makes the total a floor: a guessed rate is a reasoned price.
+STUDIO_APP_USD_PER_HOUR = {
+    (app_type, instance): usd
+    for app_type in ("JupyterLab", "CodeEditor")
+    for instance, usd in (
+        ("ml.t3.medium", 0.050),
+        ("ml.t3.large", 0.100),  # measured 2026-09-07
+        ("ml.m5.large", 0.115),  # measured 2026-09-07
+        ("ml.t3.xlarge", 0.200),  # measured 2026-09-11
+    )
+}
+
+# The space volume row of docs/PRICING.md 8: a space bills its EBS volume at rest, app stopped.
+SPACE_VOLUME_USD_PER_GB_MONTH = 0.112
+
+
+def studio_apps_billing(env: str, dry: bool) -> list | None:
+    """[app] for every app in one account whose status bills, or None when nothing was read.
+
+    One `list-apps` with no domain filter answers for every domain in the account, the
+    blueprint's and the Tooling's alike. None follows instance_states()'s rule: it is never
+    read as "no app is running" (Lesson 13).
+    """
+    res = run(
+        ["aws", "sagemaker", "list-apps", "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the Studio apps in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    apps = json.loads(res.stdout or "{}").get("Apps", [])
+    return [a for a in apps if a.get("Status") in BILLING_APP_STATUSES]
+
+
+def studio_spaces_created(env: str, dry: bool) -> dict | None:
+    """{(domain id, space name): creation time} for every space in one account, or None.
+
+    One `list-spaces` with no domain filter answers for every domain, as `list-apps` does. None
+    leaves each app's line on its own CreationTime, the wider bound, and never reads as "no space".
+    """
+    res = run(
+        ["aws", "sagemaker", "list-spaces", "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the Studio spaces in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    spaces = json.loads(res.stdout or "{}").get("Spaces", [])
+    return {
+        (s["DomainId"], s["SpaceName"]): datetime.fromisoformat(s["CreationTime"]).astimezone(
+            timezone.utc
+        )
+        for s in spaces
+        if s.get("CreationTime")
+    }
+
+
+def print_studio_app(env: str, app: dict, now: datetime, spaces: dict | None) -> float | None:
+    """One app's line; returns its hourly rate, or None when docs/PRICING.md holds no row for it."""
+    instance = app.get("ResourceSpec", {}).get("InstanceType", "-")
+    rate = STUDIO_APP_USD_PER_HOUR.get((app["AppType"], instance))
+    owner = app.get("SpaceName") or app.get("UserProfileName", "-")
+    since = datetime.fromisoformat(app["CreationTime"]).astimezone(timezone.utc)
+    space_created = (spaces or {}).get((app.get("DomainId"), app.get("SpaceName")))
+    if space_created is not None and space_created > since:
+        since = space_created
+    if rate is None:
+        cost = "rate unmeasured"
+    else:
+        # The app bills from its start, Pending included; `since` is no later than that start.
+        so_far = rate * (now - since).total_seconds() / 3600
+        cost = f"{rate:.4f} USD/h, at most {so_far:.2f} USD so far"
+    label = f"studio/{env}/{owner}"
+    print(
+        f"  {label:<40} {BILLING_APP_STATUSES[app['Status']]:<7} {app['AppType']} {instance}"
+        f"   {cost}   since {since:%Y-%m-%d %H:%M} UTC, domain {app['DomainId']}"
+    )
+    return rate
+
+
+# ------------------------------------------------- the portal's standing resources, for `status`
+#
+# A project member deploys an EMR Serverless application or a knowledge base's OpenSearch
+# Serverless collection from the portal (docs/SMUS.md §Resource blueprints). No slice declares
+# either, so `terraform show` never counts one, and `make down` deletes neither: each belongs to
+# the project that deployed it. `status` lists the ones that can bill in every account it covers.
+# Neither is priced: an application bills the workers it holds started and a classic collection
+# one OCU or more, and no listing gives those counts, so each one makes the total a floor
+# (docs/PRICING.md 5, Lesson 6).
+#
+# The states that can bill: an application while it starts, runs or stops; a collection in every
+# state but the two below.
+EMR_SERVERLESS_BILLING_STATES = ("STARTING", "STARTED", "STOPPING")
+AOSS_IDLE_STATUSES = ("DELETING", "FAILED")
+
+
+def portal_listing(env: str, cmd: list, what: str, key: str, dry: bool) -> list | None:
+    """The items of one listing in one account, or None when it was not read (Lesson 13)."""
+    res = run(
+        ["aws", *cmd, "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the {what} in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    return json.loads(res.stdout or "{}").get(key, [])
+
+
+def utc_minute(stamp: str) -> str:
+    """An API timestamp as `YYYY-MM-DD HH:MM UTC`, or as given when it does not parse."""
+    try:
+        return f"{datetime.fromisoformat(stamp).astimezone(timezone.utc):%Y-%m-%d %H:%M} UTC"
+    except ValueError:
+        return stamp
+
+
+def portal_standing(env: str, dry: bool) -> list | None:
+    """[(label, state, detail)] for the portal resources that can bill in one account."""
+    apps = portal_listing(
+        env,
+        ["emr-serverless", "list-applications", "--states", *EMR_SERVERLESS_BILLING_STATES],
+        "EMR Serverless applications",
+        "applications",
+        dry,
+    )
+    collections = portal_listing(
+        env,
+        ["opensearchserverless", "list-collections"],
+        "OpenSearch Serverless collections",
+        "collectionSummaries",
+        dry,
+    )
+    if apps is None or collections is None:
+        return None
+    return [
+        (
+            f"emr-serverless/{env}/{a.get('name') or a.get('id', '?')}",
+            a.get("state", "?"),
+            f"{a.get('type', '?')} application {a.get('id', '?')},"
+            f" since {utc_minute(a.get('updatedAt', '?'))}",
+        )
+        for a in apps
+    ] + [
+        (f"aoss/{env}/{c.get('name', '?')}", c.get("status", "?"), f"collection {c.get('id', '?')}")
+        for c in collections
+        if c.get("status") not in AOSS_IDLE_STATUSES
+    ]
 
 
 def cmd_status(args) -> int:
@@ -633,22 +880,92 @@ def cmd_status(args) -> int:
         state = json.loads(res.stdout or "{}").get("values", {}).get("root_module", {})
         n = managed_resources(state)
         up = n > 0
-        total += sl.usd_per_hour if up else 0.0
+        # An optional host bills only when the state holds it, which is the apply having asked for
+        # it (layers.Slice.optional_hosts): the build runner on `make gitlab-up BUILD=1`.
+        held = [
+            f"{r['type']}.{r['name']}"
+            for r in state.get("resources", [])
+            if r.get("mode") == "managed"
+        ]
+        rate = sl.usd_per_hour + sum(usd * held.count(addr) for addr, usd in sl.optional_hosts)
+        with_hosts = ", ".join(addr for addr, _ in sl.optional_hosts if addr in held)
+        total += rate if up else 0.0
         print(
             f"  {sl.path:<40} {'UP' if up else 'down':<5} {n:>3} resource(s)"
-            f"   {sl.usd_per_hour:.4f} USD/h"
+            f"   {rate:.4f} USD/h" + (f"   with {with_hosts}" if with_hosts else "")
         )
 
-    print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3, static)")
+    # The Studio apps, which no slice holds (BILLING_APP_STATUSES above).
+    now = datetime.now(timezone.utc)
+    quiet, unmeasured, apps_read = [], 0, False
+    for env in envs:
+        apps = studio_apps_billing(env, args.dry_run)
+        if apps is None:
+            if args.dry_run:
+                continue
+            print(f"  {'studio/' + env:<40} UNREADABLE")
+            unreadable += 1
+            continue
+        apps_read = True
+        if not apps:
+            quiet.append(env)
+        spaces = studio_spaces_created(env, args.dry_run) if apps else {}
+        for app in apps:
+            rate = print_studio_app(env, app, now, spaces)
+            if rate is None:
+                unmeasured += 1
+            else:
+                total += rate
+    if quiet:
+        print(f"  no Studio app billing in {', '.join(quiet)}")
+
+    # The portal's standing resources, which no slice holds either (EMR_SERVERLESS_BILLING_STATES).
+    portal_quiet, unpriced = [], 0
+    for env in envs:
+        standing = portal_standing(env, args.dry_run)
+        if standing is None:
+            if args.dry_run:
+                continue
+            print(f"  {'portal/' + env:<40} UNREADABLE")
+            unreadable += 1
+            continue
+        if not standing:
+            portal_quiet.append(env)
+        for label, state, detail in standing:
+            print(f"  {label:<40} {state:<7} {detail}   rate unmeasured")
+        unpriced += len(standing)
+    if portal_quiet:
+        print(
+            "  no EMR Serverless application started and no OpenSearch Serverless collection in "
+            + ", ".join(portal_quiet)
+        )
+
+    print(f"\n  estimated burn: USD {total:.4f}/h   (rates: docs/PRICING.md 3 and 8, static)")
     if any(s.layer == layers.DORMANT for s in metered):
         # 0.0000/h is not "free" once a [D] slice exists. A stopped host keeps its EBS volume
         # and its [P] Elastic IP, both billed monthly, so the hourly total is silent about them
         # by construction.
         print("  a stopped [D] host still bills its EBS volume and its [P] Elastic IP,")
         print("  monthly rather than hourly - the floor lines of docs/plan/cost-model.md.")
+    if apps_read:
+        print(
+            f"  a space bills its volume with its app stopped, {SPACE_VOLUME_USD_PER_GB_MONTH} USD"
+        )
+        print("  per GB-month (docs/PRICING.md 8), monthly rather than hourly.")
+    if unmeasured:
+        print(
+            f"  {unmeasured} Studio app(s) on a rate docs/PRICING.md has not measured"
+            " - this total is a floor"
+        )
+    if unpriced:
+        print(
+            f"  {unpriced} portal resource(s) that no listing prices - this total is a floor:"
+            " an application bills\n  its started workers, a classic collection at least one"
+            " OCU at 0.24 USD/h (docs/PRICING.md 5)"
+        )
     if unreadable:
-        # A slice that could not be read is not a slice that is down.
-        print(f"  {unreadable} slice(s) UNREADABLE - this total is a floor, not a measurement")
+        # A slice or an account that could not be read is not one where nothing runs.
+        print(f"  {unreadable} reading(s) UNREADABLE - this total is a floor, not a measurement")
         return 1
     return 0
 
@@ -687,6 +1004,13 @@ def main(argv: list) -> int:
             "(Stage 8 step 4.4): the deploy runner's profiles are its deploy roles. A deploy-role "
             "profile meets refusal 8 in an Interactive account.",
         )
+        if action == "up":
+            p.add_argument(
+                "--groups",
+                help="comma-separated optional endpoint groups, the Makefile's GROUPS: a slice in "
+                "layers.OPT_IN_BY_GROUP is raised only when its group is named (refusal 11). "
+                "Ignored with --only.",
+            )
         p.set_defaults(fn=cmd_updown, action=action)
     p = sub.add_parser("status")
     p.add_argument("--env")

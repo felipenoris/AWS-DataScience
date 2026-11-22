@@ -1,0 +1,196 @@
+# app-ml's manifest (Stage 17 step 9.2, D41): what the CI/CD CLI copies to a project, in the notation
+# the CLI resolves. Four storage items are folders of this tree, which `deploy` syncs to the stage's
+# `targetDirectory` under the project's shared prefix; an include names a file or a folder, never a
+# glob, which `bundle` (CLI 1.0.9) does not expand. A workflow's `code` is the worker's archive, which
+# the pipeline builds before the bundle.
+#
+# The fifth item, `model`, names the project's connection and the prefix the `dev` project's publish
+# task writes: `bundle` reads it from the project of the stage it targets, as its caller, into the
+# bundle's `model/` folder (SUP-374), so a release carries the candidate app-ml/models/latest/ holds
+# when the pipeline's `bundle` job runs. Neither `bundle` nor `deploy` fails where the item is
+# missing, so the job checks the archive (scripts/check-model-bundle.py), and every `deploy` needs a
+# bundle, `dev`'s included. `dev`'s deployment configuration leaves `model` out, so no deploy writes a
+# model back into the project that trains it; `staging` and `prod` write it to app-ml/bundle/model.
+#
+# Three stages, one account each (Stage 19 decisions 6 (b), 18 (d) and 19 (c)): `dev`, the Sandbox
+# project the model is trained in, which the developer deploys to from a space with scripts/dev-cli.sh
+# and the pipeline's `bundle` job names; `staging` and `prod`, each account's deployment project. The
+# `dev` stage alone creates app-ml-train; every stage creates app-ml-register and app-ml-score, which
+# differ between stages by their variables alone. `prod`'s bootstrap runs app-ml-register and follows
+# it, so a release ends in Production with its model proposed, PendingManualApproval.
+#
+# A stage reads `${VAR}` from the shell, every stage's whatever the target, so a caller exports each
+# name: the pipeline's legs fill a target's from its project's Tooling environment and give the other
+# stages' a placeholder; scripts/dev-cli.sh sets TRAINING_SOURCE and gives the other stages' names a
+# placeholder. Each `{env.VAR}` a workflow names is a stage variable of every stage, and a literal is
+# never empty: MLFLOW_APP_ARN and TRAINING_SOURCE are `none` where no stage creates app-ml-train.
+applicationName: app-ml
+
+content:
+  storage:
+    - name: code
+      include:
+        - code/app-ml-train.zip
+        - code/app-ml-register.zip
+        - code/app-ml-score.zip
+    - name: src
+      include:
+        - "src/"
+      exclude:
+        - __pycache__/
+        - "*.pyc"
+    - name: samples
+      include:
+        - "samples/"
+    - name: workflows
+      include:
+        - "workflows/"
+    - name: model
+      connectionName: default.s3_shared
+      include:
+        - app-ml/models/latest
+  workflows:
+    - workflowName: app-ml-train
+      connectionName: default.workflow_serverless
+      code: code/app-ml-train.zip
+    - workflowName: app-ml-register
+      connectionName: default.workflow_serverless
+      code: code/app-ml-register.zip
+    - workflowName: app-ml-score
+      connectionName: default.workflow_serverless
+      code: code/app-ml-score.zip
+
+stages:
+  dev:
+    stage: DEV
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: ${DEV_PROJECT_NAME}
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      SUBNET_AZ1: ${SUBNET_AZ1}
+      SUBNET_AZ2: ${SUBNET_AZ2}
+      PROJECT_SG: ${DEV_PROJECT_SG}
+      PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
+      MIN_AUC: "0.70"
+      MODEL_PREFIX: app-ml/models/latest
+      MODEL_SOURCE: prefix
+      MODEL_PACKAGE_GROUP: app-ml-dev
+      MLFLOW_APP_ARN: ${MLFLOW_APP_ARN}
+      TRAINING_SOURCE: ${TRAINING_SOURCE}
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-ml-train
+        - type: workflow.create
+          workflowName: app-ml-register
+        - type: workflow.create
+          workflowName: app-ml-score
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/src
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/workflows
+
+  staging:
+    stage: STAGING
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-staging
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      SUBNET_AZ1: ${STAGING_SUBNET_AZ1}
+      SUBNET_AZ2: ${STAGING_SUBNET_AZ2}
+      PROJECT_SG: ${STAGING_PROJECT_SG}
+      PROJECT_KEY_ARN: ${STAGING_PROJECT_KEY_ARN}
+      MIN_AUC: "0.70"
+      MODEL_PREFIX: app-ml/bundle/model
+      MODEL_SOURCE: registry
+      MODEL_PACKAGE_GROUP: awsds-staging-model-app-ml
+      MLFLOW_APP_ARN: none
+      TRAINING_SOURCE: none
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-ml-register
+        - type: workflow.create
+          workflowName: app-ml-score
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/src
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/workflows
+        - name: model
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/bundle/model
+
+  prod:
+    stage: PROD
+    domain:
+      id: ${DOMAIN_ID}
+      region: ${DOMAIN_REGION}
+    project:
+      name: deploy-production
+    environment_variables:
+      JOB_IMAGE_URI: ${JOB_IMAGE_URI}
+      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
+      SUBNET_AZ1: ${PROD_SUBNET_AZ1}
+      SUBNET_AZ2: ${PROD_SUBNET_AZ2}
+      PROJECT_SG: ${PROD_PROJECT_SG}
+      PROJECT_KEY_ARN: ${PROD_PROJECT_KEY_ARN}
+      MIN_AUC: "0.70"
+      MODEL_PREFIX: app-ml/bundle/model
+      MODEL_SOURCE: registry
+      MODEL_PACKAGE_GROUP: awsds-prod-model-app-ml
+      MLFLOW_APP_ARN: none
+      TRAINING_SOURCE: none
+    bootstrap:
+      actions:
+        - type: workflow.create
+          workflowName: app-ml-register
+        - type: workflow.create
+          workflowName: app-ml-score
+        - type: workflow.run
+          workflowName: app-ml-register
+          trailLogs: true
+    deployment_configuration:
+      storage:
+        - name: code
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/code
+        - name: src
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/src
+        - name: samples
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/inbox
+        - name: workflows
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/workflows
+        - name: model
+          connectionName: default.s3_shared
+          targetDirectory: app-ml/bundle/model

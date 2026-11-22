@@ -4,7 +4,11 @@ These are findings from the planning period that re-reading the plan will not gi
 list only what would otherwise be relearned the hard way.
 
 Read it before planning, reviewing, or settling a decision. `CLAUDE.md` carries the titles so a lesson
-can be recognised without opening this file; the reasoning that makes each one usable is here.
+can be recognised without opening this file, with a table of them by situation; the reasoning that makes
+each one usable is here.
+
+Lessons 1 to 60 are numbered list items and the later ones are `## Lesson N` headings, so one lesson is
+found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read from that line.
 
 ---
 
@@ -38,7 +42,13 @@ can be recognised without opening this file; the reasoning that makes each one u
    revision before anyone noticed the `Data` OU SCP never denied Glue jobs (D25). Likewise the three Lake
    Formation shares assumed organization-wide RAM sharing and cross-account version 3+ that no stage
    enabled — and their absence makes a share fail *silently*, the grant succeeding while the resource
-   never appears. For every stated property, name the policy line that enforces it.
+   never appears. For every stated property, name the policy line that enforces it. A naming rule is a
+   stated property too: `conventions.md` has recorded since 2026-08-16 that Parameter Store refuses
+   `/awsds/…` and that a project parameter takes `/datascience/<env>/…`. Stage 19's release F named its
+   stage-variables parameter `/awsds/<env>/applications/<app>/stage-variables` after the `awsds-` resource
+   names (2026-11-12), every plan and lint passed, and the first write, `v0.5.1`'s `staging-deploy` on
+   2026-11-16, was refused past the gate (`SUP-067`). The rename cost a module tag, three applies and a
+   merge. A convention nothing checks is an intention; a lint over the names the code writes is its control.
 6. **Prices are measured, not reasoned.** The AWS Price List bulk API
    (`pricing.us-east-1.amazonaws.com/offers/v1.0/aws/<service>/current/<region>/index.json`) is public,
    needs no credentials, and answers in seconds what the pricing pages answer in paragraphs. It is also
@@ -674,6 +684,17 @@ can be recognised without opening this file; the reasoning that makes each one u
    check is Lesson 32's citation test in reverse, follow the promise to its addressee). And before
    scheduling anything "before the door closes", try the door: both options of the sample-row
    decision described a door that was not there.
+   Stage 19's decision 20 counted on *"two data products, told apart by the owning project alone"* in
+   one domain, while `CreateDataProduct`'s prerequisites, read for the stage on 2026-10-28, state a data
+   product's name unique within the domain; release F's second import measured it on 2026-11-16, a
+   conflict the CLI counts as an update (`SUP-369`, decision 26). A decision that relies on a platform
+   behaviour reads the API reference's prerequisites for it before it is taken.
+   Stage 6d's decision 17 (a), offered on 2026-11-17, measured a notebook run in Sandbox *under a control
+   that pins `VPC_ONLY`*; on 2026-11-18 DataZone's service reference gave `StartNotebookRun` no resource
+   type and no condition key, so the promised control had no key to write, and its fallback, the domain's
+   VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
+   promises a policy control names the condition key it writes, read from the service reference, before
+   the card is offered.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -828,6 +849,12 @@ can be recognised without opening this file; the reasoning that makes each one u
    something this project ran, and a doc reading that says so is worse than an admitted guess,
    because a guess invites the measurement and a false measurement forbids it.
 
+   Read again 2026-11-17: the plan named release T's backup of 2026-11-15 22:38 UTC as GitLab's newest,
+   from the sittings' records, while the host's 03:00 UTC timer had taken one during release F's sitting,
+   at 03:01 UTC on 2026-11-16; the deadline it sets moved from 2026-12-16 to 2026-12-17 once the bucket was
+   listed. A timer acts in every sitting the host is up for and in no sitting's record, so the newest
+   object is read from its store.
+
 39. **What a console wizard fills and the authoring API does not require is still required — and the
    validator is the deploy and the teardown, so an incomplete object pins its dependents in both
    directions.** Stage 6's blueprint configurations were created through
@@ -909,6 +936,14 @@ can be recognised without opening this file; the reasoning that makes each one u
    security group instead. When a vendor page offers two topologies, the requirements list you hit
    first belongs to whichever one it is under; the tell is a "required" whose premise names a
    network shape nobody checked against ours.
+   Third instance, 2026-11-16 (Stage 19 step 9), with the premise in this repository's own register.
+   Act 7 granted the load's database role to `IAMR:<the project role's name>`, *"Stage 9 9.3's
+   shape"*; `AWS_STATE.md`'s row for that shape reads *"the name assumes a session with no
+   `RedshiftDbUser` tag"*, and a SageMaker project role carries one, `user-project@<project id>`,
+   written by DataZone. The job connected as `IAMR:user-project@<project id>`, auto-created and
+   holding nothing, and failed *"permission denied for schema trades"*, while the granted user waited
+   for a session no door opens. A recipe copied to another principal carries the conditions of the one
+   it was measured on: read the target role's tags before naming its database user (`SUP-205`).
 
 42. **A permission failure is a response; a network failure is the absence of one — and CloudTrail
    separates "denied" from "never arrived".** The on-VPN portal break arrived with a plausible
@@ -1335,6 +1370,16 @@ decision due 5 twice, once wrongly. Lesson 13 is its sibling (a verification emp
 Lesson 42 its network form (denied is a response, never-arrived is an absence) and Lesson 30 the
 reminder that a tool's failure is not a property of the world.
 
+**A third instance, 2026-11-08** (Stage 19, pass 1's preparation). A `grep` over the logs and runbooks
+for the worker's `DataZoneDomainId` printed nothing, and the nothing was written into the stage file,
+the log and a PR as *no reading of this estate measured the variables on a worker*. The command had
+never run: one of its paths was a zsh glob that matched nothing, the shell refused the whole line, and
+`2>/dev/null` hid the refusal. The 6i log held the measurement (a task of a portal-created workflow
+printed the seven variables, 2026-10-11) and `serverless-workflows.md` §O repeated it. The positive
+control was one word away, the same grep for a name known to be in the file. The design change the
+false absence motivated stood on another ground found afterwards, a CLI-created workflow's injection
+being unmeasured and the CLI's code passing no variable, and the claim was corrected the same day.
+
 ## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
 
 **What happened.** The `default-v0.3.0` → `v0.4.0` bump followed [`dev-env.md`](runbooks/dev-env.md) §B
@@ -1370,6 +1415,13 @@ correct whether the API replaces or merges, and a template is correct only if it
 **The failure is a start that does not happen.** Measured the same evening: the stranded space's app
 failed to start against the destroyed version, with no fallback to the domain default. The user
 repaired it in the portal and it came up with those three fields intact.
+
+**Read again 2026-11-18.** A DataZone environment holds the same kind of copy. `test-experimentation`'s
+`Tooling` environment, created 2026-10-15, stores `enableSpaces` `"true"` in its own `userParameters`. The
+profile locked it `"false"` on 2026-11-18, and the owner's *Update project* re-deployed `true` with no
+resource changed (`SUP-380`). Stage 6d's decision 16 (a) had planned to retire each living project's
+`Tooling` domain with that press, reasoning from the profile's side; the environment was the consumer
+nobody read until the press.
 
 ## Lesson 64 — a comment inside a rendered template is a host replacement in waiting
 
@@ -1521,766 +1573,500 @@ and a running host that bills while registered as nothing. Each failure is also 
 silent: the race loses some sessions, the version drifts with no commit, and the replacement arrives
 inside a plan written for something else.
 
+## Lesson 69 — two stages' unapplied changes to one slice become one apply the moment both are on main
+
+**What happened.** 2026-10-18, `sandbox/sagemaker/`. Stage 17's pass 1 put `MLflowApp` into
+`sagemaker-prereqs-v0.5.0` and waited on its 1.1, a portal reading the user takes before the blueprint
+exists. Stage 11's `TM-21` put the project key's organization condition into `v0.6.0`, built on `v0.5.0`,
+and its threat-model row said it applies "unless Stage 17's step 1.3 applies first". Both PRs merged; the
+caller pins `v0.6.0` and takes the module's default roster, so the slice's only possible plan is `2 to add,
+1 to change`, and the security fix waits on a portal reading of another stage.
+
+**Why it is a class rather than a slip.** A tag is cut from the commit before it, so a later version carries
+every earlier one; each stage's text describes its own half and stays true on its branch. The coupling
+appears only on main, where nothing reads the two stages together.
+
+**The rule.** Before tagging a module whose previous version is unapplied in a caller, read who waits on that
+version and say it in both stages: the apply is shared, and so is the condition each one waits on. Where the
+two must land apart, cut the second change from the version that is applied, not from the newest tag.
+
+**What makes it expensive.** The plan is the only reader that shows it, and nobody plans a slice whose change
+is waiting.
+
+## Lesson 70 — a refusal attributed to the identity's class was a membership, and memberships change in a portal nobody watches
+
+**What happened.** `datazone list-connections` refused `InfrastructureAccess` three times (2026-09-21 to
+2026-10-10), and 6h recorded it as a property of the identity: the infrastructure user is not a project
+member, so `WH-9` became a permanent note and `EXC-17` an object no instrument reads. On 2026-10-15 a
+portal act added a group profile whose role is Sandbox's `InfrastructureAccess` as a contributor of both
+projects, and on 2026-10-18 the same call answered from Sandbox's profile and stayed refused from Data
+Governance's.
+
+**Why it is a class rather than a slip.** A service with its own permission layer decides on state it holds
+(Lesson 28's second grant), and that state is edited in a console, by a person, with no plan and no diff. A
+refusal read as "what this identity is" outlives the state that produced it.
+
+**The rule.** Record such a refusal with the state it depends on ("not a member of the project, read
+<date>"), and give the note a revision trigger the instrument can read, here the projects' memberships.
+
+**What makes it expensive.** The change is silent in both directions: nothing announces the new access, and a
+permanent note stops anyone from re-trying the call that would show it.
+
+**Read again 2026-11-18.** Stage 6d's `SageMakerAIDomain` pilot was rolled back in the portal on 2026-10-31
+(`DeleteEnvironment` in Data Governance at 00:29:20 UTC, then the domain, its space and its user profile
+deleted in Sandbox within 21 seconds), and no record said so for 18 days: the log's entry of 2026-10-31 still
+described the domain with its spaces, and step 2.7 was planned around a pilot project holding both domains.
+CloudTrail was the only witness, read when 2.7's first step listed the domains. A portal act deletes as
+silently as it grants, so a plan that reuses an object a portal can touch lists it first.
+
+## Lesson 71 — a lint that prints `ok` for a clause its invocation leaves unchecked reads as a pass on every clause
+
+**What happened.** Stage 8, 2026-10-18. Step 5.6 lists eight clauses for the D28 workflow lint, and
+`app-etl`'s CI runs it as `lint .`, which prints `ok: 6 arquivo(s)` or one line per refusal. Reading the
+tool at `3c1708e` found clauses that this invocation leaves unchecked and says nothing about: (d) and
+(h)'s comparison with the release's manifest have no rule at all, and (e)'s repository, (f)'s instance
+type and (f)'s volume key need `--image-repository`, `--instance-type` and `--promoted`, of which the
+pipeline passes none and the last refuses a folder. A `dev-env` image by digest and a job with no volume
+key both read `ok`. The clauses were written from the design (Lesson 57's neighbour); the pipeline's line
+was written from the tool's default.
+
+**Why it is a class rather than a slip.** A gate's verdict is one word for every clause, and a clause a
+mode skips does not print "skipped": `ok` means nothing was refused and reads as nothing is wrong, which is
+Lesson 13 inside one command. The clause list and the pipeline's line are two documents about one
+behaviour, and no step reads them together; the options that switch a clause on are what the pipeline's
+author did not think to add.
+
+**The rule.** For each clause of a gate, name the invocation that switches it on, and read the pipeline's
+command line against that table: a clause the line leaves off is written in the plan as a gap, with its
+owner. Prove each clause with a deliberate violation run through the pipeline's own invocation, never
+through the most thorough one (Stage 8 verification xiv says which option each row needed).
+
+**What makes it expensive.** The gate stays green while the thing it was written to refuse goes through,
+and the first reader to notice is a person looking at a rendered file.
+
+## Lesson 72 — an action left out of the policy you write is not denied to a principal that carries policies you do not write
+
+**What happened.** Stage 6h, 2026-09-21 to 2026-10-18. Step 2.2 wrote the project role's warehouse
+policy without the `redshift-data:` family, and the stage recorded the consequence as a fact: *"the JDBC
+path is open and the Data API path is not granted"*. Verification i left the boundary's answer for the
+family unread, and decision 8 argued the wide tag on the strength of layer 2. The policy simulator, run
+on 2026-10-18 for 5.3, read the project role `allowed` for `redshift-data:ExecuteStatement` on the tagged
+workgroup: AWS's `SageMakerStudioProjectUserRolePolicy` v75, which the blueprint attaches to every project
+role, grants the family and `GetCredentials` on a workgroup tagged with the caller's project,
+`GetCredentials` on any workgroup through `sqlworkbench` or the Data API, and both on any workgroup
+carrying `for-use-with-all-datazone-projects=true`. The omission had closed nothing for a month.
+
+**Why it is a class rather than a slip.** An omission is a control only on a principal whose every policy
+the author writes. The project role carries five AWS-managed documents and one of this repository's (open
+question 22), so what it may do is their union, and a family left out of the one is granted or not by the
+five. Lesson 11 one layer down: the author of the *other* policies decides. And Lesson 20's mirror: the
+allow nobody here wrote is attached and exercised, while the deny nobody wrote is imagined.
+
+**The rule.** A claim that a principal lacks an action is made about the principal, never about one
+policy on it: simulate the principal with the action and the resource's tags in the context, or read every
+policy it carries. Where a service mints the role, the repository's policy is the declared duplicate of
+what the service's text grants, kept because that text moves, and the stage says which door each grant
+answers for; in 6h the access role, which carries no AWS policy, is the one principal the repository's
+policy alone admits.
+
+**What makes it expensive.** The design was argued on a gate that did not exist, the instrument that reads
+the layer (`WH-11`) reads the repository's policy only, and the finding arrived as a by-product of another
+measurement.
+
+## Lesson 73 — a selector that takes the last match is a claim that there is one, and the change that adds the second is never read against it
+
+**What happened.** Stage 8, 2026-10-24. `app-etl`'s `test-deploy` followed its run with `get-workflow-run`,
+taking the workflow's ARN from the CLI's log with `sed … | tail -1` on *"ARN:"*, written when the manifest
+held one workflow. v0.4.0 added `app-etl-train`, created in the same deploy after `app-etl`, so the last
+*"ARN:"* line became the train workflow's while the run was app-etl's. The deploy and the run passed; the
+job failed 16 minutes in on *"Workflow run not found"*, and the tag `v0.4.0` was spent, since a retry runs
+the tag's YAML. The release that added the second workflow was written, linted and unit-tested, and none of
+that reads the job's selector.
+
+**Why it is a class rather than a slip.** "The last line", "the first element", `[0]`, `tail -1` and
+`head -1` answer correctly for every input their author ran, and the inputs grow through a change made
+elsewhere: a manifest's list, an account's resources, a log's verbosity. The change is reviewed against its
+own files; the selector lives in a job, a script or a query, often in another repository, and fails only
+when it runs, after everything before it passed. Lesson 49 is the same claim held by a comment.
+
+**The rule.** Select by identity, never by position: the name the run line carries, the key an object is
+created under, a filter on the attribute that tells the items apart. Where a position is the only handle,
+assert the count first and fail naming it. When a change adds a second instance of something (a workflow,
+a chain, a bucket, a target), search its consumers for positional selectors over that thing before the
+tag.
+
+**What makes it expensive.** It fails at the last step of a long job, after the work it was meant to check
+succeeded, on an identifier that names something that exists; on a tag pipeline the fix costs a new tag.
+
+## Lesson 74 — a placeholder that reads correctly after decoding can be inert to a service that substitutes it textually, and the plan that fixes it calls the change whitespace
+
+**What happened.** Stage 10, 2026-10-25. The orchestration module wrote each schedule's target input with
+`jsonencode({ chain = …, scheduledTime = "<aws.scheduler.scheduled-time>" })`. `jsonencode` writes `<` and
+`>` as `\u003c` and `\u003e`, and EventBridge Scheduler substitutes a context attribute only where the input
+carries it literally, so Production's first scheduled executions received the placeholder unsubstituted.
+Every reader decoded the JSON first: the HCL, `describe-execution`'s input as a parser reads it, the plan.
+The fix's plan rendered the change as `jsonencode( # whitespace changes`.
+
+**Why it is a class rather than a slip.** A service that substitutes placeholders matches bytes: the
+Scheduler's `<aws.scheduler.*>` attributes, an EventBridge input transformer's `<path>` names. Every tool
+between the author and the service decodes before it shows anything, so an encoder that escapes the
+placeholder's delimiters makes it inert while every view reads it as intended. Lesson 56's inert line,
+produced by an encoder instead of a missing capability.
+
+**The rule.** Write a value a service substitutes into as a literal template with only the parts that need
+encoding encoded (here the chain's key); read back the stored raw string from the service's own API at the
+first apply; and read a plan's "whitespace changes" on a JSON string as a byte change.
+
+**What makes it expensive.** It is silent until something consumes the value. No chain forwarded the date, so
+the defect cost nothing yet; the first chain that reads it would receive a literal where a timestamp was
+expected, at a scheduled run in Production.
+
+## Lesson 75 — a permission the creator holds without a grant moves with whoever creates the object, and a decision that moves the teardown to another identity owes it the grant nobody had to write
+
+**What happened.** Stage 8's decision 27 (2026-10-24) moved Staging's teardown from the pipeline's deploy role
+to the user's `make down`. The application slice's table in `app_outputs` is created by the deploy role at
+the leg, and Lake Formation gives a table's creator its permissions and nobody else: the account's
+administrator, who created the database, holds no `DROP` on a table another principal created in it. The
+first such down, 2026-10-25, was refused *"Required Drop on trades_notional"*; the user unblocked it with a
+grant by name, which left with the table, and `app_outputs` gained a wildcard grant to the infrastructure
+identity. The decision, its plans and its applies were read against IAM, the deploy roles' grants narrowed
+and the user's permission set, and the creator's half was written in neither.
+
+**Why it is a class rather than a slip.** Creator-held permissions exist in more than one system here: Lake
+Formation's creator permissions on databases and tables, and Redshift's ownership, under which only an
+object's owner or a superuser drops it. A decision that changes who creates or who destroys an object changes
+who holds that half, and no policy diff shows it, because the permission was never written.
+
+**The rule.** When a decision moves an act (create, alter, destroy) to another identity, list the objects the
+act touches and, per object, what its creator holds without a grant; write the new identity's grant in the
+same change, and run the act once as the new identity before relying on it.
+
+**What makes it expensive.** It surfaces at the teardown, the step nobody rehearses, after the work succeeded,
+and the hand grant that unblocks it leaves with its object and teaches the next release nothing.
+
+## Lesson 76 — a toolchain upgrade on one writer locks out every older reader of the states it writes, and the readers that cannot move on the spot move first
+
+**What happened.** The laptop moved from Terraform 1.15.8 to 1.16.6 on 2026-10-25 (the bump taken 2026-10-22
+for CVE-2026-78669), while the deploy image the pipeline's jobs run in carries 1.15.8 until its next release, a
+GitLab act. Terraform refuses a state snapshot written by a newer version, *"state snapshot was created by
+Terraform vX, which is newer than current vY"*, in a plan, in a `terraform_remote_state` read and in `terraform
+output` alike. Every state the pipeline reads or applies was still 1.15.8's that day, because the sitting's
+three applies ran before the install; the first laptop apply or `make up` of such a slice after it would have
+put the state out of the image's reach: `staging-check` on `staging/egress`, `production-deploy` on
+`production/workloads-egress`, and the application and orchestration slices' `terraform_remote_state` reads of
+`data/`, `sagemaker/`, `foundation/` and `workloads/` in both targets.
+
+**Why it is a class rather than a slip.** A version is a property of every state a binary writes, not of the
+machine alone (Lesson 65's mirror): the laptop and the image are two writers and two readers of the same
+states, and upgrading one changes what the other can read without touching a file either of them reads.
+Nothing in the plan, the diff or the apply names the second reader; the refusal arrives in a pipeline job,
+days later, as the failure of a slice nobody changed.
+
+**The rule.** When two toolchains read the same states, the readers that cannot be upgraded on the spot (an
+image, a runner) move first, or every writer that moved stays off the states they share until they do. Here:
+the deploy image is rebuilt before any laptop apply or `make up` of a slice the pipeline reads or applies
+([`runbooks/promotion.md`](runbooks/promotion.md) §N.1 step 2); the hub and GitLab slices, which no pipeline
+reads, are free.
+
+**What makes it expensive.** The lockout is invisible until the pipeline runs, and the way back is a
+downgrade of the laptop or an image rebuild in the middle of a release.
+
+## Lesson 77 — a gate that reads a feed gives a dated verdict: the lock that passed on the day it was cut fails on the day it is tagged, and the tag is spent either way
+
+**What happened.** `awsds/dev-env`'s lock was cut on 2026-10-16 and passed `pip-audit` at `default-v0.8.0`'s
+release that day. The recipe then changed in one literal, and on 2026-10-25 the same lock met 73 blocking
+findings at the gate, in 11 packages, three pipelines (#89 to #91) failing on the tag `default-v0.9.0`, which
+the convention spends on first landing: pillow's 41 alone were published against 12.3.0 once 13.0.0 shipped
+on 2026-10-16, setuptools' fix 84.1.0 on 2026-10-19. Nine packages moved by a targeted `uv lock
+--upgrade-package`; pillow and setuptools could not, their fixed versions forbidden by autogluon 1.6.1's upper
+bounds, and entered the accepted list by name (42 entries, `gates-v0.5.0`).
+
+**Why it is a class rather than a slip.** The gate's input is two things, the lock and OSV's records of the
+day, and only the first is in the commit. A green pipeline is a reading of the feed at that hour, not a
+property of the lock; a tag cut from the same commit days later reads a different feed, and the failure lands
+on the one object the project cannot reuse. Lesson 54's three verdicts gain an axis: *when*.
+
+**The rule.** A gate that reads a moving feed is run on the laptop the day of the tag, before the tag, with
+the gate's own flags (the dev-env README's *Before a build*); the tag is cut on a green reading, the lock
+moved package by package past what moved, and what a dependency's upper bound forbids is accepted by name,
+dated and attributed. A bare `--upgrade` is not the move: on 2026-10-25 it resolved an older autogluon and
+failed building `configspace`.
+
+## Lesson 78 — a stand-in for a refused call answers what the real call answers to the identity it imitates, read from the path that already works, never from what the first caller tolerates
+
+**What happened.** On 2026-10-26 the CI/CD CLI's `dev` deploy from a space stopped at `ListDomains`, which
+DataZone refuses to a project's role (Stage 10 2.1). The command replaced the CLI's lookup,
+`get_domain_id_by_name`, with a stand-in whose first answer was `None`, on the premise that the deploy role's
+own call in Sandbox returns an empty list, the domain living in Data Governance. The project step, the
+lookup's first caller, accepts `None` and goes on; the deploy copied the application's files under the
+project's `shared/` and two operator zips under `shared/operatorFiles/`, then stopped in `workflow.create`,
+the second caller, which resolves the project's role through the same lookup: *"Domain 'awsds-studio' not
+found in region us-west-2"*. The premise was contradicted by a record already in hand: the pipeline's
+`test-deploy` creates its workflows through that second caller as the deploy role, so the role's call
+returns the domain. The stand-in answering with the manifest's domain id passed both callers, and the deploy
+and its run succeeded.
+
+**Why it is a class rather than a slip.** A stand-in replaces a function for every caller, and the caller
+that runs first is the one that tests the guess; a tolerant caller passes a wrong answer through, and the
+failure arrives at a later caller, after side effects. The guess was about a value nobody read: what the real
+call returns to the identity the stand-in imitates. That value was knowable without a call, from a run of the
+same code path that had already succeeded.
+
+**The rule.** Before writing a stand-in, list every caller of the function it replaces and read what the real
+call returns, to the identity being imitated, from a run that went through all of them; return that. A
+stand-in that satisfies only the caller that failed is a second defect, and its first symptom names a later
+caller, never the stand-in.
+
+**What makes it expensive.** Each wrong answer costs a deploy and leaves its partial write behind: the copied
+files a later deploy syncs over, and operator zips nothing prunes.
+
+## Lesson 79 — a slice applied from an unmerged branch is a revert in every other tree, and its plan reads like a small change of your own
+
+**What happened.** On 2026-10-26 the 6f session applied its pilot to `data-governance/data/` from its PR's
+branch: two SMUS Lake Formation seats in `aws_lakeformation_data_lake_settings.this`, and the publisher's
+grants. The same evening Stage 9 xxiv's sitting had to plan and apply that slice for the datashare's
+association, from a worktree cut from `main` before the PR merged. From `main`'s tree the plan read *1 to
+change, 2 to destroy* beside the association: the seats leaving the administrators and the grants destroyed.
+The tfvars that tree generates lack `lake_publishing_enabled`, which then defaults to `false`. The sitting
+planned from a detached checkout of the pilot's branch, its tfvars regenerated there, read `No changes`, and
+applied the association alone. The PR merged during the sitting, after which `main` plans the same.
+
+**Why it is a class rather than a slip.** A slice has one state and every tree has its own code. Once a branch
+applies, every tree without its commits describes an older slice, and its plan proposes undoing the newer one
+in the words of the change at hand: a `1 to change` on a settings resource reads like drift, a `destroy` of
+grants like cleanup, and nothing in the plan names the branch that applied. The rule that sessions hold
+slices apart does not cover a cross-stage act, such as xxiv applying the lake's slice. The generated tfvars
+add a second way to diverge: two trees whose `backend.py` differ generate different values for one slice.
+
+**The rule.** Before planning a slice another session applied, ask that session, or read its PR, which tree
+carries what is applied. Plan from that tree with its tfvars regenerated there, or wait for the merge and
+sync. A plan that changes or destroys a resource the change at hand does not touch is stopped, and its author
+asked, before anything is applied.
+
+**What makes it expensive.** An apply from the older tree removes another session's applied work without an
+error, and that session learns it from its next reading.
+
+## Lesson 80 — a revocation that removes a name reads as "not found", never as "denied", and it lands with the last of its asynchronous writes, not with the call
+
+**What happened.** On 2026-11-14 Stage 19's Sandbox sitting revoked `test-experimentation`'s subscription
+from the portal at 23:00:00 UTC while a Glue interactive session in that project held the table open
+through its resource link. The session's next count, right after the revocation, still answered 10. The
+one after it, at 23:01:21, failed with *"[TABLE_OR_VIEW_NOT_FOUND] The table or view
+`glue_db_4zojr4rr6bmnww.trades_notional` cannot be found"*. The trails held the fulfilment's removal as two
+writes by two other principals: `BatchRevokePermissions` by the producer's project role at 23:00:52 and the
+link's `DeleteTable` by the consumer's at 23:01:02 (`SUP-365`).
+
+**Why it is a class rather than a slip.** A grant that reaches a reader through a name, such as a resource
+link, a view or a shortcut, is revoked by deleting the name, and every engine that resolves names reports
+the name's absence. The API that revokes answers before its writes run, and the writes are another
+principal's, so neither the call's answer nor the caller's own trail dates the moment the access ended.
+A proof read at the call's answer reports a control that does not work, and an error read later sends its
+reader after a dropped table.
+
+**The rule.** Date a revocation from its last write in the trail, read after the trail's delay (Lesson 62),
+never from the call's answer. Read a "not found" after a revocation as the revocation until the trail
+says otherwise. Where a session could hold the target by its own name, test that path too, since the
+deleted name proves nothing about it.
+
+**What makes it expensive.** The negative that passes too early is written down as a broken control, and
+the "not found" that follows it is fixed by recreating the name, which a later reader takes for the
+access coming back.
+
+**Read again 2026-11-18, from the other side.** A refusal can name a permission when the object is what is
+missing. In 6d 2.7 step 5, `throwaway-6d`'s project role was refused `DescribeUserProfile` five times from
+21:46:44 UTC, *"no identity-based policy allows"*, on the user's profile in the blueprint's domain.
+SageMaker created the profile at 21:47:31, and the same role's same call on the same ARN answered at
+21:48:05. The ML policy allows the call only where the profile's `AmazonDataZoneProject` tag equals the
+role's, and an object that does not exist has no tag. Under a tag-conditioned allow, read whether the
+object existed at that second before reading an `AccessDenied` as a missing grant.
+
+## Lesson 81 — a notebook's engine is a bill of its own, sized by its connection and kept by its idle timeout, and the space's price is not the session's
+
+**What happened.** Stage 19's Sandbox sitting priced its window at the hub's and the endpoints' 0.2 USD/h
+and 0.050 USD/h per space. Its Spark read, one `%%pyspark project.spark.fineGrained` cell, opened a Glue 5.0
+interactive session of up to 10 `G.1X` workers with a 60-minute idle timeout: up to 4.40 USD/h at
+0.44 USD/DPU-h, twenty-two times the rest of the estate. The connection carried that size in its
+`sparkGlueProperties`, which no step had read. The session was read at 23:05 UTC and stopped with the
+notebook's kernel at 23:07:37, after 1152 s; it would otherwise have run to 00:01. Its `DPUSeconds` read
+0.0 at the stop and 3248.6 an hour later, an average of 2.8 DPU under the auto scaling its arguments
+carried, and the bill charged that field: 0.9025 DPU-h, 0.3971 USD (`SUP-368`).
+
+**Why it is a class rather than a slip.** A cell runs on an engine its connection names, beside the space
+that runs the notebook, and the vendor sizes that engine. The idle timeout ends the session an hour after the
+last cell, not at it. A cost line written from the space's instance type and the slices `make status` reads
+leaves out every engine a cell starts, because neither the instance nor the slices hold it.
+
+**The rule.** Before a cell runs on a project connection, read the connection's size (`get-connection`,
+the engine's properties) and put the engine in the sitting's cost line. When the reading is done, close the
+kernel and read the engine's session `STOPPED` (`glue get-session`), before the space is stopped. Read its
+consumption from `DPUSeconds` once the field is filled, never at the stop.
+
+**What makes it expensive.** The engine bills while the person reads the result. At the connection's
+ceiling one forgotten hour costs what 22 hours of the sitting's hub and endpoints cost, 4.40 against
+0.2006 USD/h; at the measured session's average, 1.24 USD/h, it costs six.
+
+## Lesson 82 — a refusal diagnosed as a shape and granted as a list stays open for every member the list left out
+
+**What happened.** `SUP-267` diagnosed the blueprint's refusal of a workflow's first job by its mechanism:
+the operator reads the job name before it creates the job, and AWS's project-role policy scopes that read
+to the caller's project tag, which a free name cannot carry. The grant written from it (`sandbox/workflows/`,
+2026-10-16, and `<env>/studio/workflows.tf` from Stage 18) named the members that had failed,
+`DescribeProcessingJob` and `glue:GetJob`. `SUP-268` recorded on 2026-10-20 that `SageMakerTrainingOperator`
+calls `DescribeTrainingJob` the same way, while training still ran under the application role. Stage 19's
+decision 6 (b) moved every workflow onto the deployment project's role, and `app-etl-train` first ran under
+a project role in `v0.5.1`'s `staging-test` (2026-11-16), where `DescribeTrainingJob` was refused past the
+gate. The fix was the same pair on `training-job/*`, two applies and a new tag.
+
+**Why it is a class rather than a slip.** A diagnosis names a mechanism and a grant names actions. The run
+that fails supplies the actions, so the members that have not run yet are missing from the list while the
+mechanism still covers them. Each fails at its own first run under the identity, and the last to run is
+the task the promotion runs, often the least frequent one. The mechanism is written in the supplement and
+the grant in a slice, so a decision that moves a task is read against neither. Lesson 75 is the sibling
+for what a creator holds without a grant.
+
+**The rule.** When a grant answers a diagnosed mechanism, list the mechanism's members across what the
+estate runs (the operators the templates and the workflows name) and grant each one, scoped as the measured
+one. When a decision moves workloads onto an identity, run each of their tasks once under it before the
+tag, in the dev project, where a refusal costs nothing.
+
+**What makes it expensive.** The refusal arrives in the tag's pipeline, past the gate, where neither the
+grant nor the template of the running tag can change; here it cost an hour, two applies and `v0.5.2`.
+Sandbox's grant carries no training pair, so by the same reading a training task in a Sandbox project
+would be refused the same way; none has run there.
+
+## Lesson 83 — a retry reuses every name the first attempt spent, and a job whose objects are named after the pipeline has no retry
+
+**What happened.** `app-etl`'s `staging-test` named each chain's execution
+`$CI_COMMIT_TAG-$CI_PIPELINE_ID-<chain>`. In `v0.5.1`'s pipeline #126 the `app-etl` execution succeeded and
+`app-etl-train` failed on a grant (Lesson 82). The grant was fixed outside the template, so the same YAML
+would have run correctly on a retry, and the retry would still have been refused at its first call: GitLab's
+retry keeps `CI_PIPELINE_ID` and changes `CI_JOB_ID`, and Step Functions answers a closed execution's name
+with `400 ExecutionAlreadyExists` for 90 days (the `StartExecution` reference, read 2026-11-16). Naming the
+executions after the job was a template change, and a tag never moves, so a failure fixed outside the
+template still cost `v0.5.2` and a full pipeline. The same night `staging-deploy`'s retry passed (job 796),
+because the CI/CD CLI updates its workflows in place.
+
+**Why it is a class rather than a slip.** A retry is a pipeline's recovery path for a job past its gate, and
+every name a job derives from the pipeline or the tag is the same on the retry. A service that keeps a name
+after its object ends refuses the second attempt, whatever the first one's outcome. The author runs the job
+once, and a first run never exercises its retry.
+
+**The rule.** A job that creates a named object outside GitLab names it after the attempt (`$CI_JOB_ID`, or
+a time stamp, as the training job's name does), or adopts the object its name already holds. Before a tag,
+read each job's external names with the question "what does the second attempt send?".
+
+**What makes it expensive.** A failure fixed outside the template (a grant, a quota, a transient refusal)
+costs one click on a job that can be retried. On a job that cannot, it costs a new tag, a merge request, a
+build and the gates again.
+
+## Lesson 84 — the laptop's shell is zsh, and a command written as bash expands to another string before it runs
+
+**What happened.** The commands of this project run in zsh: the Bash tool's shell and the user's terminal.
+Four bash habits read differently there, each met in Stage 19's sittings:
+
+- `"$M:examples/app-etl"` applied zsh's `:e` modifier, and `git ls-tree` received `xamples/app-etl`
+  (2026-11-16);
+- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15);
+- `echo ======` failed with *"===== not found"*, since `=word` expands to the path of the command `word`
+  (2026-11-16);
+- a glob that matched nothing refused the whole line: `terraform-modules/sagemaker-app*` (2026-11-16), and
+  on 2026-11-08 behind `2>/dev/null`, where the refusal read as an empty result and a false absence went
+  into three files (Lesson 62's third instance).
+
+The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 it refused
+`(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, and inside `$(…)` behind
+`2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
+runs as `grep -F` or in Python, with its exit code read.
+
+**Why it is a class rather than a slip.** The differences are in expansion, which happens before the
+command runs, so the command receives another string and nothing reports the substitution. A modifier such
+as `:h` or `:t` yields a valid path, and a destructive command runs on it. The runbooks' fenced `bash`
+blocks and the habits that write them are bash; the shell is not.
+
+**The rule.** In a command for this laptop: brace every parameter a colon follows (`${M}:path`), quote a
+glob a tool expands itself (`--include='*.md'`), split a list explicitly (`${=s}` or an array), and quote a
+word that begins with `=`. A script carries its interpreter in its shebang and is never pasted into the
+shell.
+
+**What makes it expensive.** The failure is silent wherever an error is redirected, and a wrong string that
+is still a valid argument makes the command succeed on something else.
+
+## Lesson 85 — a name has a composer, and a record that infers it from the name's shape credits the default
+
+**What happened.** Two names were credited to the wrong party, and both were found on 2026-11-16.
+
+- `SUP-254`, from a reading of 2026-10-20 in Staging, took the workflow log group
+  `/aws/mwaa-serverless/<domain>-<project>/<workflow>` for MWAA Serverless's default and recorded that the
+  CI/CD CLI passes no `LogGroupName`. The CLI composes the name (`build_idc_log_group_name`) and passes it
+  in `CreateWorkflow` and `UpdateWorkflow`, as its code shows. Stage 19 decision 27 was first drafted on the
+  wrong premise.
+- Stage 19 act 7 granted the load's database role to `IAMR:<the project role's name>`, the spelling Redshift
+  documents for an IAM role. The project role carries `RedshiftDbUser = user-project@<project id>`, which
+  DataZone writes, and the Glue job connected as `IAMR:user-project@<project id>` (`SUP-205`); verification
+  xxxii's first run failed on *"permission denied for schema trades"*.
+
+**Why it is a class.** A name with a recognisable shape looks like the platform's default, and the default
+is the one hypothesis that needs nothing configured to be true. Something else composed both names, a
+client in one and a tag in the other, and neither shows in the object.
+
+**The rule.** Before a record says who names an object, read the request that created it: the trail's
+`requestParameters` or the client's code for a resource, the role's and the session's tags for a database
+user. Where neither can be read, the record says the composer is unread.
+
+**What makes it expensive.** A wrong composer moves the fix to the wrong place: a retention rule aimed at the
+service instead of the client's parameter, a grant to a user no session reaches.
+
+## Lesson 86 — a reply that reports an act names the act, never its object, and the object is read before the step that consumes it
+
+**What happened.** On 2026-11-18 the session asked whether to make Stage 20 decision 17 (b)'s change in
+`app-dbt` after the merge of `awsds-workflows` pull request #28, and the user answered *"Fiz o merge. Pode
+fazer a mudança."* The merge the user had made was this repository's PR #319, at 15:33:19 UTC; #28 was still
+open, and that repository's `main` still at `1a50ceb`. The change's pin is #28's merge commit, which did not
+exist yet. The session read both pull requests' states before it wrote the pin, wrote the rest of the change
+on a branch cut from the merge it found, and left the pin for #28's merge (Stage 20's log, the same day).
+
+**Why it is a class.** Two pull requests were open at once, one per repository, and the question named one of
+them. The answer reports the act the user had just performed, and the act is real; its object is whichever
+the user had in front of them. A confirmation carries no identifier, so it fits every object of the right
+kind.
+
+**The rule.** A step that consumes another party's act reads the act's object first: the pull request's state
+and merge commit, the slice's state, the project's membership. A "done" in the chat authorizes the step and
+never supplies the identifier it consumes (Lesson 38).
+
+**What makes it expensive.** A pin taken from `main` before the merge names the commit the change was meant to
+leave, and the lint refuses it at the application's first push, weeks later and in another system.
+
+## Lesson 87 — a gate written against the first application's shape fails on the next one's edge, and the failure reads as the application's
+
+**What happened.** The gates' pip-audit step was written for `app-etl`, whose runtime export pins every
+package for one platform. On 2026-11-17 `app-genai`, which has no runtime package, met
+`set -eu; pinned="$(grep -c == req)"`: `grep -c` prints 0 and exits 1 on a count of zero, so the step fails
+on an empty export, and the application's first release waits on a gates tag (Stage 17's log, 10.6). On
+2026-11-18 `app-dbt`'s lock met the same count from the other side: pip-audit 2.10.1 skips a pin whose
+marker its runner does not match, and the job fails when it audits fewer packages than the export pins, so
+the lock was cut for Linux and macOS alone, 80 pins to 78 (Stage 20's log).
+
+**Why it is a class.** A shared gate encodes the shape of the first thing it ran on: a list that is never
+empty, a lock for one platform, a name that always matches. Lesson 31's check keeps passing while the design
+spreads; this one fails, and the failure names the new application, so it reads as the application's defect
+rather than the gate's assumption.
+
+**The rule.** Before a second application rides a shared gate, run the gate on that application's shape with
+nothing up, its empty and multi-platform cases included, and write each edge into the gate's own tests. A
+count that may be zero is read where its exit status does not decide the step (`grep -c … || true`, or the
+count taken in the language that reads it).
+
+**What makes it expensive.** The gates ship as a tagged image, so the fix is a new tag and a pin moved in every
+application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
+assumption from the next one.
+
 ## What AWS does that its documentation does not say
 
-The lessons above are habits; the entries here are facts about the platform that cost a measurement
-to learn. Each says what was measured, when, and where the reading lives: a behaviour recorded
-without its evidence is indistinguishable from a belief (Lesson 37).
-
-An entry belongs here only if the documentation does not state the behaviour, or states it somewhere
-the person who needed it would not have been reading. A documented gotcha that was merely forgotten
-belongs in the file that owns it (`conventions.md`, a runbook, a stage). Two candidates were
-excluded by that rule: `iam list-roles` omitting `PermissionsBoundary` (documented contract) and
-ECR's `tagPatternList` accepting wildcards (the page says so; the wrong claim was ours).
-
-The signatures these findings leave in a stage log: an error message naming the wrong cause, a call
-answering differently before and after another act, a field that writes and never reads, a bill
-starting at a state nobody named. Each entry carries the stage that found it.
-
-### Elastic IP transfers
-
-- **The allocation id does not survive a transfer** (measured 2026-09-06, 6c step 4.5):
-  `eipalloc-04397bfae0295333d` in the source became `eipalloc-07edec7a52dc0820a` in the destination.
-  AWS documents it neither way. The address is preserved and the id is not, so an allocation id is a
-  per-account fact about an address, and anything that pinned the old id points at nothing. This is
-  why `[P]` ids are read through remote state instead of pasted, and why an `import` block's id is
-  read after the accept. Reading: `log-stage-06c-networking-hub.md`, the 4.3-4.6 entry.
-- **Two of the four documented refusals fire at accept time, in the destination account.**
-  `enable-address-transfer` succeeds on an address that is still associated, and on a destination at
-  its Elastic IP quota; the failure arrives at `accept-address-transfer` as
-  `InvalidTransfer.AddressAssociated` / `AddressLimitExceeded`, with the transfer already pending
-  and a seven-day clock running that AWS notifies nobody about. The eligibility reading is therefore
-  taken across both accounts before the first write, which is what `./aws/eip-transfer.py` does.
-
-### Systems Manager
-
-- **`ApplyOnlyAtCronInterval` is rejected on `rate()` schedules**: `InvalidSchedule:
-  ApplyOnlyAtCronInterval is not supported for Rate Schedule associations` (measured 2026-09-06, 6c
-  step 4.8). The flag is the only thing that stops a State Manager association firing at creation
-  time, so an association that must not race a first boot has to be `cron(...)`.
-- **A State Manager association fires seconds after `RunInstances`** when that flag is absent, while
-  the user data is still in `dnf install`. On a fresh host the immediate run is a guaranteed `exit
-  127`, and it leaves a `Failed` association on a working host.
-- **The SSM agent reports `Online` before the user data has finished**: the agent ships in the AMI
-  and registers early. Agent registration is not a readiness signal; a check that treats it as one
-  reads a half-built host as built (measured twice on 2026-09-06, on both hub hosts).
-- **Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitively.**
-  `PutParameter` answers `AccessDeniedException: No access to reserved parameter name`, a message
-  that reads like a policy problem and is a naming one. Measured at Stage 2's Validation,
-  2026-08-16; the rule and this project's `/datascience/<env>/…` names live in `conventions.md`. The
-  undocumented half is the error text.
-- **A public AMI parameter answers only its current value** (measured 2026-10-16 as
-  `InfrastructureAccess` in Production, Stage 8 decision 25). On
-  `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`, `GetParameterHistory` is
-  refused with `AccessDeniedException: Cannot access/update data for the restricted parameter`, and
-  `GetParameter` with a version selector answers `ParameterVersionNotFound` for every version, the
-  current one (194) included. A pin by parameter version is therefore unavailable, and which image the
-  parameter named at a past moment is read from `describe-images` (owner `amazon`, name and
-  `CreationDate`), never from Parameter Store. Neither the EC2 page that recommends the parameter nor
-  Parameter Store's page on public parameters says so (both read the same day).
-
-### ECR, S3 and the NAT
-
-- **An ECR image pull is two paths, and the heavy one is free.** `ecr.api` and `ecr.dkr` carry the
-  authentication and the manifest, kilobytes; the image layers are fetched from S3, which in this
-  estate means the `[P]` gateway endpoint: no hourly charge and no per-GB charge. The two interface
-  endpoints are billed for almost no traffic. This is also why AWS requires an S3 gateway endpoint
-  beside the two ECR ones: without it the auth succeeds and the download hangs. Written down
-  2026-09-06 after a user question found it recorded nowhere in this repository.
-- **A NAT never carried S3 or DynamoDB traffic here, even under design A**: a prefix-list route is
-  more specific than `0.0.0.0/0`, so the gateway endpoint always won (`docs/NETWORK.md`, measured in
-  Stage 3). Removing the NAT therefore did not make that traffic cheaper; it was never paying.
-  Design B saves on the traffic that did use the NAT, internet downloads at 0.045/GB of processing,
-  which now cross an EC2 proxy with no per-GB charge.
-
-### WireGuard and the client platforms
-
-**`AllowedIPs` is inert for an address family the interface has no address in** (measured
-2026-09-07, macOS, App Store client). `wg-quick` installs routes only for the families present on
-`[Interface] Address`, so `AllowedIPs = 0.0.0.0/0, ::/0` beside an IPv4-only address installs no
-IPv6 route; the config parses, the tunnel comes up and `wg show` reports nothing unusual. The
-reading is `netstat -rn -f inet6`: the tunnel interface is not among the default routes. WireGuard's
-documentation does not say the two lines are coupled. Where: `docs/plan/runbooks/vpn.md` §C6.
-
-**macOS keeps the physical default route as an interface-scoped entry while a tunnel is primary**
-(same reading). `netstat -rn` shows two defaults; the physical one carries the `I` flag, and traffic
-already associated with that interface keeps using it. A socket established before the tunnel came
-up survives it, so "the tunnel is up" does not mean everything goes through the tunnel: a new
-connection to the same host fails while the old one works.
-
-**macOS does not consult the system proxy while a NetworkExtension tunnel is primary** (measured
-2026-09-07). `networksetup -getsecurewebproxy "Wi-Fi"` reports the proxy configured and enabled;
-`scutil --proxy`, which is what applications read, returns an empty dictionary. Safari, Chrome by
-default and every native application reading the system configuration behave as if no proxy existed.
-Per-application configuration works (Chrome's `--proxy-server` flag, Firefox's own settings,
-`https_proxy` for shell tools). With the tunnel down the same setting is consulted again, points at
-a host only the tunnel can reach, and breaks the `aws` CLI, which falls back to the system
-configuration: an empty `https_proxy` does not override it and `NO_PROXY='*'` does. Tracked as
-[issue #67](https://github.com/felipenoris/AWS-DataScience/issues/67).
-
-**Linux rate-limits the ICMP errors a `REJECT` rule promises, per destination, and the rule's own
-counter does not say so** (measured 2026-09-07, 6c step 6.4). `iptables -L FORWARD -v` counted 27681
-rejected packets; `/proc/net/snmp`'s `Icmp` line said 4366 `OutDestUnreachs` and 23318
-`OutRateLimitHost`, under `net.ipv4.icmp_ratelimit = 1000` (ms, per destination) and `icmp_ratemask
-= 6168` (destination-unreachable included). A client whose background traffic is refused a few times
-a second sees a timeout for the packet it is watching, and a fast refusal when a token happens to be
-free; both were measured with the same command, minutes apart. The `REJECT` counter proves the rule
-is hit; only the `Icmp` line says whether the refusal was spoken. `./aws/vpn.py --on-host` reads
-both. Where: `docs/plan/runbooks/vpn.md` §S2, `docs/NETWORK.md` §7.
-
-**The App Store WireGuard client applies a `DNS` line to every query, whatever `AllowedIPs` says**
-(read from its source on 2026-09-08, `matchDomains = [""]` in `PacketTunnelSettingsGenerator.swift`,
-and measured the same night, 6c step 8.3). Under a split `AllowedIPs` the tunnel's resolver is still
-`scutil --dns`'s resolver #1, with no domain restriction and ordered ahead of the physical
-interface's; `/etc/resolv.conf` names it, and `dig` resolves a private name through it. A split
-tunnel does not give the laptop its own DNS back: every name crosses the tunnel, only the traffic
-does not. The `wg-quick` path does the same by writing the server on every network service. Where:
-`docs/plan/runbooks/vpn.md` §C7.
-
-**The same client installs an interface-scoped default route on the tunnel in both families, even
-when `AllowedIPs` names no default** (measured 2026-09-08, 6c step 8.3). `netstat -rn` shows a
-`default … utun4` carrying the `I` flag beside the physical `default … en0` without it, and the
-scoped entry is inert for any socket not bound to the tunnel. The reading that separates the two
-profiles is the flag, not the presence of the line: under the monitored profile the tunnel's default
-has no `I` and is primary. A step written as *"no default via the tunnel"* was one flag short; the
-host's `REJECT` counter, flat across a burst, proved the route inert. Observed the same night by the
-user: the app's tunnel is a Network Extension that `wg show` does not list, so the app's window is
-check 1's reading.
-
-**A host with no IPv6 route answers a tunnelled IPv6 packet with ICMPv6 *no route* before the
-`FORWARD` chain sees it** (same reading). The `ip6tables` `REJECT` written on 2026-09-07 to make the
-refusal counted stood at 0 while `Icmp6OutDestUnreachs` read 191: the refusal is real and counted in
-`/proc/net/snmp6`, and the rule is a backstop that has never fired. The routing table is the control
-(Lesson 56). Where: `runbooks/vpn.md` §C6.
-
-**`aws sso logout` invalidates every cached session's token, and a browser sign-out of the access
-portal invalidates none** (measured 2026-09-07/08). The infrastructure token died at
-`GetRoleCredentials … 401` right after the user's `aws sso logout`, while the CLI kept answering for
-profiles whose role credentials were already cached locally; Terraform, which exchanges the token
-itself, noticed first. The same night the Data Scientist's token survived the user signing out of
-the portal in the browser and signing in again as the infrastructure user. Two people's sessions
-coexist on one laptop as long as nobody types `aws sso logout`, and the browser's portal session
-decides whose token a login mints (the `ForbiddenException` at `GetRoleCredentials`). Where:
-`aws/AWS-CLI.md`.
-
-### Route 53
-
-- **DNS Firewall needs both `example.com` and `*.example.com` to cover a domain and its
-  subdomains**: neither form implies the other. Harmless there, and fatal when the same list is
-  transcribed into a system whose wildcard already covers the apex (Lesson 53).
-- **The VPC resolver at `.2` answers only requests sourced from within the VPC's own address
-  range**, so a forwarded packet carrying a tunnel address is not answered. This is why 6c step 4.7
-  exempts the hub's public subnets from the masquerade and never the VPC CIDR: the tidier rule takes
-  the tunnel's DNS down, with a symptom pointing anywhere but at a masquerade rule.
-
-### Control Tower and Organizations
-
-- **A Control Tower *Update account* renders `Display Name` and `Account Email` read-only**, so an
-  account renamed out of band can never be made to match its provisioned product: permanent
-  divergence, not drift (measured in Stage 6b). The same update re-asserts D32's direct
-  `AWSAdministratorAccess` assignment, so its absence on other accounts is not a control.
-- **A cached SSO token is keyed by the `sso-session` name, never by the user**, so signing in as a
-  second identity silently reuses the first one's token. The remedy is `aws sso logout` plus a
-  portal sign-out; the failure mode is a command that succeeds as the wrong person (`aws/INDEX.md`).
-- **An `AWSReservedSSO_*` trust policy permits only `sts:AssumeRoleWithSAML` and `sts:TagSession`**,
-  so an RCP denying those actions locks every SSO user out of every member account. Measured at
-  Stage 1c step 7.8; AWS's own `CT.STS.PV.1` carries the exclusion note, which is why no `sts:`
-  action is added to that document without reading it first.
-- **`describe-effective-policy` answers `{}` rather than raising when the policy type is `ENABLED`
-  and nothing is attached** (measured at Stage 1c). A reader expects
-  `EffectivePolicyNotFoundException`, and it does not arrive, so *"no policy in force"* and *"an
-  empty policy in force"* are one reading. Any check written against this call needs a second
-  signal.
-- **An out-of-band account rename propagates with no observable delay** (measured at Stage 6b step
-  3.2, which had flagged the timing as undocumented): the console act and the `organizations
-  list-accounts` read agreed in the same sitting. Recorded as a measured absence, so that nobody
-  builds a wait into a procedure that does not need one.
-
-### Lake Formation and SageMaker Unified Studio
-
-- **`UpdateDomain` does not clear a list you leave out; it clears one you send empty** (measured
-  2026-09-11, 6d step 2's first version bump). The API is treated as a full replace of
-  `DefaultUserSettings` — and a block sent without `JupyterLabAppSettings.CustomImages` left both
-  attachments exactly as they were, so "omitted" read as "unchanged" rather than as "deleted". The
-  vendor says the form in the detach page and nowhere near the attach page: *"you will need to leave
-  `CustomImages` blank, such that `"CustomImages": []`"*. What survives of Lesson 60 here is the
-  discipline, not the mechanism: send the block back as read, and clear a list explicitly. Where:
-  `runbooks/dev-env.md` §C6 and §X step 1.
-
-- **SMUS appoints itself a Lake Formation administrator** when the first project is created: two
-  service roles nobody chose, in an account whose `admins` list a later
-  `aws_lakeformation_data_lake_settings` would silently reset. Found 2026-08-26 by an unrelated
-  plan, not by a gate: `DL-5` measures `parameters`, not `admins`.
-- **`CROSS_ACCOUNT_VERSION: 4` and `SET_CONTEXT: TRUE` are already set in accounts nobody
-  configured**, consumers included, and `aws_lakeformation_data_lake_settings` replaces the whole
-  `Parameters` structure in any account that gains the resource.
-- **`EnvironmentRolePermissionBoundary` is write-only on a blueprint configuration**: the schema
-  accepts it and no read returns it (Stage 6a, 2026-08-22). Boundary drift can never appear in a
-  `terraform plan`; the only door is `iam get-role` per role, since `list-roles` omits
-  `PermissionsBoundary` by documented contract. A control that cannot be read back needs a sentinel,
-  which is `US-8`.
-- **An associated DataZone domain lists from every member account, with an ARN naming the owning
-  account.** A check that counts domains per account therefore reports the association working as a
-  finding. Measured when `./aws/studio.py` failed because the step succeeded (Lesson 31).
-- **`list-environment-blueprint-configurations` cannot succeed from a member account until the
-  association exists**; after it, the same call returns `{"items": []}`. The empty list is the
-  success signal, indistinguishable from an absence to anything that only checks the contents.
-- **A blueprint configuration is applied from the member account**, an existing one is immutable
-  through `awscc`, and an incomplete one pins its projects in both directions: they can neither
-  deploy nor be torn down. None of the three is on the authoring API's page; each cost a sitting.
-- **The `Workflows` blueprint has three states and the bill starts at the third.** Enabling it
-  provides the CloudFormation template; the fee-bearing MWAA environment is born when a project
-  first uses the blueprint. Neither *"enabled"* nor *"a project exists"* means billing.
-- **A `VpcOnly` space started with no interface endpoints does not fail; it hangs, with a working
-  terminal** (measured 2026-09-07, 6c step 6.2, the first space under design B). JupyterLab loaded,
-  the terminal answered, the banner *"IDE configuration in progress"* never cleared and a Python
-  kernel never returned: the app's DataZone and SageMaker calls had no route and no endpoint, so
-  they got silence rather than a denial (Lesson 42), and nothing in the UI said network. The
-  vendor's pages list the endpoints as required and say nothing about what their absence looks like.
-  `make up ENV=sandbox` plus a stop/start of the space cleared it. The discriminator from inside the
-  space is `getent hosts sts.us-west-2.amazonaws.com` (`10.20.x.x` with the endpoints, public
-  without) and `curl` to the same name (`302` against a timeout). Where: `docs/SMUS.md` §`VpcOnly`,
-  the client runbook §1, the 6c log.
-- **An app image configuration's environment caps each value at 256 characters, and no BYOI page says
-  so** (measured 2026-09-10, 6d step 2.2). `CreateAppImageConfig` refused this estate's six proxy
-  variables with `ValidationException … Member must have length less than or equal to 256`; the cap is
-  in the `ContainerConfig` API reference (25 entries, 256 per key and per value) and nowhere on the
-  pages that recommend `ContainerEnvironmentVariables` as the way to configure a custom image. A
-  generated `NO_PROXY` — 50 endpoint names, 1,442 characters — does not fit, so the documented
-  mechanism cannot deliver the estate's own proxy contract. Where: `runbooks/dev-env.md` §E, and 6d
-  decision due 8.
-- **`CreateImageVersion` uses the image's `RoleArn` to read the repository, and resolves the tag to a
-  digest once** (measured 2026-09-10, 6d step 2.1). The role is documented as *"a role that enables
-  SageMaker to perform tasks on your behalf"* with a console hint to attach `AmazonSageMakerFullAccess`,
-  and what it actually does is `BatchGetImage` + `GetDownloadUrlForLayer` in the **registry account** —
-  visible in that account's CloudTrail as `userIdentity.type AWSAccount`, principal `<role-id>:SageMaker`,
-  from an AWS-internal address. Four ECR read actions are enough. The version's `ContainerImage` then
-  names a `sha256:` digest, so a registered version is pinned to bytes rather than to a tag, and
-  re-tagging upstream would not move it. Where: `runbooks/dev-env.md` §C5.
-- **A space's `~/shared/` writes a zero-byte folder marker for every directory** (measured 2026-10-11,
-  Stage 6i step 3.6). A `cp -r` of a 176-file folder left 192 objects, 16 of them `…/` keys, and a
-  `mkdir` leaves `inbox/`, which a sensor's `inbox/*` matches before any file lands. A processing input
-  downloads such a prefix without complaint. Where: `runbooks/serverless-workflows.md` §A and §J1.
-- **The portal's session ended twice right after another Identity Center user's CLI login** (seen
-  2026-10-11, Stage 6i). Each time the user had just signed in to the CLI as the infrastructure user while
-  Chrome held the Data Scientist User's portal session, and the next portal act landed on the sign-in
-  page. The shared browser is the inferred cause, not an isolated one. Where: `aws/AWS-CLI.md`, "Signing
-  in".
-
-### MWAA Serverless
-
-- **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
-  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares
-  `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and
-  each read `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run
-  whether one fired or not, and that is Stage 10 verification (v)'s evidence. Where:
-  `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
-- **A worker fetches its `Code` snapshot as the service principal, through the customer's S3 gateway
-  endpoint** (measured 2026-10-11, Stage 6i decision 7). At each save the service copies the code object
-  to `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, keyed by account, workflow, version
-  and the upload's key. Each task's environment preparation then has `airflow-serverless.amazonaws.com`
-  `GetObject` it through the workers' VPC, so the gateway endpoint's policy must admit a bucket the
-  customer neither owns nor names. A refusal surfaces only as "Execution environment preparation failed
-  due to an internal server error". The guide names neither the bucket nor the path. Where:
-  `runbooks/serverless-workflows.md` §O and §C, `log-stage-06i`'s 4.2a entries.
-- **Every save takes a new code snapshot, and the portal uploads the code again at every save**
-  (measured 2026-10-11, Stage 6i verification vii). A description-only edit made a new workflow version
-  and moved `CodeSnapshottedAt` with the code unchanged, and a refused save uploaded the file all the
-  same. Where: `runbooks/serverless-workflows.md` §C5.
-- **The portal's save sends a code location the editor pre-fills, and an import cannot replace a saved
-  workflow** (measured 2026-10-10/11, Stage 6i). A new workflow's *Settings → Storage* carries
-  `dev/operatorFiles/<workflow>.zip`, a processing-only workflow's included; saved with no file there,
-  the service answers `ValidationException: Code not found in specified S3 location`. An import into a
-  saved workflow's editor makes a new workflow under the bare name, whose save is refused with
-  `ConflictException`. Where: `runbooks/serverless-workflows.md` §A.
-- **A Bash task's script is rendered as a Jinja template, and its `PYTHONPATH` carries the code folder**
-  (measured 2026-10-11, Stage 6i pass 5). `bash_command: reach_pypi.sh` ran as `bash <tmp>.sh`, the
-  archive's file rendered into a temporary file; an inline command needs no archive; `PYTHONPATH` starts
-  with `/usr/local/airflow/dags`. Where: `runbooks/serverless-workflows.md` §C4.
-- **The worker's resolver reports a DNS Firewall block as errno 16** (measured 2026-10-11, Stage 6i
-  step 5.0). `pypi.org` answered `NXDOMAIN` with `firewall_rule_action` `BLOCK`, and Python read
-  `OSError(16, 'Device or resource busy')`, pip `[Errno 16]`, rather than a name error. A worker failing at
-  resolution with "Device or resource busy" is a blocked name. Where: `runbooks/serverless-workflows.md` §O.
-- **A run's state lags its task instances, and the workflow's log group exists from its first save**
-  (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while the
-  sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
-  empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
-
-### CloudTrail
-
-- **CloudTrail Lake refuses a new customer, and the network activity guide still offers it** (measured
-  2026-10-11, Stage 6i step 4.2a). `CreateEventDataStore` answered `InvalidParameterException: CloudTrail
-  Lake is no longer accepting new customers. Existing customers can continue to use their event data
-  stores.` An account that never created a store is a new customer. The guide's network activity page
-  and the 2024 announcement both offer an event data store beside a trail. Where: `log-stage-06i`'s
-  4.2a entry, `PRICING.md`.
-- **Network activity events cover an S3 gateway endpoint, under a prefix of their own** (measured
-  2026-10-11, Stage 6i step 4.2a). A trail's files arrive under `AWSLogs/<account>/CloudTrail-NetworkActivity/`,
-  beside `CloudTrail/`. A refusal by the gateway endpoint's policy reads `errorCode` `VpceAccessDenied`,
-  names the bucket for a path-style request as for a virtual-hosted one, and shows another owner's
-  account as `HIDDEN_DUE_TO_SECURITY_REASONS`. The announcement names S3 and never says "gateway".
-  Where: `log-stage-06i`'s 4.2a reading.
-
-- **A role's own account records a caller from another account with no ARN, and an absent field fails
-  EventBridge's `anything-but`** (measured 2026-10-13, Stage 8 step 4.6). Staging's copy of the deploy
-  runner's `AssumeRole` reads `userIdentity.type` `AWSAccount`, a `principalId` of `<role unique
-  id>:<session name>`, the caller's `accountId` and a `sharedEventID`, and no `arn`; an SSO session's reads
-  `AssumedRole`, still with no `arn`. `TestEventPattern`
-  answered `false` for a pattern exempting the runner by `userIdentity.arn` on that record with another
-  account's role in it, so the rule could never fire on a caller from outside. The operators page says
-  `anything-but` matches *"anything except what's specified"* and speaks of absence only under `exists`.
-  The role's account does deliver that copy to its event bus: a misuse from Production fired Staging's
-  rule (verification xvi). A refused cross-account `AssumeRole` is recorded in the caller's account only,
-  with `requestParameters` null and the role named in `errorMessage` alone. Where: `log-stage-08`'s
-  2026-10-13 entries, `deploy-role-v0.2.0`.
-
-### SageMaker processing jobs
-
-- **A processing job reads `Completed` minutes after it ends, and the operator bills the wait**
-  (measured 2026-10-11, Stage 6i step 3.8). `ProcessingEndTime` was 23:16:26Z, the outputs had landed at
-  23:16:21Z, and `describe-processing-job` still read `InProgress` at 23:18:33Z and `Completed` at
-  23:18:54Z. `SageMakerProcessingOperator` waits on that status, so its task held a worker 791 s for a
-  one-second command: about 3 minutes of provisioning before `ProcessingStartTime`, 7 of image pull, and
-  this tail. Where: `runbooks/serverless-workflows.md` §J.
-- **An extension module imports from a processing input** (measured 2026-10-11, Stage 6i verification
-  xvi). `msgspec`'s `_core.cpython-313-x86_64-linux-gnu.so` loaded from `/opt/ml/processing/code`, which
-  SageMaker had downloaded from S3 with the prefix's folder markers. No page says whether the input
-  volume admits executable mappings. Where: `runbooks/serverless-workflows.md` §J1.
-
-### Athena
-
-- **`DeleteWorkGroup` counts query history as contents, and no API deletes a query execution.** A
-  workgroup with zero named queries and zero prepared statements still refuses to delete while old
-  executions remain, and those age out on Athena's own 45-day clock. The only door is
-  `RecursiveDeleteOption`. The Terraform corollary: that door is a configuration argument
-  (`force_destroy`) and a destroy runs from the attributes in state, so the flag has to be set in
-  the configuration before the resource is removed from it. Deleting the block and the flag in one
-  version leaves the destroy unarmed, which surfaces only at destroy time.
-
-### EC2
-
-- **A Data Lifecycle Manager policy description admits `[0-9A-Za-z _-]` and nothing else** (measured
-  2026-10-12, Stage 7 step 1.2): an apostrophe or a parenthesis fails the plan with `invalid value for
-  description`, naming the CLI reference rather than the character. The Terraform provider validates it
-  at plan time, which is the cheap place to meet it. Where: `terraform-live/production/tooling/main.tf`.
-- **`associate_public_ip_address` read-back fights an `aws_eip_association` forever.** With an
-  Elastic IP attached, the refresh reports the attribute from the instance's current public address,
-  so the next plan wants to destroy and recreate the instance on a ForceNew diff that nothing
-  changed. Measured on the first VPN apply, 2026-08-17; the fix is `ignore_changes` on the
-  read-back, while the argument stays load-bearing at launch.
-- **Changing `instance_type` is a stop/modify/start, and user data does not re-run on it**, so a
-  size change made because the build ran out of memory leaves the bigger host unbuilt. Only a
-  replacement re-runs a first boot.
-- **A cross-Region inference profile is authorized once per destination Region, and `aws:RequestedRegion`
-  in that evaluation is the destination, not the caller's** (measured 2026-09-12, Stage 6e step 6). A
-  call made with `--region us-west-2` and logged by CloudTrail with `awsRegion: us-west-2` was denied
-  against `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-5` by Control Tower's
-  `CT.MULTISERVICE.PV.1`, whose only condition is `aws:RequestedRegion != us-west-2`. No vendor page
-  connects the two, and the consequence is that **a Region ceiling refuses every cross-Region profile in
-  the organization** until the invoke actions are exempted. Where: `claude-code-sagemaker.md` M5.
-- **Bedrock's data retention mode is per account AND per Region** (measured 2026-09-12). The account read
-  `none` in `us-west-2` and `inherit` in the two Regions its own profiles route to; `get-account-data-retention`
-  answers independently in each. A mode declared once is a claim about one Region, and whether cross-Region
-  inference obeys the source Region's mode or the destination's is in no API and on no page. Where:
-  `claude-code-sagemaker.md` M1, `AWS_STATE.md` `EXC-07`.
-- **The Bedrock use-case form does not enable a model; the agreement does** (measured 2026-09-12). With
-  the form submitted and readable in all three Regions, `create-foundation-model-agreement` against an
-  offer token was still required per model — the act the console calls *Enable specific models*.
-  `agreementAvailability.status: NOT_AVAILABLE` means **no agreement has been created**, not *no
-  agreement is needed*, and reading it the second way is what hid the omission through three separate
-  readings. The agreement is account-wide: created in one Region it reads `AVAILABLE` in the others
-  before the creating Region leaves `PENDING`. Amazon's own models need none. Where:
-  `claude-code-sagemaker.md` M4.
-- **A Bedrock model can be gated commercially with every readable instrument reporting it available**
-  (measured 2026-09-12). `anthropic.claude-sonnet-5`: agreement `AVAILABLE`, `authorizationStatus
-  AUTHORIZED`, `entitlementAvailability AVAILABLE`, `regionAvailability AVAILABLE`, `modelLifecycle
-  ACTIVE`, form present — and `AccessDeniedException … not available for this account … contact AWS
-  Sales` for every principal including `AdministratorAccess`, while the previous generation answered.
-  **The invocation is the only instrument that answers whether a model can be used**, which is
-  Lesson 13 at account scale. Where: `AWS_STATE.md` `EXC-08`.
-- **A streaming Bedrock invocation writes two CloudTrail events; a non-streaming one writes one**
-  (measured 2026-09-12). `InvokeModelWithResponseStream` records one event carrying
-  `requestParameters.modelId` and a sibling carrying `requestParameters: {}` — 9 and 9 in one hour —
-  while `InvokeModel` records a single event, 4 with a `modelId` and none without in the same hour.
-  Counting events doubles a streaming client's calls; **counting events that name a `modelId` and
-  carry no `errorCode` counts each invocation once**, and it equals CloudWatch's per-model
-  `Invocations` exactly (22/20/3 over one evening). `responseElements` is `null` on both, which is the
-  attribution-without-content property Stage 6e 4.6 claims, measured. **A denied call reaches
-  CloudTrail with no `modelId` at all**, so refusals cannot be attributed to a model there — and they
-  do not reconcile with CloudWatch either: one hour held 18 `AccessDenied` events against 6
-  `InvocationClientErrors`, a metric AWS publishes only without a `ModelId`.
-- **CloudWatch carries a cross-region profile's tokens in the source Region, with invocation
-  logging off** (measured 2026-09-12). `AWS/Bedrock` publishes `Invocations` and four token counts per
-  `ModelId` — the `us.` profile id — in `us-west-2`, whichever Region processed the prompt; the
-  dimensionless series equals the per-model sum for all four token metrics. The Control Tower Region
-  ceiling refuses `cloudwatch:ListMetrics` in `us-east-1` and `us-east-2`, so nothing else could have
-  been read. And `ListMetrics` names only series with data in the last two weeks. Where:
-  `aws/bedrock-usage.py`.
-- **A Control Tower control is written from `Management` and read from anywhere** (measured
-  2026-09-12). `controltower:` answers only in the management account — a member account is told to
-  create a landing zone first — but the control writes an ordinary SCP, and
-  `organizations describe-policy` returns its document from a delegated-admin account. So a console
-  act on a control has a **mechanical verification**: the `NotAction` count, 86 in the
-  `CT.MULTISERVICE.PV.1` template and 92 after six additions. This matters because the obvious
-  verification is the opposite of an instrument — re-attempting the denied call returns the same
-  refusal whether the form failed to propagate or something else in the chain is missing (Lesson 24).
-  Where: `claude-code-sagemaker.md` M5.
-- **A SageMaker space keeps its own copy of the custom image version number**, in
-  `SpaceSettings.<app>AppSettings.DefaultResourceSpec`, written when the space is created — and it
-  **overrides the domain's `DefaultUserSettings`**. Measured 2026-09-12: with version 4 attached to the
-  domain, an existing space still named version 3, which the same apply had destroyed
-  (`aws_sagemaker_image_version` is force-new on `base_image`). AWS's own images are referenced by a
-  mutable **alias** instead, which survives a bump. **An app started against the destroyed version
-  fails to start** rather than falling back (measured the same evening). Where: `dev-env.md` §B,
-  *Moving a space*, `AWS_STATE.md` `EXC-09`, Lesson 63.
-- **`describe-app` still returns the `ResourceSpec` of an app that has been deleted** (measured
-  2026-09-12), so the image a removed space ran can be attributed after the fact. A space deleted
-  within the hour read `sagemaker-distribution-cpu`, alias `4.3`, with `Status: Deleted` — the
-  evidence that it had been created on AWS's image rather than this estate's, which is what its
-  missing proxy variables had looked like a defect of. Where: `dev-env.md` §C7.
-- **`UpdateDomain` changes `CustomImages` with apps running, whatever the vendor's page says**
-  (measured 2026-10-15 on a probe image, Stage 8 decision 7). The detach page reads *"Before you can
-  update the custom images, you must delete all of the applications in your domain"*, and four
-  `update-domain` calls changing the list were accepted with apps `InService`, one removing an entry
-  while two apps ran on that image. Each read back identical, and the running apps were untouched.
-  Where: `dev-env.md` §C6.
-- **A `CustomImage` with no `ImageVersionNumber` offers every version of the image** (measured
-  2026-10-15). The portal's picker listed each version, newest first, as `<display name> v<n>`,
-  including one created after the attach and one no space named, and the portal's `CreateSpace` pinned
-  the chosen version's ARN into the new space. The API reference says only that the field is optional.
-  Where: `dev-env.md` §C6 and §B.
-- **`VendorGuidance ARCHIVED` hides nothing from the portal, and an archived version still starts**
-  (measured 2026-10-15). With a version `TO_BE_ARCHIVED` and then `ARCHIVED`, the picker kept offering
-  it under the same label, `list-image-versions` kept listing it, and a space pinned to it started and
-  pulled it by digest. Deleting it is what took it out of the picker. Where: `dev-env.md` §B, *The
-  retirement*.
-- **A custom image's alias works in a space's spec, and the portal reads it as the SageMaker
-  Distribution's** (measured 2026-10-15). `update-space` accepted `SageMakerImageVersionAlias` with the
-  version ARN cleared by `"None"`; the app resolved the alias at each start and followed it to another
-  version; and the portal then bannered the space as running an *outdated SageMaker Distribution image*.
-  The same `update-space`, sent the whole live block, left `SpaceManagedResources: ENABLED` out of the
-  read afterwards. Where: `dev-env.md` §B, *Moving a space*.
-- **Opening a project's *Spaces* page in the portal starts its default space** (read 2026-10-15).
-  CloudTrail recorded a `CreateApp` on the default space, by the project role in the data scientist's
-  portal session and on AWS's distribution by alias, as the page loaded, and the app ran until its idle
-  shutdown. Where: `dev-env.md` §C7.
-- **`PutAccountDataRetention` publishes `bedrock:DataRetentionMode` at request time** (measured
-  2026-09-12 in `Policy Canary`), so a `StringNotEquals` deny on it is a mode ceiling and not a
-  blanket deny on the action. **A condition key being in a service's catalogue and a key being
-  published by a given action are two claims**, and `accessanalyzer validate-policy` answers only the
-  first: it accepts a statement conditioned on a catalogued key whatever action it is written against.
-  The second is a call, and the vendor documents neither. The mode enum is also four values —
-  `default`, `none`, `provider_data_share`, `inherit` — where this plan had discussed two. Where:
-  `claude-code-sagemaker.md` M3.
-- **A schedule-only State Manager association does not fire when an instance starts** (measured
-  2026-09-19 on the proxy host). The association is `cron(0/30 * * * ? *)` and its
-  `LastExecutionDate` was **20:00:40Z**; `make hub-up` started the host at **20:04:55Z**; at 20:25Z
-  the host was still serving the `squid.conf` of its previous session - 25 entries against the
-  parameter's 32, missing both of that day's applies, one of which had been written while the host
-  was stopped. The next scheduled run at **20:30:53Z** reported `Success` with **empty stdout**, and
-  `PX-3` read 32 against 32 immediately after. What it means here: **starting the hub does not put
-  the committed policy in force**, and for up to one cron interval the proxy enforces the previous
-  session's allow-list. A parameter written while the host is stopped is not rendered by the start
-  either, so the lag is not bounded by how old the edit is. Where: `NETWORK.md` the proxy's filters,
-  `log-stage-06d` the fifteenth sitting.
-
-- **The database identity of a SMUS Redshift connection is the ACCESS ROLE, not the project role and
-  not the person** (measured 2026-10-10, from the account's own trail). `redshift-serverless:GetCredentials`
-  is called by the assumed access role; the project role's own calls are `ListWorkgroups`, which fills
-  the compute dropdown, and the `sts:AssumeRole` that gets there. So the `RedshiftDbUser` tag belongs on
-  the access role, layer 2's reach has to be attached to **both** roles for different reasons, and
-  *whose identity reaches the database* is a third answer again after Stage 6d step 7's `StartSession`.
-  **Creating the connection mints no database session**: the compute reads `Available` with `pg_user`
-  unchanged, because a database user is created when credentials are used rather than when they are
-  minted. Where: `log-stage-06h` (2026-10-10).
-
-- **The Redshift Serverless audit export carries nothing while a workgroup exists** (measured
-  2026-10-17 over the groups' 30-day retention). Configuration is not the explanation: the namespace
-  exports all three groups, unchanged since its creation. After the first day no record of any kind
-  arrived during any of seven workgroup lifetimes, and the namespace's own `rdsdb` sessions arrive in a
-  `default` stream, about 29,000 a day, only while no workgroup exists, from about a day after a delete
-  until two minutes after the next create. The one window of user activity is the admin's Data API
-  sessions of 2026-09-21, 23 minutes long: 36 of the 268 Data API calls CloudTrail holds for those two
-  days, and no session through any other door.
-  **The reading of 2026-10-10 was a sampler's** (inference): 155 records at a ~2h25m cadence fit one
-  record per 1 MB `FilterLogEvents` page over the 444,502 records the group held, so the *heartbeat* was
-  the pager's, and the *stop* at 03:09:06 was that day's first create silencing the stream. **The
-  reading to carry**: before an absence or a cadence in a log group is evidence, count it with an
-  aggregate (Logs Insights `stats count(*) by bin(1h)`), not by paging events (Lesson 62's wrong path).
-  Stage 11 must not rest a DLP feed on these groups. Where: `log-stage-06h` (2026-10-10, 2026-10-17), `log-stage-05b`, Stage 11.
-
-- **A Redshift schema shared by a role shares nothing IN it, and `pg_default_acl` cannot tell you**
-  (measured 2026-10-10, on the first table a project ever wrote). A role holding
-  `USAGE, CREATE ON SCHEMA` lets every admitted project create its own tables and carries **nothing at
-  table level**: the new table's `relacl` was **null**, so a second project granted the same role would
-  have had `CREATE` and read **none** of the first's data — not reduced access, none. The fix is
-  `ALTER DEFAULT PRIVILEGES`, set **per creating user**, so a shared schema owes one statement per
-  admitted project (Lesson 14) plus one `GRANT` per table that already exists.
-  **And the verification is not where PostgreSQL keeps it**: `pg_default_acl` returns zero rows after a
-  successful `ALTER DEFAULT PRIVILEGES`, and the privilege lives in **`svv_default_privileges`** alone —
-  the mirror of the schema trap, where `nspacl` is the authority and the `SVV_` view shows only RBAC.
-  A statement that reports `FINISHED` and a catalog that reports nothing is Lesson 54's shape, and the
-  cheap resolution is to look for the platform's own view before believing either.
-  Where: `log-stage-06h` (2026-10-10), `runbooks/redshift-connection.md` §T, `WH-14`.
-
-- **Two sessions on the same role carry different session tags, and the session NAME is the only
-  thing that tells them apart** (measured 2026-10-10, after reading one for the other). SMUS assumes
-  one project role from two places: the portal's session, named `<Identity Center user id>@<environment
-  id>`, carries `RedshiftDbUser` **and `RedshiftDbRoles`**; the space's session, named `SageMaker`,
-  carries `RedshiftDbUser` and **not** `RedshiftDbRoles`. Both appear in one `lookup-events` output,
-  identical but for `roleSessionName` and the tag list — and a capability read off the wrong one becomes
-  a mechanism you then cannot make work, with nothing broken to find. **`transitiveTagKeys` was `None`
-  on both**, so no tag survives a further chain. Read `roleSessionName` before attributing a session
-  tag, and treat "the role carries X" and "this session carries X" as different claims — a role tag is
-  overridden by a session tag of the same key, so the role's value can be live and irrelevant at once.
-  Where: `log-stage-06h` (2026-10-10), 6h decision 8a.
-
-- **Two doors into one database resolve to two DIFFERENT database users, one per project and one per
-  person** (measured 2026-10-10). The same warehouse, the same schema, the same project: through the
-  portal's Data page the grantee is `IAMR:<the project role's name>`, set by the access role's
-  `RedshiftDbUser` tag; through JupyterLab, where the project role reaches `5439` directly, Redshift
-  **auto-creates `IAMR:user-<Identity Center user id>@<project id>` holding nothing**. So a `GRANT`
-  written for one door leaves the other with a session that authenticates and can read nothing — and
-  this grantee **cannot be pre-made**, because it does not exist until that person first connects.
-  Asking "is the database user per project or per person" has no answer: it is a property of the path,
-  not of the design. **The per-person `GRANT` is the trap** — it is the identity seam, one statement per
-  person per schema; the mechanism that fits is `RedshiftDbRoles` on the role the user signs in with,
-  which maps roles at first sign-in. Where: `log-stage-06h` (2026-10-10),
-  `runbooks/redshift-connection.md` §T, `docs/AWS_STATE.md`'s Redshift register.
-
-- **`RedshiftDbUser` decides the database user, and Redshift prefixes its VALUE with `IAMR:`**
-  (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session
-  ran as `IAMR:<that name>` — 142 queries attributed to it. The discriminator is that an ignored tag
-  would have produced `IAMR:<the access role's own name>`, and it did not. So the documented
-  `IAMR:<role>` spelling applies to the **tag value**, which is not a role at all, and a grant written
-  for the unprefixed value reaches nobody. Where: `log-stage-06h` (2026-10-10),
-  `runbooks/redshift-connection.md` §P.
-
-- **A CloudTrail `eventName` is not the IAM action that event authorizes, and a policy written from
-  the event name grants nothing** (measured 2026-10-10, and it cost an apply cycle). The portal's
-  refusals logged events `GetResources` and `ExecuteQuery`; the denial **message** on those same events
-  named the action being checked, and it was `sqlworkbench:CreateConnection` — with
-  `sqlworkbench:DriverExecute` behind a second `GetResources`. One event authorizes a differently-named
-  action, and several events authorize the same one. A policy granting `sqlworkbench:GetResources`
-  changed nothing and the next refusal was identical to the first, which is the dangerous part: the
-  symptom does not say the grant missed.
-  **Read `errorMessage`, not `eventName`** — `is not authorized to perform: <action>` is the only
-  authoritative statement of what to grant, and it also distinguishes the policy type
-  (*"no identity-based policy allows"* against an explicit deny). Two services in this same window gave
-  neither: Glue answered `An unknown error occurred` for `GetCatalogs`, and Lake Formation answered
-  *"Insufficient Lake Formation permission(s): Required Describe on raw"* — **not an IAM failure at
-  all**, so the action was inferred from the event name there, by necessity rather than by choice.
-  The corollary for managed policies: `AmazonRedshiftQueryEditorV2NoSharing` v9 **does** carry both
-  real actions (`DriverExecute` unconditionally, `CreateConnection` under
-  `aws:RequestTag/sqlworkbench-resource-owner`), and the earlier reading that it did not was this same
-  confusion written down as a fact about AWS. Where: `log-stage-06h` (2026-10-10),
-  `sandbox/warehouse/iam.tf`, `runbooks/log-debugging.md`.
-
-- **A refused `sts:AssumeRole` records no `roleArn` in CloudTrail** (measured 2026-10-10). Both denials
-  carry `requestParameters.roleArn` absent and no `externalId`, while the successes in the same window
-  carry the target in full. The trail says *denied*, not *denied for what*, so the role that was actually
-  requested comes from the caller's own error text — read it before attributing a refusal from the trail
-  alone. Where: `log-stage-06h` (2026-10-10), `runbooks/log-debugging.md`.
-
-- **`cloudtrail lookup-events` can answer "no events" for events it holds** (measured 2026-10-10). A
-  lookup by `EventName=GetResources` returned nothing; a lookup by
-  `EventSource=sqlworkbench.amazonaws.com` two minutes later returned six `GetResources` events in the
-  same window. Indexing lag or an index that does not carry them — either way, **an absence from a
-  lookup run shortly after the fact is not evidence of absence** (Lesson 62). Sweep by source before
-  concluding that a call was never made. Where: `log-stage-06h` (2026-10-10).
-
-- **The SageMaker Unified Studio portal requires an access role on a SAME-ACCOUNT Redshift
-  connection, and both AWS's procedure and the field's own help say it does not** (measured
-  2026-09-21, by the user, in the form). *"Gaining access to Amazon Redshift resources"* splits in
-  two: the same-account procedure is three steps and names no role — the admin tags the workgroup and
-  its namespace and *"then must send you a username and password for a database user"* — while the
-  access role, its trust policy and the `RedshiftDbUser` tag live entirely under *"resources in a
-  different account"*. The form's help says *"Access role ARN is optional. Required when connecting to
-  resources in a different AWS account."* The form then refuses to submit without it, same account,
-  same VPC, while marking **`AWS Secret` optional** beside it. Lesson 41 with the polarity reversed: a
-  vendor **optional** the implementation makes mandatory, so the premise that travelled was the wrong
-  one in both directions. Where: `log-stage-06h` (2026-09-21), `sandbox/warehouse/iam.tf`.
-
-- **"IAM credentials" is not a credential type in the DataZone API at all** (read 2026-09-21 from
-  `aws datazone create-connection`'s own model). `redshiftProperties.credentials` is a tagged union
-  with exactly two variants, `secretArn` and `usernamePassword`. The portal's third option is
-  `awsLocation.accessRole` plus the role's `RedshiftDbUser` tag, which *"determines the federated
-  database user"* — a shape that carries **no standing credential**, which is why the requirement above
-  turned out to be the better outcome and why the purpose-made secret held in reserve was never built.
-  Two things the pages do not say: whether `RedshiftDbUser` is used verbatim or prefixed the way an
-  IAM-derived user is spelled (`IAMR:<role>`), and — from the serverless side — that
-  **a database user is created on first sign-in**, so the grant can be pre-made or not at all.
-  `RedshiftDbRoles` maps roles at that first sign-in, and *"in a case where you pass a role name that
-  doesn't exist in the database, it's ignored"*: a silent nothing, which is why it was refused.
-  Where: `log-stage-06h` (2026-09-21).
-
-- **DataZone refuses connection operations to an identity that is not a project member, in its own
-  authorization layer rather than in IAM** (measured 2026-09-21). `datazone list-connections` as the
-  account's `InfrastructureAccess` role: *"User is not permitted to perform operation:
-  ListConnections"* — no IAM policy is involved and none can fix it. So the account's administrator
-  cannot read, let alone create, a project's connections; the act belongs to a project member in the
-  portal. Lesson 28's intersection, with the second permission system being the product's own.
-  Where: `log-stage-06h` (2026-09-21).
-
-- **A failed `CreateNamespace` rolls the namespace back and leaves its managed secret behind**
-  (measured 2026-09-20). Redshift Serverless creates the admin credential in Secrets Manager, then
-  the namespace; when the namespace creation failed on an inaccessible KMS key, the namespace was
-  rolled back and the secret was not. It survives as `redshift!<namespace>-<username>`,
-  `OwningService: redshift`, rotation enabled, tagged with a **namespace ARN that no longer
-  resolves** — and the next attempt fails with a *different* message, *"Unable to create secret for
-  the dbInstance because a secret with a matching name exists"*, which reads like a name collision
-  rather than the residue of the previous attempt. The name is derived from the namespace **and the
-  admin username**, so changing either gets past it and leaves the orphan. Where: `AWS_STATE.md`
-  `EXC-12`, `log-stage-05b` the first sitting.
-
-- **A Redshift Serverless workgroup's endpoint host survives a delete and re-create; its id does
-  not** (measured 2026-09-20). Destroy and re-create under the same name and
-  `endpoint.address` is byte-identical — it is derived from the name, the account and the Region —
-  while `workgroupId` changes (`75b926c8-…` → `4b0577a2-…`), the usage limit's id changes, and the
-  workgroup's VPC endpoint and both its ENIs are replaced with new private addresses. **The ARN
-  carries the id**, so any IAM or SCP statement scoped to a workgroup's exact ARN stops matching
-  after the first teardown, silently, presenting as a principal whose queries stopped
-  authenticating with no diff anywhere. Two ENIs also linger in `available` state for under two
-  minutes after the destroy, still referencing the security group, which would fail a teardown of
-  the slice that owns it inside that window. Where: `log-stage-05b` 1.9, and the comments on
-  `sandbox/warehouse/iam.tf` and `DenyRedshiftCostGuardTamperingExceptInfrastructure`.
-
-- **A breached `deactivate` usage limit does not show in the workgroup's status, and refuses only
-  the compute** (measured 2026-09-20). With the limit breached, `get-workgroup` still reads
-  `status: AVAILABLE` and nothing in the workgroup's record mentions it; `UsageLimitAvailable`
-  reports a stale figure against the previous amount; and the client sees six words with no policy,
-  no limit id and no amount: `ERROR: Query reached usage limit`. **Leader-node queries keep
-  answering** — `select 1`, `select count(*) from pg_attribute`, `svv_all_schemas` — while a
-  `CREATE TABLE` is refused, so *"connect and `select 1`"* passes on a warehouse that cannot run a
-  real query. **Recovery is immediate on raising the amount**, with no wait for the period to roll
-  over, which no vendor page states. Also: a second `deactivate` limit is refused outright (*"Only
-  one DISABLE usage limit allowed per feature"*) and a second, looser `log` limit is **permitted**,
-  which is the hole `WH-3` exists for. Where: `log-stage-05b` pass 3.
-
-- **A Redshift Serverless workgroup reads back with six `config_parameter` entries nobody set, and
-  the Terraform provider plans to remove them forever** (measured 2026-09-20). `config_parameter` is
-  a set the provider owns whole: a workgroup created with three parameters returns nine, because the
-  service fills `auto_mv`, `datestyle`, `enable_case_sensitive_identifier`, `query_group`,
-  `search_path` and `use_fips_ssl`, and every subsequent plan is `1 to change` that never converges.
-  The fix is to declare them at their read-back values, which also discloses what a query actually
-  runs under — including that **`auto_mv` is on by default**, so the service builds and refreshes
-  materialized views on a 1.44 USD/hour meter unasked. Where: `log-stage-05b` pass 3,
-  `sandbox/warehouse-compute/main.tf`.
-
-- **`SVV_SCHEMA_QUOTA_STATE` is refused to a superuser on Redshift Serverless** (measured
-  2026-09-20). Both it and `STV_SCHEMA_QUOTA_STATE` answer `permission denied for relation` for the
-  namespace admin, who reads `usesuper = true` in `pg_user`, and no other catalog view carries a
-  schema's quota — `svv_redshift_schemas.schema_option` is empty for a schema that has one. So a
-  quota is **authored and proven by breach, never read back**: the check named for it in Stage 5b's
-  deliverables can only ever be a note. The breach itself is legible and carries three facts: the
-  refusal is **at commit**, the usage **exceeds the quota inside the transaction** before the abort
-  (2458 MB against a 2048 MB quota), and 1,024,000 incompressible 1 KB rows read as 2458 MB — a
-  quota bounds **disk blocks, not logical bytes**. The floor and ceiling are also undocumented:
-  *"Schema quota must be between 2048 and 524288000 MB"*. Where: `log-stage-06h`,
-  `runbooks/redshift-connection.md` §S.
-
-- **`CREATE SCHEMA … AUTHORIZATION` takes a database user, not a role** (measured 2026-09-20).
-  Redshift has RBAC roles and they cannot own a schema: given a role the statement answers
-  `ERROR: user "<name>" does not exist`, which reads as a missing object rather than a wrong kind of
-  object. A shared schema therefore has a **non-login user** as owner and its grants on a **role**,
-  which is the shape that keeps a schema × project relation many-to-many. Where: `log-stage-06h`
-  1.3, `runbooks/redshift-connection.md` §S.
-
-- **`AmazonDataZoneProject` is a single-valued tag key, so a Redshift compute admits one SageMaker
-  project** (read 2026-09-20). AWS's instruction is to add *"1 of the following tags"* to the
-  workgroup **and its namespace**: either `AmazonDataZoneProject={{projectID}}`, which names one
-  project, or `for-use-with-all-datazone-projects=true`, which names every project in the account.
-  There is no per-project list, because a tag key holds one value — on both objects. A plan that
-  says *"one tag per admitted project"* is therefore not implementable, and a second map entry would
-  silently overwrite the first project's tag and break its connection with nothing in the plan
-  output to say which project lost access. Where: `log-stage-06h`,
-  `terraform-live/sandbox/warehouse/variables.tf`'s `projects` validation.
-
-- **`db_name` on a Redshift Serverless namespace adds a database, it does not replace `dev`**
-  (measured 2026-09-20). A namespace created with `db_name = "warehouse"` carries **both**
-  `warehouse` and `dev` as local databases, and both are born with `USAGE, CREATE` to the group
-  `PUBLIC` on their `public` schema. So the `REVOKE` that closes that hole is owed **per database**,
-  and a check that looks for "exactly one class container" has to know about two inert ones. Also in
-  the same namespace: `awsdatacatalog` exists but **cannot be connected to at all** —
-  *"FATAL: Cannot connect to shared database … use cross-database query notation"* — which is a
-  stronger form of the documented read-only direction. Where: `log-stage-05b` 1.6 and 2.4.
-
-- **The Redshift Data API reaches a private workgroup from outside every VPC** (measured
-  2026-09-20). `redshift-data execute-statement --workgroup-name … --secret-arn …` runs SQL on a
-  workgroup that is `publiclyAccessible: false`, in a private subnet with no default route, from a
-  laptop with no VPN — because the Data API is an AWS endpoint and not a database connection. No
-  security group sees it and the 5439 door is irrelevant to it. Convenient (it is how this
-  repository's instruments read `SVV_*`) and load-bearing: a principal holding
-  `redshift-data:ExecuteStatement` has a query path from anywhere, which is why `identity/sso`
-  denies the family rather than merely not granting it. It is also **asynchronous with no waiter**,
-  so a poll without a delay reports an empty result for a warehouse that is answering. Where:
-  `log-stage-06h`, `runbooks/redshift-connection.md` §V.
-
-- **An EC2 security group description refuses an apostrophe, and a RULE description refuses `>`**
-  (measured 2026-09-20 and 2026-09-21). One character set governs both:
-  `a-zA-Z0-9. _-:/()#,@[]+=&;{}!$*` — it includes `#`, `$`, `!`, `=` and `+`, and excludes `'` and
-  `>`, so the ASCII arrow `->` that reads naturally in a rule description is refused while `to`
-  passes. The wording differs by object (`Invalid security group description` against `Invalid rule
-  description`) and both arrive **at apply**, after every other resource in the plan has been
-  created and with `validate`, `fmt` and `tflint` all green. `validate` holds the set only on an
-  inline `ingress`/`egress` block and on `aws_security_group_rule` (hashicorp/aws 6.68.0, measured
-  2026-10-14); `./scripts/check-sg-descriptions.py` holds every description's literal text to it,
-  in `make check` and the commit gate. Where: `log-stage-05b` 1.8, `log-stage-06h` 2.3,
-  `log-stage-08` 2.4.
-
-- **The Redshift Data API does not cancel a statement when its client stops polling, and
-  `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A
-  `count(*)` over a triple cross join was submitted through `redshift-data execute-statement`; the
-  client gave up polling after 242 s and exited; **the statement ran for 23,601 seconds — 6 h 33 min —
-  at base capacity**, and `ComputeSeconds` reported a flat 7,230 RPU-seconds per 30-minute interval
-  throughout, which is 4.017 RPU sustained. The workgroup's `max_query_execution_time` was **1800**,
-  **Why it did not bite is unresolved, and the obvious
-  explanation lost its support within the hour.** The first hypothesis was the superuser queue —
-  `pg_user` reports `usesuper = true` for the namespace admin, and Redshift exempts that queue from WLM
-  and QMR. But AWS's serverless query-queues page says *"Query monitoring rules (QMR) apply only at the
-  Redshift Serverless workgroup level, **affecting all queries run in this workgroup uniformly**"*, and
-  its example exempts an admin by giving them a **queue with no rules** — implying that without queues
-  (none here; enabling them is permanent) the rule reaches everyone. So the live candidates are the
-  exemption *after all*, or that **`max_query_execution_time` as a standalone `config_parameter` is not
-  enforced at all** and a per-query ceiling exists only through `wlm_json_configuration` — Lesson 56 in
-  its purest form. **One test separates them**: the same query as a non-superuser. Until then the
-  parameter is **possibly inert**. The unit is not in doubt: **seconds**, from the 86,399-second service
-  maximum and the QMR examples' own wording; `statement_timeout` is the millisecond parameter and is
-  not in the Serverless list. What stopped it:
-  `pg_terminate_backend(<session_id>)`, then destroying the workgroup. What would have stopped it
-  eventually: the `serverless-compute` usage limit, 3.4 hours later, at 14.40 USD. Where:
-  `log-stage-05b` the third amendment, and the comments on
-  `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and `layers.py`'s `usd_per_hour`.
-
-- **A CloudWatch aggregate answers a question about its window, not about now — and the CLI makes the
-  aggregate easier to ask for than the current value** (three times in one stage, 2026-09-20). The same
-  session read `ComputeSeconds` as **405**, then **4,743**, then **94,767** RPU-seconds for one
-  workgroup, and `DataStorage` as **1,596 MB** when the namespace held **130** — the storage figure was
-  `max(Datapoints[].Maximum)` over a 24-hour window, six hours after a `DROP` had freed the space, and
-  it was written into a plan as an owed `VACUUM`. `--statistics Sum` and `--statistics Maximum` with a
-  wide `--start-time` are the shortest commands to type and the easiest to misread; the habit that
-  catches all three is **plot the series before quoting a number from it**. Two consequences that cost
-  real money and real work here: a cost figure taken while a query is still running is a partial sum,
-  and a storage figure taken over a day is a peak. Where: `log-stage-05b`, the three amendments to 5.3
-  and the fourth on the storage.
-
-- **`DROP` frees Redshift Managed Storage at once; the `VACUUM` caveat is about `DELETE`** (measured
-  2026-09-20). *"A DELETE statement deletes data from a table and disk space is freed up only when
-  `VACUUM` runs"* is about **rows** removed from a table that still exists. `DROP SCHEMA … CASCADE` over
-  a 1.5 GB table took `DataStorage` from **1,596 MB to 129 MB in the next 30-minute datapoint**, with no
-  `VACUUM` anywhere. Reading the caveat as covering both is how a session ends up planning to raise an
-  `[E]` compute at 1.44 USD/hour to reclaim zero bytes. Where: `log-stage-05b`, the fourth amendment,
-  and `runbooks/redshift-connection.md` §S.
-
-- **`ComputeSeconds` lands per half-hour interval, so a Redshift cost read right after an expensive
-  query under-reads it** (measured 2026-09-20). The same metric answered **405**, then **4,743**, then
-  **94,767** RPU-seconds for the same workgroup within a few hours — the first two while a query was
-  still running, and each was written into four tracked files as *the measured cost*. Cost Explorer
-  cannot be used as the cross-check on the same day: it returned 0 for every service with **zero
-  groups** for that date, while a negative control three days earlier returned real figures, so its
-  zero means *no data yet* and nothing else. Two rules, and neither is about Redshift: **a meter that
-  is still accruing has not answered**, and *"I stopped watching"* is not *"it stopped"*. Where:
-  `docs/PRICING.md` §5, `log-stage-05b`'s three amendments to 5.3.
+The lessons above are habits. The facts about the platform that cost a measurement to learn are in
+[`docs/AWS_SUPPLEMENT.md`](../AWS_SUPPLEMENT.md): one `SUP-nnn` entry per behaviour of an AWS service, of
+Terraform or of a tool run against the estate, by service. The stage logs and the stage files name that
+list as `lessons.md`'s second list, its platform list or the lessons' AWS list.
 
 ---
 

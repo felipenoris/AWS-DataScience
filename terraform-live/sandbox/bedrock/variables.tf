@@ -1,7 +1,7 @@
 # Inputs. region, env and environment_tag arrive from the generated, untracked
-# terraform.auto.tfvars (./scripts/gen-tfvars.py <account> bedrock). project_roles is this slice's
-# own, edited by hand once per project - see its comment, which is the whole operating cost of
-# this design.
+# terraform.auto.tfvars (./scripts/gen-tfvars.py <account> bedrock). project_roles and
+# application_roles are this slice's own, edited by hand once per project - see project_roles'
+# comment, which is the whole operating cost of this design.
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."
@@ -106,6 +106,57 @@ variable "models" {
   validation {
     condition     = length(var.models) > 0
     error_message = "an empty map would build a policy with an empty Resource list, which is a policy that authorizes nothing and reads like one that authorizes everything."
+  }
+}
+
+# --------------------------------------------------------- an application's dev project (application.tf)
+#
+# The roles the application policy attaches to, written by hand after the project exists, as
+# project_roles are. A role listed here and not in project_roles holds the application's grant and not
+# the coding assistant's.
+variable "application_roles" {
+  description = "The SMUS project roles whose application keeps a guardrail of its own and calls a model under it (Stage 17 step 10.4), by role NAME (not ARN). One entry per application's dev project; empty is legal and attaches nothing."
+  type        = list(string)
+
+  # app-genai-dev, created 2026-11-19, the project for app-genai alone and its manifest's `dev` stage
+  # (Stage 17 step 10.4); read 2026-11-19.
+  default = [
+    "datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0",
+  ]
+
+  validation {
+    condition     = alltrue([for r in var.application_roles : can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", r))])
+    error_message = "each entry is a SMUS project role name, `datazone_usr_role_<project>_<environment>`."
+  }
+
+  validation {
+    condition     = length(var.application_roles) == length(distinct(var.application_roles))
+    error_message = "a role appears twice. The attachment is keyed by role name, so a duplicate would collide rather than be ignored."
+  }
+}
+
+variable "application_guardrail_required" {
+  description = "Stage 17 step 10.4, step 4: true adds to the application policy a deny of bedrock:InvokeModel and InvokeModelWithResponseStream where the request names no numbered version of a guardrail of this account. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "account_guardrail_enabled" {
+  description = "Stage 17 step 10.4, step 6, decision 27 (a): true creates the account's guardrail, its version and the account-level configuration that enforces it on enforced_models. The configuration is the account's: the peers are told before an apply that turns it on. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "enforced_models" {
+  description = "The models the account-level configuration enforces the account's guardrail on, by model id: Nova Lite alone, so Claude Code's sessions and the scoped Claude models stay outside it (Stage 17 step 10.4, step 6)."
+  type        = list(string)
+  default     = ["amazon.nova-lite-v1:0"]
+
+  validation {
+    condition     = length(var.enforced_models) > 0 && !contains(var.enforced_models, "ALL")
+    error_message = "an empty list is refused by the API and ALL enforces the guardrail on every model of the account, Claude Code's included: name each model."
   }
 }
 

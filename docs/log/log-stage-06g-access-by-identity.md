@@ -141,3 +141,29 @@ space.*
 left, `stopped` (a user shutdown at 2026-10-16 23:33:56Z), last launched 2026-10-16 16:31:16Z, private
 `10.31.160.140`, no public address while stopped. So the host decision 1 left to be replaced has not
 been replaced; `make hub-up` starts it and never applies the slice.
+
+## 2026-10-18 — verification ii read from the deployed sets, and the pickup's state
+
+*Written by Claude, in the task `stages-06fgh-readings` the orchestrating session ran on the user's
+approval of 2026-10-18, with the environment down. Every call is a read, as the infrastructure user with
+`InfrastructureAccess`: `awsds-infra-identity` (`<Identity Account>`) for the permission sets,
+`awsds-infra-sandbox-1` (`<Sandbox Account 1>`) for the customer-managed policy and `awsds-infra-prod`
+(`<Production Account>`) for the job role. Account ids are replaced by the account's name.*
+
+- **[Claude] Verification ii, the six deployed persona sets** (`sso-admin`
+  `get-inline-policy-for-permission-set`, `list-managed-policies-in-permission-set`,
+  `list-customer-managed-policy-references-in-permission-set`). Statements per set:
+  `DataScientistAccess` 21, `DataScientistStagingAccess` 14, `DataScientistProdAccess` 16,
+  `DeploymentManagerAccess` 17, `DevEnvStewardAccess` 16, `GovernanceManagerAccess` 16. None tests
+  `aws:SourceIp`, `aws:SourceVpc` or `aws:SourceVpce`, and no set carries a permissions boundary. The
+  Allow statements are the ones 0.1's table lists by set, plus `ReadRedshiftServerlessStatus` on
+  `DataScientistAccess`: `GetNamespace`, `GetWorkgroup`, `ListNamespaces`, `ListTagsForResource`,
+  `ListUsageLimits` and `ListWorkgroups` on `*`, Stage 5b step 2.3's, committed 2026-09-20 with two
+  Redshift denies. `CloudWatchLogsReadOnlyAccess`, on four sets, is at v12 (updated 2026-02-12), and
+  `awsds-org-project-storage-vending` in `<Sandbox Account 1>` at v1 (2026-08-24). `git log` on
+  `terraform-live/identity/sso/` since the 6g commit shows no other statement change.
+- **[Claude] The job role the drop-box names.** `iam get-role` on `awsds-prod-job-exec`: created
+  2026-10-18T19:59:03Z, `RoleLastUsed` empty at 22:40Z. Production's `us-west-2` trail from 19:59Z: 85
+  `AssumeRole` events, none on that role, and no `StartJobRun`, `CreateJob`, `CreateProcessingJob` or
+  `CreateTrainingJob`. `glue get-jobs` in Production returns none. Stage 9's pickup (its step 2.5) is a
+  Glue job under that role, so the SageMaker processing-job quotas of 0 are not on its path.

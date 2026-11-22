@@ -1,0 +1,95 @@
+# production/data — Production's data platform, layer `[P]`
+
+Stage 9 steps 1 and 2.3, applied 2026-10-22. The `consumer-data` module's third caller
+([its README](../../../terraform-modules/consumer-data/README.md) holds the module's own rows: the key's
+administration statement, the settings, the links, the persona's re-grants); this file indexes what the
+slice adds. The `.tf` comments carry the reasoning. `staging/data/` is the same shape without the
+governed write ([its README](../../staging/data/README.md)).
+
+## The apply is two steps
+
+Recipe D ([`terraform-changes.md`](../../../docs/plan/runbooks/terraform-changes.md)): the settings alone
+under `-target=module.consumer_data.aws_lakeformation_data_lake_settings.this`, read back (`DT-5`, and
+`IAMAllowedPrincipals` revoked if it is still there), then the rest. Before it:
+`data-governance/data/`'s Stage 9 change applied (pass 2), since the regrants below need the share. The
+first apply, on 2026-10-22, read back the `InfrastructureAccess` seat alone and both default lists `[]`,
+so nothing was revoked.
+
+## The data key's added statements (`main.tf`)
+
+Every role is the account root narrowed by `aws:PrincipalArn`, which KMS does not validate.
+
+| `Sid` | Who | Actions and condition |
+|---|---|---|
+| `AllowTheJobRoleViaS3` | `awsds-prod-job-exec` | `Decrypt`, `GenerateDataKey` through S3 |
+| `AllowTheDataScientistViaS3` | `DataScientistProdAccess` | `Decrypt`, `GenerateDataKey` through S3: the named outputs and Athena's results as the caller (5.1) |
+| `AllowTheDebugRoleToDecryptViaS3` | `awsds-prod-debug` | `Decrypt` through S3 (6.1) |
+| `AllowTheReleaseRolesViaS3` | `awsds-deploy-prod`, `InfrastructureAccess` | `Decrypt`, `GenerateDataKey` through S3: the release's tree and the inbox (Stage 10) |
+| `AllowTheReleaseRolesForTheirWorkflows` | idem | `Decrypt`, `GenerateDataKey` with the workflow's ARN as encryption context (Stage 10 decision 2) |
+| `AllowTheReleaseRolesToGrantTheWorkflowService` | idem | `CreateGrant` for an AWS resource; which context the service's grant carries is unread |
+| `AllowTheReleaseRolesToDescribeTheKey` | idem | `DescribeKey` |
+| `AllowTheChainRoleForItsWorkflows` | `awsds-prod-chain-exec` | `Decrypt`, `GenerateDataKey` with the workflow's ARN as context |
+| `AllowTheDeploymentManagerToReadWorkflowRuns` | `DeploymentManagerAccess` | `Decrypt` with a workflow's ARN as encryption context alone: the service decrypts a run in the reader's session at each `GetWorkflowRun` (Stage 10 decisions 2, 11). No S3 object carries that context, so the approver still decrypts no output (D31). `kms:ViaService` `airflow-serverless.<region>.amazonaws.com` admits the workflow service's calls alone (decision 11's option A, applied 2026-10-26) |
+| `AllowTheWorkflowRolesViaS3` | `awsds-prod-wf-*` | `Decrypt`, `GenerateDataKey` through S3: the result file and the inbox markers |
+| `AllowTheWorkflowRolesForTheirWorkflows` | `awsds-prod-wf-*` | `Decrypt` and `GenerateDataKey` with the workflow's ARN as context: its own workflow, and each XCom a task pushes, which the worker encrypts with its own `GenerateDataKey` (read 2026-10-23 in Staging: without it the first task fails after its job has run) |
+| `AllowJobVolumeGrantsThroughSageMaker` | `awsds-prod-wf-*`, `awsds-deploy-prod` | `CreateGrant`, `DescribeKey` through SageMaker: a job's volume key, granted in the submitting session (6i) |
+| `AllowCloudWatchLogsForTheJobAndWorkflowGroups` | `logs.<region>.amazonaws.com` | the key's use for the job groups (`/aws/sagemaker/*`, `/aws-glue/*`) and Stage 10's (`/awsds/prod/wf/*`, the chains' group), by `kms:EncryptionContext:aws:logs:arn` |
+| `AllowRedshiftServerlessViaServiceInThisAccount` | this account, through Redshift Serverless | the governed warehouse's namespace (9.1); without it `CreateNamespace` fails and leaves an orphan secret (`EXC-12`) |
+
+The account root is the principal of every statement, so a role also needs an identity grant. The deploy
+role holds none on this key since Stage 19 item 31: the statements naming `awsds-deploy-prod` admit it
+to nothing, and `InfrastructureAccess` keeps the release roles' four. The statements naming
+`awsds-prod-wf-*` or a workflow ARN under `workflow/awsds-prod-wf-*` match no role and no workflow since
+the same item (read 2026-11-17): the CI/CD CLI's workflows are named `<application>_<project>_<workflow>`,
+run as the deployment project's role and are encrypted under `alias/awsds-prod-project`, whose policy
+delegates to IAM, so `DeploymentManagerAccess`'s `DecryptWhatTheWorkflowServiceEncrypts` is what admits
+its `GetWorkflowRun` (unmeasured on a CLI workflow).
+
+## The production persona's managed policy (`persona.tf`)
+
+`awsds-prod-data-scientist`, the customer-managed policy `identity/sso/` attaches to `DataScientistProdAccess`
+by name (Stage 9 step 5.1; the name is `backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`). Each ARN is this
+slice's own; the debug role is named by contract, as `main.tf` names it. Written and applied 2026-10-22, then
+`identity/sso/`'s attachment; the set's role in Production carries it.
+
+| `Sid` | Allows |
+|---|---|
+| `RunQueriesOnTheProductionWorkgroup` | the six `athena:` query and history actions on `awsds-prod-athena` alone (1.2, decision 11) |
+| `ReadTheNamedApplicationOutputs` | `GetObject`, `GetObjectVersion` under each of `persona_read_prefixes` in `awsds-prod-outputs`, the list the bucket policy's principal branch is written from |
+| `ListTheNamedApplicationOutputs` | `ListBucket` with `s3:prefix` held to those prefixes and the root, `GetBucketLocation` |
+| `ReadAndWriteTheQueryResults` | `PutObject`, `GetObject`, `AbortMultipartUpload`, `ListMultipartUploadParts` under `results/` of `awsds-prod-derived`: Athena writes as the caller |
+| `ListTheQueryResults` | `ListBucket`, `GetBucketLocation` on `awsds-prod-derived` |
+| `UseTheDataKeyThroughS3` | `Decrypt`, `GenerateDataKey` on the data key with `kms:ViaService` S3, the identity half of `AllowTheDataScientistViaS3` |
+| `AssumeTheDebugRoleInsideAnApprovedWindow` | `sts:AssumeRole` on `awsds-prod-debug` (6.1): the trust decides the window |
+
+## `awsds-prod-outputs`'s policy (`buckets.tf`)
+
+Beside the module's TLS-only and presigned-age denies.
+
+| `Sid` | Denies |
+|---|---|
+| `DenyOutsideTheJobNetwork` | everything not through VPC-Workloads' gateway endpoint, not by or through a service, and not by `InfrastructureAccess`, the persona, the debug role or the deploy role (INT-05, D39) |
+| `DenyThePersonaAndTheDebugRoleAnyWrite` | the persona and the debug role anything but `GetObject`, `GetObjectVersion`, `ListBucket`, `GetBucketLocation` |
+| `DenyThePersonaReadsOutsideTheNamedPrefixes` | the persona's reads outside `var.persona_read_prefixes` (`app-etl/outbox/`) |
+| `DenyThePersonaListingsOutsideTheNamedPrefixes` | the persona's listings outside the same prefixes |
+| `DenyTheReleaseRoleAnythingButItsObjects` | the deploy role anything but `PutObject`, `GetObject`, `GetObjectVersion`, `ListBucket`, `GetBucketLocation` |
+| `DenyTheReleaseRoleObjectsOutsideItsPrefixes` | the deploy role's object calls outside `applications/` and `inbox/` |
+| `DenyTheReleaseRoleListingsOutsideItsPrefixes` | the deploy role's listings outside the same prefixes |
+| `DenyWritesToApplicationsButTheReleaseRoles` | `PutObject`, `DeleteObject` under `applications/` to all but the deploy role and `InfrastructureAccess` (Stage 10 decision 12) |
+
+The deploy role holds no identity grant on the bucket since Stage 19 item 31, so its three denies fence
+nothing it can reach. `aws_s3_bucket_notification` sends the bucket's events to EventBridge (Stage 10
+decision 16).
+`awsds-prod-derived` carries the module's policy alone and expires after 30 days (decision 11).
+
+## Lake Formation grants (`lakeformation.tf`)
+
+| Grant | Principal | Resource | Permissions |
+|---|---|---|---|
+| `job_link_describe` (×2) | `awsds-prod-job-exec` | the links `raw`, `curated` | `DESCRIBE` |
+| `job_shared_databases` | idem | the lake's databases, `layer ∈ {raw, curated}` | `DESCRIBE` |
+| `job_shared_tables` | idem | the lake's tables, `layer ∈ {raw, curated}` and `classification ∈ {public, internal}` | `SELECT`, `DESCRIBE` |
+| `job_curated_write` | idem | every table of the lake's `curated`, by name | `SELECT`, `INSERT`, `DELETE`, `ALTER`, `DESCRIBE`: the governed write (2.3) |
+
+The workgroup `awsds-prod-athena` (`athena.tf`) is enforced: its results land under
+`awsds-prod-derived/results/` under the data key, and a query past 10 GB is cancelled (decisions 2, 11).

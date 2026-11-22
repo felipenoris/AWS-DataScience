@@ -57,10 +57,10 @@ FAIL region canary deny ALLOWED    dry-run      region: ec2:RunInstances in us-e
 
 | Outcome | Means |
 |---|---|
-| `DENY-SCP` | An explicit deny in a **service control policy**; the detail column is the policy id the API named — attribution without CloudTrail. AWS names one policy even when several deny, so a document that appears in no row is attached but unexercised (Lesson 20) |
+| `DENY-SCP` | An explicit deny in a **service control policy**; the detail column is the policy id the API named — attribution without CloudTrail. AWS names one policy even when several deny, so a document that appears in no row is attached but unexercised (Lesson 20). A refusal whose wording names no policy but carries an authorization id is read through the evaluation AWS recorded for it (IAM's Access Troubleshooter, a preview), and the detail is the policy id and the statement's Sid: STS's `AssumeRole` refusals name no policy |
 | `DENY-RCP` | The same, in a **resource control policy**. Different wording, same attribution |
 | `DENY-DECL` | A **declarative policy**, enforced in the service's control plane, so it names no policy id. The attribution is the exception message, and the detail column says which one arrived: `custom-message` is ours, `AWS-default-msg` means the `exception_message` did not survive the upload |
-| `DENY-NOT-SCP` | `AccessDenied` naming **no** policy — an IAM or permission-set deny. It answers a different question from the one being asked and is never counted as the ceiling working |
+| `DENY-NOT-SCP` | `AccessDenied` naming **no** policy — an IAM or permission-set deny. It answers a different question from the one being asked and is never counted as the ceiling working. When the refusal carried an authorization id, the detail is the explicit deny's policy type and Sid, or why the evaluation was not read (`authz: not recorded` after half a minute of asking, `authz: <error>`); an evaluation that is an implicit deny leaves it empty |
 | `ALLOWED` | `DryRunOperation`, an exit code of 0, or the wording that proves *this action* reached authorization — declared per probe, because "the service validates first" is a property of the action, not of the service (Lesson 21) |
 | `UNTESTED` | The call never reached authorization. Not a pass and not a failure: a probe that needs a better input, usually a real id |
 

@@ -17,8 +17,9 @@ follows is still unanswered:
 2. **D7/D28 - two verifications, not decisions.** The orchestration decision is closed (Stage 10 builds
    alternative A alone since D7's 2026-09-05 amendment: MWAA Serverless via
    `awscc_mwaaserverless_workflow`, verified to exist 2026-08-08, re-verified 2026-08-16). What is open:
-   (i) whether the awscc resource *applies* cleanly under the CI deploy role (INT-14 — fallback chain
-   recorded there); (ii) whether **no-UI** observability is livable for a data scientist debugging a
+   (i) whether the awscc resource *applies* cleanly under the CI deploy role, answered yes by pipeline #71
+   (2026-10-24, INT-14), the path retired on 2026-11-17 with the CI/CD CLI creating the workflows (Stage 19
+   item 31); (ii) whether **no-UI** observability is livable for a data scientist debugging a
    failed run — Serverless has run/task APIs, a console page, per-task log streams and (since 2026-06)
    EventBridge events, but no Airflow web interface (read 2026-08-16). Stage 10 measures it in step 3.2's
    diagnosis session and answers it in its decision 11. Keep application entry points as plain containers
@@ -41,6 +42,8 @@ follows is still unanswered:
 4. **Layer assignments.** `[P]`/`[D]`/`[E]` are cost judgements based on estimates. Revisit them at
    Stage 12 against the real bill — especially the interface endpoints (the largest hourly item, and a
    **per-account** list rather than one list: Stage 3 step 8) and GitLab (the largest idle item).
+   **Read 2026-10-20** (Stage 12 step 5.2, PR #211): the bill moves no layer letter; the choice is
+   Stage 12's decision due 3, the user's.
 5. **CodeArtifact ecosystem coverage (`docs/plan/architecture.md` §4.3).** The CodeArtifact
    documentation lists Cargo among its supported formats, so the Rust question is down to confirming it
    in practice at Stage 6. Julia and R remain uncovered and keep their `docs/plan/architecture.md` §4.3
@@ -88,13 +91,15 @@ follows is still unanswered:
    INT-06's allow-list must carry the VPN home's endpoint — the same axis rule Lesson 33's second
    finding states for the lake — and the open half narrows to *which* calls the S3 console actually
    makes, from where.
-9. **Whether sampled or synthetic Staging data makes the integration tests meaningful** (D20, Stage 9).
-   The decision that Staging never holds a copy of production data is firm — the reasoning is in D20 and
-   it is a security argument, not a cost one. What is open is the consequence: a test suite running
-   against a sample catches permission, schema and wiring errors and misses everything that only appears
-   at production distribution and volume. Answer it by recording, for each production incident this
-   environment ever has, whether a Staging run could have caught it. Until there is such a record, this
-   is a belief rather than a finding.
+   **Closed 2026-10-23** (Stage 9 8.2, the log): under the principal branch, from a laptop with no tunnel,
+   the console works for `DataScientistProdAccess` on one page, the object listing under a named prefix
+   reached by its URL, with its downloads; the bucket list (`s3:ListAllMyBuckets`, which the set lacks),
+   the bucket's root listing (`s3:ListBucket` outside the prefixes) and every bucket-level tab refuse,
+   Block Public Access showing the bucket policy's explicit deny. `README.md` carries the sentence.
+9. ~~**Whether sampled or synthetic Staging data makes the integration tests meaningful**~~ — **closed
+   2026-10-22 by Stage 9 decision 3** (D20 amended): Staging reads the governed lake in place, read-only,
+   so its tests meet production's distribution and volume, and the copy D20 refuses stays refused. The
+   residual is `TM-25`.
 10. **How far the Sandbox ordinal propagates.** The token shape is settled — an ordinal integer,
     `awsds-infra-sandbox-1`, `-2`, … (`docs/plan/conventions.md`, 2026-08-11) — and the SSO profile carries it
     today. What is open is which of the other five per-unit tokens D35 names do: the `<env>` token, the
@@ -201,6 +206,11 @@ load-bearing against principle 4.
     saw. **The distinction: where a session is reached *from* is not where it *runs*.** The revision
     trigger is worded against that (Stage 6 step 1.6): executors in our subnets, under our security group,
     never a headline saying VPC is supported.
+    **Read again 2026-10-18** (the upstream readings, PR #189): since 2026-04-23 the native notebook's kernels
+    run in the domain-level VPC configuration, so its Python kernel is inside the VPC, while Athena for
+    Apache Spark is still the notebooks' default Spark runtime and still outside any VPC (the user guide's
+    notebooks page), so the item stands for Spark. `L-DBBAE884` read 2 on 2026-09-12, so such a notebook may
+    start in Sandbox, unmeasured.
 13. **Notebooks do not support trusted identity propagation, and that reaches an `objectives.md` objective.**
     In an IAM Identity Center domain, notebooks fall back to **compatibility permission mode**, so data
     access resolves through the project/compute role rather than through the signed-in human. The DLP
@@ -229,7 +239,10 @@ load-bearing against principle 4.
     **all three engines** (Glue, EMR Serverless, EMR on EC2 — full-table access), so the TIP lever is
     SQL/query-path only; the one documented notebook-side fine-grained route is an EMR-S **compute
     connection** in `project.spark.fineGrained` mode — whether an IdC-domain notebook can actually use it
-    is Stage 6 decision 1's second in-stage reading.
+    is Stage 6 decision 1's second in-stage reading. **Read again 2026-10-18** (the upstream readings,
+    PR #189): since 2026-08-19 the native notebooks carry the Identity Center identity to Athena,
+    Redshift and EMR Serverless in a TIP profile, while Glue, EMR on EC2 and JupyterLab do not, and remote
+    space connections are still unsupported in a TIP profile, so Stage 6 decision 2 holds.
     **A second mapped option, 2026-08-24, on the S3 surface:** S3 Access Grants takes grantees of
     `DIRECTORY_USER`/`DIRECTORY_GROUP` (the CLI's own model, not prose), which would make a
     project-storage grant per-person or per-IdC-group and CloudTrail attribution per-human — the TIP
@@ -283,6 +296,10 @@ load-bearing against principle 4.
     decided the perimeter, and no method was both VPN-bound and scoped** until D39 removed the VPN half:
     6d decision due 4 now carries the method and the file channel. The residual (12 h) is still 6d 7.7's
     to measure.
+    **A second laptop channel since 2026-09-11** (read 2026-10-18, PR #189): the Athena ODBC driver 2.2.0.1 or
+    later reads project data from a BI tool on a laptop, authenticating as the Identity Center user or by
+    IAM, and under D39 needs no tunnel; the threat model carries it as `TM-22` beside `TM-08`, with the
+    driver's calls unread.
 15. **"As many instances as they like" is a cost statement before it is an access statement.** Each
     JupyterLab or Code Editor space is a running instance billed by the hour, and D11 ("pay nothing while
     idle") is a property of the *design*, not of the user's habits. What closes it is idle shutdown plus a
@@ -446,7 +463,10 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     (S3 → EventBridge → Glue workflow, landing on the 3.4 service-guard side), already asked by the
     stage — **measure it against the guard rather than assuming it lands on the allow side**; if it
     does not qualify, event-driven ingestion is blocked by the SCP as written and that becomes a
-    decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant.
+    decision in its own right. (c) Whether Stage 9's writer makes `awsds-data-raw` redundant. **Read
+    2026-10-23**: Stage 9 2.5's pickup wrote `curated.trades` from the drop-box with no `raw` zone in
+    between and no crawler, the Iceberg writer registering its own table, which is (c)'s first reading;
+    the collector exists now, so a drop stays in the box only until the next pickup.
     **The consequence of leaving it open**: D25's drop-box stays inert **even after
     `DenyControlPlaneOffVpn` is amended**. The write and the catalogue are independent failures, and
     fixing the first alone produces a bucket that accepts files nothing ever reads.
@@ -454,8 +474,8 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     read/list/delete verbs implicit-deny). So the drop-box **accepts files and nothing catalogues them**,
     and this question is the only thing between a delivered file and a usable table. A second consequence
     of the same measurement, for whoever answers this: the writer holds no delete and the collector is
-    Stage 9's, so **anything written to the letterbox stays there** until that stage lands
-    (`AWS_STATE.md` `EXC-02` declares the one object that already has). An answer that starts the crawler
+    Stage 9's, so **anything written to the letterbox stays there** until a pickup consumes it; Stage 9's
+    first ran on 2026-10-23, and the proof objects `EXC-02` declared were removed by hand on 2026-10-24. An answer that starts the crawler
     does not empty the box; only the pickup does.
 
     **The first consumer is Stage 6 step 2.1** (recorded at both ends, Lesson 34). That step is where a
@@ -492,7 +512,7 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     it regardless. **Lesson 30 is the reason for the restraint**: a page that was not found is not a
     property of the world.
     **Settled by attempting it, in the session (xii) and (xiii) already require** — a governance-manager
-    sign-in with the tunnel up, against Stage 6 step 2.4's throwaway project. Three outcomes: **(a)
+    sign-in, from any network since D39, against Stage 6 step 2.4's throwaway project. Three outcomes: **(a)
     denied** — record it and close; **(b) it vends, and the boundary caps what the vended role reads** —
     the wildcard is still worth narrowing, because the intent in the comment and the reach of the document
     have drifted; **(c) it vends a principal that reads rows** — `Get*` becomes an enumeration in that
@@ -500,6 +520,15 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     **Where it sits in the map**: the same axis as INT-11's credential-vending half — what a *service* can
     hand a principal that the principal could not ask for directly. Two surfaces, which is the argument
     for carrying it as an axis rather than as two incidents.
+
+    **Amended 2026-10-22: the membership is a door of its own.** DataZone hands an owner's or a
+    contributor's portal session the project role (Stage 18 6.1), and its query editor reads the project's
+    tables with no compute (Stage 18 7.2), so a governance manager made a member, as 6f 4.3 plans, reads
+    them past `DenyReadingTheRows` with no `GetEnvironmentCredentials` call. A domain-defined designation
+    is the narrower membership, by API only since 2026-10-29, its policy naming action groups (`SUP-384`):
+    Stage 19's `subscription-approver` (decision 15 (d), 2026-11-19) withholds the Project, Connections,
+    and Notebooks and Querybooks categories `PROJECT_CONTRIBUTOR` grants. Whether the query editor still
+    hands the member the project role under it is Stage 19 xxvi's portal half.
 
 ### Raised by Stage 6 step 1.3, 2026-08-21
 
@@ -590,6 +619,12 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     — which is *why* the bucket name is free (Stage 6's v0.3.2 finding, whose `*/dzd*/<project>/`
     shorthand is the **provisioning** policy's `GetS3GenAI` statement, a different document; the
     conclusion is unaffected and was proven behaviourally anyway).
+    **A third authorship since 2026-10-09** (read 2026-10-18, PR #189): a custom Tooling blueprint is a
+    CloudFormation template this repository writes, registered with `CreateEnvironmentBlueprint` under the
+    `TOOLING` category, and in an Identity Center domain the template creates the project role, so that
+    role's policies, and the D13 boundary on it, would be this repository's text rather than AWS's.
+    [Stage 18](stages/stage-18-staging-deployment-project.md) decision 1 weighs it for the deployment
+    project; whether the Sandbox profiles ever move to one is a question this item gains, not an answer.
 
 ### Raised while sizing the persona set, 2026-08-23
 
@@ -649,6 +684,30 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     meets a question this file holds: the project role's `datazone:Get*` now covers
     `GetEnvironmentCredentials`, which question 20 asks of the governance manager's set. Again it was read
     by hand, for an unrelated sweep.
+    **The same date moves this item's scope** (2026-10-09, read 2026-10-18): a project role a custom Tooling
+    template creates carries the policies the template attaches, so a profile on such a blueprint takes the
+    load-bearing documents out of AWS's authorship, and the pull-and-diff this item asks for would cover the
+    roles the managed blueprints still mint. Stage 18 decision 1 is where the template is first weighed.
+    **Read again 2026-10-30, a day after the revision**: `SageMakerStudioProjectUserRolePolicy` **v76** and
+    `SageMakerStudioProjectRoleMachineLearningPolicy` **v47** (both 2026-10-29), the diff in
+    [`upstream-releases.md`](upstream-releases.md); nothing the claims above rest on moved, and the reading was
+    that file's fortnightly sweep, not an instrument.
+    **Read again 2026-11-13 and 2026-11-14: four policies had moved, three of them on the day of the reading.**
+    `SageMakerStudioDomainExecutionRolePolicy` is **v27** (v23 on 2026-10-30), each revision one addition to
+    `DataZonePermissions`: v24 (2026-11-04) `datazone:GetEffectiveUICustomization`, v25 (2026-11-05)
+    `ListDeployableEnvironmentBlueprints`, v26 (2026-11-12) three notification-preference actions, v27
+    (2026-11-12 19:47 UTC) `UpdateAssetOwner`. The admin guide's document history names v25 and v27 alone.
+    AWS's managed policy reference, read at 20:02 UTC on 2026-11-13, showed the project policies unmoved;
+    pulled in Sandbox at 01:46 UTC on 2026-11-14 they were `SageMakerStudioProjectUserRolePolicy` **v77** and
+    `SageMakerStudioProjectRoleMachineLearningPolicy` **v48** (both 2026-11-13 20:47 UTC) and
+    `SageMakerStudioProjectProvisioningRolePolicy` **v85** (20:07 UTC), and the reference page still showed
+    v76 five hours after IAM served v77. The diffs are in [`upstream-releases.md`](upstream-releases.md): v77
+    adds Bedrock knowledge bases and data sources, v48 `bedrock-agentcore:InvokeWebSearch` and
+    `datazone:UpdateAssetOwner`, v85 RAM shares of Glue resources named `DataZone*`. The knowledge-base
+    policy is still v9. `GetS3GenAI` is byte-identical in v85, and so are `DomainS3BucketPermissions` and
+    `DomainS3BucketKmsPermissions` in v77 and the `S3AG*` and `ConsumerS3AGPermission` statements in v48, so
+    the claims above stand again. It was a hand's pull once more, and the page that stood in for it was out of
+    date within five minutes.
 
 ### Raised by the 2026-08-25 objectives clarification
 
@@ -732,6 +791,37 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     registered, grants under the `projectId` condition, a database `test`, and a Glue `UntagResource`
     refused.
 
+    **Amended 2026-10-19: Staging, at Stage 18 3.3.** The first project there, `deploy-staging`, took
+    the same seats: the provisioning role's three `PutDataLakeSettings` at 06:05:34Z set the admin list,
+    empty until then and with no `InfrastructureAccess` seat, to itself and the manage-access role.
+    `./aws/datalake.py` `DL-13` reads the lake's accounts alone, so it does not see them; Stage 18's
+    8.6 reads them back after the unwinding, and Stage 9 pass 5's `staging/data/` meets them if a
+    deployment project outlives the stage.
+
+    **Amended 2026-10-20: the manage-access seat gains its IAM half.** The role's only identity policy,
+    `AmazonDataZoneSageMakerManageAccessRolePolicy` v4, carries no `lakeformation:` action, which is why
+    the seat's one call was refused and it has acted on nothing. `sagemaker-prereqs-v0.8.0` attaches
+    `AmazonDataZoneGlueManageAccessRolePolicy` v18, the policy a `DataLake` environment needs (Stage 18
+    7.2), whose `lakeformation:` actions on `*` include `GrantPermissions`, `BatchGrantPermissions`,
+    `RevokePermissions` and `RegisterResource`. The user applied it in Sandbox at 02:38:53Z, so the seat
+    is a working administrator whose grants are what DataZone fulfils. Its first calls, at 6f step 2.0
+    (02:51:23Z): the opt-in on `test-experimentation`'s new database, conditioned on the project, and a
+    `RevokePermissions` from `IAM_ALLOWED_PRINCIPALS` answered `InvalidInputException`; it granted
+    nothing. The narrower-permission half of this question stands.
+
+    **Amended 2026-10-22: a subscription used no seat, and Staging's are gone.** Stage 18 7.2's
+    subscription across accounts was fulfilled by each side's project role, the producer's on a table it
+    had created, so the writes read there are the project roles', not a seat's; the same-account case is
+    6f step 2.2's. Stage 18's unwinding put Staging's settings at no administrator,
+    `CROSS_ACCOUNT_VERSION` 1 and `AllowFullTableExternalDataAccess` `false` (01:46:47Z), and its verdict
+    left no deployment project, so Stage 9 pass 5's `staging/data/` meets no seat.
+
+    **The seats are back in both targets since 2026-11-11.** [Stage 19](stages/stage-19-smus-native-data-product.md)
+    step 4.6's `create-project` seated the two SMUS roles as Lake Formation administrators of Staging and
+    Production by a full replace of each account's settings, and set `AllowFullTableExternalDataAccess`
+    `true` (15:26:05 and 15:29:36 UTC, the provisioning role's `PutDataLakeSettings`). The narrower-permission
+    half of this question covers both targets again.
+
 ### Raised by Stage 6 step 2.4's reading, 2026-08-26
 
 25. **What expires in `awsds-<env>-smus-projects`, and who removes the storage of a project that no
@@ -780,10 +870,13 @@ policy set lives in code, which is Stage 2 step 5's mandate.
 26. **How does work produced in the derived zone reach Production, and what in SMUS carries it?**
     **The mechanism half is answered (2026-09-05, revised 2026-10-15 by
     [D41](decisions/D41-sagemaker-application.md)):** the repository holds the application, the SageMaker
-    Unified Studio CI/CD CLI deploys it from the repository into the `dev` and `test` projects and makes
+    Unified Studio CI/CD CLI deploys it from the repository into the `dev` project (no `test` stage
+    since 2026-11-11, [Stage 19](stages/stage-19-smus-native-data-product.md) decision 19 (c)) and makes
     the bundle the pipeline promotes; what a space produces reaches the repository by `git` from the space
-    (INT-13's accepted path). The CLI deploys only into existing SMUS projects and a deployment target
-    has none, so the pipeline stays the deployer there (D26/D28 amended). The
+    (INT-13's accepted path). The CLI deploys only into existing SMUS projects. Each deployment target
+    holds one since 2026-11-11 ([Stage 19](stages/stage-19-smus-native-data-product.md) decision 6 (b)),
+    and since release F (2026-11-16, pipeline #129) the pipeline runs the CLI to deploy the bundle into
+    each (D26/D28 amended). The
     `gitConnectionArn`-is-createOnly half stays open at the service: the CloudFormation schema of
     `AWS::DataZone::ProjectProfile` (read 2026-10-17) is `FULLY_MUTABLE` with only `DomainIdentifier` and
     `UseDefaultConfigurations` create-only, and names no git property, so `gitConnectionArn` can only be a
@@ -847,6 +940,56 @@ policy set lives in code, which is Stage 2 step 5's mandate.
     so enumerating a live project's connections needs a project-member identity. **Related:** D28, D17,
     D21, [`docs/SMUS.md`](../SMUS.md) §S3 item 2 (rewritten from this reading), open question 25 (what
     expires in that same path) and open question 13 (the identity that folder cannot propagate).
+
+### Raised by the user, 2026-11-16 — a grant every project role holds
+
+27. **How does a project role get a grant the blueprint's policies lack, without one apply for each
+    project?** The workflows grant is the case: a project whose workflow creates a processing or a Glue
+    job needs three statements the blueprint's managed policies do not hold
+    ([`serverless-workflows.md`](runbooks/serverless-workflows.md) §G), and `sandbox/workflows/`
+    attaches them to each role named in `project_roles`, a list written by hand after the project
+    exists (Stage 6i decision 6). `sandbox/bedrock/` keeps a list of the same kind, each deployment
+    project's `studio/` slice one of its own, and `sandbox/warehouse/` a map of the projects it
+    admits. The user asked for a form that serves every project, a new project needing no apply
+    ([Stage 20's log](../log/log-stage-20-dbt-lineage.md), 2026-11-16), kept the list for now on
+    Claude's recommendation, and had the question recorded here.
+
+    IAM attaches a managed policy to one role at a time, and SageMaker Unified Studio mints a role for
+    each project. AWS's pages, read 2026-11-16: the managed Tooling blueprint has no parameter that
+    adds a policy to a role it creates, its one setting for every role being the permissions
+    boundary, which grants nothing; a custom Tooling blueprint's template creates the project role in
+    an Identity Center domain, and a project of such a profile is created through the API alone.
+
+    **What has to be decided, the user's, each option unmeasured here:**
+
+    - **The slice discovers the roles by name**, `datazone_usr_role_*` under the D13 boundary, in
+      place of the list. The hand-written line and its pull request end; one apply for each new
+      project stays, since Terraform attaches only to a role that exists at plan.
+    - **A function attaches the policy when a project role is created**: an EventBridge rule and a
+      Lambda holding `iam:AttachRolePolicy` for the named policies, on roles under the boundary. No
+      apply for a project, and the portal keeps creating projects. To find out: which event carries
+      a project role's creation in the estate's Region (whether IAM's `CreateRole` reaches a bus
+      outside `us-east-1` is unread here, and the Tooling stack's CloudFormation events are
+      regional); what the function's role adds to the threat model (Lesson 67); and the window
+      between a project's creation and the attachment.
+    - **A custom Tooling blueprint**, whose template names the policies on the role it creates, so a
+      project is born with them. To find out: the template this domain needs, the boundary on a
+      role the template creates (INT-15), what keeping a template of this repository's beside AWS's
+      managed one costs (open questions 21 and 22), and whether projects created through the API
+      alone are acceptable.
+    - **The lists kept**: one line and one apply for each project and each grant.
+
+    The form chosen serves every list of the kind but the warehouse's map, an admission being a
+    choice made for one project. The gap behind the workflows grant is AWS's: its managed policies
+    refuse the read an operator makes before it creates a job and, for a processing job, the tag the
+    create has to carry. A revision of those policies that closes it ends the question for that
+    grant ([`upstream-releases.md`](upstream-releases.md) reads them). Sandbox holds no Premium
+    Support subscription (read 2026-11-14, Stage 19 decision 17 (d)), so no support case reports it
+    from here. One candidate is unmeasured: a role the customer provides at the project's creation, which
+    the CI/CD CLI's manifest carries as `project.role.arn` and `CreateProject` takes as
+    `--project-execution-role` (the laptop's AWS CLI, read 2026-11-17), while AWS's page on IAM-based
+    domains says an Identity Center domain uses the project role. A create is the only probe, so it is read once in the sitting that creates
+    `app-ml-dev` (Stage 17 step 9.6), never by a project made for it.
 
 ---
 

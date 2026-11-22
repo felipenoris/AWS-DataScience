@@ -15,7 +15,7 @@
 **Objective:** threat detection over the whole organization — delegated to Audit, auto-enabled for every
 account present and future, held to **foundational detection only** (every optional protection plan
 switched off until [Stage 11](stage-11-dlp.md) step 4 decides the paid ones against a real bill), and its
-findings routed to a human for the first time in the project.
+findings routed to a human through a topic of its own in Audit.
 
 ## The position of this stage, and what it costs
 
@@ -80,11 +80,29 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   possible. It is **decision 1** below, taken before step 1 and not at the console — the exact situation
   `POLICIES.md` says must never be discovered at the console in the evening.
 
+  **Re-read 2026-10-20**: the FAQ's Runtime Monitoring sentence and the S3 Protection page's sentence
+  stand. GuardDuty's pricing page tables the defaults: EKS, S3, RDS and Lambda Protection and Malware
+  Protection for EC2's GuardDuty-initiated scan on; Runtime Monitoring, the on-demand scan, Malware
+  Protection for S3 and Malware Protection for AWS Backup off, and none of the last three is a detector
+  feature `GD-3` reads. AI Protection has no row there, and its own pages enable it as an act
+  (`AI_PROTECTION`) and state no default, so whether it arrives on is verification ii's reading.
+  The AWS CLI 2.37.12 model lists one more detector feature beside the plans above, `AI_ANALYST`
+  (read 2026-10-20). `CreateInvestigation`, a preview available in US West (Oregon), needs it enabled on
+  the calling detector, which in an organization is the administrator's; the investigations run on
+  Amazon Bedrock models through cross-Region inference, in `us-east-1`, `us-east-2` or `us-west-2` for a
+  request from Oregon. GuardDuty Investigation's page enables it as an act (`UpdateDetector`) and states
+  no default, so it is verification ii's reading too, and `GD-3` fails on it `ENABLED`.
+
 - **1 — [user] Delegate from Management** — CloudShell or console:
 
   ```
   aws guardduty enable-organization-admin-account --admin-account-id <Audit> --region us-west-2
   ```
+
+  **Read 2026-10-18** (the upstream readings, PR #189): GuardDuty enablement can be an Organizations
+  policy since 2026-10-01. **Read 2026-10-20** (decision 4): the policy can replace steps 2 and 3 and
+  never this act, whose delegated administrator is the policy's prerequisite; `aws_organizations_policy`
+  accepts the type from provider 6.68.0.
 
   Three properties of this one call, all documented and all consequential. **It is per-Region** (the
   same-account rule above). **It enables GuardDuty in Audit** and registers `guardduty.amazonaws.com`
@@ -105,7 +123,9 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   owes a clean-up pass that a single call would have made unnecessary. **Type the feature names from
   `get-detector`'s own `Features` list, not from memory** — Audit's detector exists by now and
   enumerates them, AI Protection included, which a typed list would miss (Lesson 23's shape: bind to
-  what the API returns).
+  what the API returns). The call's feature names are `OrgFeature`'s, and the list also returns names
+  that enum lacks, the foundational `CLOUD_TRAIL`, `DNS_LOGS` and `FLOW_LOGS` and `AI_ANALYST`: they stay
+  out of the call, so no `NONE` here reaches `AI_ANALYST` (the AWS CLI 2.37.12 model, read 2026-10-20).
 
 - **2a — [user] Management's own coverage — decision 3, executed here.** `ALL` does **not** reach the
   management account on its own: "before the management account gets added as a GuardDuty member, it
@@ -118,14 +138,23 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   for EC2 were always the named two (billed separately, decided in Stage 11 step 4 against a real
   bill); step 0 widens the list to every optional plan. **Where each is switched off:** members through
   `UpdateMemberDetectors` (allowed, one call for all of them); future accounts through step 2's `NONE`;
-  **Audit's own detector through decision 1, and nothing else works**. `./aws/guardduty.py` `GD-3`
-  reads every feature of every detector it can reach and fails on any that is `ENABLED`, so drift and
-  an unfinished step 3 look the same in the report — which is the intent.
+  **Audit's own detector through decision 1**, unless decision 4's policy turns its plans off as the
+  service (unmeasured). `AI_ANALYST` is named by neither the member call nor the policy:
+  `UpdateMemberDetectors` takes `OrgFeature` names as step 2's call does, and the policy syntax has no
+  key for it (read 2026-10-20). If verification ii reads it `ENABLED` on a member, `UpdateDetector` in
+  that account is its only switch, and decision 1's collision reaches that member.
+  `./aws/guardduty.py` `GD-3` reads every feature of every detector it can reach and fails on any that is
+  `ENABLED` but the foundational `CLOUD_TRAIL`, `DNS_LOGS` and `FLOW_LOGS`, so drift and an unfinished
+  step 3 look the same in the report — which is the intent.
 
 - **4 — [user] Route findings** — in Audit, console-built (`ManagedBy` n/a — no Terraform reaches that
   account by design): an EventBridge rule on GuardDuty findings → SNS → e-mail. Decision 2 below;
-  record the topic name and who subscribes — D12 skipped budget alerts, so this is the project's first
-  automatic notification of anything. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
+  record the topic name and who subscribes. It is not the project's first notification: the break-glass
+  topic `awsds-org-break-glass-alerts` in Management (Stage 1a) and Stage 8 decision 5's
+  `awsds-prod-alerts` and `awsds-staging-alerts` already reach a person (one confirmed subscription each,
+  read 2026-10-18), and Stage 12's `awsds-sandbox-alerts` since the user confirmed its subscription on
+  2026-10-19; this is the
+  first for threat findings. **Create a new `awsds-*` topic; do not reuse Control Tower's** —
   and this is measured, not assumed: the `Security` OU's Control Tower SCP was read from the Identity
   profile on 2026-08-18 and carries three SNS statements, all excluding only `AWSControlTowerExecution`.
   `GRSNSSUBSCRIPTIONPOLICY` denies `sns:Subscribe`/`Unsubscribe` on
@@ -137,7 +166,8 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   statement over it at all.
   **A related absence to leave related, not conflated**: the WireGuard health alarm
   (`terraform-modules/wireguard/observability.tf`) carries **no SNS action** — deferred to Stage 12, and
-  its comment names this step's topic only as the project's first notification of anything. The alarm
+  its comment still calls this step's topic the project's first notification, which the module's next tag
+  corrects. The alarm
   lives in the VPN home and this topic in Audit, so wiring them is a cross-account question for Stage 12,
   not a to-do of this step; record here only that the topic now exists.
 
@@ -146,15 +176,23 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   org-wide administration through `UpdateOrganizationConfiguration`/`UpdateMemberDetectors` is not
   denied, and enabling the base service needs neither, so **steps 1 and 2 are not blocked**; step 3's
   Audit half is, and Stage 11 step 4 will be. **What this step can now answer, which is why
-  `POLICIES.md` deferred the question: the only principal GuardDuty creates is the service-linked role
-  `AWSServiceRoleForAmazonGuardDuty`** (one per account where the service is enabled) — the *service's*
-  identity, not an administration role, and it never calls `UpdateDetector` on a human's behalf. **So
+  `POLICIES.md` deferred the question: the principals GuardDuty creates are service-linked roles**,
+  `AWSServiceRoleForAmazonGuardDuty` (one per account where the service is enabled) and
+  `AWSServiceRoleForAmazonGuardDutyMalwareProtection`, trusted by
+  `malware-protection.guardduty.amazonaws.com`, created when Malware Protection for EC2 is first
+  enabled, which it is by default in an account new to GuardDuty, and kept when the plan is disabled.
+  Each is a *service's* identity, not an administration role: neither managed policy holds a
+  `guardduty:` action (`AmazonGuardDutyServiceRolePolicy` v13 and
+  `AmazonGuardDutyMalwareProtectionServiceRolePolicy` v2, read 2026-10-20), so neither calls
+  `UpdateDetector` on a human's behalf. **So
   `POLICIES.md`'s "carve out a named administration role" alternative has no candidate in GuardDuty's
   own creations**: the only nameable principal that could hold the carve-out is the Identity Center
   administrator role in Audit (`AWSReservedSSO_AWSAdministratorAccess_*`), which is decision 1's
-  option (c). Record the SLR's exact ARN once it exists, in the stage log, so Stage 11 inherits a
+  option (c). Record each SLR's exact ARN once it exists, in the stage log, so Stage 11 inherits a
   reading rather than a search. **The before, read 2026-10-17**: no detector and no
-  `AWSServiceRoleForAmazonGuardDuty` in Sandbox, Production, Staging, Data Governance or Identity.
+  `AWSServiceRoleForAmazonGuardDuty` in Sandbox, Production, Staging, Data Governance or Identity;
+  re-read in the same five on 2026-10-20 (the stage log), no role whose name holds `GuardDuty`, so
+  neither.
 
 - **6 — [Claude] Close the paperwork in the same sitting**: restate `INV-09` in
   [`docs/AWS_STATE.md`](../../AWS_STATE.md) (`guardduty` delegated to Audit; the count is the row's, ten
@@ -163,7 +201,9 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   `./aws/guardduty.py`; and write the first findings on credential use into Stage 11 step 3.4's row, the
   detective half of D39's identity premise. **[user]** Record
   steps 1-4 in the stage log — including the feature list `get-detector` actually returned, which is
-  this stage's only measurement of what "the defaults" mean on the day it ran.
+  this stage's only measurement of what "the defaults" mean on the day it ran. **And re-read `EXC-14`**:
+  its revision trigger names this stage, since findings with a reader change whether the paused FSBP
+  standard ([`security-hub.md`](../runbooks/security-hub.md) §R) should come back; the choice is the user's.
 
 ## Deliverables
 
@@ -171,8 +211,10 @@ every Region**, so a second Region later repeats step 1's command, never picks a
   delegated administrator (`./aws/org-trusted-access-services.py`, and `GD-1`).
 - **Coverage without silence**: `./aws/guardduty.py` shows a detector `ENABLED` in **every measured
   account** — and section 3 of its report names the accounts nothing measured (Management, Log Archive,
-  Audit, the unvended `Staging`), because a missing account is not a passing account (Lesson 13).
-- **Foundational only**: `GD-3` green — every optional plan `DISABLED` on every detector it can read.
+  Audit), because a missing account is not a passing account (Lesson 13). `Staging` holds a profile since
+  it was renamed from `Development` (6b), so it is measured, not missing.
+- **Foundational only**: `GD-3` green — every optional plan and `AI_ANALYST` `DISABLED` on every
+  detector it can read.
   Audit's own detector is outside every profile; its clean-up is proven in the same sitting as
   decision 1's procedure, by `get-detector` read back in its CloudShell **before** the SCP re-attach.
 - **The first notification**: a test finding (`CreateSampleFindings` in Audit) arrives by e-mail.
@@ -232,16 +274,76 @@ Protection for EC2** bills only when a finding triggers a scan.
    left only in prose is measured by nobody.
    **(c) carve a named principal out of `DenyGuardDutyTampering`** — the only candidate is Audit's
    Identity Center administrator role (`AWSReservedSSO_AWSAdministratorAccess_*`), since GuardDuty
-   itself creates only the service-linked role (step 5). It converts a procedure into a standing
+   itself creates only service-linked roles (step 5). It converts a procedure into a standing
    exemption held by the one role a compromise of Audit would already have, and the statement exists to
    stop exactly that principal from turning detection off (Lesson 18's neighbourhood). Reject unless a
    second sitting proves (a) unworkable.
+   **Decision 4's policy may leave no exit to take** (read 2026-10-20, unmeasured): if a root-attached
+   GuardDuty policy turns Audit's plans off as the service, nobody calls `UpdateDetector`, and (a) stays
+   the fallback.
 2. **Findings routing** (step 4) — recommended: EventBridge → SNS → e-mail, in Audit, console-built.
    Record the topic name and who subscribes.
 3. **Management's own coverage** (step 2a) — recommended: **enable it.** It is the SCP-exempt account,
    it holds break-glass root (D16), and it is the one place where a compromise is constrained by
    nothing this project wrote — which makes "GuardDuty everywhere except there" the wrong shape. It
    costs one more account's foundational detection after the trial. Record the answer either way.
+4. **The enablement mechanism** (steps 1, 2) — the console and CLI acts as written, or GuardDuty's
+   Organizations policy type, `GUARDDUTY_POLICY` (2026-10-01; the upstream readings of 2026-10-18, PR
+   #189), a declarative enablement attached at the root like the other policy types. The policy's test is
+   whether `aws_organizations_policy` accepts the type and whether the policy carries steps 0 to 3 whole.
+   **Read 2026-10-20** from the provider's source, the AWS CLI 2.37.12 model and the Organizations and
+   GuardDuty guides:
+   - **The provider accepts the type from 6.68.0** (2026-10-07). It validates `type` against the Go SDK's
+     `PolicyType` enum, which gains the value in `service/organizations` v1.61.0 (2026-09-30), the version
+     6.68.0 is the first to bundle. `identity/org-policies/` locks 6.60.0, which bundles v1.53.7 and
+     refuses the type at plan. The changelog has no entry for it, and the resource's documentation still
+     lists twelve values without it.
+   - **The policy expresses the plans and the scope, never the administrator.** Per Region, a `default`
+     block or one named after the Region, it sets `foundational` and seven plans (`s3_data_events`,
+     `eks_audit_logs`, `ebs_malware_protection`, `rds_login_events`, `lambda_network_logs`,
+     `ai_protection`, `runtime_monitoring` with its three agent-management sub-features) to `enabled` or
+     `disabled`; a plan the document omits is unmanaged. The syntax has no key for the `AI_ANALYST`
+     detector feature (read 2026-10-20), so no policy reaches it (step 3). The attachment is the scope:
+     at the root, every account present and future, each added as a member of the delegated
+     administrator, and Management only once `AWSServiceRoleForAmazonGuardDuty` exists there. Enabling
+     the type suspends the Regional auto-enable settings, attached policy or not; disabling it restores
+     them and leaves GuardDuty on. The delegated administrator is a prerequisite (step 1), and so is an
+     Organizations delegation policy admitting the type for the account that authors the policy.
+   - **It does not carry steps 0 to 3 whole.** Step 1 stays, and the policy adds acts in Management: the
+     delegation's widening to the type, and `EnablePolicyType` on the root unless Audit's GuardDuty console
+     enables it with its first policy (`POLICIES.md` keeps that action out of Identity's delegation).
+     Steps 2 and 3, and step 0's three switch-off calls, become one document listing the seven plans
+     `disabled`: a disabled plan is turned off in every covered account where it is on, and no covered
+     account can turn it back on through the console or API, so step 2's order hazard is gone. Step 2a stays decision 3: a root attachment covers
+     Management once its service-linked role exists, and an attachment to the OUs leaves it out, since it
+     sits at the root. The block names `us-west-2`: a `default` block enables GuardDuty in every Region,
+     its findings unseen where Audit is not the administrator.
+   - **Whether it sidesteps decision 1 is unread.** A root attachment covers Audit, and no page says which
+     principal turns a covered account's plans off. SCPs bind the IAM principals of member accounts and no
+     service-linked role, so if GuardDuty applies the effective policy itself, Audit's plans go off with no
+     `UpdateDetector` and no detach; Stage 11 step 4's switch-on would be a policy update, and rests on
+     the same reading. The reading is `get-detector` in Audit once the policy has propagated: each
+     feature's `Status`, and its `ManagedBy`, which reads `GUARDDUTY_POLICY` on a feature a policy manages
+     (botocore 1.43.106).
+   - **Whether Identity may author the policy is unread.** GuardDuty's guide says "Only the delegated
+     administrator account can create and manage GuardDuty policies"; Organizations' admits the management
+     account or an Organizations delegated administrator for the type, which Identity becomes if its
+     delegation is widened. The first `CreatePolicy` from Identity reads which holds.
+   - **The policy is an off switch `DenyGuardDutyTampering` does not reach.** An update to `disabled` turns
+     detection off in every covered account through Organizations actions, so the author's delegation
+     joins that statement's perimeter (Lesson 18).
+
+   Recommended, from the reading: **step 1 as written, steps 2 and 3 by the policy**, and decision 1's (a)
+   the fallback if Audit's `get-detector` reads a plan `ENABLED` once the policy has propagated. The author
+   is the user's choice within this decision. **Audit's GuardDuty console**, the recommended author, is the
+   one GuardDuty documents; it keeps the off switch with the GuardDuty administrator, apart from Identity's
+   blast radius as [`docs/ORGANIZATION.md`](../../ORGANIZATION.md) separates the two accounts, and needs no
+   Terraform. **`identity/org-policies/`** puts the policy in Terraform, at the cost of the lock moved to
+   6.68.0 or later with the ten documents re-planning `No changes` first (`type` is ForceNew), and a fifth
+   type in `POLICIES.md` and in the `POLICY_TYPES` of `./aws/org-policies.py` and
+   `./aws/org-delegation.py`, which read four today. Either author needs the delegation widened from
+   Management by `PutResourcePolicy`, which replaces the whole document (Lesson 60), and
+   `./aws/org-delegation.py` re-read against the new one.
 
 ## Verifications to answer while executing
 
@@ -249,8 +351,8 @@ Record every answer, including the ones that come out fine.
 
 | # | Question | Step |
 |---|---|---|
-| i | Does auto-enable `ALL` reach **Management itself**? **Answered no by the documentation, 2026-08-18** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — the `Staging` vend or Stage 14's first unit, whichever lands first (existing members were already documented as covered) | 2, 2a |
-| ii | What does `get-detector` actually return in a freshly enabled account — which features, with which statuses? The documentation says "all but Runtime Monitoring"; this is the reading that turns that into a measurement, and it is also where AI Protection's feature name comes from | 0, 2 |
+| i | Does auto-enable `ALL` reach **Management itself**? **Answered no by the documentation, 2026-08-18** — "before the management account gets added as a GuardDuty member, it must have GuardDuty enabled", so `ALL` never reaches it on its own and coverage there is a deliberate act (step 2a, decision 3). What remains of this row: **does a later vend arrive covered** — Stage 14's first unit, since `Staging` needed no vend (6b renamed `Development`) and is an existing member, documented as covered | 2, 2a |
+| ii | What does `get-detector` actually return in a freshly enabled account — which features, with which statuses? The documentation says "all but Runtime Monitoring"; this is the reading that turns that into a measurement, and it decides AI Protection (`AI_PROTECTION`) and `AI_ANALYST`, on which the pages read 2026-10-20 state no default | 0, 2 |
 | iii | How does the **SUSPENDED `Sandbox`** in the roster surface under auto-enable `ALL` — an error, a skipped row, or a member entry? The documentation says `ALL` includes "accounts that may have been suspended", and the standing rule (resolve accounts by exact vended name, filter on `ACTIVE`) exists because that account is a trap for instruments; record what the Accounts table shows for it | 2 |
 | iv | Does the `Security` OU's Region ceiling interact with the delegation at all — the enablement is `us-west-2` by design, but record whether any console surface tries another Region and is refused (the ceiling's `NotAction` list does not exempt GuardDuty, by decision 10 of Stage 1d) | 1, 2 |
 

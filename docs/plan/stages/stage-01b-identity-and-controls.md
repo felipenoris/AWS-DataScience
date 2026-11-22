@@ -699,8 +699,8 @@ matched by the object in the console is the failure this table exists to prevent
   Identity account, and it is safe only in the order the step states: profiles proven against this project's
   set first, Identity account last.
 - **Nothing here is torn down between sessions** — everything 1b creates is `[P]` (D11). Account e-mails
-  cannot be reused after an account is closed (a closed account holds its e-mail for 90 days), which is
-  exactly why D11 keeps accounts in the persistent layer. The same is true of 1c and 1d.
+  cannot be reused after an account is closed (the address it holds at closure is spent, Stage 14 step 6),
+  which is exactly why D11 keeps accounts in the persistent layer. The same is true of 1c and 1d.
 
 ## Verifications to answer while executing
 

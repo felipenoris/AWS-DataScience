@@ -1,5 +1,7 @@
 # production/runners/ - the build runner (Stage 7 step 6, decision 5), layer [E]: one m8i.xlarge in
-# VPC-SharedServices' private tier, created by `make gitlab-up` and destroyed by `make gitlab-down`.
+# VPC-SharedServices' private tier. It exists with its role and instance profile only while an apply
+# sets var.build_runner (`make gitlab-up BUILD=1`); `make gitlab-down` destroys it, and so does an
+# apply that leaves the variable false. The deploy and test runners do not depend on it.
 #
 # It is the buildbox's successor (6.5): the same amd64 shape, in the same VPC, behind the same
 # proxy, pushing with its own instance profile where the buildbox pushed with a token the operator
@@ -16,8 +18,7 @@
 # VPN-only GitLab cannot serve a JWKS that IAM can fetch, so OIDC federation is structurally
 # unavailable here. How it authenticates to GitLab: an authentication token (`glrt-...`) minted in
 # GitLab's UI and read at boot from foundation/'s secret container - never a tfvars, never a
-# user-data literal. Each session's new instance registers as a new runner manager under the same
-# token.
+# user-data literal. Each new instance registers as a new runner manager under the same token.
 #
 # How a job pushes: the role's credentials reach a job container through the metadata service (hop
 # limit 2, below), and ECR's credential helper turns them into the registry login. The boot installs
@@ -66,6 +67,7 @@ locals {
 module "role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/iam-role?ref=iam-role-v0.1.0"
+  count  = var.build_runner ? 1 : 0
 
   name        = "awsds-${var.env}-runner"
   description = "GitLab build runner - Session Manager, push to the image repositories, pull through the cache, its token and the CA root; no deploy permission (Stage 7 step 6.1)"
@@ -184,21 +186,25 @@ module "role" {
 }
 
 resource "aws_iam_instance_profile" "this" {
+  count = var.build_runner ? 1 : 0
+
   name = "awsds-${var.env}-runner"
-  role = module.role.role_name
+  role = module.role[0].role_name
 }
 
 # -------------------------------------------------------------------------- the host itself
 resource "aws_instance" "runner" {
   # checkov:skip=CKV_AWS_126:detailed monitoring on a host destroyed the same session buys nothing - CloudWatch spend is Stage 12's subject
   # checkov:skip=CKV_AWS_88:no public address is set here and none is inherited - the subnet is the private tier, which has no default route
+  count = var.build_runner ? 1 : 0
+
   ami           = data.aws_ssm_parameter.al2023.insecure_value
   instance_type = var.instance_type
   ebs_optimized = true
 
   subnet_id                   = data.terraform_remote_state.foundation.outputs.private_subnet_ids[local.zone]
   vpc_security_group_ids      = [data.terraform_remote_state.tooling.outputs.runner_security_group_id]
-  iam_instance_profile        = aws_iam_instance_profile.this.name
+  iam_instance_profile        = aws_iam_instance_profile.this[0].name
   associate_public_ip_address = false
 
   user_data = local.user_data

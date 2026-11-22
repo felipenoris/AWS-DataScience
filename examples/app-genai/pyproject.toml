@@ -1,0 +1,38 @@
+# app-genai - the third application on app-etl's template (Stage 17 step 10.2): a batch triage of
+# support messages by a foundation model, under a guardrail the application carries.
+#
+# Python 3.12, the MWAA Serverless worker's. The project has no runtime dependency: its tasks run on
+# the worker with the boto3 the worker carries, and the pipeline zips them with the prompt and the
+# guardrail's definition, never with a package. The dev group pins that boto3 and its botocore,
+# 1.43.1, so the tests' Stubber validates each request against the service models the worker holds.
+# The project is not installed: pytest reads the tasks from code/, as the worker does.
+
+[project]
+name = "app-genai"
+version = "0.1.0"
+description = "Each support message labelled and summarised by a foundation model under a guardrail"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["boto3==1.43.1", "botocore==1.43.1", "pdoc>=15", "pytest>=8", "pyyaml>=6", "ruff>=0.12"]
+
+# The resolver sees nothing published after this instant, so a release reaches the project no sooner
+# than two weeks after it appears: the delay the infrastructure repository gives an action it pins.
+# Moved forward deliberately, with `uv lock --upgrade` in the same commit.
+[tool.uv]
+exclude-newer = "2026-11-03T00:00:00Z"
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["code", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["code", "scripts"]

@@ -1,18 +1,18 @@
 # Outputs for a person diagnosing a job, and for ./aws/supplychain.py's reader.
 
 output "instance_id" {
-  description = "The runner. `aws ssm start-session --target <this>` for a shell; /var/log/awsds-runner-boot.log holds the first boot, including the registration's result."
-  value       = aws_instance.runner.id
+  description = "The build runner, or null when the apply left var.build_runner false. `aws ssm start-session --target <this>` for a shell; /var/log/awsds-runner-boot.log holds the first boot, including the registration's result."
+  value       = one(aws_instance.runner[*].id)
 }
 
 output "private_ip" {
-  description = "The runner's address - what GitLab's access log shows for a job's clone, and what the proxy's access log shows for a build's fetches."
-  value       = aws_instance.runner.private_ip
+  description = "The build runner's address, or null without it - what GitLab's access log shows for a job's clone, and what the proxy's access log shows for a build's fetches."
+  value       = one(aws_instance.runner[*].private_ip)
 }
 
 output "role_arn" {
-  description = "The runner's role - push to the image repositories, pull through the cache, its token, the CA root, Session Manager. No deploy permission, by design (6.1)."
-  value       = module.role.role_arn
+  description = "The build runner's role, or null without it - push to the image repositories, pull through the cache, its token, the CA root, Session Manager. No deploy permission, by design (6.1)."
+  value       = one(module.role[*].role_arn)
 }
 
 output "deploy_runner_instance_id" {

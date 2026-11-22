@@ -9,7 +9,8 @@
 #     --opt build-arg:RUST_TOOLCHAIN=<..> --opt target=manifests --output type=local,dest=manifests
 #
 # What fails the build: a client that does not trust the internal root, a runtime at another version
-# than the recipe pins, a key library of the house environment that does not import. The image's proxy
+# than the recipe pins, a key library of the house environment that does not import, a CI/CD CLI by its
+# name that is not the house environment's after the activation a space runs. The image's proxy
 # environment is read from /opt/awsds-proxy.txt and never from `printenv`: the build's proxy arguments
 # shadow the image's own ENV inside a RUN, as a docker client's `proxies` block does in a container.
 ARG DEV_ENV
@@ -56,6 +57,27 @@ RUN set -eu; \
     test "${rs}" = "${RUST_TOOLCHAIN}" || { echo "FATAL: Rust is ${rs}" >&2; exit 1; }; \
     cp /opt/awsds-runtimes.txt /tmp/out/runtimes.txt; \
     cp /opt/awsds-proxy.txt /tmp/out/proxy.txt
+
+# The CI/CD CLI by its name, read after `micromamba activate base`, as a space's server and terminal
+# read it. A RUN here activates nothing (MAMBA_DOCKERFILE_ACTIVATE is an ARG of the distribution's own
+# build), so a check without the activation reads the image's ENV and passes in an image whose spaces
+# resolve the distribution's CLI. The activation runs before `set -u`, as in the start scripts.
+RUN set -e; \
+    eval "$(micromamba shell hook --shell=bash)"; \
+    micromamba activate base; \
+    set -u; \
+    cli="$(command -v aws-smus-cicd-cli)"; \
+    target="$(readlink -f "${cli}")"; \
+    reported="$(aws-smus-cicd-cli --version)"; \
+    house="$("${AWSDS_PYTHON_ENV}/bin/python" -c 'from importlib.metadata import version; print(version("aws-smus-cicd-cli"))')"; \
+    echo "aws-smus-cicd-cli by its name: ${cli} -> ${target}, '${reported}'; the house environment carries ${house}" \
+      | tee /tmp/out/cicd-cli.txt; \
+    case "${target}" in \
+      "${AWSDS_PYTHON_ENV}/bin/"*) ;; \
+      *) echo "FATAL: the CLI by its name is ${target}, not the house environment's" >&2; exit 1 ;; \
+    esac; \
+    test "${reported}" = "aws-smus-cicd-cli ${house}" \
+      || { echo "FATAL: the CLI by its name reports '${reported}'" >&2; exit 1; }
 
 # The house environment's key libraries, each imported and its version written down.
 RUN set -eu; \

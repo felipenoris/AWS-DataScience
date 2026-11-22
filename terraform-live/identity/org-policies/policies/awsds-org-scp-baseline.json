@@ -136,6 +136,23 @@
           "aws:PrincipalArn": "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*AWSReservedSSO_InfrastructureAccess_*"
         }
       }
+    },
+    {
+      "Sid": "DenyProvisionedMwaa",
+      "Effect": "Deny",
+      "Action": "airflow:CreateEnvironment",
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyDeployRoleAssumptionOutsideTheRegion",
+      "Effect": "Deny",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::*:role/awsds-deploy-*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": "us-west-2"
+        }
+      }
     }
   ]
 }

@@ -17,13 +17,13 @@ locals {
   # them before anything was applied.
   #
   # The order is a contract, and only its first element is measured: profiles.tf reads
-  # `index(local.category_one_blueprints, bp)` as each environment's `deployment_order`, so
-  # Tooling must come first - nothing else provisions a working project. The grouping after it is
+  # `index(each.value.blueprints, bp)` as each environment's `deployment_order`, so
+  # Tooling must come first and a name joins at the end - nothing else provisions a working project. The grouping after it is
   # not a dependency graph anybody has read; a stricter order is a measurement at step 2.4.
   category_one_blueprints = [
     # The base environment, first: it provisions the project's SageMaker AI domain, roles and
-    # security groups, and nothing else works without it. `deployment_order` below is `index()`
-    # into this list.
+    # security groups, and nothing else works without it. `deployment_order` is `index()` into
+    # each profile's copy of this list.
     "Tooling",
     # ToolingLite is absent - category 3 since 2026-08-21 (user decision, after step 1.5's apply
     # measured what no page documents: it is a base variant, not a capability. The service
@@ -43,12 +43,10 @@ locals {
     # the D13 boundary stops, or when a blueprint here proves to depend on it.
     # Compute.
     "EmrServerless",
-    # The generative-AI surface, six entries. `AmazonBedrockGenerativeAI` is a console grouping
-    # with no API identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
-    # `AmazonBedrock*` blueprints and no aggregate), and six of the seven are category 1.
-    # AmazonBedrockKnowledgeBase is absent - category 2, its vector store bills while it exists;
-    # it joins in the commit that enables it (Lesson 14). Decision 5's category 1 is delivered by
-    # naming them.
+    # The generative-AI surface. `AmazonBedrockGenerativeAI` is a console grouping with no API
+    # identifier (measured 2026-08-21 - `list-environment-blueprints` returns seven
+    # `AmazonBedrock*` blueprints and no aggregate), so decision 5's category 1 is delivered by
+    # naming them. AmazonBedrockKnowledgeBase, the seventh, is last in the list.
     "AmazonBedrockChatAgent",
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",
@@ -56,17 +54,61 @@ locals {
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
     # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12):
-    # the serverless MLflow App. Last, so every environment above keeps its `deployment_order`.
-    # MLExperiments, the tracking server, stays category 2. Whether its template has a required
-    # parameter without a default, which `blueprint_parameters` below would then have to declare
-    # for UpdateProjectProfile, is read from the template before the apply (docs/SMUS.md, the
-    # category-2 checklist, step 3).
+    # the serverless MLflow App. MLExperiments, the tracking server, stays category 2. Its
+    # template's one user parameter, `mlflowAppName`, has a default, so `blueprint_parameters`
+    # below declares nothing for it (read 2026-10-18).
     "MLflowApp",
+    # The knowledge base, out of category 2 at Stage 17 step 7.0a (decision 1, taken 2026-10-12):
+    # the portal opens its Generative AI menu only when the profile carries all seven Bedrock
+    # blueprints (read from the portal's code 2026-10-19). Its template's parameters without a
+    # default are the four `datazoneEnvironment*` ones, none of them a user parameter, so
+    # `blueprint_parameters` declares nothing for it (read 2026-10-19). Appended last, like
+    # MLflowApp, so every environment above keeps its `deployment_order`.
+    "AmazonBedrockKnowledgeBase",
+    # The SageMakerAIDomain blueprint (released 2026-10-20), out of `undefined` at 6d decision due 15
+    # (2026-10-30): the project's SageMaker AI domain, the code spaces experience as the profile's
+    # parameters below. ON_CREATE in profiles.tf beside a Tooling with spaces off (6d decision 16 (a)),
+    # so a project holds this domain alone. Last, so every environment above keeps its
+    # `deployment_order`.
+    "SageMakerAIDomain",
   ]
 
+  # The blueprints a profile may bundle: category 1, and RedshiftServerless, category 3, while Stage
+  # 21's switch is on (var.redshift_serverless_enabled, decision 1 (b)). Appended last, so every
+  # environment above keeps its `deployment_order`. data.tf resolves each one's id, profiles.tf's
+  # precondition admits no other, and `experimentation` bundles them all.
+  admitted_blueprints = concat(
+    local.category_one_blueprints,
+    var.redshift_serverless_enabled ? ["RedshiftServerless"] : [],
+  )
+
   member_account_ids = {
-    sandbox = data.aws_caller_identity.sandbox.account_id
+    sandbox    = data.aws_caller_identity.sandbox.account_id
+    staging    = data.aws_caller_identity.staging.account_id
+    production = data.aws_caller_identity.production.account_id
+    # The domain's own account, a profile's target since Stage 6f step 11 (no association).
+    data-governance = data.aws_caller_identity.current.account_id
   }
+
+  # The deployment profiles exist while this is true (Stage 19 step 4.5). It turns true in the
+  # change that applies them, after each target's <env>/studio/ has configured Tooling and DataLake
+  # there and each target's InfrastructureAccess has read a project of the domain once (get-project),
+  # which is what creates the group profile the grant names. While it is false this slice plans as
+  # it did before the deployment members joined.
+  deployment_profiles_enabled = true
+
+  # The DataZone group a profile with no `group` grants project creation to: the IAM role session
+  # group of the InfrastructureAccess role in the profile's own account. Keyed by account folder; a
+  # profile pinned to an account absent here fails at plan.
+  infrastructure_access_group_ids = local.deployment_profiles_enabled ? {
+    staging    = data.awscc_datazone_group_profile.staging_infrastructure_access[0].group_profile_id
+    production = data.awscc_datazone_group_profile.production_infrastructure_access[0].group_profile_id
+  } : {}
+
+  # A deployment project's blueprints (Stage 19 decision 6 (b); Stage 18's measured shape): Tooling
+  # with spaces off, and DataLake on demand, the home of the database an application's product table
+  # is created in. One profile per target, since an environment configuration names one account.
+  deployment_blueprints = ["Tooling", "DataLake"]
 
   # The profiles, where each provisions, and who may create from it (D21/D26). The names are a
   # contract with ./aws/studio.py (US-4), and the account pinning turns D21's boundary from
@@ -87,20 +129,61 @@ locals {
   # scientists' grant is a standing right. The `engineering` profile went with the account that
   # became headless `Staging` when D21's open half closed against an interactive surface next to
   # that account's data.
-  project_profiles = {
-    experimentation = {
-      account     = "sandbox"
-      group       = "sso-group-data-scientists"
-      description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
-    }
-  }
+  #
+  # `blueprints` is the profile's own list, in deployment order with Tooling first (profiles.tf
+  # refuses any other order and any blueprint outside category 1).
+  project_profiles = merge(
+    {
+      experimentation = {
+        account     = "sandbox"
+        blueprints  = local.admitted_blueprints
+        group       = "sso-group-data-scientists"
+        description = "Experimentation (D21): the unit of work is a notebook. Provisions into a business unit's Sandbox."
+      }
+    },
+    # Stage 6f step 11 (decision 1, shape (b), the pilot of 2026-10-26): the project that publishes
+    # the lake's tables, in the lake's own account, where its Glue data source reads the catalog.
+    # Tooling alone, spaces off: no compute, and the Data OU denies every launch here anyway. The
+    # Governance Manager creates it and owns it, so a subscription is approved by the person whose
+    # decisions the grant model resolves to (docs/ORGANIZATION.md), never by the requester.
+    var.lake_publishing_enabled ? {
+      lake-publishing = {
+        account     = "data-governance"
+        blueprints  = ["Tooling"]
+        group       = "sso-group-governance-managers"
+        description = "Lake publishing (Stage 6f step 11): publishes the governed lake's tables to the catalog from the lake's own account. Tooling with spaces off; no compute."
+      }
+    } : {},
+    # Stage 19 step 4.5 (decision 6 (b)): the profile a target's one deployment project is born of,
+    # a project the CI/CD CLI deploys applications into and no person works in. A null `group`:
+    # grants.tf grants the account's own InfrastructureAccess role instead, never a persona group.
+    local.deployment_profiles_enabled ? {
+      deployment-staging = {
+        account     = "staging"
+        blueprints  = local.deployment_blueprints
+        group       = null
+        description = "Deployment (Stage 19): Staging's project, which the CI/CD CLI deploys applications into and no person works in. Tooling with spaces off, DataLake on demand."
+      }
+      deployment-production = {
+        account     = "production"
+        blueprints  = local.deployment_blueprints
+        group       = null
+        description = "Deployment (Stage 19): Production's project, which the CI/CD CLI deploys applications into and no person works in. Tooling with spaces off, DataLake on demand."
+      }
+    } : {},
+  )
 
-  # The Tooling parameters Stage 6 step 1.5 locks. The non-editable flag is the difference
-  # between a default and a control (Lesson 5): the parameters exist so nobody can flip a project
-  # to PublicInternetOnly, raise its idle ceiling, or give itself a 16 TiB volume.
+  # The Tooling parameters Stage 6 step 1.5 locks, passed by every profile. The non-editable flag
+  # is the difference between a default and a control (Lesson 5): the parameters exist so nobody
+  # can flip a project to PublicInternetOnly, raise its idle ceiling, or give itself a 16 TiB volume.
   #
   # sagemakerDomainNetworkType = VpcOnly is already the blueprint default (read 2026-08-16), and
   # is written here anyway: a default nobody may change is a different object from a default.
+  #
+  # With `enableSpaces` false, the last row, Tooling creates no SageMaker AI domain, so the idle
+  # and EBS rows reach no domain: a Sandbox project's domain is the SageMakerAIDomain blueprint's,
+  # whose rows (sagemaker_ai_domain_parameters) carry the same ceilings. They stay because removing
+  # them changes every profile's Tooling element for no effect, and a Tooling with spaces on needs them.
   tooling_parameters = [
     { name = "sagemakerDomainNetworkType", value = "VpcOnly", is_editable = false },
     # "ENABLED", not "true": the template's AllowedValues are ENABLED/DISABLED, an enum rather
@@ -109,8 +192,8 @@ locals {
     # apply because CreateProjectProfile validates no parameter against the template; the first
     # deploy to reach CloudFormation refused it ("Parameter 'lifecycleManagement' must be one of
     # AllowedValues", 400). AllowedValues were read from the downloaded template on 2026-08-22
-    # and every other locked value was checked against it in the same sitting: the five below
-    # are valid.
+    # and every other locked value but enableSpaces was checked against it in the same sitting:
+    # all are valid.
     { name = "lifecycleManagement", value = "ENABLED", is_editable = false },
     { name = "idleTimeoutInMinutes", value = tostring(var.idle_timeout_minutes), is_editable = true },
     { name = "maxIdleTimeoutInMinutes", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
@@ -120,6 +203,101 @@ locals {
       value       = tostring(var.enable_trusted_identity_propagation)
       is_editable = false
     },
+    # Tooling creates the project's SageMaker AI domain only when this is true (read 2026-10-19,
+    # SUP-160); false in every profile. The Data OU denies sagemaker:Create* in Data Governance and
+    # the Workloads OU sagemaker:CreateDomain in Staging and Production, where Stage 18 measured a
+    # deploy with false calling no CreateDomain (its step 3.2). In Sandbox the project's domain is
+    # the SageMakerAIDomain blueprint's, ON_CREATE in profiles.tf on this row's premise (6d decision
+    # 16 (a)): with true, a project would be born with two.
+    { name = "enableSpaces", value = "false", is_editable = false },
+  ]
+
+  # The house image's objects in Sandbox, by terraform-live/sandbox/dev-env/'s name contract
+  # (`awsds-<env>-dev-env`, one app image configuration per app type). The version is the pin the
+  # SageMakerAIDomain template writes into the domain's CustomImages, so a release reaches each
+  # project's domain by moving var.sandbox_dev_env_version and an Update project per project
+  # (docs/SMUS.md, "Custom images"); the default-image ARN carries the same version, which is what
+  # the release pipeline's retire job keeps (gitlab/awsds/dev-env/release/versions.py reads
+  # CustomImages alone).
+  sandbox_dev_env_image = "awsds-sandbox-dev-env"
+  sandbox_dev_env_image_version_arn = format(
+    "arn:%s:sagemaker:%s:%s:image-version/%s/%d",
+    data.aws_partition.current.partition,
+    var.region,
+    local.member_account_ids.sandbox,
+    local.sandbox_dev_env_image,
+    var.sandbox_dev_env_version,
+  )
+
+  # The SageMakerAIDomain blueprint's parameters (6d decision due 15 (b), 2026-10-30). They are the
+  # template's own and per app type, so Tooling's rows above do not reach this domain: the same
+  # ceilings are written again, locked (Lesson 5), from the same variables. The image lists are JSON,
+  # `[{"ImageName","AppImageConfigName","ImageVersionNumber"}]`, the form the portal and the service
+  # take; DataZone translates it to the template's `name;config;version` before the stack, and a
+  # triple written here fails the environment's validation with an empty message (measured
+  # 2026-10-30, 2.6 item 3). enableRStudio is locked, never a member's choice: the template's note says RStudio is
+  # never removed from a domain. It is false by the user's decision of 2026-10-30 (6d 2.6 item 5, the
+  # Posit Workbench licence's price): with true the template adds an EFS home, service-managed
+  # security groups and Posit's RStudio, which need a licence accepted in License Manager, an inline
+  # policy on the project role and a license-manager interface endpoint in the VPC (read 2026-10-31).
+  # The first environment created with true ended VALIDATION_FAILED with an empty message and no
+  # call into Sandbox (2.6 item 3, 2026-10-30); the flip to false was the discriminator, and the
+  # cause was the image lists' form. hiddenInstanceTypes, hiddenSageMakerImageVersionAliases and
+  # domainName keep the template's empty defaults: the instance ceiling is the SCP's, not a picker's
+  # (Lesson 5).
+  sagemaker_ai_domain_parameters = [
+    {
+      name = "customImagesJupyterLab"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-jupyterlab"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
+      is_editable = false
+    },
+    {
+      name = "customImagesCodeEditor"
+      value = jsonencode([{
+        ImageName          = local.sandbox_dev_env_image
+        AppImageConfigName = "${local.sandbox_dev_env_image}-codeeditor"
+        ImageVersionNumber = var.sandbox_dev_env_version
+      }])
+      is_editable = false
+    },
+    { name = "defaultImageVersionArnJupyterLab", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "defaultImageVersionArnCodeEditor", value = local.sandbox_dev_env_image_version_arn, is_editable = false },
+    { name = "lifecycleManagementJupyterLab", value = "ENABLED", is_editable = false },
+    { name = "lifecycleManagementCodeEditor", value = "ENABLED", is_editable = false },
+    { name = "idleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "idleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = true },
+    { name = "minIdleTimeoutInMinutesJupyterLab", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "minIdleTimeoutInMinutesCodeEditor", value = tostring(var.idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesJupyterLab", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxIdleTimeoutInMinutesCodeEditor", value = tostring(var.max_idle_timeout_minutes), is_editable = false },
+    { name = "maxEbsVolumeSize", value = tostring(var.max_ebs_volume_size_gb), is_editable = false },
+    { name = "enableRStudio", value = "false", is_editable = false },
+  ]
+
+  # 2.6 item 3's discriminator (2026-10-30): with true the SageMakerAIDomain element carries no
+  # override, so an environment created from the portal takes the template's defaults alone, no
+  # image, no ceiling, RStudio off. The environment's record decides whether the overrides return
+  # whole or one group at a time. False outside that reading. The key leaves the map rather than
+  # holding an empty list: DataZone stores no parameterOverrides for an empty one, and `[]` in the
+  # configuration is a diff on every plan (read 2026-10-30).
+  sagemaker_ai_domain_defaults_only = false
+
+  # The RedshiftServerless overrides (Stage 21 1.3: the template
+  # DataZone-Amazon-SageMaker-RedshiftServerlessDefault-prod-20250515, read 2026-11-18). Both are
+  # Numbers with no AllowedValues. redshiftBaseCapacity defaults to 128, which the template omits,
+  # setting a price-performance target at level 50 instead; any other value becomes the workgroup's
+  # BaseCapacity and drops the target. redshiftMaxCapacity defaults to 0 in the template, which omits
+  # MaxCapacity, and to "512" in the blueprint's user parameter. Both are locked at D40's floor of
+  # 4 RPU (Lesson 5): unlocked, the blueprint's defaults give a workgroup on that target with a
+  # 512-RPU maximum. No AWS page states MaxCapacity's range, and whether the service takes a maximum
+  # equal to the base is Stage 21 2.4's reading.
+  redshift_serverless_parameters = [
+    { name = "redshiftBaseCapacity", value = "4", is_editable = false },
+    { name = "redshiftMaxCapacity", value = "4", is_editable = false },
   ]
 
   # Parameter overrides per blueprint - the map profiles.tf consumes. Tooling's rows above are
@@ -133,13 +311,26 @@ locals {
   # portal pre-fills when a member enables the capability (deployment_mode ON_DEMAND), and
   # is_editable = true so the member replaces it. A project deployed with the placeholder
   # unchanged fails or collides visibly, rather than sharing a name silently.
-  blueprint_parameters = {
-    Tooling = local.tooling_parameters
-    S3Bucket = [
-      { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
-    ]
-    S3TableCatalog = [
-      { name = "catalogName", value = "changemecatalog", is_editable = true },
-    ]
+  blueprint_parameters = merge(
+    {
+      Tooling = local.tooling_parameters
+      S3Bucket = [
+        { name = "bucketName", value = "changeme-project-bucket", is_editable = true },
+      ]
+      S3TableCatalog = [
+        { name = "catalogName", value = "changemecatalog", is_editable = true },
+      ]
+    },
+    local.sagemaker_ai_domain_defaults_only ? {} : { SageMakerAIDomain = local.sagemaker_ai_domain_parameters },
+    var.redshift_serverless_enabled ? { RedshiftServerless = local.redshift_serverless_parameters } : {},
+  )
+
+  # The overrides each profile passes, by profile name: Tooling's rows in every profile, and the
+  # other blueprints' in `experimentation`, the one profile that bundles them.
+  profile_parameters = {
+    experimentation       = local.blueprint_parameters
+    lake-publishing       = { Tooling = local.tooling_parameters }
+    deployment-staging    = { Tooling = local.tooling_parameters }
+    deployment-production = { Tooling = local.tooling_parameters }
   }
 }

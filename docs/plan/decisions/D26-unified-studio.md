@@ -14,9 +14,36 @@ is associated for the length of one measurement, a project whose only member is 
 deploys, and the association is removed at that stage's pass 8. Production is not associated, and the
 sentence above holds unless the stage's verdict reopens D41 item 2.
 
+**Amended 2026-10-26 ([Stage 6f](../stages/stage-06f-data-governance.md) decision 1, the user's, for a
+pilot):** the domain's own account provisions one project, `governed-lake`, from the profile
+`lake-publishing`: a `Tooling` environment with spaces off that publishes the lake's tables to the
+catalog, so the business catalog and the technical catalog meet in the account that approves. The
+registry still runs no user compute; [D22](D22-data-governance-account.md)'s amendment lists what the
+account gains. A deployment target is still never associated.
+
+**Amended 2026-10-31 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b), the
+user's):** Staging and Production are associated as a standing state, each holding one deployment
+project from the `deployment` profile, `Tooling` with spaces off and `DataLake` on demand, whose
+members are the identities that deploy and the approver Stage 19 decision 15 names; the CI/CD CLI
+deploys every stage, and Production publishes its own data product. The association is made at Stage
+19 4.2 and `DenyDataZoneEntirely` revised at its 4.1; until then the one-line summary below holds. The
+domain is still a registry: a deployment project runs no space and no SageMaker AI domain (Stage 18
+question i). "Staging and Production are never associated" in the rationale is the record of
+2026-08-08; [D41](D41-sagemaker-application.md)'s "Where production runs" carries the reopening.
+
+**Amended 2026-11-11 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 19 (c), the
+user's):** the `test` stage is retired. The CI/CD CLI deploys to the `dev` project and, from Stage 19
+step 4.9, to a deployment project in Staging and in Production; the pipeline's `bundle` job makes the
+bundle from `dev` with nothing deployed in Sandbox.
+
+**Amended 2026-11-11 (Stage 19 step 4.2):** Staging and Production are associated to the domain, the
+standing state decision 6 (b) of that stage took on 2026-10-31. The act is `ram:AssociateResourceShare`
+on the domain's share, the call the console makes (`SUP-349`). Each account will hold one deployment
+project, with no space and no SageMaker AI domain, so the domain stays a registry.
+
 **Applied 2026-09-06.** The `engineering` profile is destroyed, the second member's **22** objects (11 blueprint configurations and their 11 grants) are gone, and the association was removed from the member side — `studio.py` reads one associated account and one project profile. `US-4` fails if the retired name ever returns.
 
-**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes alone since 6b; a registry, never a runtime.
+**In one line:** One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes and, since 2026-11-11, to Staging and Production for a deployment project each; a registry, never a runtime.
 
 **Related decisions:** [D12](D12-budget-ceiling.md), [D17](D17-interactive-vs-runtime.md), [D20](D20-staging-account.md), [D21](D21-development-account.md), [D27](D27-catalog-maintenance.md), [D28](D28-workflow-contract.md), [D41](D41-sagemaker-application.md)
 

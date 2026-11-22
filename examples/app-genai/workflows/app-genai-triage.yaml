@@ -1,0 +1,32 @@
+# {"guardrail":{"x":120,"y":200},"triage":{"x":420,"y":200},"check":{"x":720,"y":200}}
+app-genai-triage:
+  dag_id: app-genai-triage
+  tasks:
+    guardrail:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      python_callable: app_genai_tasks.ensure_guardrail
+      op_kwargs:
+        project: "{proj.id}"
+        region: "{domain.region}"
+      retries: 0
+    triage:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [guardrail]
+      python_callable: app_genai_tasks.triage_messages
+      op_kwargs:
+        guardrail: "{{ ti.xcom_pull(task_ids='guardrail') }}"
+        model: "{env.MODEL_ID}"
+        sample: "{proj.connection.default.s3_shared.s3Uri}app-genai/inbox/messages.jsonl"
+        work: "{proj.connection.default.s3_shared.s3Uri}app-genai/work/"
+        region: "{domain.region}"
+      retries: 0
+    check:
+      operator: airflow.providers.standard.operators.python.PythonOperator
+      dependencies: [triage]
+      python_callable: app_genai_tasks.check_answers
+      op_kwargs:
+        triage: "{{ ti.xcom_pull(task_ids='triage') }}"
+        sample: "{proj.connection.default.s3_shared.s3Uri}app-genai/inbox/messages.jsonl"
+        min_accuracy: "{env.MIN_ACCURACY}"
+        report: "{proj.connection.default.s3_shared.s3Uri}app-genai/outbox/triage-report.json"
+      retries: 0

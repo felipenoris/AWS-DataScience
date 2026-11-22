@@ -11,9 +11,11 @@ A serverless workflow is a MWAA Serverless workflow that the project's *Workflow
 definition (Airflow 3.0.6 through dag-factory), run by workers the service starts per task, as the
 project role, inside the project's network. Since [D41](../decisions/D41-sagemaker-application.md)
 (2026-10-15) an application's workflow is created instead from its repository by the CI/CD CLI, which
-deploys it to the `dev` and `test` projects (Stage 10 steps 2.1-2.2; the deploy to `dev` measured in the
-lab that day). This runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in
-the house image, a `PythonOperator` and a `BashOperator`.
+deploys it to the `dev` project (Stage 10 step 2.1; the deploy measured in the lab that day) and, since
+release F (Stage 19 decision 6 (b), `v0.5.2` in Production since 2026-11-16), to each target's
+deployment project from the pipeline ([`sagemaker-application.md`](sagemaker-application.md) §T). This
+runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in the house image, a
+`PythonOperator` and a `BashOperator`.
 
 | Section | Audience | What it holds |
 |---|---|---|
@@ -49,7 +51,7 @@ of the package has run in a job or on a worker yet.
 | the definition | `s3://<projects bucket>/<domain>/<project>/dev/workflows/<name>.yaml` | written by the portal on each save; *View code* shows it |
 | the code archive of a Python or Bash task | `.../dev/operatorFiles/<file>` | uploaded in *Settings → Storage*; one `.zip` is stored as uploaded, and the workflow pins its S3 version |
 | the service's copy of that code | `mwaa-serverless-code-files-<AWS-owned account>-<region>-prod`, key `<account>/<workflow>/<version>/<upload's key>` | taken at each save and encrypted under the project key; each task's worker has `airflow-serverless.amazonaws.com` read it through the VPC's S3 gateway endpoint, whose policy must admit the family (`vpc-v0.4.0`, 6i decision 7) |
-| the task logs | `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, one stream per task attempt | per project; no retention (`EXC-10`'s shape); the group exists from the workflow's first save, before any run, and outlives the workflow |
+| the task logs | `/aws/mwaa-serverless/<domain>-<project>/<workflow>`, one stream per task attempt | per project; no retention (`EXC-10`'s shape, and `EXC-25` for the CI/CD CLI's workflows in Staging and Production); the group exists from the workflow's first save, before any run, and outlives the workflow |
 | a processing job's container output | `/aws/sagemaker/ProcessingJobs`, stream `<job>/algo-1-<n>` | account-wide: every project role in the account can read it |
 | the identity | the project role, `datazone_usr_role_<project>_<env>`, session `AmazonMWAAServerless` on the worker, `SageMaker` inside a job | the D13 boundary applies to both |
 | the network | the two private subnets and the project's security group, injected by the portal | no default route: AWS is reached through the VPC endpoints, S3 through the gateway endpoint |
@@ -62,7 +64,9 @@ included, and bills 0.088 USD per task-hour with a one-minute minimum. Measured 
 - `python3` is `/opt/mwaa-serverless-venv/bin/python3`, 3.12.14, with pip 23.2.1 and boto3 1.43.1, and the
   tasks run as `mwaa-serverless-user`;
 - the environment carries `AWS_REGION`, the seven variables the portal injects (`DataZoneDomainId`,
-  `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable;
+  `DataZoneProjectId`, `ProjectS3Path` among them) and no proxy variable; the reading is a
+  portal-created workflow's, and whether a workflow the CI/CD CLI creates carries them is unmeasured
+  (the CLI's code passes no `EnvironmentVariables`; Stage 19 1.1 reads its identifiers from the deploy);
 - a name the Sandbox DNS Firewall does not list fails at resolution, as `[Errno 16] Device or resource
   busy` rather than a name error; `/awsds/sandbox/dns-firewall` shows the `BLOCK`.
 
@@ -90,6 +94,9 @@ reference for every option and every message; this section says how this lab use
 | `package-job` | builds a processing job's code folder for the job's image (§J1) | `operators/package-uv-job.py` |
 | `job-constraints` | prints the image environment's versions as requirements (§J1) | `package-uv-job.py --constraints` |
 | `package-task` | builds a Python or Bash task's archive for the worker (§C2) | `operators/package-uv.sh` |
+| `prepare-offline <project> <archive>` | writes the `.tar.gz` of a project folder prepared with its own interpreter, a processing job's code input that the job extracts on its volume; in the package since 2026-10-13 (`6bdbcad`) | — |
+| `lint <path>` | checks an application folder, or one definition, against the rules of MWAA Serverless and of the pipeline, offline: each refusal is a line `file: rule: reason` with exit 1, otherwise `ok`; `--image-repository` and `--algorithm-repository` hold a job's literal `ImageUri` or `TrainingImage` to the application's repository or a built-in algorithm's, and `--instance-type` its `InstanceType`. Since `ff25eae` (2026-10-24) the manifest rule refuses an `include` holding `*`, `?` or `[`, a glob the CLI 1.0.9's `bundle` does not expand, and since `196acee` (2026-11-12, PR #25) it admits `content.catalog` with `skipPublish` true and no `assets.access`. The promoted mode, `--promoted --prefix`, read release T's rendered copy and, from `ff25eae`, refused a Glue task that kept `create_job_kwargs`, `script_location`, `iam_role_arn`, `update_config` or `job_desc` (Stage 10 2.3's rule (6)); it has no caller since Stage 19 item 31 (decision 16 (b)). The rules are [Stage 8](../stages/stage-08-cicd-pipelines.md) 5.6's, and `app-etl`'s template (`examples/app-etl/.gitlab-ci.yml`) runs `lint .` in its `test` job with the three, the application's repository, `sagemaker-xgboost` and the ceiling's instance types | — |
+| `lint-plan <plan.json> --prefix <s3-prefix>` | checks the Glue jobs of a saved Terraform plan, the JSON of `terraform show -json`, before the apply: in each `aws_glue_job` the apply leaves, the script and every file or module its arguments name lie under a `--prefix` (repeatable), and no module is named by its PyPI name; `ok: N job(s) do Glue: …` with exit 0, otherwise one `file: glue: address: reason` line per refusal with exit 1. Stage 10 2.3's rule (2c), since `ff25eae`. No leg runs it since Stage 19 item 31 retired the application slices and `scripts/lint-plan.py` | — |
 
 **Install it by URL, from its `main`**, never by name: the name is free on PyPI, and a package someone
 else published there under it would install instead (the package's documentation, read 2026-10-11).
@@ -104,14 +111,18 @@ uv tool upgrade awsds-workflows
 
 The second command takes the newest commit of `main`: measured 2026-10-12 with uv 0.12.13, on an install
 from a local git remote that gained a commit. The commit installed is the `commit_id` in
-`direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The package needs Python 3.12 or newer,
-which uv installs. It calls `uv` as a program, and `aws` for `--profile`.
+`direct_url.json`, under `$(uv tool dir)/awsds-workflows/`. The laptop's install was at `c9a4c20` on
+2026-10-18, older than `lint` (`3c1708e`, 2026-10-16), and answered `invalid choice: 'lint'`; still at
+`c9a4c20` on 2026-10-24, it answered `invalid choice: 'lint-plan'`. The
+package needs Python 3.12 or newer, which uv installs. It calls `uv` as a program, and `aws` for
+`--profile`.
 
 **Where it runs:**
 
 - **the laptop**: the readings below ran there on 2026-10-12. uv reaches PyPI, and `--profile` reads the
   account;
-- **a space**: not run there yet, its installation included. The script `package-job` replaced built a
+- **a space**: the tool not run there yet, its installation included; its `scripts/space_values.py` runs
+  from a clone with no installation (below). The script `package-job` replaced built a
   job folder in a space (Stage 6i step 3.6). uv in a house-image space finds the distribution's
   interpreter only ([`gitlab/awsds/dev-env/README.md`](../../../gitlab/awsds/dev-env/README.md)), so a project is packaged for the
   house environment with `UV_PYTHON="$AWSDS_PYTHON_ENV/bin/python"` set: 3.13 up to `default-v0.6.0`,
@@ -138,6 +149,9 @@ A data scientist without that identity reads the same values from a project spac
 `scripts/space_values.py`, which prints what `values` prints without `--image-name`; in a Sandbox space
 on 2026-10-11 the two printed the same JSON, byte for byte
 ([its documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#os-valores-de-dentro-de-um-espaco)).
+On 2026-10-26 it ran from a shallow clone under `/tmp`, on the distribution's Python, for the values a
+manifest reads in the `dev` deploy ([`sagemaker-application.md`](sagemaker-application.md) §D step 3); the
+clone reaches GitHub through the proxy.
 
 **The placeholders** of this repository's files are the package's names: `REGION`, `ACCOUNT_ID`,
 `PROJECT_ROLE_NAME`, `PROJECT_ID`, `DOMAIN_ID`, `PROJECTS_BUCKET`, `PROJECT_KEY_ID`, `PROJECT_SG`,
@@ -162,12 +176,14 @@ that hour, against the scripts at `c0baddd`, with the same results at both commi
 
 ## §G — The grant a project needs, once per project
 
-A project role cannot run `SageMakerProcessingOperator`, nor create a Glue job from `GlueJobOperator`,
-with the blueprint's policies alone, for three reasons, two measured on 2026-10-10 and one on 2026-10-16:
+A project role cannot run `SageMakerProcessingOperator` or `SageMakerTrainingOperator`, create a Glue job
+from `GlueJobOperator` or start its own data source's run with the blueprint's policies alone (measured
+2026-10-10, 2026-10-16 and 2026-11-16, and read in the policies on 2026-11-08):
 
 - **The operator describes the job name before creating it**, and the blueprint lets a project role
   describe only a job tagged with its own project. A name not yet taken carries no tag, so the first run
-  fails with `AccessDeniedException` on `DescribeProcessingJob` before any job exists.
+  fails with `AccessDeniedException` on `DescribeProcessingJob` or `DescribeTrainingJob` before any job
+  exists.
 - **A create that carries tags is also authorized as `sagemaker:AddTags`**, and the blueprint excludes
   every `AmazonDataZone*` key from `AddTags` while requiring the job to carry `AmazonDataZoneProject`. The
   second run fails with `AccessDeniedException` on `sagemaker:AddTags`.
@@ -175,20 +191,49 @@ with the blueprint's policies alone, for three reasons, two measured on 2026-10-
   blueprint lets a project role read only a job tagged with its own project. A name not yet taken
   carries no tag, so the first run fails with `AccessDenied` on `glue:GetJob` before any job exists
   (the CI/CD CLI's run `u4AFogXA74olkqo`, 2026-10-16).
+- **An application's publishing task starts the project's data source run** (Stage 19 decision 3), and
+  the blueprint's `SageMakerStudioProjectRoleMachineLearningPolicy` (v47) grants `datazone:Get*`,
+  `List*`, `Search*`, `CreateAsset*` and `CreateListingChangeSet` and no `StartDataSourceRun`;
+  `SageMakerStudioProjectUserRolePolicy` (v76) names none either (read 2026-11-08, before the first run).
+  Production's deployment project role alone holds that statement (`<env>/studio/workflows.tf`, where
+  `project-roles.tf` sets `publishing_starts_the_source`); a Sandbox project's source imports on its
+  schedule or on a member's run in the portal (Stage 19 decision 17).
+- **Release G's task also creates, revises and lists the product's data product** (Stage 19 decision
+  26 (b)), on `main` and tagged `v0.6.0` at its sitting: a data product's name is the domain's, so the
+  stage that lists the product owns it. Neither managed policy grants `datazone:CreateDataProduct` or
+  `CreateDataProductRevision` (v48 and v77, read 2026-11-16). The statement that gives them to the same
+  role, beside the start (`publishing_creates_the_data_product`), was written 2026-11-16 and applied
+  with `production/studio/` on 2026-11-17, release G's step 3 ([`promotion.md`](promotion.md) §N.8.5).
 
-The grant is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
+The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
 1. Add the project role's name to `project_roles` in `variables.tf`. The role is
    `datazone_usr_role_<project id>_<environment id>`, read with `aws iam list-roles`.
-2. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
-   lives in. A precondition refuses a role without the D13 boundary.
+2. For an application whose task registers a model, add its entry to `model_applications`: the project
+   role, its model package group and the prefix its training leaves the model under. The role gains the
+   registration of a pending version in that group, and the bundle role the read of that prefix
+   ([INT-25](../integrations.md), Stage 17 9.5).
+3. Plan and apply the slice as the infrastructure user, `InfrastructureAccess`, in the account the project
+   lives in, after the project exists: the slice reads each listed role with `data "aws_iam_role"`, so a
+   role not yet minted fails the plan, naming it (Stage 17 9.5). A precondition refuses a role without
+   the D13 boundary.
+
+Stage 18's deployment project in Staging held, until its removal on 2026-10-22, the same three statements from
+`terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
+without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
+in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
+first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
+`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair behind `training_pair_enabled`, `false`
+until the sitting after Stage 17 2.2's readings (a) and (b); it was written 2026-11-19 with the transform
+pair, the model's tag and the registration in an application's own group, applied the same night (Stage 17 9.5).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no
 project tag whose name ends with the caller's project id, `<app>-<project id>`, the name an application
-gives its job (user, 2026-10-16). Another project's jobs stay out of reach. The Glue statement is written
-and waits on an apply and a run that creates the job: whether `CreateJob` with the project tag then
-passes with nothing more, unlike the processing job's `AddTags`, is unmeasured.
+gives its job (user, 2026-10-16). Another project's jobs stay out of reach.
+With the Glue statement applied, `CreateJob` with the project tag passed with nothing more, unlike the
+processing job's `AddTags`: `GetJob` answered `EntityNotFoundException`, then `CreateJob` and `StartJobRun`
+passed (Sandbox, 2026-10-16, 6i's log; Staging, 2026-10-19, Stage 18 4.4).
 
 ---
 
@@ -237,9 +282,15 @@ the application's repository and deploy again with the CLI.
   the portal on 2026-10-15 with no save; no save has measured either.
 - **A run started from the portal** passes no `OverrideParameters`. The CLI writes each `{env.VAR}` of
   the workflow as `{{ params.VAR }}` and fills it only in a run it starts, from the stage's
-  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values;
-  what it renders in their place is [Stage 10](../stages/stage-10-orchestration-promotion.md)
-  verification xxix. Start the run from the CLI.
+  `environment_variables` (its 1.0.9 code, read 2026-10-15), so such a run gets none of their values.
+  It carries the service's own `mwaa_serverless_workflow_id` alone and fails at the DAG's template
+  before any task: *"User template error: DAG template rendering failed: 'dict object' has no attribute
+  'SUBNET_AZ1'"* ([Stage 10](../stages/stage-10-orchestration-promotion.md) verification xxix, read
+  2026-10-26). Start the run from the CLI, or with `start-workflow-run` carrying the parameters as
+  `OverrideParameters`, as a target's chain does from the stage's recorded variables (Stage 19 decision
+  23 (a), [`sagemaker-application.md`](sagemaker-application.md) §X): DataZone does not gate a start, which takes the IAM action and, in the starter's
+  session, `kms:GenerateDataKey` and `kms:Decrypt` on the project key (Stage 18 0.4, 2026-10-19). The
+  CLI's `run` returns once the service accepts the start; `get-workflow-run` follows the run to its end.
 
 **Save errors and their way through:**
 
@@ -294,7 +345,10 @@ import it. The template is `examples/sandbox-orchestration/devenv-job/demo-deven
 **What the boundary requires** (`awsds-<env>-project-boundary`), on every job:
 
 - `NetworkConfig.VpcConfig`: the project's two private subnets and its security group;
-- `EnableNetworkIsolation: true`: the container has no network and no AWS credentials;
+- `EnableNetworkIsolation: true` in the template: the container has no network and no AWS credentials.
+  The boundary leaves it to a processing job since 2026-11-17 ([Stage 20](../stages/stage-20-dbt-lineage.md)
+  decision 13); without it the container holds the project role's credentials and reaches the VPC's
+  endpoints and the proxy's allow-list (`TM-35`);
 - `EnableInterContainerTrafficEncryption: true`, even for one instance;
 - `ProcessingResources.ClusterConfig.VolumeKmsKeyId`: the project key;
 - an instance type inside the boundary's ceiling; `ml.t3.medium` is the smallest it admits.
@@ -476,11 +530,13 @@ after `ProcessingEndTime` before the job reads `Completed`, which is what the op
 
 **Status in Sandbox: runs since 2026-10-11.** The worker fetches the service's copy of the code (§O)
 through the S3 gateway endpoint. Where the endpoint's policy does not admit
-`mwaa-serverless-code-files-*-<region>-prod` (any VPC on `vpc-v0.3.1`, Staging and Production today), a
-workflow with a code archive fails before its first task with `Execution environment preparation failed
-due to an internal server error`, and only a CloudTrail network activity event names the refusal. C6's
-recipe built the archive that ran here. Archives of C2's `package-task` ran on a worker on 2026-10-12,
-in a Python task and a Bash task outside this lab
+`mwaa-serverless-code-files-*-<region>-prod` (a VPC on `vpc-v0.3.1`: Production's `foundation/` and
+`networking/`), a workflow with a code archive fails before its first task with `Execution environment
+preparation failed due to an internal server error`, and only a CloudTrail network activity event names
+the refusal. The deployment projects' VPCs, Staging's in `staging/foundation/` and Production's in
+`production/workloads/`, are on `vpc-v0.4.0`, which admits it, and release F's Python tasks ran there on
+2026-11-16 (pipeline #129). C6's recipe built the archive that ran here. Archives of C2's
+`package-task` ran on a worker on 2026-10-12, in a Python task and a Bash task outside this lab
 ([the package's documentation](https://felipenoris.github.io/awsds-workflows/awsds_workflows.html#o-codigo-de-uma-task-python-ou-bash)).
 
 ### C1 — What the worker expects
@@ -651,7 +707,9 @@ prefix of loose files cannot be named, and a package with dependencies travels a
   stored as uploaded, its S3 version pinned, its sha256 equal to the built archive's.
 - **Through the API** (`create-workflow --code`, or Terraform's `awscc` from 1.99.0), the object can be
   any one the saver can read, such as an archive in the project's `shared/`. The service reads it at
-  save time in the saver's session. Not exercised here.
+  save time in the saver's session. The CI/CD CLI 1.0.9 takes this path: `workflow.create` copies the
+  archive to `shared/operatorFiles/<workflow>-<ms>.zip`, one object per deploy that nothing prunes, and
+  names it as `Code` (Stage 18 4.2, 4.3 and 4.5).
 
 **The portal guide's dependency recipe omits the platform flags** (`pip install --target ./package
 your-dependency`): run on a Mac, it installs the Mac's wheels of any compiled package. Use C2, or C6
@@ -716,6 +774,10 @@ never from `RunState`.
 - **Delete a workflow** from the *Workflows* page. Its log group stays, with no retention.
 - **Empty the inboxes** so the next run starts from a known state; the outboxes are the results.
 - **Processing jobs cannot be deleted**: they stay listed, which is why `SO-5` fails only the newest.
+- **A processing job's lineage stays too**: SageMaker creates a trial component per job, with artifacts
+  and associations, removed with `delete-association`, `delete-trial-component` and `delete-artifact`
+  (read in Staging, Stage 18 4.4 and 8.1). A project's deletion leaves these, the runs' log groups and the
+  CLI's `operatorFiles/` copies ([`docs/SMUS.md`](../../SMUS.md), "What a teardown leaves").
 - **The code archives** under `dev/operatorFiles/` stay with every version, since the bucket is versioned.
 - **The code folders** under `shared/jobs/` stay, one per version (§J1 step 5); delete an old one only
   when no definition names it.

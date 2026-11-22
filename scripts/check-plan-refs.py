@@ -53,7 +53,35 @@ ACCOUNT_COUNT_EXCLUDE_RE = re.compile(r"quota|limit|Service Quotas", re.IGNORECA
 # Bytes, per core file. The budget forces the CLAUDE.md / GENERAL_PLAN.md split: a core file that
 # may grow without limit stops being a routing map and becomes the narrative it should point at.
 # Each ceiling is set by the user; re-read one when a file's growth is narrative rather than state.
-SIZE_BUDGET = {"CLAUDE.md": 75000, "docs/GENERAL_PLAN.md": 40000}
+# The two indexes carry no status: a row that grows is a second copy of a stage file's `Status` row
+# or of a stage log's headings.
+SIZE_BUDGET = {
+    "CLAUDE.md": 75000,
+    "docs/GENERAL_PLAN.md": 40000,
+    "docs/plan/stages/INDEX.md": 25000,
+    "docs/log/INDEX.md": 35000,
+}
+
+# Bytes, per section of a core file. A section runs from its heading to the next heading of the same
+# level or above. CLAUDE.md's Current position holds one line of state per open stage; what a sitting
+# ran belongs in the stage file's `Status` row and in the stage log.
+SECTION_BUDGET = {("CLAUDE.md", "### Current position"): 12000}
+
+
+def section_size(path: Path, heading: str) -> int | None:
+    """Bytes of the section of ``path`` opened by ``heading``, or None when the heading is absent."""
+    level = len(heading) - len(heading.lstrip("#"))
+    size = None
+    for line in path.read_text(encoding="utf-8").splitlines(keepends=True):
+        if size is None:
+            if line.rstrip("\n") == heading:
+                size = len(line.encode("utf-8"))
+            continue
+        hashes = len(line) - len(line.lstrip("#"))
+        if 0 < hashes <= level and line[hashes : hashes + 1] == " ":
+            break
+        size += len(line.encode("utf-8"))
+    return size
 
 
 def main() -> int:
@@ -154,7 +182,18 @@ def main() -> int:
         b = Path(f).stat().st_size
         say(f"  {f}: {b} bytes of {budget}")
         if b >= budget:
-            bad(f"{f} over {budget // 1000} KB - move narrative into docs/plan/")
+            bad(f"{f} over {budget // 1000} KB - move narrative to the file that owns it")
+    for (f, heading), budget in SECTION_BUDGET.items():
+        b = section_size(Path(f), heading)
+        if b is None:
+            bad(f'{f} has no section "{heading}"')
+            continue
+        say(f'  {f}, "{heading}": {b} bytes of {budget}')
+        if b >= budget:
+            bad(
+                f'{f}, "{heading}" over {budget // 1000} KB - '
+                "what a sitting ran belongs in the stage file's Status row and in its log"
+            )
 
     say("OK" if fail == 0 else "FAILED")
     return fail

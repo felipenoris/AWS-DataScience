@@ -165,6 +165,72 @@ resource "aws_lakeformation_resource_lf_tags" "sample_trades_restricted_column" 
   }
 }
 
+# ----------------------------------------------------- the producer's table (Stage 9 step 2.1)
+#
+# The first table the governed write lands in: Stage 9 2.4's producer job writes it through the
+# Production share, and 2.5's pickup curates the drop-box into it. Declared here before its first
+# write, since the share grants no CREATE_TABLE, with the columns of the application's input
+# (examples/app-etl/samples/trades.csv). The same Iceberg path as sample_trades: the engine owns the
+# column mirror after its first commit.
+resource "aws_glue_catalog_table" "trades" {
+  name          = "trades"
+  database_name = aws_glue_catalog_database.curated.name
+  table_type    = "EXTERNAL_TABLE"
+
+  open_table_format_input {
+    iceberg_input {
+      metadata_operation = "CREATE"
+      version            = "2"
+    }
+  }
+
+  storage_descriptor {
+    location = "s3://${local.bucket_names["curated"]}/warehouse/trades"
+
+    columns {
+      name = "trade_date"
+      type = "date"
+    }
+    columns {
+      name = "desk"
+      type = "string"
+    }
+    columns {
+      name = "instrument"
+      type = "string"
+    }
+    columns {
+      name = "quantity"
+      type = "double"
+    }
+    columns {
+      name = "price"
+      type = "double"
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [storage_descriptor[0].columns]
+  }
+
+  depends_on = [module.bucket]
+}
+
+# The table's classification, the Governance Manager's to approve before the apply that creates it
+# (docs/GOVERNANCE.md, the development cycle). Without it the table matches no read expression and
+# is invisible to every consumer while the producer writes it.
+resource "aws_lakeformation_resource_lf_tags" "trades_table" {
+  table {
+    database_name = aws_glue_catalog_database.curated.name
+    name          = aws_glue_catalog_table.trades.name
+  }
+
+  lf_tag {
+    key   = aws_lakeformation_lf_tag.classification.key
+    value = "internal"
+  }
+}
+
 # --------------------------------------------------- the maintenance owner (4.2, decision 4)
 #
 # Glue automatic compaction under the maintenance role. The role is the D27 carve-out principal,

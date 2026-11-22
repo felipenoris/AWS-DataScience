@@ -45,7 +45,7 @@ A release is a tag `<flavour>-v<semver>` on `main`, which only a Maintainer can 
 
 | Stage | Job | What it does | Runner |
 |---|---|---|---|
-| build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the key imports, and the manifests | build |
+| build | `build-images` | builds `base` with the distribution through the pull-through cache and pushes it as `<tag>-<short sha>`, builds `dev-env` `FROM` that base by digest and pushes it under the same tag, then builds [`smoke/`](smoke/Dockerfile) `FROM` the pushed `dev-env`: the trust checks, the runtimes at the pinned versions, the CI/CD CLI by its name after `micromamba activate base`, the key imports, and the manifests | build |
 | verify | `scan-base`, `scan-dev-env` | each push's own scan against the lineage's baseline in `awsds/ci-gates`; informative, a red one stops nothing | build |
 | release | `release-gate` | the steward's gate, a manual job the chain waits on; running it is the approval, and it keeps the evidence | test |
 | register | `register` | on the deploy runner: [`release/versions.py`](release/versions.py) `register` creates the release's SageMaker image version in every target account from the pushed digest, with the release's semver as an alias, and reads it back against that digest | deploy |
@@ -112,6 +112,31 @@ image** is `/opt/awsds-proxy.txt` inside it, the entry count and the first 16 he
 Neither is enforced by a gate: both are readings, and [`dev-env.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/dev-env.md)
 §E says when to take them.
 
+**Audit the lock on the laptop before the tag.** `pip-audit` reads OSV's records of the day, so the gate's
+verdict is dated: the lock of 2026-10-16 passed `default-v0.8.0`'s gate and met 73 blocking findings at
+`default-v0.9.0`'s on 2026-10-25 (pipelines #89 to #91), which spent the tag with nothing built. The gate's
+own audit runs on the laptop in about two and a half minutes once the export's environment markers are
+stripped: pip-audit skips a line whose marker the running interpreter does not match, and every line names
+`linux` and `x86_64` (AWS-DataScience Stage 8 verification x). From a checkout of AWS-DataScience:
+
+```bash
+uv export --project gitlab/awsds/dev-env/dev-env/python --locked --no-dev --no-emit-project --format requirements-txt --quiet --output-file "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+sed -i '' -E 's/ ; [^\\]*( \\)?$/\1/' "$HOME/tmp/dev-env-pins.txt"
+```
+
+```bash
+uvx --from pip-audit==2.10.1 pip-audit --requirement "$HOME/tmp/dev-env-pins.txt" --disable-pip --require-hashes --vulnerability-service osv --progress-spinner off
+```
+
+What it prints beyond the accepted list in `ci-gates/baselines.gitlab-ci.yml` blocks the tag. A finding with a
+fixed version leaves by `uv lock --upgrade-package <name>`, one per blocked package, never a bare `--upgrade`,
+which on 2026-10-25 resolved an older autogluon and failed building `configspace`; a fixed version another
+package forbids (`Pillow<13` from autogluon-multimodal 1.6.1) enters the accepted list by name, through a
+`gates-v*` tag and this file's `include:` `ref` ([`gitlab.md`](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/gitlab.md) §G).
+
 **The uv cache must never be written into a layer.** Measured on the first `default-v0.2.0` build
 (2026-09-11): the Python layer came out at 10.7 GB against a 5.2 GB environment, because `uv` unpacks
 every wheel into `/root/.cache/uv` before materialising it into the venv and both live in the same
@@ -157,6 +182,8 @@ Stage 7 step 6.5). Sizes are ECR's, compressed and per repository.
 | `default-v0.7.1` | 2026-10-15, release pipeline #28 from `c268de48` | the release gate's quote (!2); the recipe is `v0.7.0`'s | `default-v0.7.1-c268de48`: `base` 3,745,649,509 (`sha256:4accbaf5…e525`), `dev-env` 6,678,358,952 (`sha256:3b6d706a…84a4`), built in 956 s, the manifests `v0.7.0`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; registered by `register` as Sandbox's version 7 |
 | `default-v0.7.3` | 2026-10-15, release pipeline #38 from `15fac237` | nothing in the recipe: the include at `gates-v0.4.0` (!5), whose pip-audit accepts a finding by any of its ids, after `default-v0.7.2` at `8e78ab53` stopped at `pip-audit` on fsspec's accepted finding under a new OSV id and pushed nothing | `default-v0.7.3-15fac237`: `base` 3,745,649,508 (`sha256:b05552a8…2ba1`), `dev-env` 6,682,673,224 (`sha256:38f4864c…dd6f`), built in 983 s, the manifests `v0.7.1`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; the first release under AWS-DataScience Stage 8 decision 18: `register` created Sandbox's version 8, alias `0.7.3`, with no domain write, and `retire` kept versions 8 and 7 |
 | `default-v0.8.0` | 2026-10-16, release pipeline #46 from `7c59998c` | the SageMaker CI/CD CLI `aws-smus-cicd-cli` 1.0.9 in the house Python environment (AWS-DataScience Stage 8 decision 22, !7), and `mcp` held to `>=1.30.0,<2`, the 1.x line's fix for CVE-2026-59951, since `strands-agents` requires `mcp<2.2` | `default-v0.8.0-7c59998c`: `base` 3,745,649,519 (`sha256:681dcb20…f23e`), `dev-env` 6,678,573,838 (`sha256:b788dbd9…1b87`), built in 955 s; the Python manifest adds `aws-smus-cicd-cli` 1.0.9, `httpx-sse` 0.4.3 and `pydantic-settings` 2.16.0, moves `mcp` 2.1.1 → 1.30.0 and drops `mcp-types`, the other manifests `v0.7.3`'s but the base digest; both scans CRITICAL 113 and HIGH 610, the 593 past the baseline all `linux-libc-dev`; `register` created Sandbox's version 9, alias `0.8.0`, with no domain write, and `retire` kept versions 9, 8 and 7 |
+| `default-v0.9.1` | 2026-10-25, release pipeline #96 from `746ef084` | the 72-name `NO_PROXY` literal of `vpc-egress-v0.18.0` (AWS-DataScience Stage 8 1.1, merged as `f71cafcd`); the lock moved past the findings OSV published since 2026-10-16, 17 entries in 9 packages (`aiohttp`, `brotli`, `certifi`, `filelock`, `gitpython`, `mlflow` with `-skinny` and `-tracing`, `nbconvert`, the opentelemetry family, `virtualenv`, `yarl`); the include at `gates-v0.5.0`, whose dev-env list accepts pillow 12.3.0's 41 findings and setuptools' second by name (!10), after `default-v0.9.0` at `f71cafcd` stopped at `pip-audit` on the lock of 2026-10-16 (73 blocking) and pushed nothing | `default-v0.9.1-746ef084`: `base` 3,754,767,181 (`sha256:ac9bd82b…044e`), `dev-env` 6,687,899,330 (`sha256:20a1017a…ca39`), built in 970 s; `pip-audit` 50 accepted and 0 blocking; the Python manifest moves the lock's 17 entries, `proxy.txt` 72 entries `6faf2e4761622508`, the other manifests `v0.8.0`'s but the base digest; both scans CRITICAL 113 and HIGH 612, the 595 past the baseline 593 `linux-libc-dev` and, new, `CVE-2026-85091` on `zlib` and `zlib1g`; `register` created Sandbox's version 10, alias `0.9.1`, with no domain write, and `retire` kept versions 10, 9, 8 and 7 |
+| `default-v0.10.0` | 2026-10-26, release pipeline #109 from `c8bac16e` | the 73-name `NO_PROXY` literal of `vpc-egress-v0.19.0`, which adds `airflow-serverless.us-west-2.api.aws` (AWS-DataScience Stage 8 1.1); the CI/CD CLI by its name through the base environment's activation hook, `/opt/awsds/bin` and `zz-awsds-bin.sh`, read by the smoke after `micromamba activate base` (Stage 8 decision 22); the include at `gates-v0.6.0`, whose SageMaker Distribution baseline accepts the zlib pair by name (decision 1); the manual job `sts-global-probe` (Stage 8 verification xxviii); all in !12 | `default-v0.10.0-c8bac16e`: `base` 3,754,767,169 (`sha256:78e253ce…f741`), `dev-env` 6,688,199,603 (`sha256:658c05d1…19f9`), built in 980 s; `pip-audit` 50 accepted and 0 blocking; `cicd-cli.txt` reads `/opt/awsds/bin/aws-smus-cicd-cli -> /opt/awsds/venv/bin/aws-smus-cicd-cli`, `aws-smus-cicd-cli 1.0.9`, the house environment's; `proxy.txt` 73 entries `61f1e1646df12c14`, the other manifests `v0.9.1`'s but the base digest; both scans CRITICAL 113 and HIGH 612, 132 in the baseline and the 593 past it all `linux-libc-dev`; `register` created Sandbox's version 11, alias `0.10.0`, with no domain write, and `retire` kept versions 11, 10, 9, 8 and 7 |
 
 **The recipe is not reproducible byte-for-byte**: `v0.1.1` moved both digests with no commit to the
 recipe, and a retry of the same commit builds another manifest (Stage 7 6.4). A pipeline that assumes
@@ -214,6 +241,14 @@ this environment is 3.13 against the distribution's 3.12, so a project asking fo
 unless it names it; the recipe carries 3.12 since 2026-10-14 (Stage 8 decision 13), the distribution's
 minor, and the first image built from it is `default-v0.7.0`. A later image version that exported
 `UV_PYTHON_INSTALL_DIR=/opt/awsds/python` would make it discoverable to every uv command.
+
+**In a space, `aws-smus-cicd-cli` is the house environment's from `default-v0.10.0`.** The distribution
+ships its own 1.0.8 in `/opt/conda/bin`, and every start script of a space runs `micromamba activate
+base`, which puts `/opt/conda/bin` first whatever the image's `ENV PATH` says. So the recipe adds
+`/opt/awsds/bin`, a symlink to the house CLI's entry point and nothing else, and the base environment's
+activation hook `/opt/conda/etc/conda/activate.d/zz-awsds-bin.sh` prepends it after each activation:
+`python`, `pip` and `jupyter` stay the distribution's (AWS-DataScience's Stage 8 decision 22). The
+smoke reads the name after the same activation and writes `cicd-cli.txt`.
 
 **For two of those rows the merge request review is the only control there is.** Measured 2026-08-22,
 when Stage 6a step 5.0 pushed the first images: ECR's scan read `base` and `dev-env` to identical

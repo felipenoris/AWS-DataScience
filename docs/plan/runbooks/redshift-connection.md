@@ -9,7 +9,7 @@ the S3 connection.*
 | | |
 |---|---|
 | **Who runs this** | the infrastructure user (`felipenoris+infrastructure_user@…`), profile `awsds-infra-sandbox-1`, account `Sandbox Account 1`, permission set `InfrastructureAccess`. The SQL halves need the namespace admin secret, which only that identity can read |
-| **What it does not cover** | the governed class. A governed database gets **no project connection**: it is read through the federated catalog Lake Formation governs ([Stage 9](../stages/stage-09-deployment-targets.md) 9.5) and written by a pipeline. Reusing anything below there would put a Redshift `GRANT` beside a Lake Formation grant over governed data |
+| **What it does not cover** | the governed class's own database, Production's `governed`, written by a pipeline and never connected to a project. A Sandbox project reads a governed table through the Lake Formation-managed datashare ([Stage 9](../stages/stage-09-deployment-targets.md) 9.5) over its existing connection, §G below; Lake Formation decides which tables, and the Redshift grants there are the consumer database's `USAGE` and the session's `TEMP` |
 
 ---
 
@@ -18,7 +18,7 @@ the S3 connection.*
 | # | Layer | Lives in | Grain | What its absence looks like |
 |---|---|---|---|---|
 | 1 | the tag `AmazonDataZoneProject=<projectId>` on the workgroup **and** the namespace | Terraform, `sandbox/warehouse/`'s `projects` map | per **workgroup** | the compute does not appear in the project's dropdown at all |
-| 2 | the project role's IAM policy — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` | Terraform, the same map | per **project role** | the connection is created and every query fails at authentication |
+| 2 | the IAM reach — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` — in one policy on the project role and on its access role. The project role also carries AWS's `SageMakerStudioProjectUserRolePolicy` v75, which grants it `GetCredentials` and the Data API on a workgroup tagged with its project, the same to every project role under the wide tag, and `GetCredentials` on any workgroup through `sqlworkbench` (simulated 2026-10-18, 6h 5.1 and decision 8) | Terraform, the same map | per **project** on the access role alone | the connection is created and every query fails at authentication; §F says which role to read |
 | 3 | a database role per schema, granted to each admitted project's database user | **SQL**, nowhere else | per **schema × project** | the project connects, sees the cluster, and the schema is invisible or read-only |
 | — | the door on `5439/tcp` | Terraform, the warehouse's security group | per **project's security group** | JupyterLab hangs; the Data page still works |
 
@@ -26,12 +26,16 @@ the S3 connection.*
 are code and diff; a `GRANT` is state in the namespace that Terraform never wrote. That asymmetry
 is the whole of §U below.
 
-**Layer 1 admits exactly one project, and the limit is AWS's.** The admin *"adds 1 of the following
+**Layer 1 admits one project by its tag, and the limit is AWS's.** The admin *"adds 1 of the following
 tags"*: `AmazonDataZoneProject={{projectID}}`, which names one project, or
 `for-use-with-all-datazone-projects=true`, which names every project in the account. There is no
 per-project list, because it is a tag key. `sandbox/warehouse/`'s `projects` variable refuses a
 second entry for that reason — a second one would silently overwrite the first project's tag and the
 first project's connection would stop working with nothing in the plan to say which project lost it.
+A second project is admitted by the wide tag (6h decision 8 (a), taken 2026-11-17): the slice's
+`all_projects_tag_enabled` writes it on the namespace and, at the compute slice's next apply, on the
+workgroup, and only then does the map take a second entry. Every project role then reaches the compute
+under AWS's `ExistingRedshiftCompute`, and layer 3's `GRANT` is the per-project gate.
 
 ---
 
@@ -131,9 +135,10 @@ connect but sees nothing"* as the expected state for a while — which is the am
    per project, and CloudTrail still names the person: the chained session carries the space's
    `sourceIdentity`, the data scientist's Identity Center user id, although §J's call passes none (6h
    verification xv, read 2026-10-17).
-4. **The connection, in the portal**, by the project member — it cannot be done any other way:
-   `datazone list-connections` is refused to the account's administrator by **DataZone's own**
-   authorization layer, because that identity is not a project member. *Compute → Data warehouse →
+4. **The connection, in the portal**, by a project member — this repository does not author it.
+   DataZone's own authorization layer refused the account's administrator `datazone list-connections`
+   three times, and answers it since Sandbox's `InfrastructureAccess` role was made contributor to both
+   Sandbox projects on 2026-10-15, as a group profile, so `WH-9` reads the object. *Compute → Data warehouse →
    Add compute → Connect to existing compute resources*, credential type **IAM credentials**. Three
    things the form does that no AWS page describes (measured 2026-09-21):
 
@@ -141,14 +146,43 @@ connect but sees nothing"* as the expected state for a while — which is the am
      over `terraform output project_access_role_arns`. AWS's same-account procedure names no access
      role and the field's help calls it *"optional. Required when connecting to resources in a
      different AWS account"* — both wrong against the running form.
-   - **The compute dropdown offers the namespace's `dev` database.** The themed schema is in the class
-     container (`sandbox`), and a cross-database **write** does not work in Redshift, so the
-     connection must name that database — by a database field if the form has one, otherwise through
-     the JDBC URL with the `/dev` suffix replaced. Measured 2026-10-10: the Query editor lists every
-     database in the namespace (`dev`, `sandbox`, `warehouse`) and the project wrote `lab.hello` from
-     it; which database the connection object names was not recorded.
-   - **There is no `lineageSync` toggle** on this path, so the scheduled query on the 1.44 USD/hour
-     meter cannot be turned on from the portal. It is reachable only through the API.
+   - **The compute dropdown offers the namespace's `dev` database, and the form keeps it.** The
+     themed schema is in the class container (`sandbox`), and a cross-database **write** does not work
+     in Redshift. Measured 2026-10-10: the Query editor lists every database in the namespace (`dev`,
+     `sandbox`, `warehouse`), and the project wrote `lab.hello` from it. The editor opens each session
+     on the connection's database, and a session in `dev` reads no governed share for want of `TEMP`
+     (§G, `SUP-208`). Step 4a names `sandbox`.
+   - **There is no `lineageSync` toggle** on this path, and the form writes the sync **on**, on a
+     daily cron (`SUP-207`). A run that succeeds is a scheduled query on the 1.44 USD/hour meter.
+     Step 4a switches it off (6h decision 3), and `WH-9` fails until it runs.
+4a. **The update: database `sandbox` and `lineageSync` off**, right after step 4, as
+   `awsds-infra-sandbox-1`. DataZone accepts it from Sandbox's `InfrastructureAccess` as a contributor
+   of the project (`SUP-157`) and with the workgroup down (`SUP-387`), so it needs nothing up; it ran on
+   `eighth-experimentation`'s connection on 2026-11-19 (6h decision 3). The call passes every field the
+   object has (Lesson 60), from a reading this procedure takes, never from a file an earlier sitting
+   kept (Lesson 61):
+   ```bash
+   D=<domain id>; J=<project id>; P=awsds-infra-sandbox-1
+   aws datazone list-connections --domain-identifier $D --project-identifier $J --type REDSHIFT \
+     --query 'items[].[connectionId, name]' --output text --profile $P
+   C=<the connection id>
+   aws datazone get-connection --domain-identifier $D --identifier $C --output json --profile $P > conn.json
+   jq '{domainIdentifier: .domainId, identifier: .connectionId,
+        awsLocation: (.physicalEndpoints[0].awsLocation | {accessRole, awsAccountId, awsRegion}),
+        props: {redshiftProperties: {storage: .props.redshiftProperties.storage,
+          databaseName: "sandbox", host: .physicalEndpoints[0].host, port: .physicalEndpoints[0].port,
+          lineageSync: {enabled: false, schedule: .props.redshiftProperties.lineageSync.schedule}}}}' \
+     conn.json > update.json
+   aws datazone update-connection --cli-input-json file://update.json --profile $P
+   aws datazone get-connection --domain-identifier $D --identifier $C --profile $P \
+     --query 'props.redshiftProperties.[databaseName, lineageSync]'
+   ```
+   The model declares the call `PATCH`, and whether it keeps a field left out is unmeasured. The filter
+   carries what the portal's object holds: no `credentials`, no `configurations`, and an empty
+   `description`, which the update cannot pass back, since its minimum is one character. An object that
+   holds more needs it added to the filter. The read-back differs from the first reading in four fields,
+   `databaseName`, `jdbcUrl`, `jdbcIamUrl` and `lineageSync.enabled`; the schedule and the lineage job
+   stay, and `WH-9` passes.
 5. **Re-run `./aws/warehouse.py --sql`** and add the register row. The database user is
    **`IAMR:<the RedshiftDbUser tag's value>`** — measured 2026-10-10: the tag is honoured and Redshift
    prefixes its value, so with the tag set to the project role's name the user is
@@ -165,7 +199,8 @@ than broken:
 | a Glue database refused with *"Insufficient Lake Formation permission(s): Required Describe on \<db\>"* | **correct.** The editor enumerates every Glue database it can see; the lake's layers are not this project's to describe, and granting one is a governance act with a named requester |
 
 **What must stay absent, whatever else is granted:** no `GRANT ALL ON DATABASE`, nothing on a schema
-the project's row does not name, no `CREATE` on `public` (revoked at 5b 1.6), and no
+the project's row does not name, no `CREATE` on `public` (`PUBLIC` holds none in any of the three
+databases, read 2026-09-21; 6h 1.2 revoked it in `sandbox`), and no
 `secretsmanager:GetSecretValue` on the admin secret — a project role that can read the admin
 credential has the admin's rights and layer 3 stops meaning anything.
 
@@ -185,9 +220,30 @@ DROP USER "<identifier>";
 
 `WH-12` is what finds a role membership nothing declares; this section is what prevents it.
 
-**The connection object stays.** It is DataZone's, no apply touches it, and this identity cannot read
-it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access role
-the apply destroyed.
+**A project that reads a governed share (§G) leaves two more grants in two more systems**, neither in any
+plan: the Lake Formation grant to its access role, and the consumer database's `USAGE` and `sandbox`'s
+`TEMP` for its database user. The access role itself goes with the map, `ReadTheGovernedShareCatalog`
+with it.
+
+```sql
+REVOKE USAGE ON DATABASE governed_trades FROM "<identifier>";
+REVOKE TEMP ON DATABASE sandbox FROM "<identifier>";
+```
+
+```bash
+aws lakeformation revoke-permissions --principal "DataLakePrincipalIdentifier=arn:aws:iam::<Sandbox>:role/awsds-sandbox-warehouse-access-<project>" --resource '{"Table":{"CatalogId":"<Data Governance>","DatabaseName":"governed_trades","Name":"trades.trades_notional"}}' --permissions SELECT DESCRIBE --profile awsds-infra-sandbox-1 --region us-west-2
+```
+
+and the same with `{"Database":{"CatalogId":"<Data Governance>","Name":"governed_trades"}}` and `DESCRIBE`.
+The table's `SELECT` is stored on its column wildcard: if the `Table` form leaves it, revoke it on
+`{"TableWithColumns":{…,"ColumnWildcard":{}}}`. Read the result back by resource, never by principal: a
+`list-permissions` filtered by principal returns nothing on these resources, held in Data Governance's catalog,
+even for a grant that works (2026-10-25). A Lake Formation grant to a role that no longer exists stays listed
+against its ARN, so the revoke comes before the apply that removes the access role.
+
+**The connection object stays.** It is DataZone's, no apply touches it, and this repository does not
+author it (`EXC-17`): removing it is a portal act by a project member. Until then it names an access
+role the apply destroyed, which `WH-9` reports.
 
 ---
 
@@ -225,8 +281,8 @@ a sharing semantic nobody has asked for; read-across is what a shared base means
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
 *creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
-bites: admitting a second project to the **warehouse** needs either the wide tag or a second
-workgroup, and that is a decision with a written argument, not a map entry.
+bites: admitting a second project to the **warehouse** needs the wide tag (6h decision 8 (a)), switched
+on in `sandbox/warehouse/` before the map takes the second entry (§O).
 
 ---
 
@@ -238,7 +294,7 @@ workgroup, and that is a decision with a written argument, not a map entry.
 | Symptom | Layer | The reading |
 |---|---|---|
 | the compute is absent from the project's dropdown | 1 | `./aws/warehouse.py` `WH-7` — the tag on **both** objects against the map |
-| the connection exists, every query fails to authenticate | 2 | `aws iam get-role` on the project role, **per role** (`list-roles` omits `PermissionsBoundary` by documented contract), and whether the D13 boundary admits `redshift-serverless:` at all — a boundary is a ceiling, and a grant it does not admit reaches nothing |
+| the connection exists, every query fails to authenticate | 2 | `aws iam get-role` on the project role, **per role** (`list-roles` omits `PermissionsBoundary` by documented contract), and whether the D13 boundary admits `redshift-serverless:` at all — a boundary is a ceiling, and a grant it does not admit reaches nothing. Which door failed decides whose policy to read: the Data page calls `GetCredentials` as the access role, which holds this repository's policy alone, while a notebook calls it as the project role, which AWS's `SageMakerStudioProjectUserRolePolicy` also admits on a workgroup tagged with its project (simulated 2026-10-18, 6h 5.3), so a notebook refused there has lost the tag as well |
 | it connects, the schema is invisible or read-only | 3 | `WH-12`, which needs a database session |
 | JupyterLab hangs, the Data page works | the door | the warehouse's security group: group-to-group on `5439`, and the workgroup and the project must share a VPC for the JupyterLab path at all |
 | `403` on a `redshift-serverless` API call from inside a space | the endpoint | `make up ENV=sandbox GROUPS=redshift`. Without it the call leaves through the proxy as a public request |
@@ -256,9 +312,11 @@ workgroup, and that is a decision with a written argument, not a map entry.
 silently.
 
 **Two prerequisites, and neither is in the notebook.** The environment must be up with the Redshift
-endpoint group — `make up ENV=sandbox GROUPS=redshift` — because `redshift-serverless` is absent from
-the proxy's allow-list, so without that endpoint `GetCredentials` **times out** rather than being
-refused. And the project must be admitted to the warehouse: `sandbox/warehouse/`'s `projects` map, §P.
+endpoint group — `make up ENV=sandbox GROUPS=redshift`, the flag that also raises the workgroup
+(`slices.py` refusal 11) — because without that endpoint `GetCredentials`
+leaves through the proxy as a public request: the compute plane admits `.amazonaws.com`, so it is
+answered, through the door the group exists to replace (6h 3.5). And the project must be admitted to the
+warehouse: `sandbox/warehouse/`'s `projects` map, §P.
 
 ### The connection
 
@@ -267,9 +325,9 @@ import boto3
 import redshift_connector
 
 WORKGROUP = "awsds-sandbox-warehouse"
-DATABASE = "sandbox"                     # the class container, NOT the `dev` the dropdown offers
+DATABASE = "sandbox"  # the class container, NOT the `dev` the dropdown offers
 REGION = "us-west-2"
-PROJECT = "avhvbqn37ty7m8"               # the project id, from the portal's URL
+PROJECT = "avhvbqn37ty7m8"  # the project id, from the portal's URL
 
 
 def connect():
@@ -314,12 +372,14 @@ statement-at-a-time.
 conn = connect()
 
 with conn.cursor() as cur:
-    cur.execute("create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)")
     cur.execute(
-        "insert into lab.readings values (%s, %s, %s)",     # paramstyle is `format`
+        "create table if not exists lab.readings (ts timestamp, sensor varchar(32), v float)"
+    )
+    cur.execute(
+        "insert into lab.readings values (%s, %s, %s)",  # paramstyle is `format`
         ("2026-10-11 12:00:00", "t-1", 21.5),
     )
-conn.commit()                                              # without this the table is not there
+conn.commit()  # without this the table is not there
 ```
 
 **Reading back, into pandas:**
@@ -327,7 +387,7 @@ conn.commit()                                              # without this the ta
 ```python
 with conn.cursor() as cur:
     cur.execute("select sensor, avg(v) as mean_v from lab.readings group by 1 order by 1")
-    df = cur.fetch_dataframe()          # pandas is in the image; fetchall() gives tuples instead
+    df = cur.fetch_dataframe()  # pandas is in the image; fetchall() gives tuples instead
 df
 ```
 
@@ -347,13 +407,19 @@ with connect() as conn, conn.cursor() as cur:
 
 Every statement runs on compute billed at **0.36 USD per RPU-hour** with **four base RPUs**, so
 1.44 USD per query-hour — and there is a **60-second minimum charge per query**. A cell run fifty times
-while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), so
-leaving a connection open between cells is free; running a heavy query is not.
+while debugging is fifty minimum charges. An **idle** session costs nothing (`WH-15` measures it), and an
+**open transaction** is not idle: AWS bills RPUs until it ends, and the driver opens one at your first
+statement, reads included. So end a cell's work with `conn.commit()` or `conn.rollback()`, or close the
+connection. On 2026-10-10 `ComputeSeconds` held 4 RPU from 17:57 to 18:56Z while a notebook session was
+open and no query longer than ten seconds completed (the 5b log, 2026-10-18).
 
-`max_query_execution_time` is **120 seconds** on this workgroup, so a runaway is cut off — and whether
-that setting binds every queue is [unresolved](../../log/log-stage-05b-redshift-serverless.md). The
-monthly ceiling is **10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup
-refuses queries until somebody raises it. Both are deliberate (5b decision 2).
+`max_query_execution_time` is **120 seconds** on this workgroup, and **whether it cuts anything off is
+unproven** ([the 5b log](../../log/log-stage-05b-redshift-serverless.md)). The monthly ceiling is
+**10 RPU-hours with `breach_action = deactivate`**: when it is reached the workgroup refuses any query
+that needs the compute until somebody raises it, while the leader node keeps answering. A statement that
+reads only catalog tables (`pg_*`) runs on the leader node, and on 2026-09-20 one ran for six and a half
+hours at 1.44 USD/h, past an 1800-second limit and through two minutes of a breached ceiling: end one with
+`pg_terminate_backend(<pid>)`. Both values are the user's, set on 2026-09-20 after that runaway.
 
 ### Readings that will confuse you otherwise
 
@@ -368,6 +434,51 @@ refuses queries until somebody raises it. Both are deliberate (5b decision 2).
 
 ---
 
+## §G Reading a governed share from a project
+
+A governed table of Production's warehouse reaches Sandbox as the consumer database `governed_trades`,
+created from the federated database Data Governance registers (Stage 9 9.5). Measured on 2026-10-25 (9.7,
+the log): the project's session needs four pieces, and the two that live in AWS belong to the **access
+role**, the principal the portal's connection assumes, never to the project role the database user is named
+after.
+
+| Piece | Lives in | What its absence looks like |
+|---|---|---|
+| the access role's catalog read, `glue:GetDatabase`/`GetDatabases`/`GetTable`/`GetTables` on the lake's catalog, the federated database and its tables | Terraform, `sandbox/warehouse/`'s `ReadTheGovernedShareCatalog`, per project | *"AccessDeniedException from glue - User: …assumed-role/awsds-sandbox-warehouse-access-<project>/… is not authorized to perform: glue:GetTable"* |
+| the access role's Lake Formation grant, `DESCRIBE` on `governed_trades` and `SELECT` on its tables | Sandbox's Lake Formation, granted by its administrator (the account holds the lake's tag grant with grant option) | Lake Formation's *"Insufficient Lake Formation permission(s)"* |
+| `USAGE ON DATABASE governed_trades` for the project's database user | SQL, as the admin | the database is listed and refuses the query |
+| `TEMP ON DATABASE sandbox` for the same user: the share's table is an external table, and the session's database holds the query's temporary objects | SQL, as the admin; `PUBLIC` holds no database privilege since 5b and 6h | *"Failed to incorporate external table … permission denied to create temporary tables in database "sandbox""* |
+| the producer's share: Production's `GRANT USAGE … VIA DATA CATALOG`, its authorization, and Data Governance's association with its catalog | SQL in Production; `production/warehouse/datashare.tf`; `data-governance/data/warehouse-share.tf` | *"AwsClientException: EntityNotFoundException from glue - No glue catalog datashare is found with arn …"*, and `WH-16` fails. Every Lake Formation grant stays after a revoke, so the grants prove nothing about the share, and `data-governance/data/` plans nothing until the re-grant (Stage 9 xxiv, 2026-10-26; `promotion.md` §N.4a step 5) |
+
+The Query editor opens each session on the connection's database, and in `dev` the read is refused for
+want of `TEMP` there (read 2026-10-26, while `redshift-serverless.redshift` named `dev`). That connection
+names `sandbox` since 2026-11-19 (§P step 4a); one the portal has just made names `dev`, and the person
+selects `sandbox` until step 4a runs. The table's name in Redshift is
+`governed_trades.trades.trades_notional`: the producer's schema, not the Glue database's. A password user
+(`dbadmin`) is refused, *"Current user is not authenticated with IAM credentials"*, so the admin reads the metadata alone, and through the Data API with IAM authentication the
+infrastructure user, Sandbox's Lake Formation administrator, reads under the account's grant. The read needs
+Sandbox's workgroup alone: Production's may be down.
+
+**A second governed database** repeats two pieces once, whatever the number of projects: the consumer
+database in Sandbox's warehouse (`CREATE DATABASE <name> FROM ARN 'arn:aws:glue:us-west-2:<Data
+Governance>:database/<name>' WITH DATA CATALOG SCHEMA <name>`, a statement of its own, as the admin), and
+its database and tables among `ReadTheGovernedShareCatalog`'s resources, which name `governed_trades` alone.
+Then the per-project grants above. Unwiring is §U.
+
+**A product a project subscribes to in the portal**, read in place through `awsdatacatalog`, takes the same
+principal through a resource link: DataZone fulfils the subscription with a link in the subscription
+target's Glue database in Sandbox, named after its target, and Redshift calls Glue on the link and on its
+target in the producer's account as the access role. Its AWS pieces are one entry of `sandbox/warehouse/`'s
+`subscribed_products` map per product, keyed by project: the target database and the producer's database
+and table, which become `ReadTheSubscribedProductsCatalog` (the link database's tables and the producer's one
+table) and `LakeFormationVendsTheSubscribedProductsData` (`lakeformation:GetDataAccess`: the data is in S3,
+under a location Lake Formation holds). Lake Formation's admission is DataZone's grant, or a named grant in
+the producer's account with `DESCRIBE` on the link in Sandbox; the SQL is `USAGE ON DATABASE awsdatacatalog`
+and the same `TEMP`. The first product's sitting is [Stage 19](../stages/stage-19-smus-native-data-product.md)'s
+pass 5 block.
+
+---
+
 ## §V The instruments
 
 ```bash
@@ -379,14 +490,19 @@ refuses queries until somebody raises it. Both are deliberate (5b decision 2).
 
 | Check | What it reads | What its failure means |
 |---|---|---|
-| `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown |
+| `WH-7` | the `AmazonDataZoneProject` tag on the workgroup and the namespace, against the authored map; with `for-use-with-all-datazone-projects` on either, that tag at `true` on both, the project tag only while the map holds one entry, and neither tag on the admin secret (`AWS_STATE.md` `INV-20`) | layer 1. A tag on one object and not the other is a drift, and the compute is missing from the project's dropdown. The wide tag on the admin secret opens the superuser password to every project role, the project tag to that project's |
 | `WH-11` | the slice's policy attached to each admitted project's role, and that the role still carries `awsds-sandbox-project-boundary` | layer 2. The plan-time precondition covers the boundary when the map is edited; this covers the role being recreated afterwards |
 | `WH-12` | the themed schemas, the role grants and the **user-role** grants | layer 3, including the orphan an unwiring leaves behind (§U) |
 | `WH-14` | every relation in a themed schema, against the roles that can read it through a grant or a default privilege | layer 3's sharing half: a table no role can read, which on a shared schema is one project's data the others cannot see (§T) |
-| `WH-9` | nothing: a note, always. The connection object is unreadable by this identity (`EXC-17`) | — the connection is read through the three layers above |
+| `WH-9` | each admitted project's Redshift connection: its workgroup, host, access role, database and `lineageSync` | the connection names a workgroup or an access role this repository did not author, a database other than `sandbox`, or the lineage sync on, a scheduled query on the meter (6h decision 3; §P step 4a repairs the last two). A `note` while `list-connections` is refused (`EXC-17`) |
 
 `WH-11` reads as a `note` where nothing is admitted, because a check that is green for an absence is
 green for the wrong reason (Lesson 50).
+
+**`WH-16` reads Production's governed datashare** in the control plane, with nothing up: the Data Catalog
+consumer `AUTHORIZED` and the lake catalog's association `ACTIVE`, for each share
+`production/warehouse/datashare.tf` names. It is the one reading that fails on a producer-side revoke:
+every Lake Formation row stays green (§G, Stage 9 xxiv).
 
 **A session for the SQL above**, from a laptop, with no network path into the VPC — the Data API
 reaches the database with an IAM identity and the admin secret alone:
@@ -410,7 +526,8 @@ query path from anywhere.
 ### The JupyterLab door, from inside a space
 
 **Two doors reach this warehouse and they have different prerequisites**, so one of them answering
-says nothing about the other. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
+says nothing about the other. Both need the workgroup, which `make up ENV=sandbox` raises only with
+`GROUPS=redshift`. The **Data page** reaches it as an AWS service — `sqlworkbench` calling
 Redshift, no network path at all — and the **JupyterLab** door is the space's own ENI opening `5439`
 to the workgroup's ENI inside one VPC. The script below is for the second, and it separates three
 questions a single *"it worked"* cannot:
@@ -452,9 +569,10 @@ nobody declared: if it is wanted for good it belongs in that `pyproject.toml` by
 #
 #     make up ENV=sandbox GROUPS=redshift
 #
-# Without it there is no door to the API and no fallback: `redshift-serverless` is deliberately
-# absent from the proxy's allow-list, so step 3 fails at GetCredentials with a timeout rather than
-# with a refusal - which looks like a network fault and is a missing endpoint (Lesson 42).
+# Without it GetCredentials leaves through the proxy as a public request and is answered, because
+# the compute plane admits `.amazonaws.com`: the house image's six calls of 2026-10-10 took that door
+# (6h 3.5). The endpoint keeps the call inside the VPC; the house image's NO_PROXY names it since
+# `default-v0.5.0`.
 
 import ipaddress
 import socket
@@ -501,29 +619,48 @@ try:
     if not addrs:
         say("1 dns resolves", "FAIL", "no A record")
     elif private:
-        say("1 dns resolves", "ok", f"{', '.join(private)} - private. These are the WORKGROUP's "
+        say(
+            "1 dns resolves",
+            "ok",
+            f"{', '.join(private)} - private. These are the WORKGROUP's "
             "own managed VPC endpoint ENIs, which carry the warehouse security group; the "
             "redshift-serverless API endpoint is a different address and is not what this name "
-            "resolves to (measured 2026-10-10)")
+            "resolves to (measured 2026-10-10)",
+        )
     else:
-        say("1 dns resolves", "FAIL", f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
+        say(
+            "1 dns resolves",
+            "FAIL",
+            f"{', '.join(addrs)} - PUBLIC. The private DNS of the "
             "redshift-serverless endpoint is not answering: either the endpoint is absent "
-            "(GROUPS=redshift) or its private DNS is off")
+            "(GROUPS=redshift) or its private DNS is off",
+        )
 except socket.gaierror as exc:
-    say("1 dns resolves", "FAIL", f"ENOTFOUND - {exc}. A name that does not resolve inside a "
-        "compute VPC is the DNS Firewall or a missing endpoint, never a security group")
+    say(
+        "1 dns resolves",
+        "FAIL",
+        f"ENOTFOUND - {exc}. A name that does not resolve inside a "
+        "compute VPC is the DNS Firewall or a missing endpoint, never a security group",
+    )
 
 # ------------------------------------------------------------------- 2. does the 5439 door open
 try:
     with socket.create_connection((host, PORT), timeout=10) as s:
         peer = s.getpeername()[0]
-        say("2 port 5439 opens", "ok",
+        say(
+            "2 port 5439 opens",
+            "ok",
             f"{s.getsockname()[0]} -> {peer}:{PORT}, so the SG rule and the route both exist. The "
-            "local address is the space's container NAT, not an ENI")
+            "local address is the space's container NAT, not an ENI",
+        )
 except OSError as exc:
-    say("2 port 5439 opens", "FAIL", f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
+    say(
+        "2 port 5439 opens",
+        "FAIL",
+        f"{type(exc).__name__}: {exc}. A TIMEOUT here is the "
         "security group (the warehouse admits only the project's group on 5439); a REFUSED is a "
-        "listener that is not there - check the workgroup is up")
+        "listener that is not there - check the workgroup is up",
+    )
 
 # ------------------------------- 2b. does the thing on 5439 speak the Redshift wire protocol
 #
@@ -538,12 +675,24 @@ try:
         s.sendall(struct.pack("!ii", 8, 80877103))
         reply = s.recv(1)
     if reply == b"S":
-        say("2b speaks redshift", "ok", "SSLRequest accepted - TLS required, as the workgroup is set")
+        say(
+            "2b speaks redshift",
+            "ok",
+            "SSLRequest accepted - TLS required, as the workgroup is set",
+        )
     elif reply == b"N":
-        say("2b speaks redshift", "warn", "SSLRequest refused - the protocol is there and TLS is off")
+        say(
+            "2b speaks redshift",
+            "warn",
+            "SSLRequest refused - the protocol is there and TLS is off",
+        )
     else:
-        say("2b speaks redshift", "FAIL", f"answered {reply!r} - whatever is on 5439 is NOT "
-            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session")
+        say(
+            "2b speaks redshift",
+            "FAIL",
+            f"answered {reply!r} - whatever is on 5439 is NOT "
+            "speaking the Redshift wire protocol, so a driver's BrokenPipe is this and not a session",
+        )
 except OSError as exc:
     say("2b speaks redshift", "FAIL", f"{type(exc).__name__}: {exc}")
 
@@ -566,12 +715,16 @@ try:
 except ImportError:
     proc = subprocess.run(
         ["uv", "pip", "install", "--quiet", "--python", sys.executable, "redshift_connector"],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     if proc.returncode:
-        say("3a driver present", "FAIL",
+        say(
+            "3a driver present",
+            "FAIL",
             f"install failed: {(proc.stderr or proc.stdout).strip()[-300:]} - PyPI is on the "
-            "proxy allow-list, so a failure here is the proxy variables rather than the index")
+            "proxy allow-list, so a failure here is the proxy variables rather than the index",
+        )
     else:
         import redshift_connector as driver
 
@@ -603,18 +756,21 @@ def measure(label, conn, table):
         cur.execute("select current_user")
         user = cur.fetchone()[0].strip()
         per_person = user.startswith("IAMR:user-")
-        say(f"{label}c the grantee", "ok",
-            f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
+        say(f"{label}c the grantee", "ok", f"{user} - per {'PERSON' if per_person else 'PROJECT'}")
 
         # LAYER 3 IS READ BEFORE IT IS USED. This came after the write once, and the write's
         # permission error arrived as a driver traceback instead of a verdict naming the layer.
         cur.execute("select role_name from svv_user_grants where user_name = current_user")
         roles = [r[0] for r in cur.fetchall()]
-        say(f"{label}d the roles it holds", "ok" if roles else "FAIL",
-            str(roles) if roles else
-            "none, so the write below fails as `permission denied for schema`. A per-person user "
+        say(
+            f"{label}d the roles it holds",
+            "ok" if roles else "FAIL",
+            str(roles)
+            if roles
+            else "none, so the write below fails as `permission denied for schema`. A per-person user "
             "is granted nothing by anything: SMUS passes `RedshiftDbRoles` only on the PORTAL's "
-            "session, not the space's (runbook section T)")
+            "session, not the space's (runbook section T)",
+        )
 
         try:
             cur.execute(f"drop table if exists {SCHEMA}.{table}")
@@ -627,9 +783,12 @@ def measure(label, conn, table):
             say(f"{label}e write and read", "ok", str(cur.fetchone()))
         except Exception as exc:
             conn.rollback()
-            say(f"{label}e write and read", "FAIL",
+            say(
+                f"{label}e write and read",
+                "FAIL",
                 f"{str(getattr(exc, 'args', [exc])[0])[:180]} - with the roles empty this is "
-                "layer 3, not the network")
+                "layer 3, not the network",
+            )
             return
 
         # WH-14's question, from inside: is what this session just wrote readable by a role?
@@ -638,12 +797,18 @@ def measure(label, conn, table):
             f"where namespace_name = '{SCHEMA}' and relation_name = '{table}'"
         )
         rows = cur.fetchall()
-        say(f"{label}f readable by a role", "ok" if rows else "FAIL",
-            f"{rows}" + (" - a role reaches it, so a second project holding the theme role reads "
-                         "this table: the schema's default privilege named this owner"
-                         if rows else
-                         " - EMPTY. No default privilege names this owner, so a second project "
-                         "holding the theme role would see none of this table (section T)"))
+        say(
+            f"{label}f readable by a role",
+            "ok" if rows else "FAIL",
+            f"{rows}"
+            + (
+                " - a role reaches it, so a second project holding the theme role reads "
+                "this table: the schema's default privilege named this owner"
+                if rows
+                else " - EMPTY. No default privilege names this owner, so a second project "
+                "holding the theme role would see none of this table (section T)"
+            ),
+        )
 
 
 # ---------------------------------------- 3b-3e. as the project role itself: the PER-PERSON user
@@ -654,9 +819,13 @@ else:
         conn = open_session()
     except Exception as exc:
         conn = None
-        say("3b direct session", "FAIL", f"{type(exc).__name__}: {str(exc)[:300]} - an "
+        say(
+            "3b direct session",
+            "FAIL",
+            f"{type(exc).__name__}: {str(exc)[:300]} - an "
             "AccessDenied naming redshift-serverless:GetCredentials is layer 2 on the PROJECT "
-            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database")
+            "role; a timeout with steps 1 and 2 green is the API endpoint, not the database",
+        )
     if conn:
         say("3b direct session", "ok", f"peer {peer} - the VPC door, not the Data page's")
         measure("3", conn, TABLE)
@@ -688,9 +857,13 @@ else:
         )["Credentials"]
         say("4a assumed the access role", "ok", "the per-project grantee's credentials")
     except Exception as exc:
-        say("4a assumed the access role", "FAIL", f"{type(exc).__name__}: {str(exc)[:220]} - an "
+        say(
+            "4a assumed the access role",
+            "FAIL",
+            f"{type(exc).__name__}: {str(exc)[:220]} - an "
             "AccessDenied naming sts:AssumeRole is layer 2 on the project role; one naming the "
-            "trust policy is the external id, which must equal the project id")
+            "trust policy is the external id, which must equal the project id",
+        )
     if chained:
         try:
             conn2 = open_session(chained)

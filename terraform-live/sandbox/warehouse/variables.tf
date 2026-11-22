@@ -1,6 +1,6 @@
-# Inputs. region, env, environment_tag and account_folder arrive from the generated, untracked
-# terraform.auto.tfvars (./scripts/gen-tfvars.py sandbox warehouse). Everything else below is this
-# slice's own, and each one carries a decision from Stage 5b or 6h.
+# Inputs. region, env, environment_tag, account_folder and producers arrive from the generated,
+# untracked terraform.auto.tfvars (./scripts/gen-tfvars.py sandbox warehouse). Everything else below
+# is this slice's own, and each one carries a decision from Stage 5b, 6h, 19 or 21.
 
 variable "region" {
   description = "AWS region for this slice. No region literal ever appears in a .tf file (docs/plan/architecture.md 4.1)."
@@ -33,6 +33,12 @@ variable "environment_tag" {
 variable "account_folder" {
   description = "The terraform-live/ folder this slice lives in - the first segment of every state key it reads. No .tf file may re-derive it from the env token (Lesson 14)."
   type        = string
+  nullable    = false
+}
+
+variable "producers" {
+  description = "The producer account of the products the access roles read in place (Stage 19 pass 5): production, keyed by account folder with its profile and env token, derived from backend.DATA_PRODUCERS in scripts/tfhygiene/backend.py and never authored here. Only providers.tf's aliased provider reads it, to resolve the account id the catalog ARNs carry."
+  type        = map(object({ profile = string, env = string }))
   nullable    = false
 }
 
@@ -114,8 +120,10 @@ variable "max_capacity" {
 # USD/month, argued as 29% of the D12 ceiling on the assumption that query time is scarce in a lab.
 # Then one forgotten statement ran 6 h 33 min at base capacity and reached **26.3 RPU-hours in an
 # afternoon**, two thirds of the way to a ceiling that was supposed to be generous. The limit was the
-# only guard that would have stopped it (max_query_execution_time did not, and make status read
-# 0.0000 USD/h throughout), and at 40 it would have let 14.40 USD through first.
+# guard meant to stop it (max_query_execution_time did not, and make status read 0.0000 USD/h
+# throughout), and at 40 it would have let 14.40 USD through first. Whether a breach stops a statement
+# already running is unmeasured: that statement read only catalog tables, ran on the leader node, and
+# kept running through the two minutes Stage 5b 5.1 held this limit breached (5b log, 2026-10-18).
 #
 # WHY A LOW LIMIT IS CHEAP HERE: `breach_action = deactivate`, so breaching costs an INTERRUPTION and
 # not money, and recovery is immediate on raising the amount - measured at Stage 5b 5.2, no wait for
@@ -188,17 +196,22 @@ variable "storage_alarm_usd" {
 
 # ------------------------------------------------- the admitted projects (5b 2.2, 6h 2.1/2.2)
 #
-# ONE MAP, THREE CONSUMERS, WHICH IS WHY IT IS A MAP AND NOT THREE LISTS. Each entry expands to:
+# One map for every consumer, which is why it is a map and not a list per consumer. Each entry
+# expands to:
 #
-#   layer 1  the tag AmazonDataZoneProject=<projectId> on BOTH the workgroup and the namespace -
-#            AWS names both objects, and a value that must appear in N places by hand will be
-#            missing from one (Lesson 14). The namespace half is written here; the workgroup half
-#            is written by sandbox/warehouse-compute/, which READS THIS MAP FROM THIS SLICE'S
-#            STATE rather than declaring its own copy.
-#   layer 2  one IAM policy attached to the project's role: GetCredentials and the three reads,
-#            resource-scoped to this workgroup's ARN.
-#   the door one ingress rule on the workgroup's security group, 5439/tcp from the project's own
-#            security group - not a CIDR, and not the whole private tier.
+#   layer 1      the tag AmazonDataZoneProject=<projectId> on both the workgroup and the namespace
+#                while the map holds one entry; a map of several is admitted by the wide tag
+#                (`all_projects_tag_enabled` below). AWS names both objects, and a value that must
+#                appear in N places by hand will be missing from one (Lesson 14). The namespace half
+#                is written here; the workgroup half is written by sandbox/warehouse-compute/, which
+#                reads this map from this slice's state rather than declaring its own copy.
+#   layer 2      one IAM policy, on the project's role and on its access role: GetCredentials,
+#                GetWorkgroup and ListTagsForResource on this account's workgroups, and the two
+#                listings that take no resource.
+#   access role  the role the portal's connection assumes (6h 3.1): trusted by the project's role
+#                alone, holding layer 2's policy and the portal's own.
+#   the door     one ingress rule on the workgroup's security group, 5439/tcp from the project's own
+#                security group - not a CIDR, and not the whole private tier.
 #
 # Layer 3 - the GRANT on a schema - is NOT here and cannot be: it is SQL in the namespace, and
 # removing a project from this map revokes layers 1 and 2 at the next apply and leaves its role
@@ -210,8 +223,8 @@ variable "storage_alarm_usd" {
 # sandbox/bedrock/'s project_roles is, and for the same reason (Stage 6e decision 8).
 #
 # EMPTY IS LEGAL AND IT IS THE STATE PASS 1 APPLIES IN. A warehouse with no admitted project has
-# no ingress rule, no project tag and no attached policy - which is what makes 6h verification (vi)
-# readable at all: the before is a measurement, not an assumption.
+# no ingress rule, no project tag, no access role and no attached policy - which is what makes 6h
+# verification (vi) readable at all: the before is a measurement, not an assumption.
 # ------------------------------------------------- the domain the admitted project belongs to
 #
 # Needed by ONE statement: the access role's trust policy pins the session tag
@@ -259,27 +272,23 @@ variable "projects" {
     error_message = "a project id is the portal's own lowercase alphanumeric id, as it appears in the URL - never a project NAME, which is not what the AmazonDataZoneProject tag is read against."
   }
 
-  # AT MOST ONE, AND THE LIMIT IS AWS'S RATHER THAN THIS DESIGN'S (read 2026-09-20, AWS "Gaining
-  # access to Amazon Redshift resources"). The admin "adds 1 of the following tags": either
-  # `AmazonDataZoneProject={{projectID}}`, which names ONE project, or
-  # `for-use-with-all-datazone-projects=true`, which names EVERY project in the account. There is
-  # no per-project list, because `AmazonDataZoneProject` is a tag KEY and a key holds one value -
-  # on the workgroup and on the namespace alike.
+  # At most one entry while `all_projects_tag_enabled` is false, and the limit is AWS's (read
+  # 2026-09-20, AWS "Gaining access to Amazon Redshift resources"). The admin "adds 1 of the
+  # following tags": `AmazonDataZoneProject={{projectID}}`, which names one project, or
+  # `for-use-with-all-datazone-projects=true`, which names every project in the account. A tag key
+  # holds one value, on the workgroup and on the namespace alike, so the project tag is written only
+  # while the map holds exactly one entry (main.tf).
   #
-  # So Stage 5b 2.2's "one tag per admitted project" is not expressible, and the requirement that
-  # one sandbox schema may be SHARED by several projects meets that wall at the second project, not
-  # the first. What is NOT affected: layer 2 (one IAM policy per project role, resource-scoped) and
-  # layer 3 (a database role per schema, granted per project) are both genuinely per project and
-  # many-to-many. Only the compute-admission gate is single-valued.
-  #
-  # The validation is here rather than in a comment because the failure it prevents is unreadable:
-  # a second entry would silently overwrite the first project's tag, the first project's connection
-  # would stop working, and nothing in the plan output would say which project lost its access.
-  # 6h decision 8 is where the second project is admitted deliberately, with the wide tag's cost
-  # accepted or rejected in writing.
+  # A second entry therefore needs the wide tag (6h decision 8 (a), taken 2026-11-17). Under it every
+  # project role in the account reaches the compute through AWS's SageMakerStudioProjectUserRolePolicy
+  # (`ExistingRedshiftCompute`, simulated 2026-10-18), each entry's access role is the per-project
+  # gate on the Data page, and the schema GRANT of layer 3 is the only per-project gate on the
+  # notebook and Data API doors. Without the wide tag, a second entry would leave both objects with no
+  # admission tag and every admitted project's connection would stop with nothing in the plan to say
+  # why, which is the failure this validation turns into a plan error.
   validation {
-    condition     = length(var.projects) <= 1
-    error_message = "at most one project: `AmazonDataZoneProject` is a single-valued tag key on both the workgroup and the namespace, and AWS's only way to admit more than one is the wide `for-use-with-all-datazone-projects=true`, refused here (5b 2.2). Admitting a second project is 6h decision 8, not a second map entry."
+    condition     = var.all_projects_tag_enabled || length(var.projects) <= 1
+    error_message = "at most one project while all_projects_tag_enabled is false: `AmazonDataZoneProject` is a single-valued tag key on both the workgroup and the namespace, and AWS admits more than one project only through `for-use-with-all-datazone-projects=true` (6h decision 8 (a)), which all_projects_tag_enabled = true writes."
   }
 
   validation {
@@ -297,13 +306,89 @@ variable "projects" {
   }
 }
 
-# ------------------------------------------------------------------- the wide tag, refused (5b 2.2)
+# ------------------------------------------------------------ the wide tag (6h decision 8 (a))
 #
-# AWS offers `for-use-with-all-datazone-projects=true`, "to allow all Amazon SageMaker Unified
-# Studio projects in this account to access it". It appears nowhere in this repository and
-# ./aws/warehouse.py WH-7 fails if it appears on either object: it is the same shape as an empty
-# deny-list permitting everything, and it turns "per project" into "per account" with one tag.
-# There is no variable for it on purpose - a knob whose only safe value is off is better absent.
+# `for-use-with-all-datazone-projects=true`, AWS's tag "to allow all Amazon SageMaker Unified Studio
+# projects in this account to access it". True puts it on the namespace here and, through the
+# `all_projects_tag` output, on the workgroup at sandbox/warehouse-compute/'s next apply, and lets
+# `projects` hold more than one entry. ./aws/warehouse.py WH-7 then expects it on both objects and
+# neither tag on the admin secret: the same AWS policy grants GetSecretValue on any secret wearing
+# it (`DataConnectionAllProjectResources`, AWS_STATE.md INV-20).
+variable "all_projects_tag_enabled" {
+  description = "6h decision 8 (a): true writes `for-use-with-all-datazone-projects=true` on the namespace and, through this slice's state, on the workgroup, admitting every SMUS project in the account to the compute, and lets `projects` hold more than one entry. false admits the map's one project by `AmazonDataZoneProject` alone."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+# ------------------------------------------------- the data transfer role (Stage 21 step 4.5)
+variable "data_transfer_role_enabled" {
+  description = "Stage 21 decision 3 (b), for one sitting: true creates the data transfer role that data lake access on the federated catalog names (`DataLakeAccessProperties.DataTransferRole`, iam.tf). The update-catalog call that sets it is a command of the sitting. false between sittings."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
+variable "federated_catalog_name" {
+  description = "The federated catalog Stage 21 step 4.1 registers this namespace as: the one catalog besides the account's own that the data transfer role reads."
+  type        = string
+  default     = "stage21_warehouse"
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[a-z0-9_-]+$", var.federated_catalog_name))
+    error_message = "a catalog name of lowercase letters, digits, `_` and `-`: the data transfer role's Glue resources embed it, and a `*` or a `/` would widen them past one catalog."
+  }
+}
+
+# ---------------------------------------------- the subscribed products (Stage 19 pass 5)
+#
+# A product a project subscribes to in the portal and reads in place through the warehouse. DataZone
+# fulfils the subscription with a resource link in the subscription target's Glue database in this
+# account, and Redshift resolves the link and calls Glue and Lake Formation as the access role, the
+# session's IAM principal (runbook redshift-connection.md §G). Each entry adds the identity half of
+# that read to the project's access role (iam.tf); Lake Formation's admission is DataZone's grant or
+# Stage 19 step 5.1's, never this map.
+#
+# Written by hand, as `projects` is: the database is the service's, named after the project's
+# environment, and the producer's table is the product's asset.
+variable "subscribed_products" {
+  description = "Per admitted project, keyed by project id: the products it reads in place from the producer account. Each entry names the subscription target's Glue database in this account, which holds DataZone's resource links, and the producer's database and table a link targets. Empty, or a project absent, adds nothing to that project's access role."
+  type = map(list(object({
+    link_database     = string
+    producer_database = string
+    producer_table    = string
+  })))
+
+  # `eighth-experimentation`'s subscription to Production's `trades_notional` (Stage 19 step 4.12),
+  # written before the request exists, from values read 2026-11-19: the subscription target is the
+  # project's `DataLake` environment `blerpkhn9nj7o0`, whose database `glue_db_blerpkhn9nj7o0` holds
+  # the project's resource links, and the product's asset is `app_etl.trades_notional`, an Iceberg
+  # table with no partition keys whose location Lake Formation holds in Lake Formation mode.
+  default = {
+    avhvbqn37ty7m8 = [{
+      link_database     = "glue_db_blerpkhn9nj7o0"
+      producer_database = "app_etl"
+      producer_table    = "trades_notional"
+    }]
+  }
+
+  validation {
+    condition     = alltrue([for id in keys(var.subscribed_products) : contains(keys(var.projects), id)])
+    error_message = "every key of subscribed_products is a key of projects: only `projects` creates an access role, so an entry for a project absent from it grants nothing and reads as a grant that exists. A project leaves both maps in the same edit."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for products in values(var.subscribed_products) : [
+        for p in products : [
+          for name in [p.link_database, p.producer_database, p.producer_table] : can(regex("^[a-z0-9_]+$", name))
+        ]
+      ]
+    ]))
+    error_message = "a Glue database or table name of lowercase letters, digits and `_`: the access role's ARNs embed each one, and a `*` or a `/` would widen the read past one database or table."
+  }
+}
 
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."

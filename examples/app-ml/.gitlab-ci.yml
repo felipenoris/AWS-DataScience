@@ -1,0 +1,523 @@
+# app-ml's pipeline (Stage 17 step 9.2): app-etl's pipeline for an application whose model is trained in
+# the `dev` project and carried by the release's bundle.
+#
+#   every push            the tests, ruff, the workflow lint and the gates (Secret Detection on branches,
+#                         pip-audit of the worker's archive)
+#   the default branch    and the docs, published to Pages
+#   a tag v<semver>       and the image: FROM base by digest, smoke-tested with networking off, pushed
+#                         to awsds-prod-ecr-app-ml as v<semver>-<short sha>, then the scan gate; then the
+#                         application: the workers' archives built, the bundle made from the tag's files
+#                         and the `dev` project's candidate model, the model checked against its
+#                         model.json, MIN_AUC and the tag, the bundle stored in awsds-prod-releases, and
+#                         the tag's GitLab release, which names it, the model's hash and its training
+#                         job; then the promotion, every step of it in another account: a manual gate
+#                         into Staging, Staging's egress and its deployment project read, the CI/CD CLI
+#                         deploying the bundle, the chain app-ml-register proposing the model, its version
+#                         approved, the chain app-ml-score serving it and checking its AUC; a manual gate,
+#                         and Production, where the deploy's bootstrap runs app-ml-register; then the
+#                         manual approval of the version that carries the release's hash
+#
+# Which runner takes which job (Stage 8 decision 11): every job extending .gates-uv carries tag
+# awsds-test, the test runner, whose jobs hold no AWS identity. build-image, the scan gate, store-bundle
+# and release are untagged, so only the build runner takes them, a protected runner that serves
+# protected refs alone; bundle carries tag awsds-deploy, the deploy runner, which holds the CI/CD CLI,
+# and runs as awsds-deploy-sandbox-test, a role that reads the `dev` project and its candidate model and
+# writes nothing. The tag v* is protected, created by Maintainers only, which in CE is the whole of the
+# release gate.
+
+include:
+  - project: awsds/ci-gates
+    ref: d0b895c8159e655f6e4af83cc096e37993087c81 # gates-v0.6.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify, bundle, release, staging-gate, staging, gate, production]
+
+variables:
+  # The worker's project alone: the application's own runtime set is empty, and the gate stops on an
+  # export that pins nothing (its count of pins exits 1 under `set -e`).
+  GATES_UV_PROJECTS: "code"
+  IMAGE_REPO: awsds-prod-ecr-app-ml
+  # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
+  # a SageMaker application (D28), offline. The commit is the merge of awsds-workflows pull request
+  # #26 (Stage 17 step 9.3), which adds the rules `transformacao` and `modelo` and the option
+  # `--model-item`, the test job's way to admit the one storage item that names a connection.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
+  # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
+  # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
+  # (allowed_instance_types) in the infrastructure repository. A copy, since the application's
+  # repository cannot read that module: a change to its list is a change here.
+  LINT_INSTANCE_TYPES: "ml.t3.medium ml.t3.large ml.t3.xlarge ml.m5.large ml.m5.xlarge ml.c5.large ml.c5.xlarge"
+  # The repositories of AWS's built-in algorithms a training task may name beside IMAGE_REPO, by
+  # digest: XGBoost 3.0-5 (Stage 10 decision 21).
+  LINT_ALGORITHM_REPOSITORIES: "sagemaker-xgboost"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+test:
+  extends: .gates-uv
+  stage: test
+  script:
+    - uv sync --locked
+    - uv lock --check --project code
+    - uv run ruff check
+    - uv run ruff format --check
+    - uv run pytest
+    # The lint with a job's two ceilings (Stage 8 step 5.6, clauses (e) and (f)): a literal ImageUri
+    # or TrainingImage names IMAGE_REPO or one of LINT_ALGORITHM_REPOSITORIES, never the notebook
+    # image, and an InstanceType is one of LINT_INSTANCE_TYPES. Without the options the lint reads
+    # neither. `--model-item model` admits the storage item `model`, which names the project's
+    # connection; the rule `manifest` refuses every other item that names one.
+    - |
+      set -eu
+      set --
+      for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
+      for repository in $LINT_ALGORITHM_REPOSITORIES; do set -- "$@" --algorithm-repository "$repository"; done
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . --image-repository "$IMAGE_REPO" --model-item model "$@"
+
+pages:
+  extends: .gates-uv
+  stage: build
+  script:
+    - uv sync --locked
+    - uv run pdoc app_ml ./code/app_ml_tasks --output-directory public
+  pages: true
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# BuildKit rootless, as Stage 7's pipelines run it: v0.34.0, the release `rootless` named on 2026-10-12,
+# by digest. Two builds share the job's cache: `smoke` first, which builds `app` and runs both modes of
+# the job's command on it, then `app` itself, pushed. The digest goes to the scan gate and to the bundle
+# job as a dotenv report. The job is not named `image`: at the top level that is the global keyword, and
+# GitLab refuses the file.
+build-image:
+  stage: build
+  image:
+    name: moby/buildkit:v0.34.0-rootless@sha256:65eca3c01cd1180c8f64565c4e3c5983af5145818b0e6fa863385d099eb73855
+    entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      mkdir -p ~/.docker
+      printf '{"credHelpers":{"%s":"ecr-login"}}' "$ECR_REGISTRY" > ~/.docker/config.json
+      proxy_args="--opt build-arg:http_proxy=$http_proxy --opt build-arg:https_proxy=$https_proxy --opt build-arg:HTTP_PROXY=$HTTP_PROXY --opt build-arg:HTTPS_PROXY=$HTTPS_PROXY --opt build-arg:no_proxy=$no_proxy --opt build-arg:NO_PROXY=$NO_PROXY"
+      ref="$ECR_REGISTRY/$IMAGE_REPO:$CI_COMMIT_TAG-$CI_COMMIT_SHORT_SHA"
+      echo "== smoke: both modes of the job's command as the image's user, networking off, the output owned by root"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=smoke --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args
+      echo "== push: $ref"
+      buildctl-daemonless.sh build --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt target=app --opt build-arg:REGISTRY="$ECR_REGISTRY" $proxy_args \
+        --opt label:org.opencontainers.image.revision="$CI_COMMIT_SHA" \
+        --opt label:org.opencontainers.image.version="$CI_COMMIT_TAG" \
+        --output type=image,name="$ref",push=true --metadata-file image.json
+      digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' image.json | grep -o 'sha256:[0-9a-f]*')"
+      echo "SCAN_DIGEST=$digest" > image.env
+      # The image by digest for the bundle job, whose deploy runner carries no ECR_REGISTRY.
+      echo "JOB_IMAGE_URI=$ECR_REGISTRY/$IMAGE_REPO@$digest" >> image.env
+      echo "== pushed $ref@$digest"
+  artifacts:
+    reports:
+      dotenv: image.env
+
+scan-gate:
+  extends: .gates-ecr-scan
+  stage: verify
+  needs: [build-image]
+  variables:
+    SCAN_REPOSITORY: awsds-prod-ecr-app-ml
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+
+# The workers' archives (D28 class 2b). app-ml-train's track task runs the MLflow client, so its archive
+# is awsds-workflows package-task over code/'s lock: the package and the client's closure as the worker's
+# wheels (CPython 3.12, x86_64 manylinux2014), without what the worker carries (Stage 17 step 9.4). The
+# archives of app-ml-register and app-ml-score need only the worker's boto3, so they are the package
+# alone, zipped as app-etl zips its module. `bundle` builds nothing, so the archives are built here, into
+# the folder the manifest includes. Each is imported on the worker's Python minor version: the package
+# from the zip, and the train archive extracted, as the worker extracts it, beside the boto3 and the
+# PyYAML the worker carries.
+build-task-code:
+  extends: .gates-uv
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows package-task code code/app-ml-train.zip
+      find code/app_ml_tasks -name __pycache__ -prune -exec rm -rf {} +
+      for workflow in app-ml-register app-ml-score; do
+        python3 -m zipfile -c "code/$workflow.zip" code/app_ml_tasks
+        python3 -m zipfile -l "code/$workflow.zip"
+        PYTHONPATH="code/$workflow.zip" python3 -c "import app_ml_tasks; print(app_ml_tasks.__file__)"
+      done
+      mkdir -p /tmp/app-ml-train
+      python3 -m zipfile -e code/app-ml-train.zip /tmp/app-ml-train
+      echo "code/app-ml-train.zip: $(wc -c < code/app-ml-train.zip) bytes, $(du -sk /tmp/app-ml-train | cut -f1) KiB extracted, $(find /tmp/app-ml-train -maxdepth 1 -name '*.dist-info' | wc -l) distributions"
+      uv venv --quiet /tmp/worker
+      uv pip install --quiet --python /tmp/worker/bin/python boto3==1.43.1 botocore==1.43.1 pyyaml==6.0.2
+      PYTHONPATH=/tmp/app-ml-train /tmp/worker/bin/python -c "import app_ml_tasks.track, mlflow, sagemaker_mlflow; print('mlflow', mlflow.__version__, 'from', mlflow.__file__)"
+  artifacts:
+    paths: [code/app-ml-train.zip, code/app-ml-register.zip, code/app-ml-score.zip]
+
+# The release's bundle (Stage 19 decisions 18 (d) and 19 (c)): `bundle` zips the folders the manifest
+# includes, the tag's own files, failing on the warning it prints for a missing include, and reads the
+# item `model` from the `dev` project: the candidate app-ml/models/latest/ holds now, into the bundle's
+# model/ folder (SUP-374). Nothing is deployed and nothing runs in Sandbox: the release's first run is
+# Staging's leg. The job runs on the deploy runner, which holds the CLI, as awsds-deploy-sandbox-test,
+# the profile the runner's AWS config carries: `bundle` resolves the project its stage names, and the
+# role is a member of that project and of app-etl's. A project the role cannot read does not stop the
+# CLI, which logs "Failed to get project connections" and zips the files, so the job fails on that line.
+# The CLI lists the connection's whole location before it reads the item and goes on when the listing
+# is refused, which it is for a role that may list app-ml/models/latest/ alone.
+#
+# A model the CLI could not read leaves the bundle without it and the exit status 0, so the guard reads
+# the archive: it fails a bundle without model/model.tar.gz, model/evaluation.json and model/model.json,
+# an archive whose SHA-256 is not the one model.json names, an AUC under the manifest's MIN_AUC, and a
+# candidate whose training source is not the tag's (scripts/check-model-bundle.py). The model's hash and
+# its training job pass to the release and the legs with the bundle's SHA256.
+#
+# DOMAIN_ID, DOMAIN_REGION and DEV_PROJECT_NAME are CI/CD variables of the GitLab project. The CLI
+# refuses a manifest with an unset `${VAR}`, whatever the command and the stage, so every name the
+# manifest reads and this job has no value for carries a placeholder; JOB_IMAGE_URI is the image
+# build-image pushed, by digest.
+bundle:
+  stage: bundle
+  needs: [build-image, build-task-code]
+  tags: [awsds-deploy]
+  timeout: 15m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    AWS_PROFILE: awsds-deploy-sandbox-test
+  script:
+    - |
+      set -eu
+      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME; do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
+      done
+      if [ -z "${JOB_IMAGE_URI:-}" ]; then echo "FATAL: build-image's dotenv carries no JOB_IMAGE_URI"; exit 1; fi
+      export JOB_IMAGE_URI
+      for name in $(grep -o '\${[A-Za-z0-9_]*' manifest.yaml | tr -d '${' | sort -u); do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then export "$name=unused-by-bundle"; fi
+      done
+      echo "== who bundles"
+      aws sts get-caller-identity --query Arn --output text
+      echo "== bundle"
+      rc=0
+      aws-smus-cicd-cli bundle --manifest manifest.yaml --targets dev > bundle.log 2>&1 || rc=$?
+      cat bundle.log
+      if [ "$rc" -ne 0 ]; then echo "FATAL: bundle exited $rc"; exit "$rc"; fi
+      if grep -q "Pattern not found" bundle.log; then echo "FATAL: an include of the manifest is missing"; exit 1; fi
+      if grep -q "Failed to get project connections" bundle.log; then echo "FATAL: the role could not read the project $DEV_PROJECT_NAME: is it a member of it?"; exit 1; fi
+      if grep -q "Error syncing" bundle.log; then echo "FATAL: the CLI could not read the candidate model of $DEV_PROJECT_NAME"; exit 1; fi
+      test -s artifacts/app-ml.zip
+      echo "== the model the bundle carries, against model.json, MIN_AUC and the tag"
+      python3 scripts/check-model-bundle.py artifacts/app-ml.zip manifest.yaml --dotenv model.env
+      sha256sum artifacts/app-ml.zip > artifacts/app-ml.zip.sha256
+      cat artifacts/app-ml.zip.sha256
+      echo "BUNDLE_SHA256=$(cut -d' ' -f1 artifacts/app-ml.zip.sha256)" > bundle.env
+      echo "JOB_IMAGE_URI=$JOB_IMAGE_URI" >> bundle.env
+      cat model.env >> bundle.env
+  artifacts:
+    paths: [artifacts/, bundle.log]
+    reports:
+      dotenv: bundle.env
+    expire_in: 1 year
+
+# The release's bundle (Stage 8 decision 20): the bytes the bundle job made, checked against the SHA256 it
+# computed, copied to awsds-prod-releases with the build runner's own role. The aws CLI image the scan
+# gate uses, by digest.
+store-bundle:
+  stage: release
+  needs: [bundle]
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      echo "$BUNDLE_SHA256  artifacts/app-ml.zip" | sha256sum -c -
+      object="s3://awsds-prod-releases/app-ml/$CI_COMMIT_TAG/app-ml.zip"
+      aws s3 cp artifacts/app-ml.zip "$object"
+      echo "BUNDLE_OBJECT=$object" > release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+# The tag's GitLab release, whose notes name the bundle's object, its SHA256, the image, the model's
+# SHA-256 and its training job: what a leg of the promotion and the approval read. The `release` keyword
+# runs glab, which GitLab's own cli image carries, pinned by digest (v1.120.0, released 2026-09-29); a
+# tag whose bundle failed gets no release. The runner evaluates the description inside double quotes,
+# so the notes hold no backtick, which the shell would run as a command substitution. glab trusts what
+# Go reads from SSL_CERT_DIR beside the image's own bundle: the CA root the runner mounts in every job
+# (runbooks/gitlab.md §K).
+release:
+  stage: release
+  needs: [store-bundle, bundle, build-image]
+  image: registry.gitlab.com/gitlab-org/cli:v1.120.0@sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812
+  variables:
+    SSL_CERT_DIR: /etc/gitlab-runner/certs
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - echo "release $CI_COMMIT_TAG, bundle $BUNDLE_OBJECT, sha256 $BUNDLE_SHA256, image $JOB_IMAGE_URI, model $MODEL_SHA256 from $MODEL_TRAINING_JOB"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "app-ml $CI_COMMIT_TAG"
+    description: |
+      Bundle: $BUNDLE_OBJECT
+
+      Bundle SHA256: $BUNDLE_SHA256
+
+      Image: $JOB_IMAGE_URI
+
+      Model SHA256: $MODEL_SHA256
+
+      Model training job: $MODEL_TRAINING_JOB
+
+# Verification (xiii), run by hand: the pip-audit gate with the proxy variables removed. No route leaves
+# VPC-SharedServices but the proxy, so the job must fail, and the time it takes says whether it failed or
+# hung until the bound.
+gate-without-proxy:
+  extends: .gates-uv
+  stage: verify
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  allow_failure: true
+  script:
+    - |
+      set -u
+      start=$(date +%s)
+      rc=0
+      env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy timeout 300 \
+        uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
+      echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
+      [ "$rc" -ne 0 ]
+
+# ------------------------------------------------------------------ the promotion (Stage 8 step 3)
+#
+# The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
+# at its default branch with the job token and printing the commit it runs (Stage 8 decision 2): the
+# deploy job, the egress reading and the model's approval live there, never here. The job's AWS identity
+# is the profile it names, one per deploy role on the runner; every account value is read at run time
+# from the project or the slice that owns it. A leg applies no Terraform: the CI/CD CLI deploys the
+# bundle into the account's deployment project, and the chains above its workflows are the
+# infrastructure user's (terraform-live/<env>/chains/).
+# The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
+# and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
+# checks the proxy first on the SageMaker API, which that VPC holds no endpoint for, with curl's failure
+# kept inside the substitution: under `set -e` a failed assignment ends the job before the message.
+# The clone trusts the CA root the runner mounts in every job (runbooks/gitlab.md §K), which the deploy
+# image's own store does not hold.
+.promotion:
+  tags: [awsds-deploy]
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    INFRA_DIR: $CI_PROJECT_DIR/infrastructure
+  before_script:
+    - |
+      set -eu
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/" || true)"
+      if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      echo "the proxy answers ($code)"
+      git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
+      echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
+
+# The staging gate (Stage 8 decision 28): a blocking manual job between the release and the Staging leg.
+# Its needs name the release's jobs, never `needs: []`, which would let it start past a failed one; who
+# may start it is whoever may run the protected tag's pipeline.
+staging-gate:
+  stage: staging-gate
+  needs: [release, store-bundle, bundle]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: staging
+  script:
+    - echo "$CI_COMMIT_TAG admitted to Staging by $GITLAB_USER_LOGIN"
+
+# Staging's [E] egress/, read before the leg writes and never raised: every shared slice is the user's
+# `make up` / `make down` (Stage 8 decision 27). Then the deployment project: its Tooling environment's
+# values, and the deploy role's membership of it, without which the CLI's deploy stops at the project's
+# connections.
+staging-check:
+  extends: .promotion
+  stage: staging
+  needs: [staging-gate]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      export AWS_PROFILE=awsds-deploy-staging
+      ./scripts/check-egress.py staging egress
+      ./scripts/deploy-application.py staging --check
+
+# The bundle read as the runner's own role and checked before a file of it is read, then deployed into
+# Staging's deployment project by the CI/CD CLI, as the deploy role (scripts/deploy-application.py of the
+# infrastructure repository): the bundle extracted beside this tag's manifest, the stage's variables read
+# from the project's Tooling environment, the bundle's files under the project's shared prefix, its model
+# under app-ml/bundle/model/, the stage's workflows created or updated. The job fails on the CLI's exit
+# status, on a workflow with no network of the project's and on a workflow it cannot find afterwards;
+# then it records the stage's variables, which the chains pass to each run. The bundle sits beside the
+# clone, never inside it.
+staging-deploy:
+  extends: .promotion
+  stage: staging
+  needs: [staging-check, bundle, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/staging-deploy.log" --dotenv "$CI_PROJECT_DIR/staging.env"
+  artifacts:
+    when: always
+    paths: [staging-deploy.log]
+    reports:
+      dotenv: staging.env
+    expire_in: 1 year
+
+# The release's first run anywhere, each chain's machine started by the leg and followed to its end, the
+# schedules being DISABLED in Staging. app-ml-register proposes the bundle's model in
+# awsds-staging-model-app-ml, PendingManualApproval; the leg approves the version that carries the
+# release's hash, as production-approve does in Production, so the path Production runs is tested here
+# first (scripts/model-chain.py approve); app-ml-score then serves that version, which it serves only
+# Approved, and checks its AUC over the holdout. The leg reads the score report as another principal. An
+# execution's name carries the job's id: Step Functions refuses a name an ended execution of the machine
+# holds, so a retry names its executions anew.
+staging-test:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy, bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      export AWS_PROFILE=awsds-deploy-staging
+      account="$(aws sts get-caller-identity --query Account --output text)"
+      run_chain() {
+        machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-$1"
+        execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_JOB_ID-$1" | tr . -)" --query executionArn --output text)"
+        echo "started $execution"
+        status=RUNNING
+        while [ "$status" = "RUNNING" ]; do
+          sleep 60
+          status="$(aws stepfunctions describe-execution --execution-arn "$execution" --query status --output text)"
+          echo "$(date -u +%H:%M:%S) $1 $status"
+        done
+        aws stepfunctions describe-execution --execution-arn "$execution" --output json > "execution-$1.json"
+        if [ "$status" != "SUCCEEDED" ]; then
+          aws stepfunctions get-execution-history --execution-arn "$execution" --reverse-order --max-items 20 --output json > "history-$1.json"
+          echo "FATAL: the chain $1 ended $status"; cat "history-$1.json"; exit 1
+        fi
+      }
+      run_chain app-ml-register
+      echo "== the version that carries the release's model, sha256 $MODEL_SHA256"
+      (cd "$INFRA_DIR" && ./scripts/model-chain.py approve staging --application app-ml --sha256 "$MODEL_SHA256" --approver "$GITLAB_USER_LOGIN")
+      run_chain app-ml-score
+      echo "== the score report, under the project's shared prefix"
+      aws s3 cp "${STAGING_SHARED_URI}app-ml/outbox/score-report.json" score-report.json --only-show-errors
+      cat score-report.json
+      grep -q "\"sha256\": \"$MODEL_SHA256\"" score-report.json || { echo "FATAL: the score report names another model than $MODEL_SHA256"; exit 1; }
+  artifacts:
+    when: always
+    paths: [execution-*.json, history-*.json, score-report.json]
+    expire_in: 1 year
+
+# The pipeline destroys nothing in Staging, as in Production (Stage 8 decision 27). The project, its
+# workflows, its model version and its score report stay at rest, billing nothing but their storage, and
+# the user's `make down ENV=staging` takes egress/ down.
+
+# Production's deployment project read beside Staging's results before the gate: its Tooling
+# environment's values, and the deploy role's membership of it, so the gate is asked of nobody while the
+# deploy behind it would stop at its first call.
+production-check:
+  extends: .promotion
+  stage: gate
+  needs: [staging-test, bundle]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --check
+
+# The gate, a blocking manual job whose needs name the Staging leg's jobs, never `needs: []`, which would
+# let it start past a failed leg. Who may start a release is the protected tag.
+production-gate:
+  stage: gate
+  needs: [staging-test, production-check]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
+
+# The same bundle and image by digest, nothing rebuilt, deployed into Production's deployment project as
+# Staging's was. A Production run needs production/workloads-egress/ raised by the user, which the job
+# reads first and never raises. The `prod` stage's bootstrap then runs app-ml-register, following its
+# log to the run's end: the deploy fails with the run, and a release that passes leaves its model
+# proposed in awsds-prod-model-app-ml, PendingManualApproval.
+production-deploy:
+  extends: .promotion
+  stage: production
+  needs: [production-gate, bundle, store-bundle]
+  resource_group: production
+  timeout: 90m
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --image-uri "$JOB_IMAGE_URI" --log "$CI_PROJECT_DIR/production-deploy.log" --dotenv "$CI_PROJECT_DIR/production.env"
+  artifacts:
+    when: always
+    paths: [production-deploy.log]
+    reports:
+      dotenv: production.env
+    expire_in: 1 year
+
+# The approval: a blocking manual job, the deployment manager's pause, CE's shape of Stage 8 3.5. It
+# prints the PendingManualApproval version of awsds-prod-model-app-ml whose description carries the
+# release's hash, with its training job and its metrics, and approves that one and no other
+# (scripts/model-chain.py approve). Production's chain app-ml-score serves it from then on, started by its
+# schedule or by the operator.
+production-approve:
+  extends: .promotion
+  stage: production
+  needs: [production-deploy, bundle]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py approve production --application app-ml --sha256 "$MODEL_SHA256" --approver "$GITLAB_USER_LOGIN"

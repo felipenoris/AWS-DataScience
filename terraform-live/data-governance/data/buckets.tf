@@ -88,10 +88,9 @@ locals {
   # ListObjectsV2 and DeleteObject are each denied implicitly. The delete is worth stating - a
   # writer that can retract is a writer that can launder, so put-only is a claim about retraction
   # as well as about reading. AllowInteractiveWriterPutOnly is exercised, not merely attached
-  # (Lesson 20). One residue by design: the writer cannot clean up after itself and the collector
-  # is Stage 9's awsds-prod-job-exec, which does not exist yet, so the proof object is
-  # uncollectable until then - AWS_STATE.md EXC-02 declares it so a later snapshot does not read
-  # it as someone writing to the drop-box outside a recorded proof.
+  # (Lesson 20). One residue by design: the writer cannot clean up after itself, so an object the
+  # collector (Stage 9's awsds-prod-job-exec) does not consume stays until a deliberate
+  # InfrastructureAccess cleanup, declared in AWS_STATE.md meanwhile.
   dropbox_statements = [
     # The drop-box's network deny, in three statements so the writer's put is the one call the
     # lake admits from any network (D39): outside the trusted networks every other action is

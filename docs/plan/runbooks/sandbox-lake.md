@@ -102,7 +102,9 @@ below.
   trail) — a plain `list_objects_v2`/`get_object` from the notebook **succeeds by design**, and reading
   that 200 as a hole is Lesson 30's mistake. The direct-refusal control lives in the laptop half alone.
   The third refusal the first draft named — the same read from a *second* project holding no grant —
-  stays unexercised until a second project exists.
+  stays unexercised, and no longer waits on a project: `sandbox/lake/`'s `wired_projects` names
+  `eighth-experimentation` alone (read 2026-11-17), so `test-experimentation` or `app-etl-dev` is a
+  second project with no grant.
 - **From the laptop, no project in the path** (proves the *persona* path): from any network, as the
   group's SSO user, the `s3-read-write` sequence unchanged — discover (`ListCallerAccessGrants`), vend
   (`GetDataAccess` on `s3://awsds-sandbox-lake/<sso-group>/*`), write, list, read back. The vended
@@ -228,6 +230,9 @@ whose grant was cut keeps its form and loses its reach — already-vended creden
 their remaining duration (the bearer residual, open question 14's shape; Stage 16 verification (viii)
 measures the window). **The orphan reading is `SL-4`**: a grant whose `datazone_usr_role_*` grantee no
 longer exists in IAM is a dead project that skipped this section — run it then, not a new design.
+A project's deletion takes its role and the Access Grants location of its own prefix, and leaves the
+account's Access Grants instance, which the lake's location lives in (measured in Staging, Stage 18
+8.1, 2026-10-22): §R removes the grant and the trust entry, never the instance.
 
 ---
 

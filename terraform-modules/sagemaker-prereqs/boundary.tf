@@ -27,6 +27,10 @@
 #      key        condition the key policy carries, each side scoping the other.
 #   4. Stage 6     the step 3 pair, mirrored: jobs off the VPC, and the instance ceiling. The
 #      step 3     persona set governs humans; this governs the roles the blueprint writes.
+#   5. Stage 19    the fence, where a caller asks for it: the account's own buckets, keys,
+#      decision   secrets, roles and repositories a project role never touches, and the services
+#      21         its projects have no use for. AWS's policies on the role reach each of them
+#                 by IAM (TM-30), and the boundary binds whatever version the role carries.
 #
 # Absent: an Athena Spark clause. Decided 2026-08-19 by the user - an OU SCP reaches every IAM
 # principal in this account, project roles included, so the clause would deny nothing the SCP
@@ -118,6 +122,109 @@ data "aws_iam_policy_document" "project_boundary" {
       test     = "StringNotEquals"
       variable = "kms:ViaService"
       values   = ["s3.${var.region}.amazonaws.com"]
+    }
+  }
+
+  # ------------------------------------------------- the fence (Stage 19 decision 21, TM-30)
+  #
+  # What a project role never touches in an account that holds more than its projects. Each
+  # statement exists only when its variable names something, so a caller that sets none renders
+  # the document it rendered before.
+
+  # The bucket and its objects, both forms, as D13's statement above.
+  dynamic "statement" {
+    for_each = length(var.fenced_bucket_names) > 0 ? [1] : []
+
+    content {
+      sid     = "DenyTheAccountsOwnBuckets"
+      effect  = "Deny"
+      actions = ["s3:*"]
+      resources = concat(
+        [for n in var.fenced_bucket_names : "arn:${data.aws_partition.current.partition}:s3:::${n}"],
+        [for n in var.fenced_bucket_names : "arn:${data.aws_partition.current.partition}:s3:::${n}/*"],
+      )
+    }
+  }
+
+  # Every customer managed key of this account whose aliases are neither the project key's nor an
+  # AWS managed key's. ForAllValues is true over a key with no alias, so an unaliased key is
+  # denied too. The resource names this account's keys, so the lake's key keeps its own statement.
+  dynamic "statement" {
+    for_each = var.fence_customer_keys ? [1] : []
+
+    content {
+      sid       = "DenyCustomerKeysButTheProjectKey"
+      effect    = "Deny"
+      actions   = ["kms:*"]
+      resources = ["arn:${data.aws_partition.current.partition}:kms:*:${data.aws_caller_identity.current.account_id}:key/*"]
+
+      condition {
+        test     = "ForAllValues:StringNotLike"
+        variable = "kms:ResourceAliases"
+        values   = ["alias/awsds-${var.env}-project", "alias/aws/*"]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(var.fenced_secret_names) > 0 ? [1] : []
+
+    content {
+      sid     = "DenyTheAccountsOwnSecrets"
+      effect  = "Deny"
+      actions = ["secretsmanager:*"]
+      resources = [
+        for n in var.fenced_secret_names :
+        "arn:${data.aws_partition.current.partition}:secretsmanager:*:${data.aws_caller_identity.current.account_id}:secret:${n}"
+      ]
+    }
+  }
+
+  # With no role excepted the statement names every role; with some, every role but those.
+  dynamic "statement" {
+    for_each = var.fence_role_assumption && length(var.assumable_role_arns) == 0 ? [1] : []
+
+    content {
+      sid       = "DenyAssumingAnyRole"
+      effect    = "Deny"
+      actions   = ["sts:AssumeRole"]
+      resources = ["*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.fence_role_assumption && length(var.assumable_role_arns) > 0 ? [1] : []
+
+    content {
+      sid           = "DenyAssumingAnyRoleButTheNamedOnes"
+      effect        = "Deny"
+      actions       = ["sts:AssumeRole"]
+      not_resources = var.assumable_role_arns
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(var.fenced_repository_names) > 0 ? [1] : []
+
+    content {
+      sid     = "DenyTheAccountsOwnRepositories"
+      effect  = "Deny"
+      actions = ["ecr:*"]
+      resources = [
+        for n in var.fenced_repository_names :
+        "arn:${data.aws_partition.current.partition}:ecr:*:${data.aws_caller_identity.current.account_id}:repository/${n}"
+      ]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = length(var.fenced_services) > 0 ? [1] : []
+
+    content {
+      sid       = "DenyServicesNoProjectUsesHere"
+      effect    = "Deny"
+      actions   = [for s in var.fenced_services : "${s}:*"]
+      resources = ["*"]
     }
   }
 }

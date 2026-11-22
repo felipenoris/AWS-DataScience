@@ -78,24 +78,30 @@ AWS Organization (Management account - console only)                        [P]
 │       │     blueprints (`Tooling` + the enabled set - docs/SMUS.md), account
 │       │     associations, SageMaker Catalog            <- D26            [P]
 │       │     A registry, not a runtime: blueprints provision compute
-│       │     into the Sandbox accounts, never here
+│       │     into the Sandbox accounts; one publishing project here,
+│       │     governed-lake, Tooling with spaces off (6f step 11), and one
+│       │     deployment project in Staging and in Production since 2026-11-11
 │       ├── Glue Crawlers (raw + drop-box) under the maintenance role,
 │       │     event-driven; Iceberg optimizers           <- D27            [P] cfg
 │       ├── ingestion drop-box prefix (PutObject-only, dated, D18)          [P]
-│       └── LF cross-account shares -> Sandbox (read; Development's revoked at 6b),
-│           Production (read + governed write: the producer path)           [P]
+│       └── LF cross-account shares -> Sandbox (read), Staging (read, since
+│           2026-10-22; Development's revoked at 6b), Production (read +
+│           governed write: the producer path)                              [P]
 │
 └── OU Workloads             <- one SCP set for both: no interactive compute,
     │                           no human control plane (D20)
     ├── Staging account      <- deployment target; integration tests land here
     │   ├── VPC (same module, own CIDR; peered to VPC-Networking since 6c)  [P]
-    │   ├── S3 + Glue Catalog (Iceberg) - sampled or synthetic data only,
-    │   │     local to this account, never LF-shared production data        [P]
-    │   ├── SageMaker job execution roles (no domain, no Model Registry)    [P]
-    │   ├── interface VPC endpoints, no NAT (only during a promotion run)  [E]
-    │   └── app slices, deployed by the pipeline and torn down after tests  [E]
+    │   ├── S3 + Glue Catalog (Iceberg) - its own tables, created by the
+    │   │     release's runs; the governed lake read in place, read-only    [P]
+    │   ├── SageMaker job execution roles (no Model Registry of its own)    [P]
+    │   ├── deploy-staging: a deployment project, spaces off, since
+    │   │     2026-11-11; the CI/CD CLI deploys each release into it (D26)  [P]
+    │   ├── chains/: a state machine and a schedule per chain (D41)        [P]
+    │   └── interface VPC endpoints, no NAT (only during a promotion run;
+    │         destroyed by the user's make down, Stage 8 decision 27)       [E]
     │
-    └── Production account   <- no human runs code here; no Studio domain   D17
+    └── Production account   <- no human runs code here; no space runs     D17
         │                       and, since 6c (D38), the network platform
         ├── VPC-SharedServices (10.30/16): GitLab, runners, the build host;
         │     the awsds.internal apex zone; peering accepter                [P]
@@ -106,6 +112,8 @@ AWS Organization (Management account - console only)                        [P]
         ├── VPC-Workloads (10.32/16): the production runtime, no IGW route  [P]
         ├── ECR (dev-env images, application images)          <- D14        [P]
         ├── CodeArtifact (package proxy: PyPI, Cargo, ...)    <- D14        [P]
+        ├── deploy-production: a deployment project, spaces off, since
+        │     2026-11-11; the CI/CD CLI deploys each release into it (D26)  [P]
         ├── SageMaker Model Registry + job execution roles    <- D17        [P]
         │     └── training/processing jobs, endpoints (pipeline-submitted)  [E]
         │         reading and writing the lake through the LF share (D22)
@@ -113,7 +121,7 @@ AWS Organization (Management account - console only)                        [P]
         ├── internal ALB for GitLab/Pages (rebuilt per session)             [E]
         ├── GitLab Runners                                    <- D14        [E]
         ├── interface VPC endpoints per VPC - no NAT anywhere (D38)         [E]
-        ├── orchestration: MWAA Serverless, chains above it (D7, D41)       [E]
+        ├── orchestration: MWAA Serverless, chains above it (D7, D41)       [P]
         └── (Stage 13) public web tier -> private backend                   [E]
 ```
 
@@ -163,18 +171,19 @@ There are two paths, and they should not be confused:
   compute is `VpcOnly`; VPC-only governs how the *app containers* reach the network, not how the browser
   reaches the UI. The laptop needs no route into the Staging VPC.
 
-The second path's control is the identity. Until Stage 6g, `aws:SourceIp` on the proxy's Elastic IP
-(Stage 4 step 8) still binds the six persona sets' API and console calls to the hub; it never reached the
-portal (INT-16, measured 2026-08-22), and D39 retires it. The identity premise it leaves is Stage 11
+The second path's control is the identity. Until Stage 6g (applied 2026-09-17), `aws:SourceIp` on the
+proxy's Elastic IP (Stage 4 step 8) bound the six persona sets' API and console calls to the hub; it never
+reached the portal (INT-16, measured 2026-08-22), and D39 retired it. The identity premise it leaves is Stage 11
 step 3.4's row: modelled, not enforced, since Identity Center's own directory checks no device.
 
 **Where the humans are (D17, D18, D21).** *Humans run code in the Interactive OU and nowhere else; they
 read the deployment targets' data planes; nobody changes a Workloads-OU control plane by hand; and the
 lake is written only through governed engines.* Interactive compute exists in Sandbox and nowhere else
 (Development's half left at Stage 6b, 2026-09-06): since D26 one unified domain, registered in Data
-Governance, whose project blueprints provision compute into the Sandbox accounts and into no others (D17
-as revised by D21, re-read by D26, and narrowed by 6b). The domain being elsewhere changes nothing about
-where code runs: it is a registry, and the project profile names the target account. The data scientist
+Governance, whose project blueprints provision interactive compute into the Sandbox accounts and into no
+others (D17 as revised by D21, re-read by D26, and narrowed by 6b); the deployment projects of Staging and
+Production, since 2026-11-11, run no space (Stage 19 decision 6 (b)). The domain being elsewhere changes
+nothing about where code runs: it is a registry, and the project profile names the target account. The data scientist
 holds read-only permission sets on Staging and Production for logs, catalog metadata, job status and
 Athena (D18); the SageMaker runtime in Staging and Production is reachable only by a pipeline; and no
 human signs in to the Data Governance account at all outside the infrastructure role (D22).
@@ -392,7 +401,7 @@ shapes exist; they are recorded so a future session does not re-derive them.
 | | Where it matches | Measured cost (`us-west-2`) | The catch |
 |---|---|---|---|
 | **AWS Network Firewall**, stateful domain list | **TLS SNI** and **HTTP Host** — never DNS, so the CNAME chain is irrelevant by construction | USD **0.395/h** per endpoint + **0.065/GB** (`docs/PRICING.md`) | ~USD 288/month **always-on**, against a USD 50 ceiling (D12) — but `egress/` is `[E]`, so an 8-hour session is ~USD 3.16. The monthly figure is the one that made this look unaffordable; the hourly one is what this estate actually pays. Still ~8× the NAT |
-| **Explicit HTTP `CONNECT` proxy** (Squid) — **chosen, and built at [Stage 6c](stages/stage-06c-networking-hub.md) under [D38](decisions/D38-single-egress-hub.md)** | the `CONNECT` line, which is plaintext to the proxy — so it survives **ECH**, which will eventually blind SNI matching | **0.0104/h**, the `t3.micro` that was built (settled 6c step 7.4, 2026-09-06). `PRICING.md` §8. It began as a `t3.nano` at 0.0052 and was sized up because **`dnf` was OOM-killed on 415 MiB**. **It charges nothing per GB**: a NAT gateway adds 0.045/GB of processing and an EC2 proxy adds none | an EC2 to run and patch; every tool needs `http_proxy`/`https_proxy` (pip, cargo, `Pkg`, R, apt, the container runtime); and the proxy must resolve **outside** the DNS Firewall, so it needs its own resolver or a VPC without the rule-group association |
+| **Explicit HTTP `CONNECT` proxy** (Squid) — **chosen, and built at [Stage 6c](stages/stage-06c-networking-hub.md) under [D38](decisions/D38-single-egress-hub.md)** | the `CONNECT` line, which is plaintext to the proxy — so it survives **ECH**, which will eventually blind SNI matching | **0.0208/h**, a `t3.small` (`PRICING.md` §8). It began as a `t3.nano` at 0.0052 and moved to a `t3.micro` at 0.0104 because **`dnf` was OOM-killed on 415 MiB** (6c step 7.4, 2026-09-06), then to a `t3.small`: on 2026-11-21 a cold `dnf` peaked at 617 MiB RSS and update-motd's at 623 MiB, more together than a `t3.micro` holds. **It charges nothing per GB**: a NAT gateway adds 0.045/GB of processing and an EC2 proxy adds none | an EC2 to run and patch; every tool needs `http_proxy`/`https_proxy` (pip, cargo, `Pkg`, R, apt, the container runtime); and the proxy must resolve **outside** the DNS Firewall, so it needs its own resolver or a VPC without the rule-group association |
 
 Neither is a Stage 6 deliverable. They answer *"the requirement is SNI, not name"* — a different
 requirement from the one design A was built for. The objectives state an institutional **HTTP/HTTPS
@@ -493,8 +502,9 @@ A mental model, not a status. Every old habit contradicts some part of it.
   account"*: Data Governance and Identity are **high blast radius**, which is a different property from
   being production.
 - **One account is off that axis entirely:** Data Governance (D22) owns the governed lake; every
-  environment reaches it through Lake Formation cross-account shares — read for Sandbox/Development, read
-  plus **governed write** for Production's job role (the producer path). Nobody signs in to it
+  environment reaches it through Lake Formation cross-account shares — read for Sandbox, and for Staging
+  since 2026-10-22 (Development's share was revoked at 6b), read plus **governed write** for Production's
+  job role (the producer path). Nobody signs in to it
   interactively.
 - **What each OU carries is not uniform (D23).** Read it per OU:
   - **`Security`** (Log Archive, Audit) is **foundational**: its ceiling is Control Tower's guardrails,
@@ -522,8 +532,8 @@ A mental model, not a status. Every old habit contradicts some part of it.
     statement is a second place to forget an amendment, and the `ExemptAssumeRoot` omission is the worked
     example of that failure.
   - **`Interactive` carries a one-statement set** (Stage 1c step 7.6, decision 1, 2026-08-13): deny
-    `sagemaker:CreateNotebookInstance` and `CreatePresignedNotebookInstanceUrl`. It holds Development plus
-    the nested `Sandboxes`, it is the only OU where a domain may exist (D17), and every *other* interactive
+    `sagemaker:CreateNotebookInstance` and `CreatePresignedNotebookInstanceUrl`. It holds the nested
+    `Sandboxes` alone since Development left at 6b (2026-09-06), it is the only OU where a domain may exist (D17), and every *other* interactive
     surface is allowed there because nothing denies it — the organization-root set plus that one statement
     is the whole ceiling. What holds infrastructure change off the data scientist is
     `DataScientistAccess`, an **identity** policy, not this OU.
@@ -542,19 +552,22 @@ A mental model, not a status. Every old habit contradicts some part of it.
 - **One unified domain, projects as the isolation unit (D26):** the DataZone V2 domain is registered in
   **Data Governance** because a domain is a registry of projects and data products — ownership axis, not
   lifecycle axis. **It holds no compute:** the
-  `experimentation` project profile provisions into the Sandboxes, the only associated accounts since 6b
-  removed `engineering` with Development, and nothing is ever provisioned into the domain account itself.
+  `experimentation` project profile provisions into the Sandboxes (6b removed `engineering` with
+  Development), and the domain account holds one publishing project, `governed-lake`, a `Tooling`
+  environment with spaces off (6f decision 1, 2026-10-26), running no user compute.
   Where a person's work runs is therefore a property of the project, never of the URL they open.
   Lakehouse blueprint in its Glue/Athena form only — **never** the Redshift Serverless variant, and that
   still holds since [D40](decisions/D40-redshift-warehouse.md) (2026-09-19): the warehouse that decision
   admits is **one namespace per account, written by Terraform**, reached through a *connection to an existing
-  compute resource*, and no blueprint provisions one. So the domain remains a registry that provisions
-  nothing into itself and no project can create a warehouse of its own.
-  Staging and Production are never associated. What crosses the gate is
-  the D28 artifact set — image, workflow YAML in S3, the code its tasks read from S3, per-workflow role,
-  orchestration resource with a chain's state machine and schedule, log group, model package group —
-  carried by the application's git repository, which the CI/CD CLI deploys between the Sandbox projects
-  and bundles ([D41](decisions/D41-sagemaker-application.md)), and linted against domain-scoped references.
+  compute resource*, and no blueprint provisions one. So the domain remains a registry that runs no user
+  compute, and no project can create a warehouse of its own.
+  Staging and Production were never associated until 2026-11-11, when
+  [Stage 19](stages/stage-19-smus-native-data-product.md) decision 6 (b) gave each a deployment project:
+  a project no person works in and no space runs in, which the CI/CD CLI deploys into since release F
+  (`v0.5.2`, 2026-11-16). What crosses the gate is the application's bundle, made by the CI/CD CLI from
+  the tag's files and the `dev` project's catalog ([D41](decisions/D41-sagemaker-application.md)): the
+  image, the workflow YAML, the code its tasks read from S3 and the catalog's export; the CLI creates the
+  workflows in each deployment project, and `<env>/chains/` holds each chain's state machine and schedule.
 - **D18** gives the data scientist read-only permission sets on Staging and Production (data plane, no
   compute); **D19** keeps the derived zone designed rather than left over — since 2026-08-26 it is the
   SMUS project path, per project, the service's hand.

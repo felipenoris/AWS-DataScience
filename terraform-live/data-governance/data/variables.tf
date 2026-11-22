@@ -32,8 +32,8 @@ variable "environment_tag" {
 }
 
 variable "consumers" {
-  description = "Profile + env token per consumer account (INT-03's N+2, minus Production until Stage 9), derived in scripts/tfhygiene/backend.py - never authored here. Consumed twice: the terraform_remote_state reads of each consumer's foundation/ (the [P] S3 gateway-endpoint id, INT-05's anchor), and the aliased providers that resolve each account id for the drop-box statements."
-  type        = map(object({ profile = string, env = string }))
+  description = "Profile, env token and VPC slice per consumer account (INT-03's N+2), derived in scripts/tfhygiene/backend.py - never authored here. Consumed twice: the terraform_remote_state reads of each consumer's VPC slice (the [P] S3 gateway-endpoint id, INT-05's anchor; workloads/ for Production, foundation/ elsewhere), and the aliased providers that resolve each account id for the shares and the drop-box statements."
+  type        = map(object({ profile = string, env = string, vpc_slice = string }))
   nullable    = false
 }
 
@@ -41,6 +41,28 @@ variable "producers" {
   description = "The account whose job role empties the drop-box (D25, INT-10) - production, resolved to an id by an aliased provider. The role itself (awsds-prod-job-exec) does not exist until Stage 9; the statements name it by ArnLike condition, which S3 does not validate - a nonexistent Principal ARN would reject the whole policy."
   type        = map(object({ profile = string, env = string }))
   nullable    = false
+}
+
+# ------------------------------------------------- Stage 6f step 11, the lake-publishing pilot
+
+variable "lake_publishing_enabled" {
+  description = "From backend.LAKE_PUBLISHERS (generated). true seats awsds-data-smus-provisioning and awsds-data-smus-manage-access as Lake Formation administrators beside InfrastructureAccess (publishing.tf), before the publishing project's first environment writes the same list."
+  type        = bool
+  default     = false
+}
+
+variable "lake_publisher_role" {
+  description = "The publishing project's role, by NAME, hand-written after its Tooling environment exists (Stage 6f step 11.5), the way sandbox/bedrock/ names project roles. null grants nothing. The role receives DESCRIBE on curated and DESCRIBE and SELECT with the grant option on each table of publishing.tf's list, the terms DataZone sets for publishing a Glue table."
+  type        = string
+
+  # governed-lake, created by the Governance Manager on 2026-10-26 (6f step 11.4) and read from its
+  # stack the same evening: `3j4l4xmvz7fggg` is the project and `52webn93119ouo` the environment.
+  default = "datazone_usr_role_3j4l4xmvz7fggg_52webn93119ouo"
+
+  validation {
+    condition     = var.lake_publisher_role == null || can(regex("^datazone_usr_role_[a-z0-9]+_[a-z0-9]+$", var.lake_publisher_role))
+    error_message = "the publisher is a SMUS project role, `datazone_usr_role_<project>_<environment>`."
+  }
 }
 
 variable "project" {

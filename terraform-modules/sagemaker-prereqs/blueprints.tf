@@ -44,8 +44,17 @@
 # three AZs and D9 built two - verification (iii): the apply either accepts two or it does not,
 # and that answer is taken here rather than assumed anywhere.
 
+locals {
+  # The configured set: var.blueprint_names, plus RedshiftServerless while Stage 21's switch is on
+  # (variables.tf). The roster guard in data.tf iterates the same set.
+  configured_blueprints = var.blueprints_enabled ? toset(concat(
+    var.blueprint_names,
+    var.redshift_serverless_enabled ? ["RedshiftServerless"] : [],
+  )) : toset([])
+}
+
 resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
-  for_each = var.blueprints_enabled ? toset(var.blueprint_names) : toset([])
+  for_each = local.configured_blueprints
 
   domain_identifier                = var.domain_id
   environment_blueprint_identifier = data.aws_datazone_environment_blueprint.enabled[each.value].name
@@ -61,8 +70,8 @@ resource "awscc_datazone_environment_blueprint_configuration" "enabled" {
   # environment blueprint id <Tooling's> not defined" - the project survived ACTIVE, the Tooling
   # environment failed before its CloudFormation stack existed. The console's own Enable-Tooling
   # wizard asks for this role, which is the reading the null contradicted (Lesson 16). It is the
-  # same role the other ten name: AmazonDataZoneSageMakerManageAccessRolePolicy is AWS's one
-  # SMUS manage-access policy, and a second role for Tooling would be a split nothing measures.
+  # same role the other ten name, carrying AWS's SageMaker and Glue manage-access policies
+  # (roles.tf), and a second role for Tooling would be a split nothing measures.
   manage_access_role_arn = module.manage_access_role.role_arn
 
   environment_role_permission_boundary = aws_iam_policy.project_boundary.arn

@@ -2,12 +2,20 @@
 # its resource policy written now rather than improvised in Stage 10 (D28 item 6).
 #
 # The registry is the promotion boundary: a version is approved here, on the far side of the gate
-# from the person who trained it. Three statements per group:
+# from the person who trained it. A family's policy takes one of two shapes, by who registers its
+# versions:
 #
-#   register and approve   awsds-deploy-prod alone (CreateModelPackage, UpdateModelPackage)
-#   read the versions      awsds-deploy-staging, which deploys the approved one (INT-07's registry half)
-#   read the status        the Sandbox readers decision 10 names, matched by aws:PrincipalArn in an
-#                          account the D35 map names, so no statement carries arn:aws:iam::*:
+#   the deploy role registers (app-etl, whose pipeline job registers)
+#     register and approve   awsds-deploy-prod alone (CreateModelPackage, UpdateModelPackage)
+#     read the versions      awsds-deploy-staging, which deploys the approved one (INT-07's registry half)
+#   a task registers (app-ml, as the deployment project's role, Stage 17 decision 16 (b))
+#     approve                awsds-deploy-prod alone (UpdateModelPackage); no Staging reader, since the
+#                            model reaches each account in the release's bundle
+#   both shapes
+#     read the status        the Sandbox readers decision 10 names, matched by aws:PrincipalArn in an
+#                            account the D35 map names, so no statement carries arn:aws:iam::*:
+#
+# The deployment project's role registers by its identity policy (production/studio/workflows.tf).
 #
 # The Sandbox readers are two principals, because a data scientist reaches AWS as either: the
 # persona's reserved role from a laptop or the console, and the project role from a space or a
@@ -23,7 +31,18 @@
 # (./aws/catalog.py CT-6), whose trigger is the Model Registry being used.
 
 locals {
-  model_families = toset(["app-etl"])
+  # Each family by name, with whether a task registers its versions and its group's description.
+  # SageMaker has no call that updates a group, so a changed description replaces the group.
+  model_families = {
+    "app-etl" = {
+      task_registers = false
+      description    = "app-etl's model versions: registered and approved by the Production deploy role alone (Stage 9 step 3.2, D28 item 6)"
+    }
+    "app-ml" = {
+      task_registers = true
+      description    = "app-ml's model versions: registered by a task as the deployment project's role, approved by the Production deploy role alone (Stage 17 decision 16 (b))"
+    }
+  }
 
   deploy_prod_arn    = data.terraform_remote_state.foundation.outputs.deploy_role_arns[var.account_folder]
   deploy_staging_arn = data.terraform_remote_state.foundation.outputs.deploy_role_arns["staging"]
@@ -33,21 +52,43 @@ locals {
     "arn:${local.partition}:iam::${local.sandbox_account_id}:role/aws-reserved/sso.amazonaws.com/*/AWSReservedSSO_DataScientistAccess_*",
     "arn:${local.partition}:iam::${local.sandbox_account_id}:role/datazone_usr_role_*",
   ]
+
+  # The status readers' statement, written once for both shapes.
+  read_the_status_from_sandbox = {
+    for family, group in aws_sagemaker_model_package_group.this : family => {
+      Sid       = "ReadTheStatusFromSandbox"
+      Effect    = "Allow"
+      Principal = { AWS = "arn:${local.partition}:iam::${local.sandbox_account_id}:root" }
+      Action = [
+        "sagemaker:DescribeModelPackage",
+        "sagemaker:DescribeModelPackageGroup",
+        "sagemaker:ListModelPackages",
+      ]
+      Resource = [
+        group.arn,
+        "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${group.model_package_group_name}/*",
+      ]
+      Condition = {
+        ArnLike = { "aws:PrincipalArn" = local.status_reader_patterns }
+      }
+    }
+  }
 }
 
 resource "aws_sagemaker_model_package_group" "this" {
   for_each = local.model_families
 
   model_package_group_name        = "awsds-${var.env}-model-${each.key}"
-  model_package_group_description = "${each.key}'s model versions: registered and approved by the Production deploy role alone (Stage 9 step 3.2, D28 item 6)"
+  model_package_group_description = each.value.description
 
   tags = {
     Name = "awsds-${var.env}-model-${each.key}"
   }
 }
 
+# The deploy role registers: the families whose pipeline job calls CreateModelPackage.
 resource "aws_sagemaker_model_package_group_policy" "this" {
-  for_each = aws_sagemaker_model_package_group.this
+  for_each = { for family, group in aws_sagemaker_model_package_group.this : family => group if !local.model_families[family].task_registers }
 
   model_package_group_name = each.value.model_package_group_name
 
@@ -68,23 +109,84 @@ resource "aws_sagemaker_model_package_group_policy" "this" {
         Action    = ["sagemaker:DescribeModelPackage", "sagemaker:ListModelPackages"]
         Resource  = "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${each.value.model_package_group_name}/*"
       },
-      {
-        Sid       = "ReadTheStatusFromSandbox"
-        Effect    = "Allow"
-        Principal = { AWS = "arn:${local.partition}:iam::${local.sandbox_account_id}:root" }
-        Action = [
-          "sagemaker:DescribeModelPackage",
-          "sagemaker:DescribeModelPackageGroup",
-          "sagemaker:ListModelPackages",
-        ]
-        Resource = [
-          each.value.arn,
-          "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${each.value.model_package_group_name}/*",
-        ]
-        Condition = {
-          ArnLike = { "aws:PrincipalArn" = local.status_reader_patterns }
-        }
-      },
+      local.read_the_status_from_sandbox[each.key],
     ]
   })
+}
+
+# A task registers: the deploy role approves alone, and no Staging statement.
+resource "aws_sagemaker_model_package_group_policy" "task_registers" {
+  for_each = { for family, group in aws_sagemaker_model_package_group.this : family => group if local.model_families[family].task_registers }
+
+  model_package_group_name = each.value.model_package_group_name
+
+  resource_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "ApproveAsTheProductionDeployRole"
+        Effect    = "Allow"
+        Principal = { AWS = local.deploy_prod_arn }
+        Action    = ["sagemaker:UpdateModelPackage"]
+        Resource  = "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${each.value.model_package_group_name}/*"
+      },
+      local.read_the_status_from_sandbox[each.key],
+    ]
+  })
+}
+
+# -------------------------------------------------- the approval notification (Stage 10 step 5.3)
+#
+# Every state change of a model package in this account, to the account's alerts topic (Stage 8
+# decision 5): a registration, an approval, a rejection. The pattern names no group, so a package
+# registered outside this slice's groups is heard too. SageMaker sends its own events to the
+# default bus, which a rule in the ENABLED state receives (OR-4 reads that state), and it may send
+# several for one change (AWS's page on SageMaker's EventBridge events), so duplicates are expected.
+# Stage 10 step 3.6 adds the serving chain's state machine as a second target when that chain exists.
+resource "aws_cloudwatch_event_rule" "model_approval" {
+  name        = "awsds-${var.env}-model-approval"
+  description = "Every SageMaker Model Package State Change in this account (Stage 10 step 5.3, D28 item 6)"
+  state       = "ENABLED"
+
+  event_pattern = jsonencode({
+    source        = ["aws.sagemaker"]
+    "detail-type" = ["SageMaker Model Package State Change"]
+  })
+
+  tags = {
+    Name       = "awsds-${var.env}-model-approval"
+    CostCenter = "stage-10"
+  }
+}
+
+# The message names the package and its two statuses and leaves the record in the registry. No path
+# below is free text the caller chooses (ApprovalDescription is), because EventBridge does not escape
+# an extracted value.
+resource "aws_cloudwatch_event_target" "model_approval" {
+  rule      = aws_cloudwatch_event_rule.model_approval.name
+  target_id = "alerts-topic"
+  arn       = data.terraform_remote_state.foundation.outputs.alerts_topic_arn
+
+  input_transformer {
+    input_paths = {
+      time     = "$.time"
+      group    = "$.detail.ModelPackageGroupName"
+      version  = "$.detail.ModelPackageVersion"
+      approval = "$.detail.ModelApprovalStatus"
+      status   = "$.detail.ModelPackageStatus"
+      package  = "$.detail.ModelPackageArn"
+      event_id = "$.id"
+    }
+    input_template = chomp(<<-EOT
+      "<aws.events.rule-name>: a model package changed state."
+      "When: <time>"
+      "Group: <group>, version <version>"
+      "Approval status: <approval>"
+      "Package status: <status>"
+      "Package: <package>"
+      "Event id: <event_id>"
+      "The full record stays in the registry (DescribeModelPackage)."
+    EOT
+    )
+  }
 }

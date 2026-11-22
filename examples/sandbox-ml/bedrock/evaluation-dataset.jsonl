@@ -1,0 +1,20 @@
+{"prompt": "What is the AWS Region code of US West (Oregon)?", "referenceResponse": "us-west-2", "category": "AWS"}
+{"prompt": "What is the AWS Region code of South America (São Paulo)?", "referenceResponse": "sa-east-1", "category": "AWS"}
+{"prompt": "Which AWS Organizations policy type sets the maximum permissions available to the accounts it is attached to?", "referenceResponse": "A service control policy (SCP)", "category": "AWS"}
+{"prompt": "Which IAM feature sets the maximum permissions that identity-based policies can grant to a role?", "referenceResponse": "A permissions boundary", "category": "AWS"}
+{"prompt": "Which kind of VPC endpoint reaches a supported AWS service privately through an elastic network interface in the VPC?", "referenceResponse": "An interface VPC endpoint (AWS PrivateLink)", "category": "AWS"}
+{"prompt": "What is the default TCP port of HTTPS?", "referenceResponse": "443", "category": "Networking"}
+{"prompt": "What is the default TCP port of SSH?", "referenceResponse": "22", "category": "Networking"}
+{"prompt": "Which DNS record type maps a name to an IPv4 address?", "referenceResponse": "A", "category": "Networking"}
+{"prompt": "Which DNS record type maps a name to an IPv6 address?", "referenceResponse": "AAAA", "category": "Networking"}
+{"prompt": "How many IPv4 addresses does a /16 CIDR block hold?", "referenceResponse": "65,536", "category": "Networking"}
+{"prompt": "Which private IPv4 range of RFC 1918 begins with 172?", "referenceResponse": "172.16.0.0/12", "category": "Networking"}
+{"prompt": "What is the Squid proxy's default listening port?", "referenceResponse": "3128", "category": "Networking"}
+{"prompt": "Which Terraform command shows the changes an apply would make, without making them?", "referenceResponse": "terraform plan", "category": "Tooling"}
+{"prompt": "Which Python package and project manager, written in Rust, does Astral publish?", "referenceResponse": "uv", "category": "Tooling"}
+{"prompt": "At which company was the Apache Iceberg table format created?", "referenceResponse": "Netflix", "category": "Data"}
+{"prompt": "Which file format does Apache Iceberg write its data files in by default?", "referenceResponse": "Apache Parquet", "category": "Data"}
+{"prompt": "What does AUC stand for in the evaluation of a binary classifier?", "referenceResponse": "Area under the ROC curve", "category": "Machine learning"}
+{"prompt": "Which XGBoost objective trains a binary classifier that outputs probabilities?", "referenceResponse": "binary:logistic", "category": "Machine learning"}
+{"prompt": "Which open-source platform records machine learning experiments, with each run's parameters, metrics and models?", "referenceResponse": "MLflow", "category": "Machine learning"}
+{"prompt": "What is the data held out from training and used once, at the end, to estimate a model's performance called?", "referenceResponse": "The test set", "category": "Machine learning"}

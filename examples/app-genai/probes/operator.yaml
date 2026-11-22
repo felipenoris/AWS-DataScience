@@ -1,0 +1,28 @@
+# {"invoke":{"x":120,"y":200}}
+#
+# The provider's BedrockInvokeModelOperator over the stage's model, outside the manifest: no storage
+# item copies probes/, so no deploy creates it, and the application's lint (`lint .`), which reads the
+# manifest and its workflows, never reads this file (Stage 17 step 10.4, verification xl). The
+# operator sends InvokeModel with the model, the body and two content types, so it can name no
+# guardrail, and it writes the prompt and the response to the task log. The workflow tooling's rule
+# `operador` refuses it by name at the pipeline's pin, 37cb5a6 (Stage 17 step 10.3), and passes it at
+# 196acee, app-etl's pin. The body is Amazon Nova's `messages-v1` schema.
+# `awsds-workflows render`, which applies no lint rule, fills MODEL_ID and the Region before the
+# definition is imported in the portal's editor.
+app-genai-operator-probe:
+  dag_id: app-genai-operator-probe
+  tasks:
+    invoke:
+      operator: airflow.providers.amazon.aws.operators.bedrock.BedrockInvokeModelOperator
+      model_id: "{env.MODEL_ID}"
+      region_name: "{domain.region}"
+      input_data:
+        schemaVersion: messages-v1
+        messages:
+          - role: user
+            content:
+              - text: "Reply with the single word: ready."
+        inferenceConfig:
+          maxTokens: 10
+          temperature: 0
+      retries: 0

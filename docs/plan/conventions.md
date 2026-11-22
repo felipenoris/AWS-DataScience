@@ -166,9 +166,10 @@ terraform-live/
 │   │                     #     6.5 (2026-09-08): the Elastic IP forgotten (it is
 │   │                     #     production/networking/'s [P] allocation), the group, the
 │   │                     #     secret and the zone destroyed
-│   ├── data/             # [P] the lake's consumer side (consumer-data - the only caller
-│   │                     #     since 2026-09-06; development/data/ was destroyed at Stage 6b
-│   │                     #     step 2.4): this account's DataLakeSettings, the LF
+│   ├── data/             # [P] the lake's consumer side (consumer-data, which staging/data/
+│   │                     #     and production/data/ also call since 2026-10-22;
+│   │                     #     development/data/ was destroyed at Stage 6b step 2.4): this
+│   │                     #     account's DataLakeSettings, the LF
 │   │                     #     resource links + local re-grants to the Data Governance
 │   │                     #     share (D22), and the alias/awsds-<env>-data CMK - since
 │   │                     #     2026-08-26 the sandbox lake's key, not a derived zone's
@@ -185,10 +186,11 @@ terraform-live/
 │   │                     #     bucket, the access role awsds-sandbox-lake-access and (its
 │   │                     #     decision 3) the Access Grants location + per-group grants;
 │   │                     #     per-project grants are hand-made: runbooks/sandbox-lake.md
-│   ├── egress/           # [E] interface VPC endpoints (20 since 6e step 4, single AZ) and the
-│   │                     #     DNS Firewall - no NAT, no default route (D38; the NAT code left
-│   │                     #     vpc-egress at v0.6.0). The optional families (bedrock, emr,
-│   │                     #     mwaa) exist only when `make up ENV=sandbox GROUPS=...` names one
+│   ├── egress/           # [E] interface VPC endpoints (18 always on at vpc-egress-v0.19.0,
+│   │                     #     single AZ) and the DNS Firewall - no NAT, no default route (D38;
+│   │                     #     the NAT code left vpc-egress at v0.6.0). The optional groups
+│   │                     #     (bedrock-base, bedrock-agent, emr, mlflow, mwaa, redshift) exist
+│   │                     #     only when `make up ENV=sandbox GROUPS=...` names one
 │   ├── probes/           # [E] Stage 3's measurement instruments (perimeter + peering),
 │   │                     #     created and destroyed by make up/make down, ranked after
 │   │                     #     egress/ so down tears them first
@@ -201,20 +203,22 @@ terraform-live/
 │   │                     #     ceiling, for even one plan cycle, is the window a mistake costs
 │   │                     #     1.44 USD/h in. make down destroys it; RMS storage keeps billing,
 │   │                     #     which is the price of keeping the data and is warehouse/'s row
-│   ├── warehouse/        # [P] the Redshift Serverless warehouse (D40, Stage 5b, rank 53):
-│   │                     #     namespace + workgroup awsds-sandbox-warehouse at base_capacity 4,
-│   │                     #     under alias/awsds-sandbox-data (read from data/), in the PRIVATE
-│   │                     #     tier's two subnets in two AZs - not the isolated tier, which
-│   │                     #     carries no peering route and no client. [P] because a workgroup
-│   │                     #     THE DATA HALF ONLY: the namespace, its Secrets-Manager admin
-│   │                     #     credential, its three audit log groups (pre-created with a
+│   ├── warehouse/        # [P] the Redshift Serverless warehouse's data half (D40, Stage 5b,
+│   │                     #     rank 53): the namespace awsds-sandbox-warehouse under
+│   │                     #     alias/awsds-sandbox-data (read from data/), its Secrets-Manager
+│   │                     #     admin credential, its three audit log groups (pre-created with a
 │   │                     #     retention period, or Redshift makes them Never Expire), the
 │   │                     #     namespace IAM role, the workgroup's security group and the
 │   │                     #     alarms. [P] because the namespace holds every database, schema,
 │   │                     #     table, database user, role and GRANT - state no plan re-creates,
-│   │                     #     which is 5.1 rule 2. The compute is warehouse-compute/ above.
-│   │                     #     Holds the `sandbox` database, its themed schemas and the tags
-│   │                     #     Stage 6h's connections need. No Lake Formation object: the
+│   │                     #     which is 5.1 rule 2; the `sandbox` database and its themed
+│   │                     #     schemas are SQL inside it. The compute is warehouse-compute/
+│   │                     #     above, in the PRIVATE tier's two subnets in two AZs - not the
+│   │                     #     isolated tier, which carries no peering route and no client.
+│   │                     #     Per admitted project: the tag, the IAM policy and the access
+│   │                     #     role Stage 6h's connection needs. Behind switches, off by
+│   │                     #     default: the wide tag (6h decision 8 (a)) and Stage 21 4.5's
+│   │                     #     data transfer role, for one sitting. No Lake Formation object: the
 │   │                     #     sandbox class is outside it by design, like lake/ beside it
 │   ├── bedrock/          # [P] the Bedrock grant (6e step 3): one IAM policy for the scoped
 │   │                     #     Claude models and one attachment per SMUS project role. The
@@ -222,16 +226,35 @@ terraform-live/
 │   │                     #     is hand-written after a project exists - the blueprint offers a
 │   │                     #     boundary for every project role and no grant for any
 │   │                     #     (runbooks/claude-code-sagemaker.md section P)
+│   ├── model-access/     # [P] the console's model access (Stage 17 decision 13, rank 52): the
+│   │                     #     model provisioning role, under the name the console adopts,
+│   │                     #     AmazonSageMakerBedrockModelManagementRole-<domain account>, and the
+│   │                     #     playground's consumption role, both under the D13 boundary; the
+│   │                     #     project they serve is data-governance/governance/'s
 │   ├── workflows/        # [P] the workflows grant (6i decision 6, rank 56): one IAM policy -
 │   │                     #     DescribeProcessingJob on a processing job no project tag marks,
 │   │                     #     which SageMakerProcessingOperator's existence check needs, and
 │   │                     #     AddTags of the caller's own project tag, which creating the job
 │   │                     #     needs - and one attachment per SMUS project role, hand-written
 │   │                     #     like bedrock/'s. Since Stage 8 decision 19 (applied 2026-10-16)
-│   │                     #     also awsds-deploy-sandbox-test, the role the deploy
-│   │                     #     runner assumes for the CI/CD CLI's test deploy (INT-25), on the
-│   │                     #     deploy-role module with its own ceiling: the supply chain's
-│   │                     #     second write path into Sandbox, after dev-env/'s
+│   │                     #     also awsds-deploy-sandbox-test, the role the deploy runner
+│   │                     #     assumes for the pipeline's bundle job (INT-25; Stage 19
+│   │                     #     decision 19 (c)), on the deploy-role module with its own
+│   │                     #     ceiling: it reads the dev project and writes nothing, so
+│   │                     #     dev-env/'s is the supply chain's one write path into Sandbox
+│   ├── ml/               # [P] the notebook grant (Stage 17 decision 7 (a), rank 57): one IAM
+│   │                     #     policy - AddTags of the caller's own project tag on a model
+│   │                     #     package group, which creating the group from a notebook needs -
+│   │                     #     and one attachment per SMUS project role, hand-written like
+│   │                     #     workflows/'s. What a workflow's operators create stays there
+│   ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the account dashboard
+│   │                     #     awsds-sandbox-environment, the account's alerts topic
+│   │                     #     awsds-sandbox-alerts (Stage 8 decision 5 gave one to each
+│   │                     #     deployment target's foundation/, and Sandbox is none), and the
+│   │                     #     80 % quota alarms on the SageMaker types in use and the VPC's
+│   │                     #     interface endpoints. Reads foundation/; builds warehouse/'s name
+│   │                     #     and its two alarms' as that slice does, since warehouse/ reads
+│   │                     #     this slice's alerts_topic_arn
 │   ├── dev-env/          # [P] the approved dev-env image registered for this account
 │   │                     #     (6d step 2, applied 2026-09-10): aws_sagemaker_image +
 │   │                     #     image_version + one app_image_config per app type + the
@@ -253,8 +276,9 @@ terraform-live/
 │                         #     domain comes from `Tooling`, and docs/SMUS.md carries the
 │                         #     enabled list - Tooling alone adds S3Location/KmsKeyArn, the
 │                         #     wizard-field set of 2026-08-22), the KMS key, the projects
-│                         #     bucket awsds-<env>-smus-projects, the 11
-│                         #     CREATE_ENVIRONMENT_FROM_BLUEPRINT grants (layer 2 of the
+│                         #     bucket awsds-<env>-smus-projects, one
+│                         #     CREATE_ENVIRONMENT_FROM_BLUEPRINT grant per enabled blueprint
+│                         #     (12 at sagemaker-prereqs-v0.9.0; layer 2 of the
 │                         #     create authorization; layer 1 sits in governance/), and the
 │                         #     D13 boundary policy attached to the project roles (INT-15).
 │                         #     It does not declare the project environments themselves:
@@ -272,10 +296,22 @@ terraform-live/
 │   ├── bootstrap/        # [P] state bucket for the Data Governance account
 │   ├── data/             # [P] raw/curated S3 (Iceberg), Glue Data Catalog, Lake Formation
 │   │                     #     registrations + LF-Tags (D13), ingestion drop-box (D18),
-│   │                     #     cross-account shares to sandbox (+ production at Stage 9;
-│   │                     #     development's was revoked 2026-09-06, Stage 6b step 2.3),
+│   │                     #     cross-account shares to sandbox, staging (read-only, since
+│   │                     #     2026-10-22) and production (Stage 9); development's was
+│   │                     #     revoked 2026-09-06, Stage 6b step 2.3,
 │   │                     #     Glue Crawlers on raw + drop-box under the D27 exception
-│   │                     #     (config is free at rest; runs are metered, event-driven)
+│   │                     #     (config is free at rest; runs are metered, event-driven);
+│   │                     #     behind LAKE_PUBLISHERS, the two SMUS administrator seats and
+│   │                     #     the publisher's grant on each published table (publishing.tf)
+│   ├── publishing/       # [P] Stage 6f step 11, the lake-publishing pilot (decision 1,
+│   │                     #     shape (b), 2026-10-26; D22 amended): the VPC the managed
+│   │                     #     Tooling template takes (vpc module, no internet route, no
+│   │                     #     peering) and terraform-modules/sagemaker-prereqs/ with Tooling
+│   │                     #     alone; the configuration and its grant follow LAKE_PUBLISHERS,
+│   │                     #     the domain's own account needing no association. Rank 46;
+│   │                     #     both applies 2026-10-26 (11.2, 11.3). The
+│   │                     #     rollback destroys it but the projects bucket, which the Data
+│   │                     #     OU's s3:DeleteBucket deny keeps
 │   └── governance/       # [P] the SageMaker unified domain (DataZone V2, D26), applied
 │                         #     2026-08-21. Verification (ii) answered: the aws-ia module
 │                         #     was not consumed - its root requires vpc_id/subnet_ids and
@@ -286,25 +322,37 @@ terraform-live/
 │                         #     and the CREATE_PROJECT_FROM_PROJECT_PROFILE grants on the
 │                         #     root unit (grants.tf, applied 2026-08-22 - layer 1 of the
 │                         #     create authorization) through `awscc`, the only provider with
-│                         #     awscc_datazone_project_profile. Account associations to
-│                         #     sandbox and development (INT-12) are console-only - no public
-│                         #     API - and the blueprint configurations are applied from the
-│                         #     member account (see */sagemaker/ below).
+│                         #     awscc_datazone_project_profile. An account association
+│                         #     (INT-12) is a principal on the domain's RAM share, added in the
+│                         #     console or by `ram associate-resource-share` (SUP-349), never
+│                         #     by Terraform, and the blueprint configurations are applied
+│                         #     from the member account (see */sagemaker/ and */studio/ below).
 │                         #     A registry: blueprints provision compute into those
-│                         #     accounts, never into this one. No foundation/ slice: no
-│                         #     VPC, no user compute, nothing standing - which is why
-│                         #     INT-13 has no host
+│                         #     accounts, never into this one; the lake-publishing pilot's
+│                         #     Tooling, with spaces off, is the one environment it
+│                         #     provisions into itself (the `lake-publishing` profile,
+│                         #     LAKE_PUBLISHERS). No foundation/ slice and no user compute;
+│                         #     the one VPC is publishing/'s and peers with nothing, which
+│                         #     is why INT-13 still has no host. Since Stage 17 decision 13 also the
+│                         #     project the console's model access publishes into,
+│                         #     GenerativeAIModelGovernanceProject, its profile with no
+│                         #     environment configuration, and Sandbox's InfrastructureAccess
+│                         #     as its contributor (model-governance.tf)
 ├── staging/              # Deployment target (D20, D17): the Development account renamed at
 │   │                     # Stage 6b (2026-09-06) - not a vend, the quota refused that.
-│   │                     # SageMaker runtime only - no domain, no space, no blueprint, no
-│   │                     # Model Registry of its own, no GitLab, no lake share (revoked at
+│   │                     # SageMaker runtime and, since 2026-11-11, one deployment project
+│   │                     # of the shared domain (Stage 19 decision 6 (b)) - no space, no
+│   │                     # Model Registry of its own, no GitLab. The lake is read through a
+│   │                     # read-only share since 2026-10-22 (the first share was revoked at
 │   │                     # 6b 2.3). CIDR stays 10.50.0.0/16: a CIDR is immutable and a
 │   │                     # rebuild would replace every subnet, endpoint and the peering.
 │   │                     # There is no development/ entry: its sagemaker/ and data/ were
 │   │                     # destroyed at 6b 1.7 and 2.4, foundation/, egress/ and probes/
 │   │                     # migrated here at 4.3, and bootstrap/ - which owned
 │   │                     # awsds-dev-tfstate, the bucket every migration read from - went
-│   │                     # last at 4.7
+│   │                     # last at 4.7. probes/ left at Stage 8 step 3.1 with no state:
+│   │                     # its target sits in VPC-SharedServices, which this VPC does
+│   │                     # not peer with
 │   ├── bootstrap/        # [P] awsds-staging-tfstate + its key (6b 4.2, applied 2026-09-06)
 │   ├── foundation/       # [P] VPC, subnets, KMS, IAM roles - migrated from
 │   │                     #     development/foundation/ with its VPC and its [P] gateway
@@ -313,21 +361,29 @@ terraform-live/
 │   │                     #     this account's whole internet, and there is no default route.
 │   │                     #     And awsds-deploy-staging with awsds-staging-alerts (Stage 8
 │   │                     #     step 4.1, decision 5), the deploy-role module
-│   ├── probes/           # [E] migrated; re-aimed at the proxy path and the peering
-│   ├── data/             # [P] S3 + Glue catalog mirroring production's schema, sampled or
-│   │                     #     synthetic data only, under alias/awsds-staging-data - a new
-│   │                     #     key created at Stage 9, never the dev-named one 6b destroys
-│   ├── sagemaker/        # [P] job execution roles only (Pipelines, training, processing,
-│   │                     #     batch transform, the Model Registry consumer side)
-│   ├── orchestration/    # [E] MWAA Serverless workflows for the staging leg (D7 amended:
-│   │                     #     a serverless workflow bills nothing at rest, so the reason
-│   │                     #     orchestration was Production-only is gone), with the chain
-│   │                     #     layer above them (D41), as in production/orchestration/
-│   ├── egress/           # [E] interface endpoints only (11) - NO NAT, no default route
-│   │                     #     (D38). Measured empty at the migration; D11 leaves it torn
-│   │                     #     down between sittings
-│   └── app/
-│       └── app-etl/      # [E] deployed by the pipeline, torn down after the tests
+│   ├── data/             # [P] the lake read through a read-only share (Stage 9 decision 3:
+│   │                     #     no mirror, no copy), the outputs and derived buckets and the
+│   │                     #     enforced workgroup, under alias/awsds-staging-data - a new key
+│   │                     #     created at Stage 9, never the dev-named one 6b destroyed
+│   ├── sagemaker/        # [P] awsds-staging-job-exec, its job log groups, and the jobs'
+│   │                     #     security group and Glue connection (Stage 9 4.3, decision 12)
+│   ├── studio/           # [P] the blueprint prerequisites of this account's deployment
+│   │                     #     project (Stage 19 step 4.4, rank 46), through
+│   │                     #     sagemaker-prereqs: the provisioning and manage-access roles,
+│   │                     #     the D13 boundary, the project key, the projects bucket and
+│   │                     #     the log group; the Tooling and DataLake configurations; the
+│   │                     #     workflows grant and the person-session deny on the project's
+│   │                     #     role. sagemaker/ above keeps Stage 9's job roles
+│   ├── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
+│   │                     #     deploy-staging (Stage 19 step 4.11, rank 61), through
+│   │                     #     orchestration-v0.3.1: per chain a state machine that finds its
+│   │                     #     workflow by name, a schedule and a failure rule. Applied
+│   │                     #     2026-11-15
+│   └── egress/           # [E] interface endpoints only (8: VPC-Workloads' set since Stage 9
+│                         #     step 4.3a and decision 12, and datazone since Stage 19 step 4.4)
+│                         #     and the DNS Firewall - no NAT, no default route
+│                         #     (D38). Measured empty at the migration; D11 leaves it torn
+│                         #     down between sittings
 └── production/
     ├── bootstrap/        # [P]
     ├── foundation/       # [P] VPC-SharedServices (10.30.0.0/16 - the VPC built at Stage 3,
@@ -360,10 +416,10 @@ terraform-live/
     │                     #     The instance only - same rule as proxy/ below. Forwards tunnel
     │                     #     packets to RFC1918 destinations only
     ├── proxy/            # [D] the Squid host - the estate's single egress. The instance only:
-    │                     #     its Elastic IP, security group and allow-list parameter are
-    │                     #     networking/'s [P] anchors, so a `make down` cannot release the
-    │                     #     address (6g decision due 1 re-reads that, D39). Its access log
-    │                     #     is Stage 11's egress evidence
+    │                     #     its security group and allow-list parameter are networking/'s
+    │                     #     [P] anchors, and its public address is the instance's own,
+    │                     #     released at every stop, since 6g decision 1 (2026-09-17, D39).
+    │                     #     Its access log is Stage 11's egress evidence
     ├── workloads/        # [P] VPC-Workloads (10.32.0.0/16, created at 6c): the production
     │                     #     SageMaker runtime, MWAA Serverless workers, production jobs.
     │                     #     No IGW route in any table. Two private subnets in two AZs -
@@ -374,9 +430,10 @@ terraform-live/
     │                     #     shaped slice reads exactly one foundation/: egress/ below
     │                     #     serves VPC-SharedServices and cannot also serve this one.
     │                     #     Rank 51, just above egress (50). Created at 6c step 1.3a;
-    │                     #     Stage 9 step 3.3a names the jobs' six endpoints and turns the
-    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2 adds
-    │                     #     the workers'
+    │                     #     Stage 9 step 3.3a names the jobs' seven endpoints and turns the
+    │                     #     DNS Firewall on, AWS namespaces only; Stage 10 step 1.2's
+    │                     #     workers need logs and kms, already there, so the mwaa group
+    │                     #     stays empty; Stage 19 step 4.4 adds datazone, eight in all
     ├── pki/              # [P] the internal root CA (D36). Own state file and own KMS key,
     │                     #     not foundation/'s: foundation is opened to change a CIDR or
     │                     #     accept a peering, and every such edit would otherwise decrypt
@@ -414,45 +471,64 @@ terraform-live/
     │                     #     the namespace awsds-prod-warehouse; its workgroup is
     │                     #     warehouse-compute/'s, in VPC-Workloads' two private subnets, so
     │                     #     this account needs no new network work. Holds the `governed`
-    │                     #     database, whose rows awsds-prod-job-exec writes, and reaches readers
+    │                     #     database, whose rows deploy-production's project role loads
+    │                     #     since 2026-11-16 (Stage 19 decision 16 (b), verification xxxii;
+    │                     #     awsds-prod-job-exec before), and reaches readers
     │                     #     only through Lake Formation, by Stage 9 decision 5's shape: a
-    │                     #     federated catalog or a Lake Formation-managed datashare. No project
-    │                     #     tag, no connection: D26 keeps deployment targets out of the domain,
-    │                     #     so 6h's three layers collapse to the GRANT alone
+    │                     #     Lake Formation-managed datashare Data Governance registers
+    │                     #     (decision 14), read from Sandbox on 2026-10-25. No project
+    │                     #     tag, no connection (step 9.3), so 6h's three layers collapse to
+    │                     #     the GRANT alone
     ├── sagemaker/        # [P] Model Registry (model package groups) + the execution role
     │                     #     pipeline-submitted jobs assume, its job log groups, and the
     │                     #     escape hatch awsds-prod-debug with its alarm (Stage 9 steps 3
-    │                     #     and 6, rank 46). No domain, no user profiles (D17)
+    │                     #     and 6, rank 46); the rule awsds-prod-model-approval on every
+    │                     #     model package's state change (Stage 10 step 5.3), and the jobs'
+    │                     #     security group and Glue connection (decision 12). No domain, no
+    │                     #     user profiles (D17)
+    ├── studio/           # [P] the blueprint prerequisites of this account's deployment
+    │                     #     project (Stage 19 step 4.4, rank 46), through
+    │                     #     sagemaker-prereqs: the provisioning and manage-access roles,
+    │                     #     the D13 boundary, the project key, the projects bucket and
+    │                     #     the log group; the Tooling and DataLake configurations; the
+    │                     #     workflows grant and the person-session deny on the project's
+    │                     #     role. sagemaker/ above keeps Stage 9's job roles
     ├── egress/           # [E] VPC-SharedServices' interface endpoints (12 since Stage 7: 6c
     │                     #     5.5's 13 plus secretsmanager, step 1.7, minus the SageMaker pair,
     │                     #     decision 9) - no NAT anywhere (D38; the NAT
     │                     #     code left vpc-egress at v0.6.0, 6c 5.1). No internal ALB: Stage 7
     │                     #     decision 1 terminates TLS on GitLab's own nginx
     ├── probes/           # [E] Stage 3's instrument here: the peering target
-    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 42,
-    │                     #     applied 2026-10-12. TLS terminates on its own nginx with pki/'s
+    ├── tooling/          # [D] GitLab CE on a t4g.large + its data volume (D8, D14), rank 52,
+    │                     #     above egress/ (50): the host starts after the ssm endpoint its
+    │                     #     agent registers through exists, and stops before it is destroyed.
+    │                     #     Applied 2026-10-12. TLS terminates on its own nginx with pki/'s
     │                     #     leaves (Stage 7 decision 1); letsencrypt['enable'] = false is
     │                     #     mandatory, since Omnibus turns it on whenever external_url is
     │                     #     https and retries every reconfigure (1.3). gitlab.rb is rendered
     │                     #     into the objects bucket and fetched by the host (decision 8);
     │                     #     the user data and the AMI are held. Also both security groups,
     │                     #     the two records and the daily DLM snapshot policy
-    ├── runners/          # [E] the build runner (D14), rank 57 - amd64 on the buildbox's
-    │                     #     measured m8i.xlarge, registered at boot with the token in
-    │                     #     foundation/'s container, pushing with its instance profile and
-    │                     #     holding no deploy permission; the buildbox (rank 55) retired
-    │                     #     into it at Stage 7 step 6.5
-    ├── orchestration/    # [E] MWAA Serverless only (D7 amended 2026-09-05):
-    │                     #     awscc_mwaaserverless_workflow per app, YAML in S3, a
-    │                     #     per-workflow role and log group (D28), NetworkConfiguration
-    │                     #     always set on VPC-Workloads' private subnets. Above the
-    │                     #     workflows, the chain layer (D41): per account a schedule
-    │                     #     group, the machines' log group and the chain roles; per
-    │                     #     chain a Step Functions state machine, its Scheduler schedule
-    │                     #     and its failure rule; per bridge an EventBridge rule; the
-    │                     #     provisioned-MWAA rung is gone
-    └── app/
-        └── app-etl/      # [E]
+    ├── runners/          # [E] the runners, rank 57. The build runner (D14): amd64 on the
+    │                     #     buildbox's measured m8i.xlarge, raised only by `make gitlab-up
+    │                     #     BUILD=1`, registered at boot with the token in foundation/'s
+    │                     #     container, pushing with its instance profile and holding no
+    │                     #     deploy permission; the buildbox (rank 55) retired into it at
+    │                     #     Stage 7 step 6.5. The deploy runner (Stage 8 step 4.3), whose
+    │                     #     role, instance profile and token container are foundation/'s
+    │                     #     anchors. The test runner (Stage 8 decision 11), unprotected,
+    │                     #     whose jobs read no AWS identity
+    ├── observability/    # [P] Stage 12 steps 1, 2 and 9 (rank 70): the hub dashboard
+    │                     #     awsds-prod-hub, which carries Production's own panels too (the free
+    │                     #     tier holds three dashboards, counted once per bill); the proxy access
+    │                     #     log's two metric filters and the refusal alarm; the VPCs-per-Region
+    │                     #     quota alarm. The alarms notify foundation/'s awsds-prod-alerts.
+    │                     #     Reads foundation/, networking/ and workloads/; names the [D] hosts'
+    │                     #     alarms by name and never reads a [D] state (Lesson 4)
+    └── chains/           # [P] the chain layer above the workflows the CI/CD CLI creates in
+                          #     deploy-production (Stage 19 step 4.11, rank 61), through
+                          #     orchestration-v0.3.1, the warehouse load's chain among them.
+                          #     Applied 2026-11-16
 
 terraform-modules/        # reusable modules (the roster and its tags: terraform-modules/README.md)
                           # consumed by git tag, never by branch - a module that moves under a
@@ -460,7 +536,8 @@ terraform-modules/        # reusable modules (the roster and its tags: terraform
 ```
 
 `make down ENV=sandbox` destroys the `[E]` slices in reverse dependency order and stops the `[D]`
-instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices; `make status`
+instances; `make up ENV=sandbox` starts the `[D]` instances and applies the `[E]` slices, `warehouse-compute/`
+only with `GROUPS=redshift` (`slices.py` refusal 11); `make status`
 reports what is running and the current hourly burn. **`ENV` names a business unit's sandbox, not *the*
 sandbox** (D35): Stage 14 step 6 makes the same `up`/`down` pair work against a generated unit, which is
 what makes a unit disposable rather than merely creatable. `[P]` slices are never touched by any of them;
@@ -471,10 +548,11 @@ provisioned into the account (D26), so the teardown is `sagemaker:ListApps`/`Del
 space) scoped to that domain, never a call against the DataZone domain, which owns no compute. `make down`
 discovers the domain ID rather than having it pasted in, since the blueprint chose it.
 
-`ENV=staging` is the one environment a human normally never runs these against: `make up ENV=staging` and
-`make down ENV=staging` are steps *inside* the promotion pipeline (Stage 8), which brings Staging up,
-deploys, tests, and tears it down again. They still have to work by hand — a rebuild that only works from
-CI is the same bug as one that only works by hand — but the expected caller is the pipeline.
+`ENV=staging` is raised and taken down by the user, as every other environment (Stage 8 decision 27,
+2026-10-24): `make up ENV=staging ONLY=egress` before a promotion's tag and `make down ENV=staging` after
+its leg. The pipeline applies no slice in either target: the leg deploys through the CI/CD CLI (Stage 19
+item 31), and `layers.py` refusal 10 keeps its profile off every slice. Both paths work by hand — a rebuild that only works from CI is the
+same bug as one that only works by hand.
 
 **Terraform rules:**
 
@@ -642,8 +720,9 @@ app-etl/
 ├── .gitlab-ci.yml    # the pipeline, with the shared gates of awsds/ci-gates
 ├── Dockerfile        # the application image and the job image, FROM base by digest: the lock's dependencies, not the project
 ├── manifest.yaml     # the SageMaker application: its name, its content and its stages (D41)
+├── scripts/dev-cli.sh  # the CI/CD CLI for the `dev` stage in a space (Stage 8 decision 22); never bundled
 ├── workflows/
-│   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint on its rendered copy
+│   └── app-etl.yaml  # the MWAA Serverless definition in the CI/CD CLI's notation, checked by the D28 lint
 ├── code/             # modules for PythonOperator/BashOperator tasks, zipped by CI (D28 class 2b)
 ├── glue/             # one script per Glue job, a Visual ETL flow's generated script among them (D28 class 2c)
 ├── pyproject.toml    # and uv.lock
@@ -653,25 +732,23 @@ app-etl/
 The template's first content is [`examples/app-etl/`](../../examples/app-etl/README.md), pushed to GitLab's
 `awsds/app-etl` at Stage 8 step 2.2; `manifest.yaml`, `workflows/`, `code/` and `glue/` joined it at
 Stage 8 step 2.5 (2026-10-16), whose four tasks include the Glue job (D41). The development stack is similar to <https://github.com/felipenoris/etl-cookbook-tutorial>: uv, pytest and pdoc. The
-application's Terraform is not in its repository: each environment's slice is
-`terraform-live/<env>/app/app-etl/` above, `[E]` everywhere and written from `terraform-modules/`
-(Sandbox's retired by Stage 8 decision 21, 2026-10-16, the `dev` project being D41's engineering loop),
-and the release it runs is a variable whose default is a tracked line (Stage 8 decision 12). `workflows/` holds
-the definition in the CI/CD CLI's notation, which the CLI deploys to the `dev` and `test` projects and
-bundles (Stage 10 steps 2.1-2.2); the release job renders it per environment from the release's bundle
-and copies it to the definitions home with the code package the tag pipeline built from `code/` when
-there is one, which the `orchestration/` slices pin, and `src/` beside them as the processing job's input
-(step 2.4). `glue/` holds the scripts the application's Glue jobs run: the release job copies them under
-the release's prefix, and the jobs the application slice declares name them there (Stage 10 decision 12).
+application has no Terraform slice: the CI/CD CLI deploys the manifest's stages into each stage's
+project, `dev` in Sandbox (D41's engineering loop) and the deployment projects `deploy-staging` and
+`deploy-production` (Stage 19 decision 6 (b)), from the bundle the tag pipeline exports, and each target's
+`chains/` slice starts the CLI-made workflows by name (Stage 19 step 4.11). `workflows/` holds the
+definitions in the CLI's notation, `code/` and `glue/` the code their tasks name, and `src/` the processing
+job's input, which the CLI copies under the project's shared prefix. Release T's Terraform path, the
+`<env>/app/app-etl/` and `<env>/orchestration/` slices with the render and the release job, retired at
+Stage 19 item 31.
 
 The directories follow D28's line between content and activation. `src/` is the code a SageMaker job
 runs, read as the job's input on the application image, which carries the lock's dependencies (D41 item
 7), and `glue/` the code of a step that reads or writes governed data. `workflows/` is the activation:
 the definition that starts that code on a schedule or on demand, with `code/` holding the orchestration
 code its Python and Bash tasks run on the worker, never a data path, the line the CLI's manifest draws
-the same way (D41). The application's slice is structure, applied by the pipeline at deploy time with no
-workflow. A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
-calls it; the notebook itself does not graduate (6d decision due 14).
+the same way (D41). A notebook's logic graduates as code in `src/` plus a task in `workflows/app-etl.yaml` that
+calls it; the notebook itself does not graduate (6d decision due 14). What a team does with this layout,
+from a space to Production, hand by hand, is [`runbooks/sagemaker-application.md`](runbooks/sagemaker-application.md).
 
 ---
 
@@ -696,9 +773,11 @@ Stage 6c (2026-09-06) — and, since Stage 7 (2026-10-12), the GitLab host and i
 (`production/tooling/`, started and stopped by `make gitlab-up`/`gitlab-down`). `make down` stops
 them, `make up` starts them, and **the hub pair has its own `make hub-up` / `make hub-down`** (D11 amended
 2026-09-05): every other account's session depends on those two, so a spoke's `make up` refuses while either
-is stopped. Idle cost is their EBS volumes (~USD 4.65/month) plus the Elastic IPs, which stay associated
-across a stop/start (and bill while stopped) — the addresses, the host-key secret and the security groups
-live in `[P]` (`production/networking/`), so they survive even if the instance is replaced. This is what
+is stopped. Idle cost is their EBS volumes (~USD 3.84/month since 2026-11-10, 0.08/GB-month over GitLab's
+32 GiB and the hub's 16 GiB, [`cost-model.md`](cost-model.md)) plus the WireGuard host's Elastic IP, which
+stays associated across a stop/start (and bills while stopped); the proxy wears its instance's own address
+since 6g decision 1 (2026-09-17). The WireGuard address, the host-key secret and the security groups live in
+`[P]` (`production/networking/`), so they survive even if the instance is replaced. This is what
 makes the Stage 7 backup/restore cycle a disaster-recovery procedure rather than a daily dependency.
 
 **[E] Ephemeral — destroyed at the end of a session.** Everything metered by the hour and rebuildable in
@@ -715,7 +794,7 @@ it bills ~USD 0.023/h for as long as it exists; nothing fronts GitLab itself, wh
 own nginx since D15 was revised). The provisioned MWAA environment (~20-30 minutes to create or delete,
 and a metadata database holding state nothing else persists) is not built: D7 amended 2026-09-05 makes
 **MWAA Serverless the only orchestrator**, and a serverless workflow bills nothing at rest, so the
-`orchestration/` slices stay `[E]` with no idle cost and nothing to lose on a destroy.
+CLI-made workflows and the `chains/` slices above them stay `[P]` (Stage 19 step 4.11).
 
 **Where each SageMaker Unified Studio object sits** (Stage 6d step 5.3, read 2026-09-12). Three owners
 share the surface — Terraform, the `Tooling` blueprint and the portal — and only the first appears in a
@@ -730,8 +809,12 @@ plan, so the layer of the other two is written here rather than inferred from a 
 | the project's SageMaker AI domain, its `DefaultUserSettings` and the `CustomImages` attachment | `[P]` | the blueprint; the attachment by hand ([`dev-env.md`](runbooks/dev-env.md) §C6) | nothing until an app runs | never |
 | the registered image, its version and app image configurations | `[P]` | `sandbox/dev-env/`, rank 49 | nothing | never |
 | the Bedrock grant | `[P]` | `sandbox/bedrock/`, rank 52 | nothing | never |
+| the governance project of the console's model access, its profile and Sandbox's membership | `[P]` | `data-governance/governance/` (Stage 17 decision 13) | nothing | never |
+| the model provisioning and consumption roles | `[P]` | `sandbox/model-access/`, rank 52 | nothing | never |
+| a model's catalog asset and environment in the governance project; a project's application inference profile of a model | `[P]` in shape | the console's *Manage*; DataZone, at a subscription's grant | nothing | never: the console's disable revokes the listing's subscriptions and unpublishes and deletes the asset (its code, read 2026-10-19); whether it deletes the environment is unread |
 | the workflows grant | `[P]` | `sandbox/workflows/`, rank 56 | nothing | never |
-| the CI/CD CLI's `test` deploy role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19; applied 2026-10-16) | nothing | never |
+| the pipeline's `bundle` role, `awsds-deploy-sandbox-test`, and its ceiling | `[P]` | `sandbox/workflows/`, rank 56 (Stage 8 decision 19, applied 2026-10-16; Stage 19 decision 19 (c) narrows it to the `dev` project's reads) | nothing | never |
+| the notebook grant | `[P]` | `sandbox/ml/`, rank 57 (Stage 17 decision 7 (a)) | nothing | never |
 | **a space** | **`[D]` in shape**: kept between sessions, its app stopped, its volume billing — though no `make` target starts one | the portal, by hand | **USD 0.112 per GB-month** of its volume (`UnifiedStudio:VolumeUsage.gp3`); 56 GB and USD 6.27 a month across the three spaces of 2026-09-12 | **not by default**: `scripts/down-studio-apps.py --spaces` deletes them, and the home directories with them |
 | an app (JupyterLab, Code Editor) | `[E]` | the portal | instance-hours while it runs, nothing after | deleted by `scripts/down-studio-apps.py` |
 | a processing or training job, a MWAA Serverless run | `[E]` | Stage 10 | nothing | nothing to delete |

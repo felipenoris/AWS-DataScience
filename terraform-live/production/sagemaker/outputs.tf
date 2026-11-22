@@ -25,3 +25,23 @@ output "debug_role_arn" {
   description = "awsds-<env>-debug, the escape hatch (step 6.1): assumable only while var.debug_window_end is in the future."
   value       = module.debug_role.role_arn
 }
+
+output "job_security_group_id" {
+  description = "awsds-<env>-jobs, the group a Glue job's connection and a processing job's VpcConfig name (decision 12); the warehouse's 5439 rule names it (step 9.1)."
+  value       = aws_security_group.jobs.id
+}
+
+output "glue_connection_name" {
+  description = "awsds-<env>-jobs, the Glue network connection the application slice declares its Glue job on (decision 12)."
+  value       = aws_glue_connection.jobs.name
+}
+
+output "producer_proof_job_name" {
+  description = "awsds-<env>-producer-proof, step 2.4's proof job: one run per --MODE, producer then pickup."
+  value       = aws_glue_job.producer_proof.name
+}
+
+output "producer_proof_script" {
+  description = "Where the infrastructure user uploads proofs/producer_proof.py before a run (step 2.4)."
+  value       = local.producer_proof_script
+}

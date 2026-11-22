@@ -40,13 +40,20 @@ data "terraform_remote_state" "warehouse" {
     key    = "${var.account_folder}/warehouse/terraform.tfstate"
     region = var.region
   }
+
+  # sandbox/warehouse/ writes no `all_projects_tag` output while its switch is off, and an output
+  # absent from that state reads as this empty map: no wide tag on the workgroup.
+  defaults = {
+    all_projects_tag = {}
+  }
 }
 
 locals {
-  name      = "awsds-${var.env}-warehouse"
-  namespace = data.terraform_remote_state.warehouse.outputs.namespace_name
-  capacity  = data.terraform_remote_state.warehouse.outputs.capacity
-  projects  = data.terraform_remote_state.warehouse.outputs.projects
+  name             = "awsds-${var.env}-warehouse"
+  namespace        = data.terraform_remote_state.warehouse.outputs.namespace_name
+  capacity         = data.terraform_remote_state.warehouse.outputs.capacity
+  projects         = data.terraform_remote_state.warehouse.outputs.projects
+  all_projects_tag = data.terraform_remote_state.warehouse.outputs.all_projects_tag
 
   # THE TWO PRIVATE SUBNETS, SELECTED BY ZONE ID. AWS's own considerations page: "Two subnets
   # (without EVR) - You must have at least two subnets, and they must span across two Availability
@@ -130,23 +137,28 @@ resource "aws_redshiftserverless_workgroup" "this" {
   # monitoring rules (QMR) apply only at the Redshift Serverless workgroup level, AFFECTING ALL QUERIES
   # RUN IN THIS WORKGROUP UNIFORMLY" - and its example exempts an admin by giving them a QUEUE with no
   # rules, which implies that without queues (this workgroup has none, and enabling them is a permanent
-  # change) the workgroup-level rule reaches everyone. Two candidates remain:
+  # change) the workgroup-level rule reaches everyone. Three candidates remain:
   #
   #   (a) the superuser exemption after all - weakened, not excluded: the sentence above describes the
   #       behaviour queues were introduced to improve on, and does not say superusers are included.
   #   (b) `max_query_execution_time` as a standalone config_parameter is simply NOT ENFORCED, and a
   #       per-query ceiling only exists through `wlm_json_configuration`. That is Lesson 56 in its
   #       purest form: a vendor-documented line that reads back with the right value and does nothing.
+  #   (c) the runaway never entered WLM: it read only catalog tables (`pg_attribute`), and AWS runs such
+  #       a query "exclusively on the leader node". The same statement kept running through the two
+  #       minutes 5.1 held the usage limit breached, while that breach refused every query needing the
+  #       compute (Stage 5b log, 2026-10-18).
   #
-  # ONE TEST SEPARATES THEM: run a long query as a NON-superuser. Aborting at the ceiling means (a); not
-  # aborting means (b). That needs a database credential this estate does not yet issue, so it arrives
-  # with Stage 6h's project user.
+  # THE TEST: a long query over a USER table, as a non-superuser and as the admin. Aborting for both
+  # means (c); aborting for the non-superuser alone means (a); aborting for neither means (b). The
+  # project's database users exist since Stage 6h, so it needs only the compute up.
   #
   # IT IS LEFT SET, and the reason is not optimism. It costs nothing, under (a) it binds a project's
   # database user (which is not a superuser), and removing it would leave nothing at all on this axis.
-  # What changed is what is RELIED ON: the guards that did hold are the usage limit (breach_action =
-  # deactivate, 10 RPU-hours since 2026-09-20) and `make down`, which is the only one that is not a
-  # setting. Read this comment before treating this line as a control.
+  # What changed is what is RELIED ON: the usage limit (breach_action = deactivate, 10 RPU-hours since
+  # 2026-09-20), which refuses compute queries and did not stop that catalog-only statement, and
+  # `make down`, which is the only guard that is not a setting. Read this comment before treating this
+  # line as a control.
   config_parameter {
     parameter_key   = "max_query_execution_time"
     parameter_value = tostring(local.capacity.max_query_execution_time)
@@ -166,10 +178,10 @@ resource "aws_redshiftserverless_workgroup" "this" {
   #                not ask for: Redshift decides on its own to build and refresh materialized
   #                views, and a refresh is a query on a 1.44 USD/hour meter. Left at the default
   #                for now and named here so turning it off is a decision somebody can find.
-  #   search_path  `"$user, public"`. It resolves an unqualified table name in `public` - the
-  #                schema 5b 1.6 revoked CREATE on - which means an unqualified CREATE TABLE fails
-  #                rather than landing somewhere nobody expects. That is the right behaviour, and
-  #                it is a consequence of the revoke rather than of this line.
+  #   search_path  `"$user, public"`. It resolves an unqualified table name in `public`, where
+  #                PUBLIC holds USAGE and no CREATE in all three databases (read 2026-09-21), so an
+  #                unqualified CREATE TABLE by a non-superuser fails rather than landing somewhere
+  #                nobody expects. That is a consequence of that ACL rather than of this line.
   config_parameter {
     parameter_key   = "auto_mv"
     parameter_value = "true"
@@ -203,13 +215,16 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = "false"
   }
 
-  # LAYER 1'S WORKGROUP HALF, from sandbox/warehouse/'s map rather than from a copy here. AWS's
-  # requirement names both objects - the tag goes on "the Amazon Redshift cluster or workgroup AND
-  # ITS NAMESPACE" - and the namespace's half is written by that slice. Reading the map instead of
-  # declaring it is what makes the two unable to disagree (Lesson 14).
+  # Layer 1's workgroup half, from sandbox/warehouse/'s state rather than from a copy here (Lesson
+  # 14). AWS's requirement names both objects - the tag goes on "the Amazon Redshift cluster or
+  # workgroup and its namespace" - and the namespace's half is written by that slice with the same two
+  # rules: the project tag while the map holds exactly one project, since the key holds one value,
+  # and the wide tag while that slice's `all_projects_tag_enabled` is true (6h decision 8 (a)). A
+  # workgroup raised before that slice's apply keeps its tags until this slice is applied again.
   tags = merge(
     { Name = local.name },
-    { for id in keys(local.projects) : "AmazonDataZoneProject" => id },
+    length(local.projects) == 1 ? { AmazonDataZoneProject = one(keys(local.projects)) } : {},
+    local.all_projects_tag,
   )
 
   lifecycle {

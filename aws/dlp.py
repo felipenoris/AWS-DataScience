@@ -3,8 +3,9 @@
 # its delegation, the Lake Formation data cells filters, the data-event trails (data-only,
 # validated, delivering into the governed logs bucket), the EventBridge rules + alarms +
 # SNS topics of the exfiltration patterns, the two GuardDuty paid features (expected
-# DISABLED before step 4 and ENABLED everywhere after it), and the CloudTrail-tampering
-# Sid in the baseline SCP.
+# DISABLED before step 4 and ENABLED everywhere after it), the CloudTrail-tampering
+# Sid in the baseline SCP, and Bedrock's model invocation logging, per account and
+# routed Region (step 5.6, decision 11).
 #
 #   needs:    a live SSO session, the only prerequisite:
 #
@@ -18,6 +19,7 @@
 #             GetEventSelectors, events:ListRules, cloudwatch:DescribeAlarms,
 #             sns:ListTopics, s3api:ListBuckets, lakeformation:ListDataCellsFilter,
 #             guardduty:ListDetectors, GetDetector,
+#             bedrock:GetModelInvocationLoggingConfiguration,
 #             organizations:ListDelegatedAdministrators, ListPolicies, DescribePolicy,
 #             sts:GetCallerIdentity.
 #             It never creates, updates or deletes anything.
@@ -55,6 +57,7 @@ import sys
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
+from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "dlp.txt"
@@ -63,18 +66,14 @@ DATA_PROFILE = "awsds-infra-data"
 IDENTITY_PROFILE = "awsds-infra-identity"
 
 
-# The DLP-scoped accounts (decision 3's map at N=1): the lake account, every sandbox ordinal
-# (D35), whose projects bucket D19 puts in scope, and Staging, which the data-event trails reach
-# (step 5.1). Production joins when decision 3 adds awsds-prod-outputs.
+# The DLP-scoped accounts (decision 3's map at N=1): the lake account and every sandbox ordinal
+# (D35), whose projects bucket D19 puts in scope. Staging holds no monitored bucket and no consumer
+# slice; Staging and Production join when decision 3 names their results homes, with
+# awsds-prod-outputs among them.
 def env_token(profile: str) -> str | None:
     if profile.startswith("awsds-infra-sandbox"):
         return "sandbox"
-    return {
-        DATA_PROFILE: "data",
-        # Stage 6b step 4.4 flips the env token before Stage 11 builds anything, so the
-        # objects this file looks for in that account are named `awsds-staging-*`.
-        "awsds-infra-staging": "staging",
-    }.get(profile)
+    return {DATA_PROFILE: "data"}.get(profile)
 
 
 # The contracts (see header).
@@ -84,13 +83,22 @@ FILTER_PREFIX = "awsds-flt-"
 TAMPER_SID = "DenyCloudTrailKill"
 BASELINE_POLICY = "awsds-org-scp-baseline"
 
-# Macie's member set is narrower than the trails' (step 1.2): nothing governed sits in Staging, so
-# DP-1 reads Macie only where step 1.2 enables it.
+# Macie's members are step 1.2's, the accounts that hold governed or derived data; DP-1 reads
+# Macie only where that step enables it, which can stay narrower than the trails' scope.
 MACIE_ENVS = ("data", "sandbox")
 
 # The two detector features step 4 enables (Stage 15 step 3 switches them off by name;
 # they arrive ON - that stage's step 0).
 GD_FEATURES = ("S3_DATA_EVENTS", "EBS_MALWARE_PROTECTION")
+
+# The env tokens where Bedrock model invocation logging is expected ON (step 5.6). Decision 11
+# is the user's and is not taken, so no account may hold a configuration: one that appears
+# without a decision is the finding (Lesson 17). The decision writes its accounts here.
+INVOCATION_LOGGING_ENVS: tuple = ()
+
+# Outside the home Region the Control Tower Region ceiling (CT.MULTISERVICE.PV.1) refuses the
+# read, and the write: neither logging-configuration action is among its Bedrock exemptions.
+REGION_CEILING_DENY = "explicit deny in a service control policy"
 
 
 def main(argv: list) -> int:
@@ -374,6 +382,41 @@ def main(argv: list) -> int:
         }
         gd_rows.append((p, det, " ".join(f"{n}={feat.get(n, 'absent')}" for n in GD_FEATURES)))
 
+    # ------------------------------- Bedrock model invocation logging, per account and Region
+    # The Regions are the ones the Bedrock SCP names as routed (awslib/bedrockscope.py reads
+    # the document), because a `us.` profile processes a prompt in any of them; outside the
+    # repository the home Region alone is read.
+    _models, routed, _why = scp_declaration(ctx.repo_root / SCP_PATH)
+    logging_regions = sorted(set(routed or []) | {context.REGION})
+    bedrock_rows: list = []  # (profile, region, state, destinations)
+    for p in live:
+        for region in logging_regions:
+            rcli = AwsCli(profile=p, region=region, errors=errors, echo_profile=True)
+            res = rcli.run(
+                "bedrock",
+                "get-model-invocation-logging-configuration",
+                "--output",
+                "json",
+                log=False,
+                tolerate=REGION_CEILING_DENY,
+            )
+            if res.tolerated:
+                bedrock_rows.append((p, region, "denied by the Region ceiling", "-"))
+                continue
+            if not res.ok:
+                logerr(
+                    p, f"bedrock get-model-invocation-logging-configuration ({region})", res.stderr
+                )
+                bedrock_rows.append((p, region, "(call failed)", "-"))
+                continue
+            # No configuration answers with an empty body; a configured one carries loggingConfig.
+            cfg = json.loads(res.stdout).get("loggingConfig") if res.stdout.strip() else None
+            if not cfg:
+                bedrock_rows.append((p, region, "OFF", "-"))
+            else:
+                dest = [k for k in ("s3Config", "cloudWatchConfig") if cfg.get(k)]
+                bedrock_rows.append((p, region, "ON", ", ".join(dest) or "(none named)"))
+
     # ------------------------------------------------ the baseline Sid, read from Identity
     tamper = "(not read)"
     if IDENTITY_PROFILE in live:
@@ -596,6 +639,45 @@ def main(argv: list) -> int:
     elif tamper == "present":
         checks.ok("DP-7", f"{TAMPER_SID} in {BASELINE_POLICY}", "present")
 
+    # DP-8: Bedrock invocation logging exists exactly where decision 11 puts it (step 5.6). The
+    # configuration is a durable copy of every prompt and completion, so one nobody decided is
+    # the finding in either direction.
+    readable = [r for r in bedrock_rows if r[2] in ("OFF", "ON")]
+    if bedrock_rows and not readable:
+        checks.note("DP-8", "Bedrock invocation logging", "no account and Region was readable")
+    elif readable:
+        unexpected = [
+            f"{p} {r} ({d})"
+            for p, r, s, d in readable
+            if s == "ON" and env_token(p) not in INVOCATION_LOGGING_ENVS
+        ]
+        missing = [
+            f"{p} {r}"
+            for p, r, s, _d in readable
+            if s == "OFF" and r == context.REGION and env_token(p) in INVOCATION_LOGGING_ENVS
+        ]
+        if unexpected:
+            checks.fail(
+                "DP-8",
+                "Bedrock invocation logging",
+                f"configured where no decision puts it: {'; '.join(unexpected)} - every prompt "
+                "and completion is being stored (step 5.6, decision 11).",
+            )
+        elif missing:
+            checks.fail(
+                "DP-8",
+                "Bedrock invocation logging",
+                f"decision 11 puts it in {', '.join(missing)} and nothing is configured there.",
+            )
+        else:
+            accounts = sorted({p for p, _r, _s, _d in readable})
+            checks.ok(
+                "DP-8",
+                "Bedrock invocation logging",
+                f"as decided in {len(accounts)} account(s), {len(readable)} account-Region "
+                f"reading(s); on in: {', '.join(INVOCATION_LOGGING_ENVS) or 'none (decision 11 not taken)'}",
+            )
+
     # --------------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
@@ -614,14 +696,15 @@ SECTIONS
   5. The rules, alarms and topics
   6. The two GuardDuty paid features, org-wide
   7. The CloudTrail-tampering Sid
-  8. CHECKS
-  9. The accounts nothing here is measuring
- 10. Calls that failed
+  8. Bedrock model invocation logging
+  9. CHECKS
+ 10. The accounts nothing here is measuring
+ 11. Calls that failed
 
 HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 11 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
-  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 9 names what nothing here
+  - A MISSING ACCOUNT IS NOT A PASSING ACCOUNT - section 10 names what nothing here
     reached: everything in Audit above all.
   - PRESENCE, NEVER SUFFICIENCY - whether a rule's pattern matches the right events
     is proven by firing it (stage step 5.5), not by its name existing here.
@@ -716,7 +799,24 @@ finding in both directions.""")
         rep.line("    (POLICIES.md's named revision trigger; battery phases 1-3).")
 
         # ==============================================================================
-        rep.h1("8. CHECKS")
+        rep.h1("8. Bedrock model invocation logging")
+        if bedrock_rows:
+            rep.tabulate(
+                ["PROFILE\tREGION\tLOGGING\tDESTINATIONS"]
+                + [f"{p}\t{r}\t{s}\t{d}" for p, r, s, d in bedrock_rows]
+            )
+        else:
+            rep.line("No profile was measured.")
+        rep.text(f"""
+Expected on in: {", ".join(INVOCATION_LOGGING_ENVS) or "no account - decision 11 (step 5.6) is not taken"}.
+The configuration is the full prompt and completion of every invocation; the organization
+trail already records InvokeModel's principal, model and endpoint with no content. A
+Region reading "denied by the Region ceiling" is the Control Tower control refusing the
+read outside the home Region; it refuses the write there too, except to the Control Tower
+roles it exempts, whose configuration there this read cannot see.""")
+
+        # ==============================================================================
+        rep.h1("9. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -731,11 +831,12 @@ What the checks are, and where each comes from:
         Stage 5a step 9.2 promise (D19)
   DP-5  the rules, alarms and topic of 5.2, per account
   DP-6  the two GuardDuty features move together, org-wide (step 4)
-  DP-7  the tampering Sid lands with the first member trail (5.4, decision 6)""")
+  DP-7  the tampering Sid lands with the first member trail (5.4, decision 6)
+  DP-8  Bedrock invocation logging exists only where decision 11 puts it (5.6)""")
 
         # ==============================================================================
-        rep.h1("9. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 8 as a pass.
+        rep.h1("10. The accounts nothing here is measuring")
+        rep.text("""Read this BEFORE reading section 9 as a pass.
 
   - AUDIT holds no CLI profile (D33/D34): Macie's members list, job history and
     results-repository answer, the internal-access analyzer (2.1.3) and
@@ -748,7 +849,7 @@ What the checks are, and where each comes from:
     re-run this script after each one.""")
 
         # ==============================================================================
-        rep.h1("10. Calls that failed")
+        rep.h1("11. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/dlp.py")

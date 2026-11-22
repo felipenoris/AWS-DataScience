@@ -199,9 +199,9 @@ Paid every month even with the lab shut down. Same rows as `docs/plan/cost-model
 | Item | Rate (`sa-east-1`) | Rate (`us-west-2`) | `sa-east-1` /month | `us-west-2` /month |
 |---|---|---|---|---|
 | Organization, accounts, Identity Center, VPC, subnets, IGW, security groups, IAM roles | — | — | **0** | **0** |
-| GitLab EBS volume (50 GB gp3) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 7.60 | 4.00 |
+| GitLab EBS volume (20 GB gp3 since 2026-11-10, 50 before) | 0.152 USD/GB-mo | 0.08 USD/GB-mo | 3.04 | 1.60 |
 | Elastic IP for WireGuard (idle or in use) | 0.005 USD/h | 0.005 USD/h | 3.65 | 3.65 |
-| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 (`production/pki/` does not exist; it arrives at Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason: 15 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 15.00 | 15.00 |
+| KMS customer-managed keys (one tfstate key per Terraform-managed account, plus one data CMK per account that holds data — the lake's `alias/awsds-data-data` and each Interactive account's (D31) — plus D36's second state key `alias/awsds-prod-tfstate-pki`, created by `production/bootstrap/` on 2026-08-15 and encrypting `production/pki/`'s state since that slice's apply on 2026-10-12 (Stage 7 pass 1) — plus the supply-chain key `alias/awsds-prod-registry` (`production/registry/`) and one project key per Interactive account, `alias/awsds-<env>-project` (`terraform-modules/sagemaker-prereqs/`), all three applied 2026-08-21; the encryption rule is `docs/GOVERNANCE.md` §Encryption) — plus, from Stage 6c step 4.11, the proxy access log's key `alias/awsds-prod-proxy-log` in `production/networking/`, the first key in this estate created for a log. Every other log group declined a CMK on the same arithmetic (USD 1/key-month against a debugging log); this one takes it because it records what left the estate. The proxy's key was applied at 6c pass 4 (14 keys); **Stage 7 step 1.1 adds `alias/awsds-prod-gitlab`** (`production/foundation/`, 2026-10-12), the key under GitLab's two buckets and its data volume, its own for D14's option-preservation reason; **Stage 9 passes 3 and 5 add `alias/awsds-prod-data` and `alias/awsds-staging-data`** (`production/data/`, `staging/data/`, 2026-10-22), the deployment targets' data keys; **Stage 6f step 11.2 adds `alias/awsds-data-project`** (`data-governance/publishing/`, 2026-10-26), the lake-publishing pilot's project key, destroyed with the pilot's rollback; **Stage 19 step 4.4 adds `alias/awsds-staging-project` and `alias/awsds-prod-project`** (`staging/studio/`, `production/studio/`, 2026-11-11), the deployment projects' keys: 20 keys | 1.00 USD/key-mo | 1.00 USD/key-mo | 20.00 | 20.00 |
 | S3 data + state + backups (~25 GB Standard) | 0.0405 USD/GB-mo | 0.023 USD/GB-mo | ~1.50 | ~1.00 |
 
 The KMS row's unit is a key **version**, not a key — read from AWS's KMS pricing and key-rotation pages
@@ -212,7 +212,7 @@ no `rotation_period_in_days`, the 365-day default — measured live 2026-08-21, 
 count cell above is therefore a year-one figure: the Stage 2 bootstrap keys (created 2026-08-15) reach
 2 versions around 2027-08 and 3 around 2028-08, and the same clock starts for each later key on its own
 creation date. The multi-year consequence belongs to `docs/plan/cost-model.md`'s Floor row, which defers a
-full recompute to Stage 12 step 5. The levers: fewer keys; rotation disabled on a named key — not free,
+full recompute to Stage 12 step 4. The levers: fewer keys; rotation disabled on a named key — not free,
 because FSBP `KMS.4` runs org-wide under `awsds-fsbp-only` and suppressing a control there is a policy edit
 that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ECR images (~10 GB) | 0.10 USD/GB-mo | 0.10 USD/GB-mo | 1.00 | 1.00 |
@@ -228,7 +228,7 @@ that turns that policy custom (Stage 5a step 13.3); or D12's ceiling revised.
 | ~~EFS (shared filesystem + project storage, IA)~~ | **removed — the NFS requirement was withdrawn 2026-08-17 (D24 with it)** | | **0** | **0** |
 | SageMaker unified domain — DataZone V2 metadata (D26) | 10.00/100k req + 0.40/GiB-mo (global) | idem | ~0.50 | ~0.50 |
 | ~~Staging, Development, Data Governance at rest~~ | **removed — double count** | | **0** | **0** |
-| **Floor** | | | **~USD 30-43** (central ~36) | **~USD 25-34** (central ~30) |
+| **Floor** | | | **~USD 27-40** (central ~33) | **~USD 25-34** (central ~30) |
 
 The São Paulo floor is roughly **1.25-1.4x** the Oregon one — less than the 1.72x of the metered services,
 because so much of the floor is region-flat: KMS, Config, Route 53, Security Hub, the domain and the
@@ -243,7 +243,7 @@ and the organization is billing **~USD 0.5**. The rate was right and the shape w
 treated configuration items as a rate per account per month, and they are an event per change. Nine
 accounts recording once, at enrollment, cost USD 2.20 in a single day and then almost nothing. The row is
 sensitive to churn, so it moves with the build-out and not with the account count; the range stays beside
-the measurement, and Stage 12 step 5 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady
+the measurement, and Stage 12 step 6 re-reads it after Stages 2-3 rather than accepting ~0.5 as steady
 state. `recordingFrequency: DAILY` is not the cheaper mode at this change rate (priced in §4): USD 0.012
 per item-day against USD 0.003 per change puts the break-even at four changes per resource per day.
 
@@ -260,7 +260,11 @@ Five types are 71% of the window: `AWS::EC2::NetworkInterface` 510, `AWS::EC2::V
 `AWS::Config::ResourceCompliance` 279 beside them. A VPC that never changes records 123 items because each
 ENI created or deleted changes the relationship list of its VPC, subnet and security group. Production's
 742 items in the same window follow the same shape (`ResourceCompliance` 172, ENI 148, endpoint 138,
-instance 76). The per-cycle figure is §3's.
+instance 76). The per-cycle figure is §3's. Staging's cycle, read 2026-10-24 (CloudWatch `AWS/Config`
+`ConfigurationItemsRecorded`, Staging): 107 items in the 20:00 UTC hour for one `staging-up` and two
+`staging-deploy` attempts, about 0.32 USD, and a full `egress/` up/down cycle about 200 items, about 0.60
+USD, paid by every pipeline run that raised it; Stage 8 decision 27 moved the cycle to the user's `make up`
+/ `make down`, once per sitting.
 
 Two corrections on 2026-08-08. The "Staging, Development, Data Governance at rest" row double-counted a
 Config recorder and a KMS key for those accounts — the Config row already covers every governed account —
@@ -270,7 +274,7 @@ account plus the D31 data keys, so ~USD 3 went back in.
 A third correction the same date restated the `us-west-2` floor from ~USD 24-30 to ~USD 25-34: the earlier
 figure was carried over rather than summed, and adding this table's `us-west-2` column row by row gives
 25.25 at the low end and 33.75 at the high end. The `sa-east-1` column was already consistent with its own
-rows. These are list rates, not an invoice; the number to trust is the one Stage 12 step 5 measures against
+rows. These are list rates, not an invoice; the number to trust is the one Stage 12 step 4 measures against
 the real bill.
 
 ---
@@ -284,8 +288,9 @@ the real bill.
 | — *(until 6c)* Sandbox, **11** endpoints, single AZ (D9), design A (12 until 2026-08-17 when `elasticfilesystem` left with the NFS requirement; 11 until 2026-08-21 when `datazone` joined at Stage 6 step 4.2; **11 again since 2026-08-25, when it left — issue #39**) | 0.231 | 0.110 | 2.10 |
 | — *(the 2026-08 projection)* Sandbox, 14 endpoints, design B — **11 + the two CodeArtifact + `datazone` back**, the one entry design B must re-add: with no NAT the app has no other path to DataZone (the 2026-08-25 removal is design A's, issue #39). B's own premise requires it; `VpcOnly` does not (Lesson 41), and the portal names it shadows belong to the client plane | 0.294 | 0.140 | (design B needs CodeArtifact — see §9) |
 | — Sandbox **18** endpoints **as built** (6c step 5.2, counted from the slice's plan: the core 8, the SMUS 3, `s3tables`, `datazone`, the SSM trio, `ec2`, `secretsmanager`) | 0.378 | **0.180** | 2.10 |
-| — Staging **11** / `VPC-SharedServices` **12** / `VPC-Workloads` **6** (6c step 5.5 counts; `VPC-SharedServices` 13 until Stage 7 step 1.7 added `secretsmanager` and decision 9 dropped the SageMaker pair; `VPC-Workloads` 0 until Stage 9 step 3.3a named the jobs' `sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`) | 0.231 / 0.252 / 0.126 | **0.110 / 0.120 / 0.060** | 2.10 |
+| — Staging **8** / `VPC-SharedServices` **12** / `VPC-Workloads` **8** (6c step 5.5 counts; `VPC-SharedServices` 13 until Stage 7 step 1.7 added `secretsmanager` and decision 9 dropped the SageMaker pair; `VPC-Workloads` 0 until Stage 9 step 3.3a named the jobs' `sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`, and `lakeformation` joined both for decision 12 (a); Staging 11 until Stage 9 step 4.3a gave it the same set, written 2026-10-22 and applied by its next `make up`; `datazone` joined both on 2026-11-11 for the deployment projects, Stage 19 step 4.4, 7 and 0.070 until each slice's next `make up`) | 0.168 / 0.252 / 0.168 | **0.080 / 0.120 / 0.080** | 2.10 |
 | AWS Config per Sandbox `[E]` cycle — **not hourly**: one `make up` + `make down` of `sandbox/egress` records 120-290 items, whatever the time between, 63-90% of them the endpoints, their ENIs, and the subnets, VPC and security groups those ENIs relate to (eight cycles measured 2026-09-14..10-12, §2) | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | **1.00** |
+| AWS Config per Staging `[E]` cycle — **not hourly**: one `make up` + `make down` of `staging/egress` about 200 items; 107 recorded in the 20:00 UTC hour of 2026-10-24 for one `staging-up` and two `staging-deploy` attempts (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Staging). The user's cycle since Stage 8 decision 27, once per sitting, never per pipeline run | about 0.60 per cycle | **about 0.60 per cycle** | **1.00** |
 | AWS Config per GitLab cycle — **not hourly**: one `make gitlab-up` + `make gitlab-down` with the runners and a hub start/stop recorded 70 items on 2026-10-14, 35 up and 35 down (CloudWatch `AWS/Config` `ConfigurationItemsRecorded`, Production). The endpoints' ENIs were absent from both halves at 21:17 UTC; in the previous cycle 17 of them landed 2-3 h after the destroy. The 2026-10-13 billing day carried 125 items (0.375) for a session whose applies removed two endpoints, replaced a runner and added one. Without the runners about 40 items, read from the per-type split (the GitLab session below) | 0.21-0.38 per cycle | **0.21-0.38 per cycle** | **1.00** |
 | GitLab EC2 `t4g.large` | 0.1072 | 0.0672 | 1.60 |
 | — `t3.large`, the x86 equivalent | 0.1344 | 0.0832 | 1.62 |
@@ -296,6 +301,8 @@ the real bill.
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.large` — **measured 2026-09-07**, the remote-IDE floor (≥ 8 GB; `ml.t3.medium` is named unsupported for it) | 0.161 (JupyterLab; the offer has no Code Editor row for it there) | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.m5.large` — measured 2026-09-07, the 8 GB general-purpose alternative | 0.184 | **0.115** | 1.60 |
 | SageMaker Studio JupyterLab / CodeEditor `ml.t3.xlarge` — **measured 2026-09-11**, the size the first remote-IDE space was created at (6d step 7.3); twice the 8 GB floor above it | 0.323 | **0.200** | 1.62 |
+| SageMaker Studio RStudio server app (`RStudio:RServer-ml.t3.medium`, Posit Workbench's server, one per domain) — **measured 2026-10-30** through the Query API, offer published 2026-10-29 | 0.000 | **0.000** | — |
+| SageMaker Studio RStudio session `ml.t3.medium` (`RStudio:RSession-ml.t3.medium` and `RStudio:RSessionGateway-ml.t3.medium`, one rate; `ml.t3.large` **0.100**) — measured 2026-10-30; the Posit Workbench licence a session needs has no AWS rate (§11) | 0.081 | **0.050** | 1.62 |
 | SageMaker processing job `ml.t3.medium` (2 vCPU, 4 GiB; `USW2-Processing:ml.t3.medium`) — `us-west-2` **measured 2026-10-10**, offer published 2026-10-09 | 0.066 | **0.050** | 1.32 |
 | SageMaker processing job `ml.m5.large` (2 vCPU, 8 GiB) — `us-west-2` measured 2026-10-10 | — | **0.115** | |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
@@ -304,10 +311,12 @@ the real bill.
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour, as built** (6c, 2026-09-07, `us-west-2`): 18 endpoints 0.180 + one `ml.t3.medium`
-app 0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, with no per-GB NAT charge —
-an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a four-hour session
-pays about 1.00 in hours and 0.36-0.87 in Config, and two short sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
+**Typical Sandbox hour, as built** (`us-west-2`): 18 endpoints 0.180 (6c, 2026-09-07) + one `ml.t3.medium`
+app 0.050 + the hub's two hosts 0.0260, the VPN's `t3.nano` and the proxy's `t3.small`, ≈ **0.26/h**
+(0.0624 and ≈ 0.29/h while the VPN ran `t3.medium`, #353 to #356), with no per-GB NAT
+charge — an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a
+four-hour session pays about 1.02 in hours and 0.36-0.87 in Config, and two short
+sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
 hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
 **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
 (`datazone`, Stage 6 step 4.2) from 2026-08-21; design A came back down on 2026-08-25 when it was removed,
@@ -328,13 +337,15 @@ plus 0.005 for its public IPv4.
 ### The GitLab session, by category
 
 A GitLab session runs from `make gitlab-up` to `make gitlab-down` ([runbook](plan/runbooks/gitlab.md) §U):
-the `[D]` host started, `production/egress/`'s endpoints and `production/runners/`' three hosts applied. Read
+`production/egress/`'s endpoints applied, the `[D]` host started, `production/runners/`' hosts applied, the build
+runner among them only with `BUILD=1` (Stage 7 decision 5). Read
 2026-10-14 from the slices, from `describe-*` in Production and from Production's Cost Explorer for
 2026-10-11..10-14, whose effective rates (cost ÷ quantity) equal this section's table: `t4g.large` 0.0672,
 `m8i.xlarge` 0.2117, `t3a.small` 0.0188, endpoint-hour 0.010, gp3 0.08/GB-mo, snapshot 0.05/GB-mo, secret
 0.40/mo, public IPv4 0.005/h, configuration item 0.003. A monthly charge is shown per hour at 730 h, and each
 cell is rounded from the exact rate, so a subtotal can differ from the sum of its rounded cells by 0.0001.
-As built there is no ALB and no NAT, so the full-stack hour above does not describe it.
+As built there is no ALB and no NAT, so the full-stack hour above does not describe it. GitLab's data volume
+is 20 GiB since 2026-11-10 (Stage 12 step 5.3); its 50 GiB before cost every column 0.0033 more.
 
 | Category | Item | Layer | `us-west-2` USD/h |
 |---|---|---|---|
@@ -343,7 +354,7 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 | Compute | GitLab, `t4g.large` | `[D]` | 0.0672 |
 | | the build runner, `m8i.xlarge` | `[E]` | 0.2117 |
 | | the deploy and test runners, `t3a.small` each | `[E]` | 0.0376 |
-| Storage | GitLab's volumes, 12 + 50 GiB gp3, billed stopped or running | `[D]` | 0.0068 |
+| Storage | GitLab's volumes, 12 + 20 GiB gp3, billed stopped or running | `[D]` | 0.0035 |
 | | the runners' root volumes, 64 + 30 + 30 GiB gp3 | `[E]` | 0.0136 |
 | | the DLM snapshots (~1 GB, from 0.025 GB-mo billed on 2026-10-13) and GitLab's two buckets (1.4 MB) | `[D]`, `[P]` | 0.0001 |
 | Other services | Secrets Manager: `gitlab-secrets`, the three runner tokens, the two TLS leaf keys | `[P]` | 0.0033 |
@@ -351,23 +362,24 @@ As built there is no ALB and no NAT, so the full-stack hour above does not descr
 | | the private zone `awsds-pages.internal` | `[P]` | 0.0007 |
 | | the CloudWatch alarm (inside the free ten), DLM, Session Manager, same-AZ peering (`DataTransfer-AZ-*` 9.20 GB each way on 2026-10-12, billed 0) | | 0 |
 
-| Category | With runners | `RUNNERS=0` | Stopped |
-|---|---|---|---|
-| VPC endpoints | 0.1200 | 0.1200 | 0 |
-| Compute | 0.3165 | 0.0672 | 0 |
-| Storage | 0.0205 | 0.0069 | 0.0069 |
-| Other services | 0.0053 | 0.0053 | 0.0053 |
-| **Total** | **0.4623** | **0.1994** | **0.0122** (8.91/month) |
+| Category | `BUILD=1` | Default | `RUNNERS=0` | Stopped |
+|---|---|---|---|---|
+| VPC endpoints | 0.1200 | 0.1200 | 0.1200 | 0 |
+| Compute | 0.3165 | 0.1048 | 0.0672 | 0 |
+| Storage | 0.0172 | 0.0102 | 0.0036 | 0.0036 |
+| Other services | 0.0053 | 0.0053 | 0.0053 | 0.0053 |
+| **Total** | **0.4590** | **0.2403** | **0.1961** | **0.0089** (6.51/month) |
 
 Billed beside the hour:
 
 - **Endpoint processing**, 0.01 USD/GB: 2.86 GB on 2026-10-12, the day of the first image build (0.029),
   and 0.21 GB on 2026-10-13.
 - **AWS Config**, per cycle rather than per hour: the GitLab row of the table above, 0.21-0.38.
-- **The hub**, when no other session holds it: 0.0206/h, the `t3.nano` 0.0052, the `t3.micro` 0.0104 and
-  the proxy's public IPv4 0.005. The proxy sets `associate_public_ip_address`, billed while the host runs:
-  `PublicIPv4:InUseAddress` read twice the hosts' running hours on 2026-10-12. The VPN's Elastic IP bills
-  0.005/h stopped or running, a floor line.
+- **The hub**, when no other session holds it: 0.0310/h, the VPN's `t3.nano` 0.0052 (D4's size, the
+  tracked file's again since #356, Stage 12 decision due 4; 0.0674/h while it ran `t3.medium` at 0.0416,
+  #353), the `t3.small` 0.0208 and the proxy's public IPv4 0.005. The proxy sets
+  `associate_public_ip_address`, billed while the host runs: `PublicIPv4:InUseAddress` read twice the
+  hosts' running hours on 2026-10-12. The VPN's Elastic IP bills 0.005/h stopped or running, a floor line.
 - **CPU credits**: neither slice sets `credit_specification`, so `t4g.large` and the `t3a.small` pair
   launch `unlimited`. A load above baseline bills 0.04 USD/vCPU-h on `t4g` and 0.05 on `t3a` (Price List
   Query API, `USW2-CPUCredits:*`, offer 2026-10-12); no `CPUCredits` usage type was billed 2026-10-11..10-14.
@@ -377,10 +389,48 @@ billed on 2026-10-11, ~30 GB at 0.10, ~3.00/month).
 
 Readings of the table:
 
-- The build runner is 46% of a session with runners; `RUNNERS=0` takes the hour to 0.1994.
-- Without the runners the endpoints are 60% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
+- The build runner and its 64 GiB root are 48% of a `BUILD=1` session; the default leaves both out at
+  0.2403, and `RUNNERS=0` takes the hour to 0.1961.
+- Without the runners the endpoints are 61% of the hour. `athena`, `glue` and `lakeformation` (0.030/h)
   serve no caller in a GitLab session; they are `vpc-egress`'s core list, which no caller overrides.
-- Always on, the session would bill 337.48/month with runners and 145.56 without, both above D12's 50.
+- Always on, the session would bill 335.07/month with `BUILD=1`, 175.42 by default and 143.15 without
+  runners, all above D12's 50.
+
+### A Sandbox unit (Stage 14)
+
+What one more business unit's Sandbox adds (D35), the quantities counted in the hand-built unit on
+2026-10-18 with the environment down: its customer-managed keys from `kms list-aliases` and
+`describe-key` (the account's other four keys are AWS-managed), its private zones from `route53
+list-hosted-zones`, and the endpoint set from this section's as-built row. Every rate is this file's.
+
+| Item | Layer | Per unit | `sa-east-1` | `us-west-2` | Rate read in |
+|---|---|---|---|---|---|
+| KMS keys `alias/awsds-<env>-tfstate`, `-data`, `-project` | `[P]` | 3 keys, 1 version each in year one | 3.00/month | **3.00/month** | §2, 1.00 per key version-month; Sandbox's KMS line billed 2.99 in September (`cost-model.md`) |
+| — the same keys after their first and second yearly rotation | `[P]` | 2, then 3 versions each | 6.00, then 9.00 | **6.00, then 9.00** | §2's rotation rule, capped at 3 versions |
+| The child zone `<env>.awsds.internal` | `[P]` | 1 private zone | 0.50/month | **0.50/month** | §2, §6 |
+| **At rest, year one** | | | **3.50/month** | **3.50/month** | |
+| Interface endpoints, the Sandbox set, one AZ (D9) | `[E]` | 18 | 0.378/h | **0.180/h** | the as-built row above; 0.010-0.070/h more per optional group named |
+| AWS Config, per `make up` + `make down` of the unit's `egress/` | `[E]` | its own recorder | 0.36-0.87 per cycle | **0.36-0.87 per cycle** | the Config row above |
+
+What the row leaves out, and why:
+
+- **The account** bills nothing (§10); what it costs is one slot of the account quota, the reason the
+  stage is blocked.
+- **The hub** serves every unit, so a unit adds nothing to its 0.0310/h (the GitLab session's hub line
+  above); the peering
+  and zone rows a vend adds there are free.
+- **What the unit's people run**: a space at 0.050/h on `ml.t3.medium` (above) and its volume at 0.112
+  per GB-month with every app stopped (§8). Unit 1 also carries Stage 5b's warehouse, which step 1's
+  composition does not: 0.40/month for its admin secret (§6) and 1.44 per query-hour at 4 RPU (§5).
+- **Stage 12's `observability/`**, if a unit gets its own: 0.10 per alarm-month and 3.00 per
+  dashboard-month past a free tier counted once per bill (§6, inferred there).
+- **Config at rest**: Sandbox records 0-4 items a day without a session (§2), at most 0.36/month.
+- **Not measured per unit**: its buckets' storage, its flow log's ingestion, peering data across AZs
+  (0.01/GB each way, §7; free inside `usw2-az1`, where the endpoint sets sit), and the vend's own
+  Config items (the landing zone's enrollment of every account billed 2.20 in one day, §2, and the
+  `[P]` applies after a vend are §11's).
+- **The endpoints are the term that multiplies**: N units working at once bill N × 0.180/h. A set
+  shared through RAM would bill one 0.180/h; what else it needs is not priced here.
 
 ---
 
@@ -388,7 +438,7 @@ Readings of the table:
 
 | Option | `sa-east-1` USD/month | `us-west-2` USD/month | Where it appears |
 |---|---|---|---|
-| Always-on GitLab (`t4g.large` + 50 GB gp3 + ALB) | 78.26 + 7.60 + 24.82 = **110.68** | 49.06 + 4.00 + 16.43 = **69.49** | D8, `docs/plan/cost-model.md` |
+| Always-on GitLab (`t4g.large` + 20 GB gp3 + ALB) | 78.26 + 3.04 + 24.82 = **106.12** | 49.06 + 1.60 + 16.43 = **67.09** | D8, `docs/plan/cost-model.md` |
 | AWS Client VPN (1 endpoint association, 730 h) | 0.15/h → **109.50** | 0.10/h → **73.00** | D4 alternative |
 | — plus each connected client | 0.05/h | 0.05/h | |
 | AWS Network Firewall (1 endpoint) | 0.395/h → **288.35** + 0.065/GB | 0.395/h → **288.35** + 0.065/GB | D5 option (c) |
@@ -413,11 +463,19 @@ São Paulo as in Oregon.
 | S3 PUT/COPY/POST/LIST (USD per 1 000) | 0.007 | 0.005 | 1.40 |
 | S3 GET and all others (USD per 10 000) | 0.0056 | 0.004 | 1.40 |
 | S3 Access Grants requests (USD per 1 000) — `GetDataAccess`, `ListCallerAccessGrants` and every other non-delete AG call; deletes are 0.00. The public pages say nothing (pricing page, user guide, FAQ — all read 2026-08-23); the Price List offer file is where the meter is written | 0.03 | 0.03 | **1.00** |
-| **Glue** ETL (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
-| Glue Flex ETL (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
+| **S3 Tables** storage, first 50 TB (USD/GB-mo; `AmazonS3` offer of 2026-10-15, read 2026-10-18) — where Redshift's system table integration writes (`docs/plan/upstream-releases.md`) | 0.0466 | 0.0265 | 1.76 |
+| S3 Tables monitoring (USD per 1 000 objects-mo) | 0.025 | 0.025 | **1.00** |
+| S3 Tables compaction (USD per 1 000 objects · per GB processed) | 0.0028 · 0.005 | 0.002 · 0.005 | 1.40 · 1.00 |
+| S3 Tables requests (USD per 1 000: PUT, COPY, POST, LIST · GET and others) | 0.007 · 0.00056 | 0.005 · 0.0004 | 1.40 |
+| **Glue** ETL, before Glue 6.0 (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
+| Glue interactive sessions, before Glue 6.0 (USD/DPU-h; usage type `GlueInteractiveSession-DPU-Hour`, `AWSGlue` offer of 2026-11-08, read 2026-11-15). The session Stage 19's Spark read opened through `project.spark.fineGrained` is 5.0, up to 10 DPU, and averaged 2.8 under auto scaling; the bill charged its `DPUSeconds`, 0.9025 DPU-h and 0.3971 USD for 2026-11-14 (`SUP-368`) | 0.69 | 0.44 | 1.57 |
+| Glue Flex ETL, before Glue 6.0 (USD/DPU-h) | 0.45 | 0.29 | 1.55 |
+| Glue ETL and interactive sessions, **Glue 6.0 and later** (USD/DPU-h; usage types `ETL-DPU-Hour-Gen2` and `GlueInteractiveSession-DPU-Hour-Gen2`, `AWSGlue` offer of 2026-10-12, read 2026-10-18). `app-etl`'s job is 6.0 | 0.483 | **0.308** | 1.57 |
+| Glue Flex ETL, Glue 6.0 and later (USD/DPU-h) | 0.315 | 0.203 | 1.55 |
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Iceberg compaction / optimization (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
 | Glue catalog statistics (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
+| Glue Data Quality runs (USD/DPU-h), the evaluation configurations behind SageMaker Unified Studio's *Data profile* among them (`docs/plan/upstream-releases.md`). A configuration bills nothing; a run takes at least 2 DPU for at least 1 minute. The pricing page's examples use 0.44 with no Region named, and the `AWSGlue` offer for `us-west-2` published 2026-11-20 carries no data quality product (read 2026-11-21) | — | — | |
 | Glue Data Catalog storage (USD per 100k objects-mo) | 1.00 | 1.00 | **1.00** |
 | Glue Data Catalog requests (USD per 1M) | 1.00 | 1.00 | **1.00** |
 | **Athena** SQL (USD per TB scanned) | 9.00 | 5.00 | 1.80 |
@@ -428,6 +486,7 @@ São Paulo as in Oregon.
 | **Redshift Serverless** compute (USD per RPU-hour) | 0.5976 | **0.36** | 1.66 |
 | — at `base_capacity = 4`, the documented floor (USD per hour **a query runs**) | 2.3904 | **1.44** | 1.66 |
 | — a workgroup serving no query | 0.00 | **0.00** | — |
+| — data lake queries from Serverless (`awsdatacatalog`, Iceberg, Spectrum-shaped): *"not billed for separately and are included in the amount billed for Amazon Redshift Serverless in RPU-hr amounts"* (the pricing page, read 2026-10-28 for [Stage 19](plan/stages/stage-19-smus-native-data-product.md)) | included | **included** | — |
 | Redshift Managed Storage, serverless (USD/GB-mo) | 0.043 | 0.024 | 1.79 |
 | — a schema filled to its 1 TB quota (USD/month) | 41.47 | **24.58** | 1.79 |
 | Redshift serverless paid snapshots (USD/GB-mo) | 0.0405 | 0.023 | 1.76 |
@@ -459,7 +518,7 @@ measured from `ComputeSeconds`. **The free trial absorbed it.** The Redshift Ser
 that day, which is how AWS says trial usage looks; the Management credits page that showed no credit on
 2026-09-20 does not carry this trial. 12.10 USD consumed against `ComputeSeconds`' 11.91 USD since
 2026-09-19, the rest storage (inferred). Every Redshift figure until 2026-12-19 is absorbed rather than
-billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii).
+billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii). Read again by the user on 2026-10-25: Sandbox *"$287.51 out of $300.00"*, the same expiration; Production *"$299.71 out of $300.00"* and *"Free trial expiration January 21, 2027"*, 90 days after the namespace's creation on 2026-10-23, so the window opens with the namespace and not with the first workgroup (Stage 9's log). On 2026-10-26, before and after the warehouse sitting of §N.2: Production 299.71 then 299.69, 0.02 USD for two Data API statements and a `--sql` session whose `ComputeSeconds` read 79 RPU-seconds (0.0079 at the rate), the 60-second minimum per query being what the balance bills; Sandbox 287.51 unchanged, its 18 RPU-seconds not yet visible. The same evening, before and after Stage 9 xxiv's sitting: Production 299.66 then 299.54, 0.12 USD where `ComputeSeconds` read 78 RPU-seconds (0.0078). The 299.69 of 01:50 had become 299.66 with no workgroup in between, so a reading within the hour after a sitting can miss part of its bill. On 2026-10-30, with no workgroup since, Production read 299.50: xxiv's sitting cost 0.16 USD in all, 0.04 of it landing after the reading 38 minutes past its end. On 2026-11-21 Production read *"$299,18 com diferença de $300,00"*: release F's sitting of 2026-11-16, the only workgroup since 2026-10-30, cost 0.32 USD where `ComputeSeconds` read 139 RPU-seconds (0.0139).
 
 **Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
 `count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the
@@ -555,8 +614,9 @@ per-region entries — one price everywhere the service exists):
 |---|---|---|
 | Metadata requests | 10.00 | per 100 000 requests |
 | Metadata storage | 0.40 | per GiB-month |
-| Compute units (metadata generation, data quality) | 1.776 | per compute unit |
-| AI recommendations — input / output | 0.015 / 0.075 | per 1 000 tokens |
+| Compute units (ingestion, business-name generation, data quality) | 1.776 | per compute unit; 0.2 free a month, per completed job (pricing page, 2026-10-18) |
+| AI recommendations for descriptions — input / output | 0.015 / 0.075 | per 1 000 tokens |
+| A subscription, a data product, a listing | 0.00 | no charge listed; the free tiers are 20 MB of metadata and 4,000 requests a month per account (the pricing page, read 2026-10-28 for [Stage 19](plan/stages/stage-19-smus-native-data-product.md)) |
 
 At lab scale the domain itself is **cents per month**: a single user cannot produce 100k metadata requests
 by hand, and the metadata for a lake this size is megabytes. The cost of Unified Studio is what the
@@ -581,9 +641,9 @@ blueprints provision, not the domain:
 The console's `AmazonBedrockGenerativeAI` grouping has no API identifier: the domain publishes
 `AmazonBedrockChatAgent`, `Evaluation`, `Flow`, `Function`, `Guardrail`, `KnowledgeBase` and `Prompt` as
 seven separate blueprints. The rates below are the model's, not the blueprint's, so they are unaffected.
-**`AmazonBedrockKnowledgeBase` is not among the six** in category 1: a knowledge base stands up a vector
-store, which bills while it exists rather than per token, so it moved to **category 2** on 2026-08-21 with
-a trigger that names the measurement. Price it when the trigger fires (Lesson 6).
+**`AmazonBedrockKnowledgeBase` was category 2 from 2026-08-21 to 2026-10-19**: a knowledge base stands up a
+vector store, which can bill while it exists rather than per token. Its store was priced on 2026-10-12
+(the knowledge-base rows below), and it joined category 1 on 2026-10-19 (Stage 17 7.0b).
 
 **Read 2026-08-21** from `AmazonBedrock/current/{us-west-2,sa-east-1}/index.json`, both published
 `2026-08-20`. The row was owed before the Stage 6 step 1.4 apply: the upkeep rule asks for one per new
@@ -687,7 +747,9 @@ the newer models publish `USW2_input_tokens_standard-Units`, the older ones `USW
 Haiku 4.5 and Sonnet 4.5 are on the second spelling, Opus 5 and Sonnet 5 on the first — so a filter
 written against either one alone reports a model as unpriced when it is merely spelled differently.
 The same split appears in the agreement rate card. `./aws/bedrock-usage.py` does not read the offer
-file: it prices from the table above, and a model with no row there is reported unpriced by name.
+file: it prices from the table above and from a row naming a model's id (Titan Text Embeddings V2's,
+below), rates a call through an application inference profile as the system-defined profile or the
+model the profile lists, and reports a model with no row unpriced by name.
 
 The `us.` profile routes to us-east-1, us-east-2 and us-west-2; `global.` routes wider and costs **10%**
 less. A batch tier is published on `global.` alone (2.50 / 12.50) and no interactive caller can use it.
@@ -731,6 +793,25 @@ For the stage's knowledge base, the repository's runbooks (550 KB, about 140,000
 are under 0.01 USD a sync and an S3 Vectors store cents a month; an OpenSearch Serverless classic
 collection would be the standing line, which is why Stage 17 decision 12 recommends S3 Vectors and its
 7.6 deletes a store with a minimum OCU.
+
+**AgentCore, measured 2026-11-17** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) step
+10.11, from the `us-west-2` offer file `AmazonBedrockAgentCore` (version `20261113204112`, published
+`2026-11-13T20:41:12Z`), read from a cloud session with no AWS credentials. An agent's runtime bills what
+its sessions consume, and the offer holds no row for a runtime that exists with no session:
+
+| Item | Unit | USD |
+|---|---|---|
+| Runtime, consumption-based (`USW2-Runtime:Consumption-based:vCPU`, `:Memory`) | per vCPU-hour, per GB-hour | **0.0895**, **0.00945** |
+| Runtime, consumption-based, the usage types that end in `-v2` (`:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.1276, 0.0169 |
+| Runtime, committed baseline (`USW2-Runtime:Committed-baseline:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.0997, 0.0132 |
+| Runtime, instance-based management (`USW2-Runtime:Instance-based:<type>:Management-Hours`, 889 rows) | per hour | by instance type: `m5.large` 0.01152, `c5.large` 0.0102 |
+| Browser tool and Code Interpreter, consumption-based | per vCPU-hour, per GB-hour | 0.0895, 0.00945 |
+
+The first row's figures are the ones AWS's pricing page gave on 2026-11-16. The offer file does not say
+which runtime the `-v2` usage types price, so which pair a session of 10.11 meters is that step's
+reading, from the first bill. The offer's other families, unused here, are Gateway, Memory, Policy,
+Evaluations and Knowledge-Base. The model's tokens and the guardrails' text units are billed apart, at
+the rates above.
 
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 
@@ -786,6 +867,7 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | **IAM Access Analyzer** internal access (USD per monitored resource per analyzer-month — charged at setup, then on the 1st; Stage 11 step 2.1) | 9.00 | 9.00 | **1.00** |
 | Access Analyzer unused access (USD per IAM role/user per month; Stage 12) | 0.20 | 0.20 | **1.00** |
 | Access Analyzer custom policy checks (per API request) | 0.002 | 0.002 | **1.00** |
+| **IAM Access Troubleshooter** `GetRequestAuthorizationDetails`, per call (preview; Stage 8 decision 29's reading, 2026-10-30) | — | no price on its page | |
 | **Amazon Inspector** ECR enhanced scanning, initial scan (USD/image) | 0.11 | 0.09 | 1.22 |
 | Inspector ECR re-scan (each — continuous scanning re-scans on every new CVE) | 0.01 | 0.01 | **1.00** |
 | **Secrets Manager** secret (USD/secret-mo). **Four at Stage 7** (2026-10-12): `gitlab-secrets.json` and the runner token (step 1.1), the two leaf keys (2.4) — 1.60/month on the floor; the VPN host key was the first (6c 4.1); Stage 8 step 4.3 adds the deploy runner's token container (2026-10-12), and decision 11 the test runner's | 0.40 | 0.40 | **1.00** |
@@ -796,6 +878,11 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | CloudWatch Logs Insights scanned (USD/GB) | 0.009 | 0.005 | 1.80 |
 | CloudWatch standard alarm (USD/alarm-mo) | 0.135 | 0.10 | 1.35 |
 | CloudWatch **custom metric**, first 10 000 (USD/metric-mo) | 0.30 | 0.30 | **1.00** |
+| CloudWatch **composite alarm** (USD/alarm-mo) | 0.675 | 0.50 | 1.35 |
+| CloudWatch **dashboard** (USD/dashboard-mo), past the free three of up to 50 metrics each; a dashboard of more than 50 metrics bills from the first | 3.00 (global) | 3.00 (global) | **1.00** |
+| CloudWatch Contributor Insights rule on a log group (USD/rule-mo) · matched events (USD per million) | 0.50 · 0.036 | 0.50 · 0.02 | 1.00 · 1.80 |
+| CloudWatch free tier, every month: ten standard alarms, ten custom metrics, 5 GB of Logs Insights scans, three dashboards | `Global-*` SKUs | `Global-*` SKUs | — |
+| **Cost Explorer** API request (each), `USE1-APIRequest`; the console is free | 0.01 (global) | 0.01 (global) | **1.00** |
 | **SNS** API requests, above the first 1M/month (each) | 0.0000005 | 0.0000005 | **1.00** |
 | SNS e-mail / e-mail-JSON notifications, above the first 1 000/month (each) | 0.00002 | 0.00002 | **1.00** |
 | SNS HTTP/HTTPS notifications, above the first 100 000/month (each) | 0.0000006 | 0.0000006 | **1.00** |
@@ -803,6 +890,14 @@ step 3.5 is where the missing private path was first recorded). The service has 
 | **Route 53** hosted zone, first 25 (USD/zone-mo) | 0.50 (global) | 0.50 | **1.00** |
 | Route 53 Resolver DNS Firewall, first 1B queries (USD per million) | 0.60 | — | |
 | Route 53 Resolver queries, first 1B (USD per million) | 0.40 | — | |
+
+The composite alarm, dashboard, Contributor Insights and free-tier rows were read on **2026-10-18** for
+Stage 12 step 1 from the `AmazonCloudWatch` bulk offers for `us-west-2` and `sa-east-1` and the global
+`aws-other` one, all published 2026-10-07T11:55:40Z. The free tier carries `Global-*` SKUs, so it is
+counted once per bill (inferred), and the alarms' half is measured: `USW2-CW:AlarmMonitorUsage` billed
+0.00 for 1.61 alarm-months in Production and 0.91 in Sandbox in September. The Cost Explorer row is
+the `AWSCostExplorer` offer of 2026-09-11T12:45:38Z, read the same day as the others; Service Quotas and
+its `AWS/Usage` metrics have no offer file in the index and bill nothing.
 
 6c decision due 4's inputs — the proxy access log's road to Log Archive, `us-west-2`, **measured
 2026-09-08** (the bulk API's `AmazonKinesisFirehose`, `AmazonCloudWatch`, `AWSEvents` and `AWSLambda`
@@ -914,22 +1009,29 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.small` (2 GiB) | 0.0268 | 0.0168 | 1.60 |
 | EC2 `t4g.medium` (4 GiB) | 0.0536 | 0.0336 | 1.60 |
 | EC2 `t4g.large` (8 GiB) | 0.1072 | 0.0672 | 1.60 |
+| EC2 `t4g.xlarge` (4 vCPU, 16 GiB) — measured 2026-10-24 with the Price List Query API (`USW2-BoxUsage:t4g.xlarge`, offer published 2026-10-23T22:13:55Z), the one size above GitLab's that `production/tooling/` admits | 0.2144 | 0.1344 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
-| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4); read again 2026-11-21 with `t3.micro`'s row, both unchanged (offer published 2026-11-21T00:48:16Z), for the proxy's size (`production/proxy/`) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3a.micro` (1 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.micro`, the same offer), the size below the deploy and test runners | 0.0151 | 0.0094 | 1.61 |
 | EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
+| EC2 `t3a.medium` (4 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.medium`), the size above the deploy and test runners that both variables admit | 0.0605 | 0.0376 | 1.61 |
 | EC2 `t3.medium` (4 GiB, x86) | 0.0672 | 0.0416 | 1.62 |
 | EC2 `t3.large` (8 GiB, x86) | 0.1344 | 0.0832 | 1.62 |
 | EC2 `t3.xlarge` (4 vCPU, 16 GiB, x86) — the Stage 6 build host until 2026-09-11 | 0.2688 | 0.1664 | 1.62 |
+| EC2 `t3a.xlarge` (4 vCPU, 16 GiB, x86, AMD EPYC 7571 at 2.5 GHz) — measured 2026-10-24 (`USW2-BoxUsage:t3a.xlarge`) | 0.2419 | 0.1504 | 1.61 |
 | EC2 `t3.2xlarge` (8 vCPU, 32 GiB, x86) | 0.5376 | 0.3328 | 1.62 |
 | EC2 `m5.large` (8 GiB, x86) | 0.1530 | 0.0960 | 1.59 |
 | EC2 `m8i.large` (2 vCPU, 8 GiB, x86) — measured 2026-09-11 | 0.1687 | 0.1058 | 1.59 |
 | EC2 `m8i.xlarge` (4 vCPU, 16 GiB, x86) — **the image build host**: the buildbox from 2026-09-11, Stage 7's build runner since; 3.9 GHz dedicated, EBS 156.25 MB/s and 6000 IOPS | 0.3374 | **0.2117** | 1.59 |
 | EC2 `m8i.2xlarge` (8 vCPU, 32 GiB, x86) — measured 2026-09-11 | 0.6747 | 0.4234 | 1.59 |
+| EC2 `m8i-flex.xlarge` (4 vCPU, 16 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:m8i-flex.xlarge`); EBS baseline 630 Mbps against `m8i.xlarge`'s 1250, both bursting to 10,000 | 0.3205 | 0.2011 | 1.59 |
+| EC2 `c8i.xlarge` (4 vCPU, 8 GiB, x86, the same 3.9 GHz Xeon 6) — measured 2026-10-24 (`USW2-BoxUsage:c8i.xlarge`) | 0.2889 | 0.1874 | 1.54 |
 | EBS `gp3` storage (USD/GB-mo) | 0.152 | 0.08 | 1.90 |
 | EBS `gp3` provisioned IOPS (USD/IOPS-mo) | 0.0095 | — | |
 | EBS snapshot storage (USD/GB-mo) — `us-west-2` **measured 2026-10-12** with the Price List Query API (`USW2-EBS:SnapshotUsage`; the archive tier is 0.0125), for Stage 7 step 1.2's daily DLM snapshots of GitLab's data volume | 0.068 | **0.05** | 1.36 |
-| EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 50 GiB data, gp3) bill ~4.96/month stopped or not | | | |
+| EBS direct APIs, `ListSnapshotBlocks` (USD per 1,000 requests) — **measured 2026-11-09** with the Price List Query API (`USW2-EBS:directAPI.snapshot.List`; `Get` 0.003 and `Put` 0.006 per 1,000 SnapshotAPIUnits), for Stage 12 step 5.3's count of a snapshot's written blocks, two calls | 0.0011 | **0.0006** | 1.83 |
+| EC2 `t4g.large` is **GitLab's host since 2026-10-12** (Stage 7 step 1.2, `[D]`): 0.0672/h while a session runs it; the two volumes (12 GiB root + 20 GiB data since 2026-11-10, gp3) bill ~2.56/month stopped or not | | | |
 | SageMaker Studio JupyterLab `ml.t3.medium` | 0.081 | 0.050 | 1.62 |
 | SageMaker Studio JupyterLab / Code Editor `ml.t3.large` (2026-09-07 — the remote-IDE floor) | 0.161 | **0.100** | 1.61 |
 | SageMaker Studio JupyterLab / Code Editor `ml.m5.large` (2026-09-07) | 0.184 | **0.115** | 1.60 |
@@ -949,7 +1051,7 @@ Paulo that discipline is worth exactly twice as much.
 | SageMaker HyperPod `ml.m5.large` (`Cluster:ml.m5.large`, USD/h per cluster node) — measured 2026-10-12; read, never created (Stage 17 pass 6) | — | 0.115 | |
 | SageMaker with MLflow **tracking server** (`MLExperiments`), USD/h while it exists — measured 2026-10-12: Small / Medium / Large | — | **0.60 / 1.04 / 1.91** | |
 | SageMaker with MLflow tracking-server **storage** (USD/GB-month) — measured 2026-10-12 | — | 0.10 | |
-| SageMaker **MLflow App** (`MLflowApp`) — **no usage type** in the `AmazonSageMaker` offer of 2026-10-12; AWS's post of 2025-12-02 says no additional cost beyond the artifact store; what it bills is read in Stage 17 8.2 | — | — | |
+| SageMaker **MLflow App** (`MLflowApp`) — **no usage type** in the `AmazonSageMaker` offer of 2026-10-12; AWS's post of 2025-12-02 says no additional cost beyond the artifact store; what it bills is read in Stage 17 8.2. **Measured 2026-11-19**: Sandbox's SageMaker bill from 2026-10-19 to 2026-11-18, by usage type, holds no MLflow line while `ml-demo-mlflow` existed (Cost Explorer) | — | **0** at rest | |
 | SageMaker **Partner AI apps** (`PartnerApps`), USD/h per app instance — measured 2026-10-12: Lakera Guard and Deepchecks Small on `m5.2xlarge` 0.384, Comet Small on `m6i.2xlarge` 0.384; Fiddler Small adds Aurora Serverless v2 0.12 per ACU-h, `cache.m5.large` 0.156 and `mq.m5.large` 0.288; Comet adds `cache.r5.xlarge` 0.431; Deepchecks adds `g4dn.xlarge` 0.526; the partner licence is outside the offer. Read, never created (Stage 17 pass 6) | — | **from 0.384** | |
 
 `t4g` (Graviton) is ~20% cheaper than `t3` for the same memory in both regions, which is the sizing
@@ -997,7 +1099,7 @@ The numbers:
 
 | Figure | `sa-east-1` | `us-west-2` | Ratio |
 |---|---|---|---|
-| Monthly floor (§2) | ~USD 30-43, central ~36 | ~USD 25-34, central ~30 | ~1.25-1.4x |
+| Monthly floor (§2) | ~USD 32-45, central ~38 | ~USD 27-36, central ~32 | ~1.25-1.4x |
 | Typical lab hour (§3) | ~USD 0.38-0.44 | ~USD 0.19-0.22 | ~2.0x |
 | Full-stack hour (§3) | ~USD 0.91 | ~USD 0.47 | ~1.9x |
 | **Projection at 20 h/month** | **~USD 38-61** | **~USD 29-43** | |
@@ -1028,7 +1130,8 @@ third-party resource-type handler operations bill; it is the deploy mechanism of
 environment since 2026-08-22, one `DataZone-Env-…` stack each), S3 gateway VPC endpoints, ECR pull-through cache (you pay only for the stored
 images), SageMaker Studio **domains** and user profiles at rest (only running apps and home-directory
 storage bill), **Amazon Data Lifecycle Manager** (the policy is free; the snapshots it takes are §8's
-EBS snapshot row — Stage 7 step 1.2), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
+EBS snapshot row — Stage 7 step 1.2), **AWS License Manager** (*"no additional charge"*, read 2026-10-30; what it
+holds is the seller's licence, the Posit Workbench one in §11), the first 30 days of GuardDuty per account, and — read 2026-08-20, a second and separate
 window — the first 30 days of **Security Hub CSPM** per account, from that account's first enablement.
 The two windows open at different stages (Security Hub at Stage 5a step 13, GuardDuty at Stage 15), so "the
 first thirty days" is never one date for the whole floor. Neither trial covers the AWS Config cost
@@ -1044,4 +1147,9 @@ Anything whose volume is unknown until the environment runs: Config configuratio
 Athena TB scanned, inter-AZ traffic driven by the AZ-mapping question in
 `docs/plan/open-questions.md` item 3, and the domain registration itself (registrar price, per TLD). Stage 12
 replaces the estimated rows in §2 and §3 with figures from the real bill; the per-unit rates in this file
-do not change at that point — only the quantities they are multiplied by.
+do not change at that point — only the quantities they are multiplied by. Posit Workbench's licence, which an
+RStudio space needs (read 2026-10-30): sold by Posit or on AWS Marketplace as `Posit Team`, granted through
+License Manager, with no rate in any AWS offer. Systems Manager Parameter Store, which Stage 19's release
+F uses for one standard parameter per application and target, written at a deploy and read at each
+chain's execution (written 2026-11-12, not applied): its rate was not read for this file, and the first
+bill after a release runs on it is the reading.

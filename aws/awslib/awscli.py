@@ -7,15 +7,19 @@ exit code). Shelling out keeps the authentication path, the profile semantics an
 text identical to a hand-run command, and keeps this package dependency-free, which the
 CloudShell fallback needs.
 
-Two call styles:
+The call styles:
 
-    run   capture the output for later use; a failure is logged (or tolerated) and returns
-          an empty ``text``, so a caller can test the result for emptiness
-    show  is on the Report class: echo the command into the report, then its output
+    run    capture the output for later use; a failure is logged (or tolerated) and returns
+           an empty ``text``, so a caller can test the result for emptiness
+    pages  every page of a listing the CLI does not paginate itself, and whether the reading
+           reached the last one
+    show   is on the Report class: echo the command into the report, then its output;
+           ``show_pages`` does the same for a listing ``pages`` reads
 """
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from dataclasses import dataclass, field
@@ -24,6 +28,11 @@ from . import context
 
 # The two spellings for "no --profile: ambient credentials".
 AMBIENT = ("-", "none")
+
+# The most pages ``pages`` reads before it reports the listing incomplete. Lake Formation's
+# ListPermissions answers empty pages that still carry a NextToken: 6 pages for 29 grants in Sandbox
+# and 5 for 28 in Data Governance, the last four of each empty (measured 2026-10-21).
+MAX_PAGES = 50
 
 
 def is_ambient(profile: str | None) -> bool:
@@ -80,6 +89,53 @@ class CallResult:
     def text(self) -> str:
         """The output on success, empty after a failure."""
         return self.stdout if self.ok else ""
+
+
+@dataclass
+class Listing:
+    """Every page one listing answered, and how the reading ended.
+
+    ``complete`` is true only when the last page carried no token. Otherwise ``last`` says
+    why: tolerated, failed, or ``ok`` at the page limit. An absence in an incomplete listing
+    proves nothing; a presence does.
+    """
+
+    pages: list
+    last: CallResult
+    complete: bool
+    token: str = "NextToken"
+
+    def items(self, key: str) -> list:
+        """The entries under ``key``, from every page read."""
+        return [item for page in self.pages for item in page.get(key) or []]
+
+    @property
+    def why(self) -> str:
+        """Why the reading stopped short, in the failed-calls log's words; empty when complete."""
+        if self.complete:
+            return ""
+        if self.last.tolerated:
+            return "tolerated"
+        if not self.last.ok:
+            return self.last.merged
+        return (
+            f"{self.token} still present after {len(self.pages)} pages: the listing is incomplete"
+        )
+
+    def merged(self) -> dict:
+        """The pages as one answer: each list member joined in page order, any other member
+        from the first page that carries it, the token dropped."""
+        doc: dict = {}
+        for page in self.pages:
+            for key, value in page.items():
+                if key == self.token:
+                    continue
+                if isinstance(value, list):
+                    joined = doc.get(key)
+                    doc[key] = (joined if isinstance(joined, list) else []) + value
+                elif key not in doc:
+                    doc[key] = value
+        return doc
 
 
 @dataclass
@@ -156,3 +212,50 @@ class AwsCli:
         if log:
             self.errors.add(args, res.merged, self.profile if self.echo_profile else None)
         return res
+
+    def pages(
+        self,
+        *args: str,
+        token: str = "NextToken",
+        max_pages: int = MAX_PAGES,
+        tolerate: str | None = None,
+        log: bool = True,
+    ) -> Listing:
+        """``run`` for a listing the CLI does not paginate, following its token.
+
+        The CLI pages an operation itself only when botocore defines a paginator for it; for
+        any other, one call answers the first page and a token. ``token`` is the member that
+        carries it in the answer and in the request (``nextToken`` for OpenSearch Serverless);
+        the request option is its kebab-case spelling, ``--next-token`` for both. ``args``
+        carry no ``--output`` and no ``--query``: the pages are read as JSON, and a query would
+        drop the token. A failure, or a token still present after ``max_pages``, is logged
+        under ``args`` without the token unless ``log`` is false.
+        """
+        option = "--" + re.sub(r"(?<!^)(?=[A-Z])", "-", token).lower()
+        pages: list = []
+        value = None
+        while True:
+            res = self.run(
+                *args,
+                *((option, value) if value else ()),
+                "--output",
+                "json",
+                tolerate=tolerate,
+                log=False,
+            )
+            if res.tolerated:
+                return Listing(pages, res, complete=False, token=token)
+            if not res.ok:
+                if log:
+                    self.errors.add(args, res.merged, self.profile if self.echo_profile else None)
+                return Listing(pages, res, complete=False, token=token)
+            page = json.loads(res.stdout or "{}")
+            pages.append(page)
+            value = page.get(token)
+            if not value:
+                return Listing(pages, res, complete=True, token=token)
+            if len(pages) >= max_pages:
+                listing = Listing(pages, res, complete=False, token=token)
+                if log:
+                    self.errors.add(args, listing.why, self.profile if self.echo_profile else None)
+                return listing

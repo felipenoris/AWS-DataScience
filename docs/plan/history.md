@@ -3,7 +3,8 @@
 How the plan and the environment got here. Two separate records:
 
 - **[`docs/log/`](../log/INDEX.md)** — manual actions performed in AWS, one file per stage. Written
-  cooperatively by the user and Claude, and by Claude only when asked ([`docs/log/INDEX.md`](../log/INDEX.md)).
+  cooperatively by the user and Claude: Claude records each step it executes, in the sitting the step ran
+  ([`docs/log/INDEX.md`](../log/INDEX.md)).
 - **this file** — how the plan changed, and what each project step did.
 
 Nothing here changes a future decision; do not read it to execute a stage.
@@ -798,6 +799,58 @@ one module tag.
   neither change nor delete it, and Stage 10's execution and chain roles carry it. The workflows
   runbook says a workflow the CLI made is never saved or run from the portal. Verifications xxiii to
   xxvi join Stage 8. Nothing in AWS changed.
+
+- **2026-10-22 — Stage 18's verdict: D41 item 2 kept.** A deployment-only SageMaker project was measured
+  in Staging from 2026-10-17 and removed on 2026-10-22, and the user kept item 2 on the recommendation
+  its measurements carried (Stage 18's 8.9). D41's item 2 and revision trigger, `SMUS.md`'s section on a
+  deployment project, `POLICIES.md`'s trigger on `DenyDataZoneEntirely` and Stage 10's status carry it.
+
+- **2026-11-09 — The platform list becomes `docs/AWS_SUPPLEMENT.md`.** The list of what AWS does that its
+  documentation does not say, kept at the end of `lessons.md` since 2026-09-06, moved to a file of its
+  own on the user's request: supplementary AWS documentation, by service, one `SUP-nnn` entry per
+  behaviour. Its entries were regrouped under the service whose behaviour each is, and the stage logs,
+  runbooks, documents and code comments were swept for the behaviours that had never reached the list,
+  Terraform's and its providers' among them. `CLAUDE.md` routes to it and indexes its sections, and
+  `./scripts/check-aws-supplement.py` joined `make check`. Nothing in AWS changed.
+- **2026-11-11 — Staging and Production associated to the domain; the `test` stage's retirement written.**
+  [Stage 19](stages/stage-19-smus-native-data-product.md)'s decisions 6 (b), of 2026-10-31, and 17 to 20, of
+  2026-11-11, reached the estate: D26's "a deployment target is never associated" ended at that stage's
+  step 4.2, by `ram associate-resource-share` on the domain's share, the call the console makes
+  (`SUP-349`), and each target is to hold one deployment project. Decision 19 (c) retired the Sandbox
+  `test` stage that D41 item 3 had put between `dev` and Staging: the template's pipeline was written
+  with a `bundle` job in `test-deploy`'s place, which deploys nothing in Sandbox, and D21's one exception,
+  a pipeline writing into Sandbox's `test` project, ends when that release lands in GitLab. The `Workloads`
+  SCP's amendment (decision 13 (b)) and the two `studio/` slices were planned and not applied that day.
+- **2026-11-11 — A stage's status gets one home per level of detail.** On the user's request to optimise
+  the memory files, four texts were measured as derived: the status cells of `docs/plan/stages/INDEX.md`
+  and of `docs/GENERAL_PLAN.md`, the `Records` cells of `docs/log/INDEX.md`, and the per-stage bullets of
+  `CLAUDE.md`'s Current position. Every identifier, date and measurement in them was in the stage's own
+  file or log but thirteen, which moved into the stage headers, and the copies disagreed where one had
+  been updated and another not. The cells were cut. A stage's state is one row in `CLAUDE.md`, its full
+  status is the `Status` row in the stage file's header, and its chronology is the stage log under its
+  dated headings; the stage index keeps one word of state, and the plan and the log index carry none.
+  A text written before this date that names the stage index's status cell or a `Records` cell means the
+  stage file's `Status` row or the log's headings. `scripts/check-plan-refs.py` gained a ceiling for
+  Current position and for the two indexes. Nothing in AWS changed.
+- **2026-11-16 — A processing job's network isolation reopened.**
+  [Stage 20](stages/stage-20-dbt-lineage.md)'s decision 13, the user's: `sagemaker:CreateProcessingJob`
+  leaves `DenySageMakerJobsWithoutNetworkIsolation`, Stage 6a step 3's statement of 2026-08-16, in
+  Sandbox, Staging and Production, so a processing job runs in its project's subnets as the project
+  role and reaches what a workflow's Glue job and worker tasks reach. Training, tuning and AutoML jobs
+  and models stay isolated. The stage's pass 4 holds the module change, its tags, the callers' pins, the
+  battery's rows and the documents that state the rule. The change was planned and not applied that
+  day. Nothing in AWS changed.
+- **2026-11-17 — A trained model is promoted, and no target trains it.** The user revised
+  [Stage 10](stages/stage-10-orchestration-promotion.md) decision 22, of 2026-10-24, in the message that
+  took [Stage 17](stages/stage-17-sandbox-machine-learning.md) decision 21 as (b). The decision had each
+  target train its own model, because Stage 9 decision 1 keeps Production's archives from Staging; the
+  user's ground for revising it is that every environment reads the governed lake. A model is trained
+  once, in the application's `dev` project in Sandbox, the release's bundle carries the archive as the
+  CI/CD CLI's `ml/deployment` example does, and each target registers, approves and serves it. D17, D20
+  and D28 are amended in place: the trained model is an artifact class the repository does not carry, and
+  Staging holds a registry group for such an application. Stage 17 pass 9 plans it for a new application,
+  `app-ml`; `app-etl`'s model chain, built on the earlier decision, retires after `app-ml`'s first
+  release (Stage 17 decision 28 (a), taken the same day). Nothing in AWS changed.
 
 ---
 

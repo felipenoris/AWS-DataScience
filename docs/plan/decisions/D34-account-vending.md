@@ -119,8 +119,12 @@ that the `for_each` key is stable enough that adding an OU does not re-create th
    profile). That list makes the real cost of "just one more sandbox" visible at the moment somebody asks
    for it, which is the point of the gate.
 4. **Quota headroom is a standing item, not a stage pre-flight.** Keep slack for a failed provisioning that has
-   to be retried; a closed account holds both its slot and its e-mail address for ~90 days; addresses follow
-   the `+alias` convention already in `secrets/emails.md`.
+   to be retried; a closed account holds its slot until it is permanently closed, 90 days after the close,
+   and spends its e-mail address: the address it holds at closure can never become another account's
+   primary address, so one meant for a later vend is changed before the close, with `account
+   start-primary-email-update` (read 2026-10-20: [Stage 14](../stages/stage-14-sandbox-vending.md) step 6,
+   and [`docs/REFERENCES.md`](../../REFERENCES.md)'s Account Factory and account-closure readings);
+   addresses follow the `+alias` convention already in `secrets/emails.md`.
 
 With no retirement there is no "vend the account before disabling the only identity that can vend", so
 **deferring an account is a scheduling choice with no structural cost**, which makes postponing `Staging`
@@ -134,7 +138,7 @@ resolves itself: on the day it fires, AFT looks expensive — probably correctly
 | Rung | What it is | What it costs |
 |---|---|---|
 | 1. **Today** | Account Factory from the console, by the owner above | nothing; the request has no diff and no review |
-| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one slice; a principal with Service Catalog rights **in Management**, which reopens the ownership question above; and `prevent_destroy`, because terminating that resource **closes an account** |
+| 2. **The middle** | `aws_servicecatalog_provisioned_product` against the **Account Factory product**, with `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters | one slice; a principal **in Management** whose rights reach past Service Catalog to `organizations:CreateAccount` and Identity Center's directory, which reopens the ownership question above; and `prevent_destroy`, because terminating that resource **unenrolls the account** and moves it to the root without closing it, so a destroy leaves a running account outside every OU policy set (read 2026-10-20: [Stage 14](../stages/stage-14-sandbox-vending.md) step 2, and [`docs/REFERENCES.md`](../../REFERENCES.md)'s Account Factory and account-closure readings) |
 | 3. **AFT** | the full product: its own management account, pipelines, per-account customization repositories | a dedicated account slot plus metered services |
 
 > **A rung the ladder never had, whose premise is now measured false** (2026-09-06, Stage 6b step 0.5b).
@@ -143,20 +147,26 @@ resolves itself: on the day it fires, AFT looks expensive — probably correctly
 > as an option. **The landing zone has `remediationTypes: INHERITANCE_DRIFT` set, i.e. account
 > auto-enrollment ON**, so an account created with `organizations:CreateAccount` and placed in a
 > **registered OU** receives that OU's baseline and controls on its own, eventually consistent within
-> minutes to hours. A rung between 1 and 2 therefore exists: **one `aws_organizations_account` resource, no
-> Service Catalog, and no Service Catalog rights in Management** — the ownership problem rung 2 reopens.
+> minutes to hours. A rung between 1 and 2 therefore exists: **one `aws_organizations_account` resource and
+> no Service Catalog**. It still needs a principal in Management, because `CreateAccount` and `MoveAccount`
+> are callable from the management account alone: the ownership question rung 2 reopens stays, narrowed to
+> Organizations rights with no Service Catalog and no Identity Center directory writes (read 2026-10-20:
+> [Stage 14](../stages/stage-14-sandbox-vending.md) step 2, and [`docs/REFERENCES.md`](../../REFERENCES.md)'s
+> Account Factory and account-closure readings).
 > **What it costs, and the reason this is a note rather than a re-decision:** no provisioned product is ever
-> created, so the console's *Update account* flow has nothing to update, the OU move and the account closure
-> become Organizations operations, and Stage 6b step 3.5's "read the parameters back" has no analogue.
+> created, so the console's *Update account* flow has nothing to update, enrolling and unenrolling become
+> moves into and out of a registered OU, and Stage 6b step 3.5's "read the parameters back" has no analogue.
 > **Nothing is re-decided here** — Stage 14 is blocked on the account quota and this decision's revision
-> trigger is frequency, not mechanism. It is written down so the next reading of this ladder starts from the
-> measurement instead of from the premise (Lesson 7).
+> trigger is frequency, not mechanism. Stage 14 step 2 weighs this rung against rung 2 and recommends it;
+> which rung is this decision's revision, and the user's. It is written down so the next reading of this
+> ladder starts from the measurement instead of from the premise (Lesson 7).
 
 Rung 2 keeps the account being created **by Account Factory**, so Control Tower enrolment, guardrails and
 baseline are untouched; it only moves who fills in the form. *To verify before writing it:* the product name
-and the exact parameter keys, which change between landing-zone versions. **This is the rung
-[Stage 14](../stages/stage-14-sandbox-vending.md) uses**, because D35 puts the one recurring account
-(`Sandbox`, one per business unit) on a different footing from the structural ones.
+and the exact parameter keys, which change between landing-zone versions. Stage 14 step 2 holds the vendor's
+reading of both (2026-10-20); the binding one, the product's own parameters read in Management, is the
+user's. **This is the rung [Stage 14](../stages/stage-14-sandbox-vending.md) uses**, because D35 puts the
+one recurring account (`Sandbox`, one per business unit) on a different footing from the structural ones.
 
 **Revision trigger:** account creation becoming frequent enough that the post-vend baseline is run from memory
 rather than read, or a second human joining — at which point the **ladder above** is walked from rung 1, not

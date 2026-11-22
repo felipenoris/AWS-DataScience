@@ -13,3 +13,8 @@ output "resource_link_names" {
   description = "The local databases resolving to the lake's shared ones."
   value       = module.consumer_data.resource_link_names
 }
+
+output "lake_catalog_id" {
+  description = "The lake account's catalog id, the account Lake Formation shares from: sandbox/warehouse/ names it in the access roles' read of a governed share (Stage 9 9.7)."
+  value       = data.aws_caller_identity.lake.account_id
+}

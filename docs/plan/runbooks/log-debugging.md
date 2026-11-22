@@ -23,6 +23,8 @@ it bounds every "this has never happened" claim below.
 | `awsds-<env>-vpc-flow-logs` **30 d** | per account · same | the `vpc` module (`[P]` — always on) | ACCEPT/REJECT per flow: **addresses and ports, never names** |
 | `/awsds/prod/vpn` **30 d** | Production · `awsds-infra-prod` | the WireGuard host | the tunnel host's own output |
 | `/awsds/<env>/studio` **30 d** | the compute account · same | `sagemaker-prereqs` | Studio app output |
+| `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>` **never expires** | Staging and Production · `awsds-infra-<env>` | the service, under the name the CI/CD CLI passes in `CreateWorkflow`, since release F (`EXC-25`, `SUP-254`). Release T's `/awsds/<env>/wf/<workflow>` (90 d, the `orchestration` module) left with `<env>/orchestration/`, destroyed in Production on 2026-11-16 (Stage 19 step 8) | a promoted workflow's task output, one stream per task attempt (`workflow_id=<workflow>/run_id=<id>/task_id=<task>/attempt=<n>.log`) |
+| `/aws/vendedlogs/states/awsds-<env>-chains` **90 d** | the same | the `orchestration` module's chain layer | every state of a chain's Step Functions execution, with its data: the run it started, its polls, its own error |
 | CloudTrail — no group; the `lookup-events` **API** | every account · any profile that can read it | the organization trail | which **principal** made which API call, and **by which door** |
 
 **Families this estate did not create and does not control**, so that none is mistaken for ours:
@@ -104,7 +106,12 @@ aws cloudtrail lookup-events \
 > Two services give no action at all, and then the event name is all there is: **Glue** answered
 > `An unknown error occurred` for a refused `GetCatalogs`, and **Lake Formation** answered
 > *"Insufficient Lake Formation permission(s): Required Describe on raw"* — which is not an IAM failure,
-> and no IAM grant fixes it.
+> and no IAM grant fixes it. The trail does not carry that sentence: a `DeleteTable` Lake Formation
+> refused for want of `DROP` reads `AccessDenied`, *"An unknown error occurred"* in CloudTrail, while the
+> client read *"Required Drop on trades_notional"* (2026-10-25, Staging's `make down`). The missing grant
+> comes from the client's output or from `lakeformation list-permissions`, never from the trail; on a
+> resource another account's catalog holds, list by resource, since a principal filter returns nothing
+> there even for a grant that works (2026-10-25).
 
 > **An absence from `lookup-events` is not evidence until the instrument has shown a presence.** A
 > lookup by `EventName=GetResources` returned no events while a lookup by
@@ -159,6 +166,11 @@ repository on 2026-09-09, by reading raw counts as MiB.
 - **A `403` over `https` reads `000` at the client.** The refusal is a `CONNECT` refusal, so
   `curl -w '%{http_code}'` shows `000` while this log shows a named `403`. Two views of one event — and
   the reason a probe that must be legible is run over `http://`.
+- **botocore reports a refused `CONNECT` as an unreachable proxy.** A boto3 call the plane refuses fails
+  at the client as *"Failed to connect to proxy URL: http://proxy.awsds.internal:3128"*, while this log
+  holds a named `403 TCP_DENIED` per retry: five for the CI/CD CLI's `CreateWorkflow` to
+  `airflow-serverless.us-west-2.api.aws` on 2026-10-26, the same client's other calls tunnelling through
+  the same proxy in the same minute. Read this log before suspecting the network.
 - **`.amazonaws.com` is on the compute plane**, so a missing bypass entry for an AWS name comes back
   **`200`**, not `403` — it succeeds, publicly, without `aws:SourceVpce`. **The loud failure is the lucky
   one**; see §7's second rule.
@@ -261,7 +273,14 @@ addresses; only CloudTrail carries `vpcEndpointId`.
   with a gateway endpoint id**. Same host, same second, different families.
 - **Who deleted it** (6d, 2026-09-09): `DeleteApp` from a browser `userAgent` is a person restarting a
   space; the same call from `AWSServiceRoleForAmazonSageMakerNotebooks` is **idle shutdown**. The API
-  cannot tell you, the `userAgent` and the identity can.
+  cannot tell you, the `userAgent` and the identity can. The mirror case (2026-10-26): `CreateApp` from a
+  browser `userAgent` under a project's role, minutes after `make down`'s hook deleted the apps, is the
+  portal starting a space for an open project page, and `list-apps`' `CreationTime` is the app name's
+  first creation, never its latest start.
+- **A refusal with no `errorMessage`** (2026-10-26): DataZone's refusal of `ListDomains` to a project's
+  role is recorded as `AccessDenied` with no message, while the client prints *"User is not permitted to
+  perform operation: ListDomains"*; no IAM or SCP layer refused it, the role's policy allowing
+  `datazone:List*`. The service's own authorization speaks only at the client.
 
 ```bash
 python3 - <<'PY'
@@ -312,6 +331,29 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
   that drops it silently re-points the logs at a service-default group — the symptom is *"the run produced
   no logs"* while a second, orphan group fills up ([Lesson 60](../lessons.md)).
 
+**In Staging and Production a run starts from its chain**, the state machine `awsds-<env>-chain-<chain>`
+(Stage 10; read in Staging on 2026-10-23), so the execution holds the first verdict: a run that did not
+succeed ends it `FAILED` with the machine's own error, `WorkflowRunNotSucceeded`, naming the workflow. A
+run the schedule started reads `RunType` `ON_DEMAND` like any other, since the machine starts it; the
+schedule's start is CloudTrail's, `scheduler.amazonaws.com` assuming `awsds-<env>-chain-scheduler` and
+`StartExecution` in that session (read 2026-10-25 in Production, Stage 10 6.1). The newest executions,
+then the last events of one, as the pipeline's `staging-test` reads them:
+
+```bash
+aws stepfunctions list-executions --state-machine-arn "$(aws stepfunctions list-state-machines --query "stateMachines[?name=='awsds-staging-chain-app-etl'].stateMachineArn" --output text --profile awsds-infra-staging --region us-west-2)" --max-items 5 --query 'executions[].[name,status,startDate]' --output table --profile awsds-infra-staging --region us-west-2
+```
+
+```bash
+aws stepfunctions get-execution-history --execution-arn "<execution arn>" --reverse-order --max-items 20 --profile awsds-infra-staging --region us-west-2
+```
+
+Then the run's task instances, as above, and the failed task's stream in
+`/aws/mwaa-serverless/<domain id>-<project id>/<workflow>` (`EXC-25`).
+A task can fail after the work it started: on 2026-10-23 `transform` failed pushing its Glue run's
+details as an XCom, refused `kms:GenerateDataKey` by the key policy (*"Failed to encrypt XCom value"*),
+while the Glue run it had started `SUCCEEDED`. The job's own run is read apart, with `aws glue
+get-job-runs`.
+
 ---
 
 ## 7. The readings that recur
@@ -342,6 +384,8 @@ aws mwaa-serverless list-task-instances --workflow-arn "$WF" --run-id "$RUN"    
 | `firewall_rule_action` **absent** ≠ allowed by a rule | it means no rule fired |
 | `%<st` is **bytes** (2026-09-09) | a figure ~5 % too large, labelled MiB |
 | a `403` over https is **`000`** at the client | the proxy log has the real code |
+| botocore's *"Failed to connect to proxy URL"* (2026-10-26) | a refused `CONNECT`: the proxy log names the host and the `403` |
+| a reader's `Decrypt` refused `invokedBy logs.amazonaws.com`, no encryption context (2026-10-26) | not a refused read: CloudWatch Logs tries the reader's identity, then decrypts through its own path (`fas.s3.amazonaws.com`) and returns the events |
 | CloudTrail has **no data events** yet | `GetObject` will never appear; that is Stage 11 |
 | a piped command's exit code ([Lesson 46](../lessons.md)) | a truncated read that looks like a finding |
 | a name searched with no `--start-time` is bounded by the group's **creation** | say *"never, since <date>"*, not *"never"* |
@@ -360,7 +404,7 @@ the browser, not which profile to log in with.
 |---|---|---|
 | `/awsds/prod/proxy`, `/awsds/prod/vpn`, the Production flow logs | `awsds-infra-prod` | `InfrastructureAccess` |
 | `/awsds/sandbox/*`, `/aws/mwaa-serverless/*` and the `mwaa-serverless` API, the Sandbox flow logs, CloudTrail in Sandbox | `awsds-infra-sandbox-1` | idem |
-| `/awsds/staging/*` | `awsds-infra-staging` | idem |
+| `/awsds/staging/*`, `/aws/vendedlogs/states/awsds-staging-chains`, the `stepfunctions` and `mwaa-serverless` APIs in Staging | `awsds-infra-staging` | idem |
 
 **Log Archive and Audit hold no CLI profile** — the organization trail's S3 copy is not read this way.
 Everything above is a **read**; nothing in this runbook writes.

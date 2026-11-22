@@ -5,9 +5,10 @@
 # publishes and their runway - GitLab's own nginx serves them, decision 1, so nothing is in ACM -
 # the DNS records, the CA root parameter), the registries (ECR repositories with tag immutability
 # and scan-on-push, the pull-through cache rules and whether each has been pulled through, the
-# CodeArtifact domain and its policy), the proxy configuration the GitLab host carries against the
-# list egress/ generates, and the cross-account consumer reads that are INT-01/INT-02's mechanical
-# half.
+# CodeArtifact domain and its policy), the proxy configuration the GitLab host and the runners carry
+# (the deployed gitlab.rb's env blocks, a runner's rendered user data) against the contracted
+# target and the list egress/ generates, and the cross-account consumer reads that are
+# INT-01/INT-02's mechanical half.
 #
 #   needs:    a live SSO session, the only prerequisite:
 #
@@ -27,11 +28,16 @@
 #             GetRegistryScanningConfiguration, DescribePullThroughCacheRules,
 #             GetLifecyclePolicy, DescribeImages, codeartifact:ListDomains,
 #             ListRepositoriesInDomain, DescribeRepository, GetDomainPermissionsPolicy,
-#             GetRepositoryEndpoint, sts:GetCallerIdentity. `openssl x509` reads a leaf's
-#             notAfter; without the binary SC-8 is a note.
+#             GetRepositoryEndpoint, sts:GetCallerIdentity, s3:GetObject on
+#             config/gitlab.rb in the GitLab objects bucket (SC-11 keeps its env blocks
+#             and prints none of the rest) and ec2:DescribeInstanceAttribute for a runner's
+#             userData (SC-11, while one exists). `openssl x509` reads a leaf's notAfter;
+#             without the binary SC-8 is a note.
 #             It never creates, updates or deletes anything, and never reads a secret value:
 #             the gitlab-secrets check is DescribeSecret metadata only, so the report cannot
-#             contain what Secrets Manager exists to hold.
+#             contain what Secrets Manager exists to hold. gitlab.rb and the user data hold
+#             none by design (the SAML values are public metadata, keys travel in Secrets
+#             Manager), and only their proxy lines are used.
 #   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # It is multi-profile, which aws/INDEX.md admits only for a reason: D14 puts the registries in
@@ -52,6 +58,13 @@
 #   - the GitLab host's bypass list is `no_proxy_literal_regionless` in
 #     terraform-live/production/tooling/main.tf, a dated copy of production/egress's
 #     `no_proxy_all_groups` output with REGION where the region goes (step 1.3; SC-11)
+#   - the proxy every component and runner is told is PROXY_URL below, spelled in `proxy_url` of
+#     terraform-live/production/tooling/main.tf and terraform-live/production/runners/main.tf
+#     (steps 1.3 and 6.2; SC-11)
+#   - the host loads s3://<GitLab objects bucket>/config/gitlab.rb (`gitlab_rb_key` in tooling/),
+#     whose four `<component>['env']` blocks carry the proxy (step 1.3, item 2; SC-11)
+#   - a runner's bootstrap assigns PROXY and NOPROXY and passes six --env flags to
+#     `gitlab-runner register` (steps 6.1 and 6.2; SC-11)
 #   - the release a rebuild installs is `gitlab_ce_version`'s default in
 #     terraform-live/production/tooling/variables.tf, and GitLab names a backup
 #     <epoch>_<YYYY_MM_DD>_<release>_gitlab_backup.tar (decision 10; SC-13)
@@ -63,11 +76,16 @@
 #     this file shows only the anchors it depends on.
 #   - The release the host runs is read through the newest backup's name, so the reading is as old
 #     as that backup (SC-13).
+#   - The configuration the running host holds: the S3 object is what its next boot or
+#     `awsds-gitlab-refresh` loads, and SC-11 reads the object. A runner's rendered user data
+#     exists while its instance does; the daemon drop-ins and config.toml it writes are on the
+#     host, reached by a Session Manager shell (runbooks/gitlab.md section U).
 #   - GitLab's own objects - groups, protected tags, mirror settings - live behind
 #     gitlab.awsds.internal, which no AWS API reads.
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import shutil
@@ -77,6 +95,7 @@ from datetime import datetime, timezone
 
 from awslib import context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
+from awslib.devenvrecipe import digest, entries
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
 OUT_NAME = "supplychain.txt"
@@ -106,6 +125,28 @@ EGRESS_FULL_OUTPUT = "no_proxy_all_groups"
 # The literal carries REGION where the region goes, because a .tf file may hold no region literal
 # (check-tf-conventions); the slice swaps var.region in and so does this reader.
 NO_PROXY_DEFAULT_RE = re.compile(r'no_proxy_literal_regionless\s*=\s*"(?P<value>[^"]*)"')
+# SC-11's proxy target: the one URL every Omnibus component and every runner is told (steps 1.3,
+# 6.2). The name and the port, since no address is exported (6g). Two slices spell it in a locals
+# block; the check reads both and fails on a difference, so the contract stays one string.
+PROXY_URL = "http://proxy.awsds.internal:3128"
+RUNNERS_MAIN_TF = "terraform-live/production/runners/main.tf"
+PROXY_URL_RE = re.compile(r'^\s*proxy_url\s*=\s*"(?P<value>[^"]*)"', re.M)
+# The object the host fetches at boot and at every refresh (`gitlab_rb_key` in tooling/), and the
+# components whose env blocks tell it the proxy (step 1.3, item 2). The block ends at the first
+# closing brace that starts a line; a value holds no brace.
+GITLAB_RB_KEY = "config/gitlab.rb"
+GITLAB_ENV_COMPONENTS = ("gitlab_rails", "gitaly", "gitlab_workhorse", "gitlab_pages")
+PROXY_VARS = ("http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY")
+BYPASS_VARS = ("no_proxy", "NO_PROXY")
+ENV_BLOCK_RE = re.compile(r"^(?P<component>[a-z_]+)\['env'\]\s*=\s*\{(?P<body>.*?)^\}", re.M | re.S)
+ENV_PAIR_RE = re.compile(r'"(?P<name>[A-Za-z_]+)"\s*=>\s*"(?P<value>[^"]*)"')
+# A runner's bootstrap names the proxy twice: the two assignments every layer reads, and the six
+# --env flags of `gitlab-runner register`, which become the job containers' environment (6.2,
+# layer 4). The three runner templates share both shapes.
+BOOT_PROXY_RE = re.compile(r'^PROXY="(?P<value>[^"]*)"\s*$', re.M)
+BOOT_BYPASS_RE = re.compile(r'^NOPROXY="(?P<value>[^"]*)"\s*$', re.M)
+REGISTER_ENV_RE = re.compile(r'--env "(?P<name>[A-Za-z_]+)=\$(?P<ref>NOPROXY|PROXY)"')
+EGRESS_APPLIED_OUTPUT = "no_proxy"
 # SC-13's two ends: the release a rebuild installs, and the release the newest backup was made by.
 # The variable's block ends at the first closing brace that starts a line.
 TOOLING_VARIABLES_TF = "terraform-live/production/tooling/variables.tf"
@@ -121,6 +162,87 @@ BACKUP_NAME_RE = re.compile(
 # VPCs resolve, and Pages keeps a sibling apex of its own for the cookie scope D36 gives.
 ZONES = ("awsds.internal.", "awsds-pages.internal.")
 LEAF_EXPIRY_WARN_DAYS = 45
+
+
+def short(items: list, limit: int = 3, sep: str = "; ") -> str:
+    """The first few findings of a list, then how many more."""
+    more = f" (+{len(items) - limit} more)" if len(items) > limit else ""
+    return sep.join(items[:limit]) + more
+
+
+def read_proxy_url(path) -> str | None:
+    """`proxy_url` as a slice's locals block spells it: None when the file is absent (a run outside
+    the repository), "" when it holds none."""
+    if not path.is_file():
+        return None
+    m = PROXY_URL_RE.search(path.read_text(encoding="utf-8"))
+    return m["value"] if m else ""
+
+
+def env_blocks(rb: str) -> dict:
+    """component -> {variable: value} for every `<component>['env'] = { ... }` block of a gitlab.rb."""
+    return {m["component"]: dict(ENV_PAIR_RE.findall(m["body"])) for m in ENV_BLOCK_RE.finditer(rb)}
+
+
+def proxy_target_problems(blocks: dict) -> list:
+    """Every way the blocks fail to tell a component the contracted proxy: a missing block, and a
+    block whose four proxy variables are absent or name another URL. A block the contract does not
+    list is held to the same."""
+    problems = [f"no {c}['env'] block" for c in GITLAB_ENV_COMPONENTS if c not in blocks]
+    for component, env in blocks.items():
+        for var in PROXY_VARS:
+            if env.get(var) != PROXY_URL:
+                problems.append(f"{component} {var} = {env.get(var) or '(absent)'}")
+    return problems
+
+
+def bypass_lists(blocks: dict) -> tuple:
+    """(the distinct bypass lists across every block and both spellings, the variables with none)."""
+    seen, absent = set(), []
+    for component, env in blocks.items():
+        for var in BYPASS_VARS:
+            if env.get(var) is None:
+                absent.append(f"{component} {var}")
+            else:
+                seen.add(env[var])
+    return seen, absent
+
+
+def list_diff(have: str, want: str) -> str:
+    """How one comma list differs from the one it should equal, in names."""
+    have_set, want_set = set(have.split(",")), set(want.split(","))
+
+    def part(label: str, names: list) -> str:
+        return f"{label} {len(names)}" + (f" ({short(names, sep=', ')})" if names else "")
+
+    return f"{part('missing', sorted(want_set - have_set))}, {part('extra', sorted(have_set - want_set))}"
+
+
+def runner_bootstrap_problems(user_data: str, bypass: str | None) -> list:
+    """What a runner's rendered bootstrap fails to tell its layers: the PROXY assignment, the NOPROXY
+    one (equal to egress's no_proxy when that is known) and the six job variables of the register
+    call, each referring to the assignment of its kind."""
+    problems = []
+    proxy = BOOT_PROXY_RE.search(user_data)
+    if not proxy:
+        problems.append("no PROXY assignment")
+    elif proxy["value"] != PROXY_URL:
+        problems.append(f"PROXY = {proxy['value']}")
+    noproxy = BOOT_BYPASS_RE.search(user_data)
+    if not noproxy:
+        problems.append("no NOPROXY assignment")
+    elif bypass is not None and noproxy["value"] != bypass:
+        problems.append(
+            f"NOPROXY differs from egress's no_proxy - {list_diff(noproxy['value'], bypass)}"
+        )
+    flags = {m["name"]: m["ref"] for m in REGISTER_ENV_RE.finditer(user_data)}
+    for want, names in (("PROXY", PROXY_VARS), ("NOPROXY", BYPASS_VARS)):
+        for var in names:
+            if flags.get(var) != want:
+                problems.append(
+                    f"register --env {var} is {flags.get(var) or 'absent'}, not ${want}"
+                )
+    return problems
 
 
 def main(argv: list) -> int:
@@ -281,7 +403,7 @@ def main(argv: list) -> int:
             _name, changed = json.loads(res.stdout)
             secret_state = f"present, last changed {changed or '(never - container only)'}"
 
-    # --------------------------- TLS: imported leaves in ACM, the CA parameter, the records
+    # ----------------- TLS: ACM (decision 1 imports nothing), the CA parameter, the records
     acm_rows: list = []  # (domain, type, days-left, arn tail)
     ca_param_state = "(not measured)"
     record_rows: list = []  # (zone, record, type)
@@ -410,7 +532,10 @@ def main(argv: list) -> int:
     if tooling_path.is_file():
         m = NO_PROXY_DEFAULT_RE.search(tooling_path.read_text(encoding="utf-8"))
         tooling_literal = m.group("value").replace("REGION", context.REGION) if m else ""
+    tooling_proxy_url = read_proxy_url(tooling_path)
+    runners_proxy_url = read_proxy_url(ctx.repo_root / RUNNERS_MAIN_TF)
     egress_full = None
+    egress_applied = None  # the output runners/ reads: the last apply's names, not every group's
     egress_state_note = ""
     if prod_live:
         cli = cli_for(PROD_PROFILE)
@@ -429,6 +554,7 @@ def main(argv: list) -> int:
             try:
                 outputs = json.loads(res.stdout).get("outputs") or {}
                 egress_full = outputs.get(EGRESS_FULL_OUTPUT, {}).get("value") or None
+                egress_applied = outputs.get(EGRESS_APPLIED_OUTPUT, {}).get("value") or None
                 if egress_full is None:
                     egress_state_note = (
                         f"the state holds no `{EGRESS_FULL_OUTPUT}`: production/egress is DOWN "
@@ -436,6 +562,57 @@ def main(argv: list) -> int:
                     )
             except json.JSONDecodeError:
                 egress_state_note = "the egress state is not JSON"
+
+    # ------- the gitlab.rb the host loads, the runners' bootstraps (steps 1.3, 6.2; SC-11): the
+    # object is readable with GitLab down, a runner's user data exists while its instance does
+    objects_bucket = next((n for n, _v in gitlab_buckets if "object" in n), None)
+    gitlab_rb = None  # the object's text; None when it was not read
+    gitlab_rb_note = ""
+    gitlab_rb_absent = False
+    if prod_live and objects_bucket:
+        res = cli_for(PROD_PROFILE).run(
+            "s3",
+            "cp",
+            f"s3://{objects_bucket}/{GITLAB_RB_KEY}",
+            "-",
+            tolerate="NoSuchKey|Not Found|404",
+        )
+        if res.tolerated:
+            gitlab_rb_absent = True
+            gitlab_rb_note = f"s3://{objects_bucket}/{GITLAB_RB_KEY} is absent"
+        elif res.ok:
+            gitlab_rb = res.stdout
+        else:
+            gitlab_rb_note = f"s3://{objects_bucket}/{GITLAB_RB_KEY} could not be read (section 10)"
+    blocks = env_blocks(gitlab_rb) if gitlab_rb is not None else {}
+    runner_user_data: dict = {}  # instance id -> text; "" holds none, None was not read
+    if prod_live:
+        cli = cli_for(PROD_PROFILE)
+        for row in runner_rows:
+            iid = row[1]
+            res = cli.run(
+                "ec2",
+                "describe-instance-attribute",
+                "--instance-id",
+                iid,
+                "--attribute",
+                "userData",
+                "--query",
+                "UserData.Value",
+                "--output",
+                "text",
+            )
+            if not res.ok:
+                runner_user_data[iid] = None
+                continue
+            raw = res.stdout.strip()
+            try:
+                runner_user_data[iid] = (
+                    "" if raw in ("", "None") else base64.b64decode(raw).decode("utf-8")
+                )
+            except ValueError:
+                runner_user_data[iid] = None
+                logerr(PROD_PROFILE, f"ec2 describe-instance-attribute ({iid})", "not base64 text")
 
     # ------------------------ the release a rebuild installs (decision 10, SC-13): the pin
     tooling_release = None  # None: the file is absent; "": it holds no default for the variable
@@ -873,6 +1050,144 @@ def main(argv: list) -> int:
                     f"{len(lit)} entries, equal to egress's no_proxy_all_groups",
                 )
 
+    # SC-11, the proxy target (steps 1.3, 6.2, 8.4): every Omnibus component and every runner is told
+    # one URL, the name and the port. The object is what the host loads at boot and at every refresh
+    # and is readable with GitLab down; a block that names another proxy, or none, leaves that
+    # component with no way out, since nothing else leaves the VPC. The code's own `proxy_url` is
+    # read beside it, so a change not yet applied reads as a fail as well.
+    if prod_live:
+        if not objects_bucket:
+            checks.note(
+                "SC-11",
+                "GitLab's deployed gitlab.rb",
+                "no objects bucket - expected before Stage 7 step 1.",
+            )
+        elif gitlab_rb is None and gitlab_rb_absent and built:
+            checks.fail(
+                "SC-11",
+                "GitLab's deployed gitlab.rb",
+                f"{gitlab_rb_note} - the host has no configuration to load (step 1.3).",
+            )
+        elif gitlab_rb is None:
+            checks.note("SC-11", "GitLab's deployed gitlab.rb", f"{gitlab_rb_note} - not compared.")
+        else:
+            problems = proxy_target_problems(blocks)
+            if tooling_proxy_url not in (None, PROXY_URL):
+                problems.append(f"{TOOLING_MAIN_TF} says {tooling_proxy_url or '(no proxy_url)'}")
+            if problems:
+                checks.fail(
+                    "SC-11",
+                    "GitLab's proxy target",
+                    f"{short(problems)}. Every component tells {PROXY_URL}: fix tooling/, apply "
+                    "it, refresh the host.",
+                )
+            else:
+                checks.ok(
+                    "SC-11",
+                    "GitLab's proxy target",
+                    f"{len(blocks)} env blocks ({', '.join(sorted(blocks))}) tell {PROXY_URL} in "
+                    f"{len(PROXY_VARS)} variables each"
+                    + (f", as {TOOLING_MAIN_TF} does" if tooling_proxy_url is not None else ""),
+                )
+            # The blocks must agree in both spellings, and equal the literal the slice holds: an
+            # object older than the code is an apply owed, and a component with no list sends the
+            # AWS endpoints' names to the proxy, the wrong door, with no error.
+            seen, absent = bypass_lists(blocks)
+            if absent:
+                checks.fail(
+                    "SC-11",
+                    "GitLab's deployed bypass list",
+                    f"{short(absent)} carry none - that component's AWS calls leave by the proxy.",
+                )
+            elif len(seen) != 1:
+                checks.fail(
+                    "SC-11",
+                    "GitLab's deployed bypass list",
+                    f"the blocks carry {len(seen)} different lists (Lesson 33): apply tooling/ "
+                    "and refresh the host.",
+                )
+            else:
+                deployed = next(iter(seen))
+                held = f"{len(entries(deployed))} entries, sha256 {digest(deployed)}"
+                if not tooling_literal:
+                    checks.note(
+                        "SC-11",
+                        "GitLab's deployed bypass list",
+                        f"{held}, one list in every block; the literal in {TOOLING_MAIN_TF} was "
+                        "not read, so it is not compared with the code.",
+                    )
+                elif deployed != tooling_literal:
+                    checks.fail(
+                        "SC-11",
+                        "GitLab's deployed bypass list",
+                        f"differs from the literal in {TOOLING_MAIN_TF} - "
+                        f"{list_diff(deployed, tooling_literal)}: apply tooling/ (its plan shows "
+                        "the object's diff), then awsds-gitlab-refresh on the host.",
+                    )
+                else:
+                    checks.ok(
+                        "SC-11",
+                        "GitLab's deployed bypass list",
+                        f"{held}, one list in the {len(blocks)} blocks, equal to the literal in "
+                        f"{TOOLING_MAIN_TF}",
+                    )
+
+        # The runners are [E]: a bootstrap exists as the instance's userData, so the deployed half
+        # is a note between sessions and the code's own proxy_url is the reading that remains.
+        runner_code = (
+            "" if runners_proxy_url is None else f"; {RUNNERS_MAIN_TF} says {runners_proxy_url}"
+        )
+        runner_code_bad = runners_proxy_url not in (None, PROXY_URL)
+        if not runner_rows:
+            if runner_code_bad:
+                checks.fail(
+                    "SC-11",
+                    "the runners' proxy",
+                    f"{RUNNERS_MAIN_TF} says {runners_proxy_url or '(no proxy_url)'}, not "
+                    f"{PROXY_URL}.",
+                )
+            else:
+                checks.note(
+                    "SC-11",
+                    "the runners' proxy",
+                    "no runner instance: the build, deploy and test runners are [E], and their "
+                    "rendered user data (PROXY, NOPROXY and the six job variables of the register "
+                    f"call) is readable only while one exists - not compared{runner_code}.",
+                )
+        for row in runner_rows:
+            name, iid = row[0], row[1]
+            what = f"the proxy in {name} ({iid})"
+            text = runner_user_data.get(iid)
+            if text is None:
+                checks.note("SC-11", what, "the user data could not be read (section 10).")
+            elif not text:
+                checks.fail("SC-11", what, "no user data - the instance tells no layer a proxy.")
+            else:
+                problems = runner_bootstrap_problems(text, egress_applied)
+                if runner_code_bad:
+                    problems.append(f"{RUNNERS_MAIN_TF} says {runners_proxy_url or '(none)'}")
+                if problems:
+                    checks.fail(
+                        "SC-11",
+                        what,
+                        f"{short(problems)}. A runner tells its layers one proxy: fix runners/, "
+                        "and the next make gitlab-up creates one that does.",
+                    )
+                else:
+                    noproxy = entries(BOOT_BYPASS_RE.search(text)["value"])
+                    checks.ok(
+                        "SC-11",
+                        what,
+                        f"PROXY {PROXY_URL}; NOPROXY {len(noproxy)} entries"
+                        + (
+                            ", equal to egress's no_proxy"
+                            if egress_applied
+                            else ", egress's no_proxy not read, so not compared"
+                        )
+                        + f"; the {len(PROXY_VARS) + len(BYPASS_VARS)} job variables in the "
+                        "register call",
+                    )
+
     # SC-12: each pull-through cache rule has been pulled through at least once - 5.2's first-pull
     # reading made durable. A rule with no repository under its prefix has never served a pull, and
     # whether the first one needs a route to the internet is the stage's verification vii.
@@ -948,7 +1263,7 @@ SECTIONS
   1. Which accounts were measured, and as whom
   2. The GitLab host and the runner (tooling [D], runners [E])
   3. The [P] anchors: buckets, the newest backup, the gitlab-secrets container
-  4. TLS: the published leaves, the CA root parameter, the DNS records
+  4. TLS and the proxy: the published leaves, the CA root parameter, the bypass lists, the DNS records
   5. ECR: repositories, scanning, the pull-through cache
   6. CodeArtifact: the domain, its repositories, the domain policy
   7. The consumer reads, from each Interactive account (INT-01/INT-02)
@@ -1040,7 +1355,9 @@ not contain what Secrets Manager exists to hold. "container only" (no change
 date) is the expected state between creation (1.1) and the first boot (1.5).""")
 
         # ==============================================================================
-        rep.h1("4. TLS: the published leaves, the CA root parameter, the DNS records")
+        rep.h1(
+            "4. TLS and the proxy: the leaves, the CA root parameter, the bypass lists, the records"
+        )
         if not prod_live:
             rep.line(f"{PROD_PROFILE} was not measured - nothing to show.")
         else:
@@ -1069,6 +1386,32 @@ date) is the expected state between creation (1.1) and the first boot (1.5).""")
                         else f"not read - {egress_state_note}"
                     )
                 )
+            rep.line()
+            if gitlab_rb is None:
+                rep.line(
+                    f"GitLab's deployed gitlab.rb: not read - {gitlab_rb_note or 'no objects bucket'}"
+                )
+            else:
+                targets = sorted(
+                    {env.get(v) or "(absent)" for env in blocks.values() for v in PROXY_VARS}
+                )
+                seen, absent = bypass_lists(blocks)
+                if len(seen) == 1 and not absent:
+                    only = next(iter(seen))
+                    bypass = f"{len(entries(only))} entries, sha256 {digest(only)}"
+                else:
+                    bypass = f"{len(seen)} list(s), {len(absent)} variable(s) with none"
+                rep.line(
+                    f"GitLab's deployed gitlab.rb (s3://{objects_bucket}/{GITLAB_RB_KEY}): "
+                    f"{len(blocks)} env block(s) - {', '.join(sorted(blocks)) or 'none'}"
+                )
+                rep.line(f"  proxy target in the blocks : {', '.join(targets) or '(no block)'}")
+                rep.line(f"  bypass list in the blocks  : {bypass}")
+            if runner_rows:
+                read = sum(1 for text in runner_user_data.values() if text)
+                rep.line(f"the runners' rendered user data: {read} of {len(runner_rows)} read")
+            else:
+                rep.line("the runners' rendered user data: not read - no runner instance")
             rep.line()
             if record_rows:
                 rep.tabulate(["ZONE\tRECORD\tTYPE"] + ["\t".join(r) for r in record_rows])
@@ -1151,7 +1494,8 @@ What the checks are, and where each comes from:
   SC-8   the published leaves have runway; the re-issue is pki/'s apply (2.3, 2.4)
   SC-9   the CA root parameter exists - INT-19's one source (2.3)
   SC-10  the runner reported as the [E] burn it is (6.1, D11)
-  SC-11  GitLab's bypass literal equals egress's no_proxy_all_groups (1.3, 8.4)
+  SC-11  the proxy: GitLab's bypass literal equals egress's no_proxy_all_groups; the deployed
+         gitlab.rb and a running runner's user data tell the one contracted proxy (1.3, 6.2, 8.4)
   SC-12  every pull-through cache rule has served a pull (5.2, 8.4)
   SC-13  the newest backup's release equals gitlab_ce_version (decision 10, 8.2)""")
 
@@ -1159,9 +1503,9 @@ What the checks are, and where each comes from:
         rep.h1("9. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 8 as a pass.
 
-  - `Staging` has no profile until the vend - and is deliberately NOT in the
-    consumer map: it pulls images through the pipeline's roles (INT-07,
-    Stage 8), not through a standing grant.
+  - `Staging` (profile awsds-infra-staging) is deliberately NOT measured: it is
+    not in the consumer map (decision 7), and pulls images through the
+    pipeline's roles (INT-07, Stage 8), not through a standing grant.
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - re-run after
     each vend: the consumer map and section 7 must both grow with N (D35).
   - GitLab's own objects (groups, protected tags, mirrors) live behind

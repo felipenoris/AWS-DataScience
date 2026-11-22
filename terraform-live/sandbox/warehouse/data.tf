@@ -2,6 +2,12 @@
 
 data "aws_caller_identity" "current" {}
 
+# The producer account of the subscribed products (variables.tf `subscribed_products`): Production,
+# the one entry of backend.DATA_PRODUCERS, resolved through the aliased provider.
+data "aws_caller_identity" "production" {
+  provider = aws.production
+}
+
 # The account data CMK. ONE DATA KEY PER ACCOUNT (docs/GOVERNANCE.md Encryption), and the warehouse
 # is a data store in this account, so it takes Sandbox's data key exactly as awsds-sandbox-lake
 # does. Read through remote state rather than by alias lookup: an alias resolves to whatever wears
@@ -24,6 +30,19 @@ data "terraform_remote_state" "foundation" {
   config = {
     bucket = "awsds-${var.env}-tfstate"
     key    = "${var.account_folder}/foundation/terraform.tfstate"
+    region = var.region
+  }
+}
+
+# awsds-<env>-alerts, both alarms' action, owned by sandbox/observability/ (Stage 12 step 2.2). The
+# plan fails on this read until that slice is applied; scripts/tfhygiene/layers.py RANKS owns the
+# order.
+data "terraform_remote_state" "observability" {
+  backend = "s3"
+
+  config = {
+    bucket = "awsds-${var.env}-tfstate"
+    key    = "${var.account_folder}/observability/terraform.tfstate"
     region = var.region
   }
 }
@@ -60,8 +79,11 @@ data "aws_security_group" "project" {
 locals {
   name = "awsds-${var.env}-warehouse"
 
-  data_key_arn  = data.terraform_remote_state.data.outputs.data_key_arn
-  boundary_name = "awsds-${var.env}-project-boundary"
+  data_key_arn        = data.terraform_remote_state.data.outputs.data_key_arn
+  lake_catalog_id     = data.terraform_remote_state.data.outputs.lake_catalog_id
+  producer_catalog_id = data.aws_caller_identity.production.account_id
+  alerts_topic_arn    = data.terraform_remote_state.observability.outputs.alerts_topic_arn
+  boundary_name       = "awsds-${var.env}-project-boundary"
 
   # The three audit log types. The group path is DERIVED FROM THE NAMESPACE NAME by the service -
   # AWS: "/aws/redshift/<namespace>/<log_type>" - so a namespace rename moves three log groups, and

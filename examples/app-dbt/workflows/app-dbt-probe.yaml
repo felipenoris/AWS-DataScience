@@ -1,0 +1,141 @@
+# {"probe":{"x":120,"y":200}}
+app-dbt-probe:
+  dag_id: app-dbt-probe
+  tasks:
+    # What the plan assumes of the worker and nobody read, printed by shell commands and by a python3
+    # script over the worker's own boto3, since the worker carries no aws client: the tools run-dbt.sh
+    # calls, whether a script runs from the task's folder and from a mktemp folder, the glibc and the
+    # distribution, the CPUs and the memory, the mounts, sys.path, the installed distributions, the
+    # names of the environment variables, then the AWS calls the transform task makes. Each call is
+    # tried once with a 10-second connect timeout and prints its answer or one line REFUSED with the
+    # error's type and text; the task ends SUCCESS whatever a call answered. No archive: the task
+    # reads the worker as a workflow without code finds it.
+    probe:
+      operator: airflow.providers.standard.operators.bash.BashOperator
+      bash_command: |
+        echo "folder: $PWD"
+        for tool in python3 bash mktemp cp chmod dirname; do
+          echo "tool: $tool $(command -v "$tool" || echo absent)"
+        done
+        for folder in "$PWD" "$(mktemp -d)"; do
+          printf '#!/bin/sh\necho ran\n' > "$folder/probe-script.sh" && chmod +x "$folder/probe-script.sh"
+          echo "script in $folder: $("$folder/probe-script.sh" 2>&1 || echo "did not run, exit $?")"
+        done
+        python3 - '{domain.region}' '{proj.connection.project.athena.workgroupName}' '{env.PRODUCT_DATABASE}' '{domain.id}' <<'PY'
+        import importlib.metadata
+        import os
+        import platform
+        import sys
+        import time
+
+        import boto3
+        from botocore.config import Config
+
+        region, workgroup, database, domain = sys.argv[1:]
+        config = Config(region_name=region, connect_timeout=10, read_timeout=60, retries=dict(total_max_attempts=1))
+
+
+        def show(name, *values):
+            print(name + ":", *values, flush=True)
+
+
+        def read(path):
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    return handle.read().strip()
+            except OSError as error:
+                return "absent (" + type(error).__name__ + ")"
+
+
+        def call(name, function, **arguments):
+            try:
+                return function(**arguments)
+            except Exception as error:
+                show(name, "REFUSED", type(error).__name__ + ":", str(error).replace("\n", " "))
+                return None
+
+
+        def query(name, athena, sql):
+            started = call(name, athena.start_query_execution, QueryString=sql, WorkGroup=workgroup)
+            if started is None:
+                return
+            execution = started["QueryExecutionId"]
+            deadline = time.monotonic() + 120
+            while True:
+                answer = call(name, athena.get_query_execution, QueryExecutionId=execution)
+                if answer is None:
+                    return
+                status = answer["QueryExecution"]["Status"]
+                if status["State"] in ("SUCCEEDED", "FAILED", "CANCELLED") or time.monotonic() > deadline:
+                    break
+                time.sleep(1)
+            output = answer["QueryExecution"].get("ResultConfiguration", dict()).get("OutputLocation")
+            show(name, status["State"], status.get("StateChangeReason", "-"), "output", output)
+            if status["State"] == "SUCCEEDED":
+                result = call(name, athena.get_query_results, QueryExecutionId=execution)
+                if result is not None:
+                    rows = result["ResultSet"]["Rows"]
+                    show(name, "rows", [[cell.get("VarCharValue") for cell in row["Data"]] for row in rows])
+
+
+        show("python", sys.executable, platform.python_version(), platform.platform())
+        try:
+            show("glibc", os.confstr("CS_GNU_LIBC_VERSION"))
+        except (ValueError, OSError) as error:
+            show("glibc", "absent (" + type(error).__name__ + ")")
+        try:
+            show("distribution", platform.freedesktop_os_release().get("PRETTY_NAME"))
+        except OSError as error:
+            show("distribution", "absent (" + type(error).__name__ + ")")
+        affinity = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else "absent"
+        show("cpus", os.cpu_count(), "usable", affinity)
+        show("cpu limit", read("/sys/fs/cgroup/cpu.max"))
+        meminfo = read("/proc/meminfo").splitlines()
+        show("memory", [line for line in meminfo if line.startswith(("MemTotal", "MemAvailable"))])
+        show("memory limit", read("/sys/fs/cgroup/memory.max"), read("/sys/fs/cgroup/memory/memory.limit_in_bytes"))
+        mounts = [line.split() for line in read("/proc/mounts").splitlines() if len(line.split()) > 3]
+        for path in (os.getcwd(), "/tmp", "/var/tmp", "/usr/local/airflow/dags"):
+            holding = [mount for mount in mounts if path == mount[1] or path.startswith(mount[1].rstrip("/") + "/")]
+            mount = max(holding, key=lambda mount: len(mount[1])) if holding else ["absent"] * 4
+            try:
+                stat = os.statvfs(path)
+                free = str(stat.f_bavail * stat.f_frsize // 2**20) + " MiB free"
+            except OSError as error:
+                free = "absent (" + type(error).__name__ + ")"
+            show("mount", path, "on", mount[1], mount[2], mount[3], mount[0], free)
+        for entry in sys.path:
+            show("sys.path", entry)
+        distributions = sorted(set((d.metadata["Name"] or "?", d.version) for d in importlib.metadata.distributions()))
+        show("distributions", len(distributions))
+        for name, version in distributions:
+            show("distribution", name, version)
+        show("environment", " ".join(sorted(os.environ)))
+
+        caller = call("caller", boto3.client("sts", config=config).get_caller_identity)
+        if caller is not None:
+            show("caller", caller["Arn"])
+        athena = boto3.client("athena", config=config)
+        group = call("workgroup", athena.get_work_group, WorkGroup=workgroup)
+        if group is not None:
+            settings = group["WorkGroup"].get("Configuration", dict())
+            show(
+                "workgroup",
+                group["WorkGroup"]["Name"],
+                group["WorkGroup"].get("State"),
+                "enforced", settings.get("EnforceWorkGroupConfiguration"),
+                "engine", settings.get("EngineVersion", dict()).get("EffectiveEngineVersion"),
+                "output", settings.get("ResultConfiguration", dict()).get("OutputLocation"),
+            )
+        glue = boto3.client("glue", config=config)
+        found = call("database", glue.get_database, Name=database)
+        if found is not None:
+            entry = found["Database"]
+            show("database", entry["Name"], entry.get("LocationUri"), entry.get("CreateTableDefaultPermissions"))
+        query("select 1", athena, "SELECT 1")
+        query("count trades", athena, 'SELECT count(*) FROM "' + database + '"."trades"')
+        events = call("lineage", boto3.client("datazone", config=config).list_lineage_events, domainIdentifier=domain, maxResults=10)
+        if events is not None:
+            show("lineage", len(events.get("items", [])), "events", [item.get("processingStatus") for item in events.get("items", [])])
+        PY
+        exit 0
+      retries: 0

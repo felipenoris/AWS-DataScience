@@ -16,9 +16,13 @@ data.
 
 Nothing here has run against AWS. The scripts were written on 2026-10-17 in a session with no AWS
 credentials, against the house environment's lock: `boto3` 1.43.92, `mlflow` 3.16.0, `sagemaker-mlflow`
-0.5.0, `sagemaker` 3.21.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. Step 0.3 reads the versions
-the space holds, and a script that disagrees with them changes before it runs (Lesson 65). What ran on
-that session's build host is under "What ran outside the lab".
+0.5.0, `sagemaker` 3.21.0, `pandas` 2.3.3, `xgboost-cpu` 3.3.0, Python 3.12. The lock has carried `mlflow`
+3.17.2 since `a1c755b5` (2026-10-25), and `default-v0.10.0` with it. The ten MLflow calls the scripts make
+have identical signatures in 3.16.0 and 3.17.2, read 2026-11-19 from `mlflow-skinny` at both versions, on
+which the lock's `mlflow` depends, so no script changed; `log_model`'s positional `artifact_path` is
+deprecated in both. Step 0.3 reads the versions the space holds, and a script that disagrees with them
+changes before it runs (Lesson 65). What ran on that session's build host is under "What ran outside the
+lab".
 
 ## Layout
 
@@ -29,11 +33,12 @@ that session's build host is under "What ran outside the lab".
 | `data.py` | the Telco churn CSV fetched from `raw.githubusercontent.com` through the space's proxy, written as `data/raw/telco.csv` and split into `data/train.csv`, `data/validation.csv` and `data/test.csv` | 2.1 |
 | `train.py` | the XGBoost training job: the admitted request (`tagged`) and six variants that each change one field, an MLflow run per attempt tagged with the job's name or the refusal, a negative the boundary admits stopped at once | 2.2, 2.3, 3.1 |
 | `register.py` | `log-model`: the job's `model.tar.gz` logged into its run, then the booster as an MLflow model; `package`: the group `ml-demo-xgboost` and a `PendingManualApproval` version; `from-mlflow`: a version through MLflow's registry | 3.1, 3.2 |
-| `serve.py` | `endpoint`: a real-time endpoint invoked and deleted in the same run; `transform`: a batch transform, and its negative without the volume key; `serverless`: the two negatives Stage 9 3.7 asks for | 4.1, 4.3, 4.4 |
+| `serve.py` | `endpoint`: a real-time endpoint invoked and kept after the run (decision 6); `transform`: a batch transform, and its negative without the volume key; `serverless`: the two negatives Stage 9 3.7 asks for | 4.1, 4.3, 4.4 |
 | `pipeline/definition.json` | the pipeline `ml-demo-pipeline`, every account-scoped value a placeholder: `Prepare` (processing, the house image, `ml.t3.medium`), `Train`, `CheckAuc` on `validation:auc` against the parameter `AucThreshold` (0.75), then `Register` or the Fail step `AucBelowThreshold` | 5.1 |
 | `pipeline.py` | `upsert` (the definition filled, `prepare.py` uploaded, the pipeline created or updated with the project role as its `RoleArn`), `start`, `status`, and `compare` against the live definition | 5.1, 5.2, 5.4 |
 | `knowledge_base.py` | the runbooks, `docs/plan/runbooks/*.md` (16 files and 556,006 bytes at this commit), copied to `bedrock/kb/` under the prefix, with the commit and each document's size printed | 7.4a |
-| [`bedrock/`](bedrock/README.md) | what the portal exports in pass 7 | 7.4, 7.4b |
+| `evaluation_dataset.py` | 7.4's dataset, `bedrock/evaluation-dataset.jsonl`, checked line by line and copied to `bedrock/` under the prefix, with its line count, size and key printed | 7.4 |
+| [`bedrock/`](bedrock/README.md) | 7.4's evaluation dataset, and what the portal exports in pass 7 | 7.4, 7.4b |
 | `extra_values.json` | the values no space reading gives, each `"<NAME>"` until it is filled | — |
 
 Every object carries the tag `AmazonDataZoneProject` with the project's id and a name starting with
@@ -57,7 +62,7 @@ in a tracked file, so neither reaches git filled:
 | Value | What it is | Where it is read | Needed by |
 |---|---|---|---|
 | `XGBOOST_IMAGE_URI` | AWS's XGBoost algorithm image for the Region, version `3.0-5` ("The model format") | the SDK's image table, in the space, below | `train.py`, `pipeline.py` |
-| `MLFLOW_APP_ARN` | the project's MLflow App, once step 1.5 has created it | the app's page in the portal, or `ML-2` in `aws/output/sandbox-ml.txt` | `train.py`, `register.py log-model` and `from-mlflow` |
+| `MLFLOW_APP_ARN` | the project's MLflow App, once step 1.5 has created it | the app's page in the portal, or the line `MLFLOW_APP_ARN=` under section 3 of `aws/output/sandbox-ml.txt` on the laptop | `train.py`, `register.py log-model` and `from-mlflow` |
 | `JOB_IMAGE_URI` | the house image pinned by digest, which the pipeline's processing step runs | `awsds-workflows values --profile awsds-infra-sandbox-1 --subnet-name 'awsds-sandbox-private-*' --image-name awsds-sandbox-dev-env` on the laptop | `pipeline.py` |
 
 In the space, from `examples/sandbox-ml/` in the clone, the first two commands write `space_values.json` and
@@ -151,13 +156,17 @@ name is what `train.py` printed, and a version's ARN is what `register.py packag
 /opt/awsds/venv/bin/python pipeline.py start
 /opt/awsds/venv/bin/python pipeline.py status
 /opt/awsds/venv/bin/python pipeline.py compare
+# 7.4: the evaluation job's dataset, before the job
+/opt/awsds/venv/bin/python evaluation_dataset.py
 # 7.4a: the knowledge base's documents
 /opt/awsds/venv/bin/python knowledge_base.py
 ```
 
-A `serve.py endpoint` run deletes its endpoint, endpoint configuration and model on its way out, an
-interrupted one included; `ML-5` fails on any endpoint that survives, every sitting. A transform job and a
-training job cannot be deleted, so they stay as records.
+A `serve.py endpoint` run keeps its endpoint, endpoint configuration and model (decision 6), an
+interrupted one included, and prints the endpoint's price with the commands that delete it and recreate it
+from the configuration. The endpoint bills 0.115 USD an hour, 2.76 a day, until its member deletes it;
+no slice, `make down` or `make status` reaches it, and `ML-5` prints each endpoint with its status, its age
+and its price, every sitting. A transform job and a training job cannot be deleted, so they stay as records.
 
 ## What the first run decides
 

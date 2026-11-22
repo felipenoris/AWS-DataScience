@@ -9,7 +9,9 @@
 #   1. Name the admins (5.3, decision 5): InfrastructureAccess alone. The measured state is
 #      DataLakeAdmins: [] - nobody can change these settings until this lands. The governance
 #      manager is not here: an approver who can already grant everything exercises no control
-#      (Lesson 9, D31). Stage 6's DataZone fulfilment principal is the named revision trigger.
+#      (Lesson 9, D31). Stage 6's DataZone fulfilment principal was the named revision trigger,
+#      and it fired with Stage 6f decision 1 (2026-10-26): behind LAKE_PUBLISHERS the list also
+#      names the two SMUS service roles (publishing.tf).
 #   2. Carry the parameters explicitly (5.4, INT-11): this resource replaces the whole
 #      DataLakeSettings structure, so naming admins and omitting parameters resets
 #      CROSS_ACCOUNT_VERSION to 1, after which every share appears to succeed and never
@@ -43,13 +45,20 @@
 #      5.2's other half - revoke, then re-read - before the second apply, not after.
 
 resource "aws_lakeformation_data_lake_settings" "this" {
-  admins = [local.infrastructure_access_role_arn]
+  admins = concat([local.infrastructure_access_role_arn], local.smus_admin_seats)
 
   parameters = {
     CROSS_ACCOUNT_VERSION = "4"
     SET_CONTEXT           = "TRUE"
   }
 
+  # Full-table access for external engines (Stage 9 decision 13): a consumer's Glue Spark job
+  # writes a registered table only through credentials Lake Formation vends for the whole table,
+  # and the vend reads this flag in the table owner's settings. With Production's own flag on and
+  # this one unset, the first write was refused naming the data lake settings (2.4's producer run,
+  # 2026-10-23). What it costs, TM-26: a principal holding full-table permissions on a table here
+  # vends S3 credentials for its objects directly, outside an integrated engine.
+  allow_full_table_external_data_access = true
 }
 
 # ------------------------------------------------------------- the registration role (5.1)

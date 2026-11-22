@@ -1,0 +1,480 @@
+# app-dbt's pipeline (the infrastructure repository's Stage 20 pass 8): the template's, with no image and
+# no model, its worker's archive built by package-task.
+#
+#   every push            the tests, ruff, the workflow lint and the gates (Secret Detection on branches,
+#                         pip-audit over the runtime set the archive carries)
+#   a tag v<semver>       and the application: the worker's archive built, the bundle made from the tag's
+#                         files and the `dev` project's catalog, checked against product.json, stored in
+#                         awsds-prod-releases, and the tag's GitLab release, which names it; then the
+#                         promotion, every step of it in another account: a manual gate into Staging,
+#                         Staging's egress with its Athena endpoint and its deployment project read (the
+#                         user raises the egress), the CI/CD CLI deploying the bundle into the project,
+#                         the chains app-dbt-probe and app-dbt run and the two tables read, the catalog's
+#                         second import, a manual gate, and Production, where the deploy's bootstrap runs
+#                         app-dbt and follows the run, then the catalog's second import there
+#
+# No docs job: the dev group carries no pdoc, and a dbt project's documentation is dbt's docs site
+# (the infrastructure repository's runbooks/catalog.md §L).
+#
+# Which runner takes which job: every job extending .gates-uv carries tag awsds-test, the test runner,
+# whose jobs hold no AWS identity. store-bundle and release are untagged, so only the build runner takes
+# them, a protected runner that serves protected refs alone; bundle carries tag awsds-deploy, the deploy
+# runner, which holds the CI/CD CLI, and runs as awsds-deploy-sandbox-test, a role that reads the `dev`
+# project and its catalog and writes nothing. The tag v* is protected, created by Maintainers only, which
+# in CE is the whole of the release gate.
+
+include:
+  - project: awsds/ci-gates
+    ref: d0b895c8159e655f6e4af83cc096e37993087c81 # gates-v0.6.0
+    file: [/gates.gitlab-ci.yml, /baselines.gitlab-ci.yml]
+
+stages: [test, build, verify, bundle, release, staging-gate, staging, gate, production]
+
+variables:
+  # pip-audit audits the lock's runtime set, the packages the worker's archive carries. The lock
+  # resolves for Linux and macOS alone (pyproject.toml), so the runner audits every package it pins.
+  GATES_UV_PROJECTS: "."
+  # The workflow tooling, by commit: its lint reads manifest.yaml and the workflows it names against the
+  # rules of a SageMaker application, offline, and its package-task builds the worker's archive. The
+  # commit is the merge of awsds-workflows pull request #29, whose rule `operador` refuses the native
+  # notebook operator by name (the infrastructure repository's Stage 8 5.6), after #28's CLI_VARIABLES
+  # admitted the project's Athena workgroup (Stage 20 decision 17 (b)) and #27's rule `job` left a
+  # processing task's isolation to the task (Stage 20 step 6.4).
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
+  # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
+  # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
+  # (allowed_instance_types) in the infrastructure repository. A copy, since the application's repository
+  # cannot read that module: a change to its list is a change here.
+  LINT_INSTANCE_TYPES: "ml.t3.medium ml.t3.large ml.t3.xlarge ml.m5.large ml.m5.xlarge ml.c5.large ml.c5.xlarge"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+
+test:
+  extends: .gates-uv
+  stage: test
+  script:
+    - uv sync --locked
+    - uv run ruff check
+    - uv run ruff format --check
+    - uv run pytest
+    # The lint of the application: the manifest and its workflows, an InstanceType one of
+    # LINT_INSTANCE_TYPES. The application has no image, so no --image-repository.
+    - |
+      set -eu
+      set --
+      for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . "$@"
+
+# The worker's archive (D28 class 2b), the one workflow app-dbt names: the lock's runtime set for the
+# worker's CPython 3.12 on x86_64-manylinux_2_28, the glibc the SQL parser of openlineage-sql asks for,
+# with the package src/app_dbt/ and run-dbt.sh at the archive's root. `bundle` builds nothing, so the
+# archive is built here, into the folder the manifest includes. The check fails a script whose
+# executable mode the archive lost, and an archive or an unzipped size past the service's 250 MB.
+build-task-code:
+  extends: .gates-uv
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      uvx --from "$AWSDS_WORKFLOWS" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
+      python3 - code/app-dbt.zip <<'PY'
+      import os
+      import sys
+      import zipfile
+
+      path = sys.argv[1]
+      archive = zipfile.ZipFile(path)
+      entries = archive.infolist()
+      unzipped = sum(entry.file_size for entry in entries)
+      modes = {name: oct(archive.getinfo(name).external_attr >> 16) for name in ("run-dbt.sh", "app_dbt/bin/dbt")}
+      print(f"{path}: {len(entries)} entries, {os.path.getsize(path)} bytes, {unzipped} unzipped, modes {modes}")
+      problems = [f"{name} at mode {mode}" for name, mode in modes.items() if mode != "0o100755"]
+      problems += [f"{label} {size} bytes past 250 MB" for label, size in (("the archive", os.path.getsize(path)), ("unzipped", unzipped)) if size >= 250_000_000]
+      sys.exit("FATAL: " + "; ".join(problems) if problems else 0)
+      PY
+  artifacts:
+    paths: [code/app-dbt.zip]
+
+# The release's bundle: `bundle` zips the folders the manifest includes, the tag's own files, failing on
+# the warning it prints for a missing include, and exports the `dev` project's catalog beside them, the
+# two tables' assets as the developer curated them. Nothing is deployed and nothing runs in Sandbox: the
+# release's first run is Staging's leg. The job runs on the deploy runner, which holds the CLI, as
+# awsds-deploy-sandbox-test, the profile the runner's AWS config carries: `bundle` resolves the project
+# its stage names, and for a project its caller cannot read it logs "Failed to get project connections"
+# and still writes the bundle, so the job fails on that line.
+#
+# The CLI exports whatever the project owns, with no filter, and an export that failed leaves the bundle
+# whole and the exit status 0. So the guard reads the archive: it fails a bundle with no
+# catalog/catalog_export.json, one that carries a resource product.json does not declare, and one
+# without either table's asset (scripts/check-catalog-export.py).
+#
+# DOMAIN_ID, DOMAIN_REGION and DEV_PROJECT_NAME are CI/CD variables of the GitLab project. The CLI
+# refuses a manifest with an unset `${VAR}`, whatever the command and the stage, so every name the
+# manifest reads and this job has no value for carries a placeholder.
+bundle:
+  stage: bundle
+  needs: [build-task-code]
+  tags: [awsds-deploy]
+  timeout: 15m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    AWS_PROFILE: awsds-deploy-sandbox-test
+  script:
+    - |
+      set -eu
+      for name in DOMAIN_ID DOMAIN_REGION DEV_PROJECT_NAME; do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then echo "FATAL: the CI/CD variable $name is not set"; exit 1; fi
+      done
+      for name in $(grep -o '\${[A-Za-z0-9_]*' manifest.yaml | tr -d '${' | sort -u); do
+        eval "value=\${$name:-}"
+        if [ -z "$value" ]; then export "$name=unused-by-bundle"; fi
+      done
+      echo "== who bundles"
+      aws sts get-caller-identity --query Arn --output text
+      echo "== bundle"
+      rc=0
+      aws-smus-cicd-cli bundle --manifest manifest.yaml --targets dev > bundle.log 2>&1 || rc=$?
+      cat bundle.log
+      if [ "$rc" -ne 0 ]; then echo "FATAL: bundle exited $rc"; exit "$rc"; fi
+      if grep -q "Pattern not found" bundle.log; then echo "FATAL: an include of the manifest is missing"; exit 1; fi
+      if grep -q "Failed to get project connections" bundle.log; then echo "FATAL: the role could not read the project $DEV_PROJECT_NAME: is it a member of it?"; exit 1; fi
+      test -s artifacts/app-dbt.zip
+      echo "== the catalog the bundle carries, against product.json"
+      python3 scripts/check-catalog-export.py artifacts/app-dbt.zip product.json
+      sha256sum artifacts/app-dbt.zip > artifacts/app-dbt.zip.sha256
+      cat artifacts/app-dbt.zip.sha256
+      echo "BUNDLE_SHA256=$(cut -d' ' -f1 artifacts/app-dbt.zip.sha256)" > bundle.env
+  artifacts:
+    paths: [artifacts/, bundle.log]
+    reports:
+      dotenv: bundle.env
+    expire_in: 1 year
+
+# The release's bundle: the bytes the bundle job made, checked against the SHA256 it computed, copied to
+# awsds-prod-releases with the build runner's own role. The aws CLI image the scan gate uses, by digest.
+store-bundle:
+  stage: release
+  needs: [bundle]
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:2.37.12@sha256:ce44b800602264c12298bbf3399055a4cefdb9ed4a098abe564afe26e7071bce
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - |
+      set -eu
+      echo "$BUNDLE_SHA256  artifacts/app-dbt.zip" | sha256sum -c -
+      object="s3://awsds-prod-releases/app-dbt/$CI_COMMIT_TAG/app-dbt.zip"
+      aws s3 cp artifacts/app-dbt.zip "$object"
+      echo "BUNDLE_OBJECT=$object" > release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+# The tag's GitLab release, whose notes name the bundle's object and its SHA256: what a leg of the
+# promotion reads. The `release` keyword runs glab, which GitLab's own cli image carries, pinned by digest
+# (v1.120.0, released 2026-09-29); a tag whose bundle failed gets no release. The runner evaluates the
+# description inside double quotes, so the notes hold no backtick, which the shell would run as a command
+# substitution. glab trusts what Go reads from SSL_CERT_DIR beside the image's own bundle: the CA root the
+# runner mounts in every job (runbooks/gitlab.md §K), which the image's store does not hold.
+release:
+  stage: release
+  needs: [store-bundle, bundle]
+  image: registry.gitlab.com/gitlab-org/cli:v1.120.0@sha256:ec2d1cd59b2343fe6270acf67d6ac92b56d9898c5e70cda6395fb617c7373812
+  variables:
+    SSL_CERT_DIR: /etc/gitlab-runner/certs
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - echo "release $CI_COMMIT_TAG, bundle $BUNDLE_OBJECT, sha256 $BUNDLE_SHA256"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "app-dbt $CI_COMMIT_TAG"
+    description: |
+      Bundle: $BUNDLE_OBJECT
+
+      Bundle SHA256: $BUNDLE_SHA256
+
+# Verification (xiii) of the infrastructure repository's Stage 8, run by hand: the pip-audit tool with
+# the proxy variables removed. No route leaves VPC-SharedServices but the proxy, so the job must fail, and
+# the time it takes says whether it failed or hung until the bound.
+gate-without-proxy:
+  extends: .gates-uv
+  stage: verify
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: manual
+  allow_failure: true
+  script:
+    - |
+      set -u
+      start=$(date +%s)
+      rc=0
+      env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy timeout 300 \
+        uvx --from pip-audit==2.10.1 pip-audit --version || rc=$?
+      echo "without the proxy: exit $rc after $(( $(date +%s) - start )) s (124 is the 300 s bound)"
+      [ "$rc" -ne 0 ]
+
+# ------------------------------------------------------------------ the promotion
+#
+# The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
+# at its default branch with the job token and printing the commit it runs: the deploy script and the
+# egress reading live there, never here. The job's AWS identity is the profile it names, one per deploy
+# role on the runner; every account value is read at run time from the project or the slice that owns
+# it. A leg applies no Terraform: the CI/CD CLI deploys the bundle into the account's deployment project,
+# and the chains above its workflows are the infrastructure user's (terraform-live/<env>/chains/).
+# The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
+# and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
+# checks the proxy first on the SageMaker API, which that VPC holds no endpoint for, with curl's failure
+# kept inside the substitution: under `set -e` a failed assignment ends the job before the message.
+# The clone trusts the CA root the runner mounts in every job (runbooks/gitlab.md §K), which the deploy
+# image's own store does not hold.
+#
+# The transform task queries Athena from the deployment project's subnets, which reach a service through
+# an interface endpoint of the account's egress slice alone. check-egress.py reads every endpoint the
+# slice holds and does not say which, so a job that deploys or runs reads the slice's athena endpoint
+# by its Name tag first (the infrastructure repository's Stage 20 decision 15).
+.promotion:
+  tags: [awsds-deploy]
+  timeout: 45m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    INFRA_DIR: $CI_PROJECT_DIR/infrastructure
+  before_script:
+    - |
+      set -eu
+      code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://sagemaker.$DOMAIN_REGION.amazonaws.com/" || true)"
+      if [ "$code" = "000" ]; then echo "FATAL: no answer through the proxy: is the hub up (make hub-up)?"; exit 1; fi
+      echo "the proxy answers ($code)"
+      git -c http.sslCAInfo=/etc/gitlab-runner/certs/ca.crt clone --quiet --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/awsds/infrastructure.git" "$INFRA_DIR"
+      echo "awsds/infrastructure at $(git -C "$INFRA_DIR" rev-parse HEAD)"
+
+# The staging gate: a blocking manual job between the release and the Staging leg. Its needs name the
+# release's jobs, never `needs: []`, which would let it start past a failed one; who may start it is
+# whoever may run the protected tag's pipeline. The leg writes into Staging and runs its workflows, so
+# nothing of it starts before the gate.
+staging-gate:
+  stage: staging-gate
+  needs: [release, store-bundle, bundle]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: staging
+  script:
+    - echo "$CI_COMMIT_TAG admitted to Staging by $GITLAB_USER_LOGIN"
+
+# Staging's [E] egress/, read before the leg writes and never raised: every shared slice is the user's
+# `make up` / `make down`. check-egress.py reads the slice's state and asks EC2 and Route 53 Resolver
+# whether every endpoint it holds is available and its DNS Firewall association complete; then the
+# athena endpoint, awsds-staging-athena. Then the deployment project: its Tooling environment's values,
+# and the deploy role's membership of it, without which the CLI's deploy stops at the project's
+# connections.
+staging-check:
+  extends: .promotion
+  stage: staging
+  needs: [staging-gate]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      export AWS_PROFILE=awsds-deploy-staging
+      ./scripts/check-egress.py staging egress
+      count="$(aws ec2 describe-vpc-endpoints --filters Name=tag:Name,Values=awsds-staging-athena Name=vpc-endpoint-state,Values=available --query 'length(VpcEndpoints)' --output text)"
+      if [ "$count" = "0" ]; then echo "FATAL: no available athena endpoint in Staging: the transform task queries Athena from the project's subnets"; exit 1; fi
+      echo "the athena endpoint is available"
+      ./scripts/deploy-application.py staging --check
+
+# The bundle read as the runner's own role and checked before a file of it is read, then deployed into
+# Staging's deployment project by the CI/CD CLI, as the deploy role (scripts/deploy-application.py of the
+# infrastructure repository): the bundle extracted beside this tag's manifest, the stage's variables read
+# from the project's Tooling environment, the bundle's files under the project's shared prefix, its
+# catalog imported and listed nowhere, both workflows created or updated. The job fails on the CLI's
+# exit status, on a workflow with no network of the project's, on a catalog import that failed an item
+# and on a workflow it cannot find afterwards; then it records the stage's variables, which the chains
+# pass to each run. A target's first import is admitted and left to staging-catalog: the import creates
+# no asset in the project, whose own source creates it (SUP-369), and STAGING_CATALOG_PENDING says so.
+# The bundle sits beside the clone, never inside it: a job that downloads a file before cloning into
+# infrastructure/ finds that folder not empty.
+staging-deploy:
+  extends: .promotion
+  stage: staging
+  needs: [staging-check, bundle, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/staging-deploy.log" --dotenv "$CI_PROJECT_DIR/staging.env"
+  artifacts:
+    when: always
+    paths: [staging-deploy.log]
+    reports:
+      dotenv: staging.env
+    expire_in: 1 year
+
+# The deployed artifact run in the account, the release's first run anywhere, each chain's machine
+# started by the leg and followed to its end, the schedules being DISABLED in Staging: app-dbt-probe
+# first, which prints what the worker of a target holds and answers and ends SUCCESS whatever a call
+# answered; then app-dbt, whose Glue job writes the table trades and whose dbt task builds
+# notional_by_desk on Athena and posts its lineage. A machine finds its workflow by name and passes the
+# run the variables staging-deploy recorded. The leg then reads each table's metadata as another
+# principal, on which the deploy role holds DESCRIBE. An execution's name carries the job's id: Step
+# Functions refuses a name an ended execution of the machine holds, so a retry names its executions anew.
+staging-test:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      export AWS_PROFILE=awsds-deploy-staging
+      account="$(aws sts get-caller-identity --query Account --output text)"
+      for chain in app-dbt-probe app-dbt; do
+        machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-$chain"
+        execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_JOB_ID-$chain" | tr . -)" --query executionArn --output text)"
+        echo "started $execution"
+        status=RUNNING
+        while [ "$status" = "RUNNING" ]; do
+          sleep 60
+          status="$(aws stepfunctions describe-execution --execution-arn "$execution" --query status --output text)"
+          echo "$(date -u +%H:%M:%S) $chain $status"
+        done
+        aws stepfunctions describe-execution --execution-arn "$execution" --output json > "execution-$chain.json"
+        if [ "$status" != "SUCCEEDED" ]; then
+          aws stepfunctions get-execution-history --execution-arn "$execution" --reverse-order --max-items 20 --output json > "history-$chain.json"
+          echo "FATAL: the chain $chain ended $status"; cat "history-$chain.json"; exit 1
+        fi
+      done
+      for table in trades notional_by_desk; do
+        echo "== app_dbt.$table, as the catalog answers the deploy role"
+        aws glue get-table --database-name app_dbt --name "$table" --query 'Table.{name:Name,type:Parameters.table_type,location:StorageDescriptor.Location,registered:IsRegisteredWithLakeFormation,description:Description}' --output json > "table-$table.json"
+        cat "table-$table.json"
+        grep -q '"type": "ICEBERG"' "table-$table.json" || { echo "FATAL: app_dbt.$table is not an Iceberg table"; exit 1; }
+      done
+  artifacts:
+    when: always
+    paths: [execution-*.json, history-*.json, table-*.json]
+    expire_in: 1 year
+
+# A target's second import (SUP-369). The import creates no asset in a second project of the domain, so
+# the project's assets come from its own source, once staging-test's run has written the two tables.
+# Where staging-deploy admitted the first import, the job starts the project's source over app_dbt as
+# the deploy role, waits for the bundle's assets in the project and deploys the same bundle again,
+# failing on any failed item and on an asset whose creation is still a conflict; otherwise it ends at
+# once.
+staging-catalog:
+  extends: .promotion
+  stage: staging
+  needs: [staging-deploy, staging-test, bundle, store-bundle]
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      if [ "${STAGING_CATALOG_PENDING:-false}" != "true" ]; then echo "staging-deploy's import was whole: no second import"; exit 0; fi
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-staging ./scripts/deploy-application.py staging --catalog-follow-up --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/staging-catalog.log"
+  artifacts:
+    when: always
+    paths: [staging-catalog.log]
+    expire_in: 1 year
+
+# The pipeline destroys nothing in Staging, as in Production. The project, its workflows and the two
+# tables stay at rest, billing nothing but the tables' storage, and the user's `make down ENV=staging`
+# takes egress/ down.
+
+# Production's deployment project read beside Staging's results before the gate: its Tooling
+# environment's values, and the deploy role's membership of it. A deploy role that is no member fails
+# the job here, naming the grant an owner of the project makes, so the gate is asked of nobody while the
+# deploy behind it would stop at its first call.
+production-check:
+  extends: .promotion
+  stage: gate
+  needs: [staging-test, staging-catalog, bundle]
+  resource_group: production
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --check
+
+# The gate, a blocking manual job whose needs name the Staging leg's jobs, never `needs: []`, which would
+# let it start past a failed leg. Who may start a release is the protected tag.
+production-gate:
+  stage: gate
+  needs: [staging-test, staging-catalog, production-check]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+  allow_failure: false
+  resource_group: production
+  script:
+    - echo "$CI_COMMIT_TAG promoted by $GITLAB_USER_LOGIN"
+
+# The same bundle, nothing rebuilt, deployed into Production's deployment project as Staging's was. The
+# deploy needs production/workloads-egress/ raised by the user, which the job reads first, its athena
+# endpoint awsds-prod-workloads-athena among it, and never raises. The `prod` stage's bootstrap creates
+# app-dbt and runs it, following its log to the run's end: the deploy fails with the run, and a release
+# that passes leaves both tables written in Production and its lineage posted. Production lists nothing
+# (the infrastructure repository's Stage 20 decision 14).
+production-deploy:
+  extends: .promotion
+  stage: production
+  needs: [production-gate, bundle, store-bundle]
+  resource_group: production
+  timeout: 60m
+  script:
+    - |
+      set -eu
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
+      count="$(AWS_PROFILE=awsds-deploy-prod aws ec2 describe-vpc-endpoints --filters Name=tag:Name,Values=awsds-prod-workloads-athena Name=vpc-endpoint-state,Values=available --query 'length(VpcEndpoints)' --output text)"
+      if [ "$count" = "0" ]; then echo "FATAL: no available athena endpoint in VPC-Workloads: the transform task queries Athena from the project's subnets"; exit 1; fi
+      echo "the athena endpoint is available"
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/production-deploy.log" --dotenv "$CI_PROJECT_DIR/production.env"
+  artifacts:
+    when: always
+    paths: [production-deploy.log]
+    reports:
+      dotenv: production.env
+    expire_in: 1 year
+
+# Production's half of the second import: production-deploy's bootstrap run wrote the two tables, so where
+# the deploy admitted the first import the job starts the project's source over app_dbt, waits for the
+# bundle's assets and deploys the same bundle again, as staging-catalog does. That deploy's bootstrap runs
+# app-dbt a second time, which rebuilds notional_by_desk by its swap and posts a second run's lineage.
+production-catalog:
+  extends: .promotion
+  stage: production
+  needs: [production-deploy, bundle, store-bundle]
+  resource_group: production
+  timeout: 60m
+  script:
+    - |
+      set -eu
+      if [ "${PROD_CATALOG_PENDING:-false}" != "true" ]; then echo "production-deploy's import was whole: no second import"; exit 0; fi
+      cd "$INFRA_DIR"
+      AWS_PROFILE=awsds-deploy-prod ./scripts/check-egress.py production workloads-egress
+      AWS_PROFILE=awsds-prod-runner-deploy aws s3 cp "$BUNDLE_OBJECT" "$CI_PROJECT_DIR/bundle.zip" --only-show-errors
+      echo "$BUNDLE_SHA256  $CI_PROJECT_DIR/bundle.zip" | sha256sum -c -
+      AWS_PROFILE=awsds-deploy-prod ./scripts/deploy-application.py production --catalog-follow-up --manifest "$CI_PROJECT_DIR/manifest.yaml" --bundle "$CI_PROJECT_DIR/bundle.zip" --sha256 "$BUNDLE_SHA256" --tag "$CI_COMMIT_TAG" --log "$CI_PROJECT_DIR/production-catalog.log"
+  artifacts:
+    when: always
+    paths: [production-catalog.log]
+    expire_in: 1 year

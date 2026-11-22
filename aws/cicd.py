@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --quiet
 # cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
-# (protected, [E]) and its narrow instance role, the three deploy roles with their permissions
-# boundaries and single-principal trust (INT-08, INT-18), the misuse-alarm rules, the
+# (protected, [E]) and its narrow instance role, the deploy roles with their permissions
+# boundaries and single-principal trust (INT-08, INT-18, INT-25), the misuse-alarm rules, the
 # app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
 # side across the Interactive accounts (D17's identical-runtime claim), and the recent
 # AssumeRole events per deploy role - the record INT-08 exists for.
@@ -31,7 +31,8 @@
 #   - the deploy runner's Name tag and role name contain awsds-prod-runner-deploy (step 4.3)
 #   - the test runner's Name tag and role name are awsds-prod-runner-test (decision 11)
 #   - the deploy roles are awsds-deploy-staging, awsds-deploy-prod (step 4.1, INT-08),
-#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19)
+#     awsds-deploy-devenv-sandbox (step 4.2, INT-18) and awsds-deploy-sandbox-test (decision 19;
+#     the bundle role since Stage 19 decision 19 (c))
 #   - the misuse-alarm rules carry "deploy-misuse" in their name, the state
 #     ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS, and a pattern exempting the runner role's unique
 #     id through userIdentity.principalId (step 4.6, deploy-role-v0.2.0)
@@ -65,7 +66,8 @@ ROLES_BY_PROFILE = {
     "awsds-infra-sandbox-1": ["awsds-deploy-devenv-sandbox", "awsds-deploy-sandbox-test"],
 }
 # Interactive compute exists in Sandbox only, so the map holds one dev-env registration home, and
-# Sandbox holds the one `test` project of D41, so its second role is the test deploy's (decision 19).
+# Sandbox holds the `dev` project of D41, so its second role is the one a release's bundle is made as
+# (decision 19; Stage 19 decision 19 (c)).
 # Staging is a deploy target and stays headless (D28); it appears one row up as
 # `awsds-deploy-staging`, a different role for a different job.
 # The accounts the application repository's grant admits (step 2.4, INT-07).
@@ -84,10 +86,6 @@ TEST_RUNNER_MANAGED = {"AmazonSSMManagedInstanceCore"}
 APP_REPO = "awsds-prod-ecr-app-etl"
 MISUSE_RULE_SUBSTR = "deploy-misuse"
 MISUSE_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
-# Where the promotion chain's Staging leg keeps its application slices' state (step 3.2): the
-# discriminator of CI-5, whose grant belongs to step 3.0 and not to the deploy roles.
-STAGING_STATE_BUCKET = "awsds-staging-tfstate"
-STAGING_APP_STATE_PREFIX = "staging/app/"
 DEVENV_IMAGE_SUBSTR = "dev-env"
 # Stage 8 verification (xvi): the infrastructure user's deliberate assumptions of two deploy roles,
 # each trust widened for 15 s and restored (2026-10-13). CloudTrail keeps them for 90 days; the session
@@ -411,7 +409,6 @@ def main(argv: list) -> int:
     app_repo_exists = False
     staging_read = "(no staging profile)"
     sandbox_read = "(no sandbox profile)"
-    staging_app_deployed = False
     account_of = {c.profile: c.account for c in callers}
     if prod_live:
         cli = cli_for(PROD_PROFILE)
@@ -500,25 +497,6 @@ def main(argv: list) -> int:
             staging_read = f"ok (asked for 1 image, {res.stdout.strip()} returned)"
         else:
             staging_read = "(call failed)"
-        # Whether the promotion chain has reached Staging: an application slice there holds state
-        # (step 3.2). The grant is step 3.0's, so its absence before then is the expected reading.
-        res = cli.run(
-            "s3api",
-            "list-objects-v2",
-            "--bucket",
-            STAGING_STATE_BUCKET,
-            "--prefix",
-            STAGING_APP_STATE_PREFIX,
-            "--max-items",
-            "1",
-            "--query",
-            "length(Contents || `[]`)",
-            "--output",
-            "text",
-            log=False,
-        )
-        if res.ok and res.stdout.strip().isdigit():
-            staging_app_deployed = int(res.stdout.strip()) > 0
 
     # ----------------- the dev-env registration, side by side (INT-17/INT-18 mechanical)
     image_rows: list = []  # (profile, image name, latest version, container image tail)
@@ -706,9 +684,8 @@ def main(argv: list) -> int:
         checks.note("CI-4", f"role {RUNNER_NAME}", "absent - expected before step 4.3.")
 
     # CI-5: the app-repository grant and the reads it admits - Sandbox's since step 2.4, Staging's
-    # (INT-07's enabling half) from step 3.0. The discriminator is the account the policy names, never
-    # the policy's presence: a policy admitting Sandbox alone is the expected reading before 3.0
-    # (Lesson 50).
+    # (INT-07's enabling half) since step 3.0. Every promotion leg since pipeline #71 (2026-10-24) pulls
+    # the application image in Staging, so a missing policy or a refused Staging read is a failure.
     admits = {
         prof: bool(account_of.get(prof)) and account_of[prof] in app_policy_text
         for prof in (SANDBOX_PROFILE, STAGING_PROFILE)
@@ -717,15 +694,11 @@ def main(argv: list) -> int:
         if app_policy_state.startswith("present"):
             checks.ok("CI-5", f"policy on {APP_REPO}", app_policy_state)
         elif app_repo_exists:
-            (checks.fail if staging_app_deployed else checks.note)(
+            checks.fail(
                 "CI-5",
                 f"policy on {APP_REPO}",
-                "repository exists with no policy - Staging cannot pull (step 3.0)"
-                + (
-                    ", and an application slice already holds state in Staging."
-                    if staging_app_deployed
-                    else "; expected before the promotion chain reaches Staging."
-                ),
+                "repository exists with no policy - Staging cannot pull (step 3.0), and the "
+                "promotion chain reaches Staging.",
             )
         else:
             checks.note("CI-5", f"repository {APP_REPO}", "absent - Stage 7 step 5.1 creates it.")
@@ -747,14 +720,14 @@ def main(argv: list) -> int:
     if staging_read.startswith("ok"):
         checks.ok("CI-5", "the Staging cross-account read", staging_read)
     elif STAGING_PROFILE in live and app_repo_exists:
-        (checks.fail if admits[STAGING_PROFILE] or staging_app_deployed else checks.note)(
+        checks.fail(
             "CI-5",
             "the Staging cross-account read",
             f"{staging_read} - "
             + (
                 "the policy names Staging, so the read should answer."
                 if admits[STAGING_PROFILE]
-                else "the policy does not name Staging yet, expected before step 3.0."
+                else "the policy does not name Staging, and every promotion leg pulls the image there."
             ),
         )
 
@@ -909,7 +882,7 @@ produced  : aws/cicd.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The deploy runner and its role, and the test runner (Production, [E])
-  3. The three deploy roles: boundary and trust (INT-08, INT-18)
+  3. The deploy roles: boundary and trust (INT-08, INT-18, INT-25)
   4. The misuse-alarm rules (step 4.6)
   5. The application repository: the grant, and the read from Staging (INT-07)
   6. The dev-env registrations, side by side (INT-17/INT-18, D17)
@@ -922,7 +895,7 @@ HOW TO READ THIS FILE
   - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 8 RUNS - each such reading
     is a note, not a failure; it becomes a regression the moment the stage closes.
   - AN ABSENT deploy runner is [E] working between sessions, not an outage.
-    `Staging` rows appear only once the account is vended and holds a profile.
+    Staging reads the application repository since step 3.0; a refusal is a failure.
   - THIS IS A CONTROL-PLANE READING. Whether a pipeline actually schedules onto
     the protected runner, blocks on a finding, or dies in Staging is behavioural
     - the stage's own proofs (Lesson 20). INT-17's reconciliation-survival half
@@ -979,7 +952,7 @@ never a compliant one.
                 )
 
         # ==============================================================================
-        rep.h1("3. The three deploy roles: boundary and trust (INT-08, INT-18)")
+        rep.h1("3. The deploy roles: boundary and trust (INT-08, INT-18, INT-25)")
         if role_rows:
             rep.tabulate(
                 ["PROFILE\tROLE\tSTATE\tBOUNDARY\tTRUSTED PRINCIPAL(S)"]
@@ -1060,9 +1033,6 @@ What the checks are, and where each comes from:
         rep.h1("9. The accounts nothing here is measuring")
         rep.text("""Read this BEFORE reading section 8 as a pass.
 
-  - `Staging` has no profile until the vend - sections 3-5 and 7 are then half
-    blind: the awsds-deploy-staging row, its alarm rule and the cross-account
-    read all appear only after 3.0.
   - Every Sandbox beyond unit 1 has no profile until Stage 14 - the deploy-role
     map and section 6 must both grow with N (D35).
   - GitLab's objects (the three .gitlab-ci.yml files, protected tags, runner

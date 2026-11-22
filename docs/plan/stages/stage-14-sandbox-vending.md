@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | not started, **blocked on the account quota** (2026-09-05) and scoped by it. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so nothing here can be marked done; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
-| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — v0.2.0 today, pinned at whatever tag is current at the vend — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
+| **Status** | **blocked on the account quota** (2026-09-05) and scoped by it, with its pre-vend half done: `./aws/vending.py` read the hand-built unit on 2026-10-18 as nine passes and one note, and [`docs/PRICING.md`](../../PRICING.md) §3 prices a unit at 3.50 USD/month at rest and 0.180/h working. Step 2 (request the account) and step 7 (prove it with a **second** unit) cannot run, so the stage cannot close; the rest may be authored, against this stage's own rule that automating what has never been built is speculation. Steps 2 and 6 hold the vendor's readings of 2026-10-20: terminating the provisioned product unenrolls the account without closing it, and the address an account holds at its closure can never be another account's primary address; the product's own reading in Management and D34's rung are the user's. **Its central question is answered elsewhere and without N**: where the VPN terminates is settled as a *designated hub* — `VPC-Networking` in Production ([D38](../decisions/D38-single-egress-hub.md)) — one of the three shapes this stage listed (Lesson 34). What remains here when a slot frees: the `sandbox-unit` module, the CIDR draw from `10.16.0.0/13`, the peering pair to `VPC-Networking` and `VPC-SharedServices`, and one more zone in the `awsds.internal` family. Per-business-unit isolation inside the single Sandbox — SMUS projects plus Stage 16's per-group prefixes — is the interim. This is the first stage about *scale* rather than about a new capability |
+| **Prerequisites** | Stages 2, 3, 4, **5** and 6 — Stage 5a for the consumer side the module composes (`terraform-modules/consumer-data/` — `sandbox/data/` pins v0.6.0 on 2026-10-18, and a vend pins whatever tag is current then — the per-account `DataLakeSettings` and the share map step 5 extends). Everything a business unit's Sandbox must arrive holding has to exist and have been applied by hand at least once |
 | **Consumes** | [D21](../decisions/D21-development-account.md), [D23](../decisions/D23-ou-structure.md), [D26](../decisions/D26-unified-studio.md), [D34](../decisions/D34-account-vending.md), [D35](../decisions/D35-sandbox-cardinality.md), [D37](../decisions/D37-nested-ou-inheritance.md) |
 | **Proves** | that a business unit's `Sandbox` can be created, made usable and closed without a hand-written slice |
 
@@ -16,7 +16,8 @@
 > This stage takes D34's rung 2 (`aws_servicecatalog_provisioned_product`) because a non-Factory account
 > was assumed unenrolled. **That assumption is false and the choice is unchanged for now** — the stage is
 > blocked on the quota, and the provisioned product is what makes the console's *Update account* flow work
-> — but the alternative is to be weighed when this stage is written.
+> — but the alternative is to be weighed when this stage is written. Step 2 weighs it from the vendor's
+> pages, read 2026-10-20; the choice is D34's and the user's.
 
 ---
 
@@ -113,23 +114,112 @@ pool stays open across units, and that is the first reading the second vend take
    **Composition, not new resources** — if this module needs a resource type that
    Stage 3 or Stage 5a did not already build, that is a signal the earlier stage was written for a singleton
    and should be fixed there instead.
-2. **The account request itself, and the rung to use (D34).** The account is still created by **Account
-   Factory**, because an account created any other way is not enrolled in Control Tower and is ungoverned
-   while looking correct. What changes is who fills in the form:
+
+   **What a unit's account owes Bedrock, which no module carries** ([Stage 6e](stage-06e-claude-code-bedrock.md),
+   recorded at this receiving end, Lesson 34): the model-access use-case form, submitted per account while
+   6e step 2.1 keeps it in `Sandbox` alone (the form from `Management`, which extends to child accounts, is
+   that step's named alternative for the day a second account needs one); one agreement per scoped model
+   and account ([`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md) M4), the act that
+   actually enables a model; the retention mode `none` in every enabled Region, per account and Region and
+   set by hand (6e decision 16); and the grant, which is `sandbox/bedrock/`'s per-project policy today and,
+   at the second unit, 6e's shape (c), a dedicated role the project role chains into, once a measurement
+   says whether a same-account `sts:AssumeRole` needs an identity grant on the calling role or the trust
+   policy alone suffices.
+
+   **The portal's Generative AI models owe a unit objects of their own** ([Stage 17](stage-17-sandbox-machine-learning.md)
+   decision 13 (b), applied in `Sandbox` on 2026-10-19 and recorded at this receiving end, Lesson 34), in
+   this order:
+   - **The unit's `model-access/` slice**, `[P]` at rank 52 as `sandbox/model-access/` is, after the unit's
+     `sagemaker/` pass 1, whose D13 boundary both roles carry. The provisioning role is
+     `AmazonSageMakerBedrockModelManagementRole-<Data Governance account>`, the name the console's *Submit*
+     looks for before it creates a role of its own outside the boundary; the slice builds it from the domain
+     ARN in `governance/`'s state. The consumption role is `awsds-<env>-bedrock-model-consumption`. Both are
+     trusted by `datazone.amazonaws.com` under the domain's account.
+   - **A membership in `data-governance/governance/`**: the unit's `InfrastructureAccess` role, through its
+     `IAM_ROLE_SESSION_GROUP` profile, as a `PROJECT_CONTRIBUTOR` of `GenerativeAIModelGovernanceProject`.
+     `model-governance.tf` names Sandbox's role alone, resolved through the `sandbox` provider alias, so a
+     unit adds a role lookup, a group-profile lookup and a membership. The lookup needs the role's group
+     profile to exist; Sandbox's was made in the portal on 2026-10-15 (INT-25). Without the membership the
+     unit's console finds no governance project and keeps *Manage* greyed, *"Model governance project does
+     not exist"* (inferred from Stage 17's reading of the console's code).
+   - **The console's *Manage* in the unit's account and Region**, a console act: the governance project
+     chosen, the models ticked under *Enable in projects* and *Enable in playground*, the slice's
+     consumption role in each playground model's *Manage roles*, then *Submit*. It writes each model's
+     environment, asset and listing in the governance project, and the playground's application inference
+     profiles in the unit's account. Sandbox's rows are in Stage 17's log of 2026-10-19.
+
+   The governance project and its profile are the domain's, one for every unit, and the Bedrock SCP's
+   entries, 6e's and decision 11's, reach a unit through `Interactive`.
+2. **The account request itself, and the rung to use (D34).** The stage's rung creates the account through
+   **Account Factory**, and what changes is who fills in the form:
    `aws_servicecatalog_provisioned_product` against the Account Factory product, with `AccountEmail`,
    `AccountName`, `ManagedOrganizationalUnit` and the SSO fields as provisioning parameters — the middle rung
    of D34's ladder, which buys a diff and a review without AFT's dedicated management account and pipelines.
-   Three things it needs, and they are why this is a stage and not a footnote:
+   An account created with `CreateAccount` and moved into `Sandboxes` is enrolled too, by auto-enrollment
+   (the note at the top); the two are weighed below. Three things rung 2 needs, and they are why this is a
+   stage and not a footnote:
    - **A principal with Service Catalog rights in the Management account.** This reopens D34's ownership
      question and must be answered explicitly: a pipeline role, not a standing human administrator, is the
-     whole point of moving off the console.
-   - **`prevent_destroy` on the provisioned product**, in its own slice. Terminating this resource **closes
-     an account**; a `terraform destroy` reaching it by accident is a class of error that must not be
-     possible.
-   - **The e-mail address**, per unit, immutable, and held for ~90 days after closure. It follows the
-     `+alias` convention and is registered in `secrets/emails.md` before the apply, never generated.
-   *To verify before writing it:* the product name and the exact parameter keys, which are the kind of detail
-   that changes between landing-zone versions.
+     whole point of moving off the console. Its rights are wider than Service Catalog's (read 2026-10-20):
+     `AWSServiceCatalogEndUserFullAccess`, `organizations:CreateAccount` and `DescribeCreateAccountStatus`,
+     and, for an identity that provisions programmatically (the page's case is a Lambda function), `sso:`
+     and `sso-directory:` actions on `*`, `sso-directory:CreateUser` and `sso-directory:AddMemberToGroup`
+     among them, with `controltower:CreateManagedAccount` and `controltower:DeregisterManagedAccount`.
+   - **`prevent_destroy` on the provisioned product**, in its own slice. Terminating it does not close the
+     account (read 2026-10-20): Service Catalog's *terminate* unenrolls it, and Control Tower removes its
+     controls, its baseline and `AWSControlTowerExecution` and moves it to the organization's root, while
+     the account keeps its resources and the Account Factory SSO user's administrator access. A
+     `terraform destroy` reaching it leaves a unit running outside `Sandboxes` and the `Interactive` policy
+     set, and must not be possible. The provider (v6.69.1) plans a change of `name` or `notification_arns`
+     as a replacement, which `prevent_destroy` refuses like any destroy; removing the resource block removes
+     the protection with it.
+   - **The e-mail address**, per unit and immutable. It follows the `+alias` convention and is registered in
+     `secrets/emails.md` before the apply, never generated. No AWS account may already use it, and
+     `CreateAccount`, which Account Factory calls, takes 6 to 64 characters of 7-bit ASCII and does not
+     refuse `+`. A closed account's address is spent rather than held for ~90 days (step 6).
+
+   **The product and its keys, read 2026-10-20 from the vendor's pages.** The product is `AWS Control Tower
+   Account Factory`, in the portfolio `AWS Control Tower Account Factory Portfolio`. Its provisioning
+   parameters are `AccountEmail`, `AccountName`, `ManagedOrganizationalUnit`, `SSOUserEmail`,
+   `SSOUserFirstName` and `SSOUserLastName`. `ManagedOrganizationalUnit` takes `OU_NAME (OU_ID)`, a format
+   that replaced `OU_NAME`, so `Sandboxes`' value carries its OU id. `ProvisionProduct` also names the
+   product, a provisioning artifact and a launch path by id. The console procedure forbids TagOptions,
+   notifications and a resource plan, each of which can fail the provisioning; whether the provider's
+   `default_tags`, which reach the provisioned product's `Tags`, count as TagOptions is not on the page.
+   At most five account operations run at once, and the target OU needs `AWSControlTowerBaseline` enabled.
+   The binding reading is the product's own, in Management: `servicecatalog
+   describe-provisioning-parameters` against its current provisioning artifact, the user's.
+
+   **The auto-enrollment rung, weighed against rung 2 from the same pages.** Nothing here is measured.
+   - **Management.** `CreateAccount` and `MoveAccount` are callable from the management account alone, so
+     this rung keeps the ownership question, with Organizations rights in place of Service Catalog's and
+     no Identity Center directory writes. `CreateAccount` takes no resource, only request-tag conditions.
+     `MoveAccount` is scoped by account, OU and root ARNs, with no key that tells the source from the
+     destination, so a policy naming the root and `Sandboxes` admits a move either way.
+   - **The role.** Every enrolled account holds `AWSControlTowerExecution`. `CreateAccount`'s `RoleName`
+     names the administrator role Organizations creates, trusted by the management account, and Control
+     Tower's own vend passes that name; the provider cannot read `role_name` back. Whether enrollment
+     creates the role when it is absent is not on these pages.
+   - **What arrives.** Account Factory deletes the default VPC, which has an internet gateway and a public
+     subnet per Availability Zone, in the governed Regions of an account it creates; enrollment deletes no
+     VPC, so this rung owes that deletion. The pages do not say whether Account Factory still deletes it
+     with VPC creation off (Stage 3 step 0.3); the first vend reads it, under either rung, by `IsDefault`,
+     since a default VPC is `172.31.0.0/16`, the range the Account Factory VPCs held. No account with a
+     profile holds a default VPC in `us-west-2` (read 2026-10-20, the log), but all six were vended before
+     0.3, so that reading does not answer it. No `SSOUserEmail` exists, so the account arrives without
+     D32's direct assignment (inferred: the field is the product's).
+   - **Timing.** Enrollment is eventually consistent, minutes to hours, so the vend's next steps wait for it.
+   - **Destroy.** `aws_organizations_account` removes the account from the organization by default, which a
+     created account allows only after four days and with a payment method, a support plan and verified
+     contacts of its own; with `close_on_deletion` it closes the account while still enrolled, which
+     Control Tower's closing page says not to do (step 6). `prevent_destroy` is owed here too.
+   - **Afterwards.** No provisioned product exists: re-registering the OU updates the account, and a move
+     to the root or to an unregistered OU unenrolls it.
+
+   Which rung is D34's revision and the user's ([`waiting-on-the-user.md`](../waiting-on-the-user.md)).
+   Recommended for that choice: the auto-enrollment rung, whose Management principal holds no Service
+   Catalog and no directory writes on `*`, with the default VPC's deletion and the enrollment wait written
+   as readings `./aws/vending.py` takes; the first vend reads both and decides whether the rung stays.
 3. **Identity per unit (D35).** A `sso-group-data-scientists-<bu>` group, assigned `DataScientistAccess` on that unit's
    Sandbox and nothing else. **There is no second Interactive account to assign into since 6b** — the
    approver groups stay institutional and single, and `DataScientistStagingAccess` is a read-only seat on a
@@ -193,7 +283,9 @@ pool stays open across units, and that is the first reading the second vend take
    4. **The unit's `sagemaker/` pass-2 apply** — the blueprint configurations **with the complete
       wizard-field set** (manage-access role on every one; Tooling's `S3Location` + `KmsKeyArn`) **and the
       11 per-configuration `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grants** — all carried by
-      `sagemaker-prereqs` at **v0.3.3 or later**, applied **from the member account**, because
+      `sagemaker-prereqs` at **v0.3.3 or later**, and v0.8.0 or later for a `DataLake` environment, whose
+      manage-access role needs `AmazonDataZoneGlueManageAccessRolePolicy` (6f, applied 2026-10-20; measured
+      again in Staging at Stage 18 7.2), applied **from the member account**, because
       `PutEnvironmentBlueprintConfiguration` takes no account parameter and configures the caller's
       (`terraform-modules/sagemaker-prereqs/blueprints.tf` carries the reasoning). **The measured rule
       (2026-08-22, five attempts): a configuration missing a wizard field pins its projects in BOTH
@@ -201,13 +293,14 @@ pool stays open across units, and that is the first reading the second vend take
       create one layer past `CreateProject`.** The enabled
       set is [`docs/SMUS.md`](../../SMUS.md)'s category-1 table — **never "the ML blueprint", which does
       not exist**.
-   5. **Three by-hand edits in `data-governance/governance/`, and an alias alone is not enough.** The
+   5. **By-hand edits in `data-governance/governance/`, and an alias alone is not enough.** The
       `backend.SMUS_MEMBERS` row, a new aliased provider in `providers.tf` (Terraform cannot `for_each` a
       provider) **and** new entries in `locals.tf`: `member_account_ids` and `project_profiles` are static
       literals, and `experimentation` is pinned to `sandbox`, so unit 2 is reachable by no profile until
-      both maps grow. **Record the choice this raises rather than performing it by rote:** three hand edits
-      per unit against AWS's own account-agnostic mechanism, `datazone create-account-pool` (CLI-only) —
-      the note Stage 6's forward-constraint paragraph deliberately did not adopt at N=1.
+      both maps grow. **Record the choice this raises rather than performing it by rote:** these three
+      hand edits per unit against AWS's own account-agnostic mechanism, `datazone create-account-pool`
+      (CLI-only) — the note Stage 6's forward-constraint paragraph deliberately did not adopt at N=1.
+      Step 1's model governance membership and its two lookups are further edits in the same slice.
    6. **The `governance/` apply — and read the plan before running it.** `profiles_enabled` feeds a
       `for_each`, so it **reverses**: a `SMUS_MEMBERS` row added while `SMUS_ASSOCIATED` lacks the same
       account takes the flag false and the next apply **destroys the project profiles that already exist**.
@@ -249,20 +342,60 @@ pool stays open across units, and that is the first reading the second vend take
      never a wildcard.
 6. **The teardown half, which is what makes a unit disposable.** `make down ENV=<bu>` must work against a
    generated Sandbox exactly as it does against the hand-built one, and closing a unit must be a documented
-   procedure with the ~90-day slot and e-mail retention stated up front (D34's headroom item).
+   procedure with the slot and the e-mail address stated up front (D34's headroom item, whose e-mail half
+   the reading below corrects).
+
+   **The domain side is unwound first**, step 4 in reverse, in the order Stage 18's pass 8 ran in Staging
+   (2026-10-22): the unit's projects deleted, then its blueprint configurations, its `SMUS_MEMBERS` and
+   `SMUS_ASSOCIATED` rows leaving in that edit, then the association, a console act. A project's deletion
+   leaves residues ([`SMUS.md`](../../SMUS.md), "A deployment project in a `Workloads` account"): those in
+   the account go with its closure, and the shared domain keeps the members' user and group profiles, the
+   lineage events and the subscription records, which no delete API reaches.
+
+   **Closing an account, read 2026-10-20 from the vendor's pages:**
+   - **Unenrolling comes first**, by Control Tower's and Account Management's pages alike: the provisioned
+     product's *terminate* under rung 2, a move to the root or to an unregistered OU under auto-enrollment.
+     An account closed while enrolled reads *Suspended* and *Enrolled*, blocks its OU's re-registration for
+     the 90 days, and leaves its provisioned product to delete after them.
+   - **The close** is `organizations close-account` from Management: `PENDING_CLOSURE`, then `SUSPENDED`.
+     Those are the account's `Status`; its `State` reads `CLOSED` beside `SUSPENDED` (`EXC-01`'s account,
+     read 2026-10-20, the log).
+   - **The post-closure period is 90 days.** AWS Support can reopen the account during it. After it AWS
+     closes the account permanently and deletes its content except its CloudTrail trails, the account id is
+     never reused, and Management's event history records `AccountDepartedOrganization` with
+     `departureMethod:CLEANED`.
+   - **The slot** counts against the organization's account quota until the account is permanently closed.
+     Removing the account from the organization before the close frees it, but a created account leaves
+     only after four days and with a support plan, verified contacts and a payment method of its own, and
+     then pays its own bill outside every organization policy.
+   - **The e-mail address** registered at closure can never become another account's primary address; the
+     page names no period, so it is spent, not held for ~90 days. To keep it for a later vend, the root
+     address is changed before the close: from Management, `account start-primary-email-update` and
+     `accept-primary-email-update`, with a one-time code sent to the new address, under the Account
+     Management trusted access Stage 6b enabled.
 7. **Prove it with the second unit, not the first.** The first unit through this module is the one that was
    built by hand and is being adopted; the proof is a *second* one, created from nothing but a name, whose
    `terraform plan` on every shared slice comes back empty afterwards.
 
-**The mechanical half this stage does not have, and should get before the first vend:** a vend's failure
-mode is *an account that is 90 % configured*. **`./aws/vending.py`** is the missing script, and its
-checks are the same list eight `aws/` scripts already run, parameterised by unit: `VN-1` the account is in
-`Sandboxes` with no policy attachment of its own (D37); `VN-2` its CIDR is inside `10.16.0.0/13` and
-overlaps nothing in `backend.CIDRS`; `VN-3` **both** peerings exist with routes on both sides (`NT-11`'s
-rule, per unit); `VN-4` its child zone is associated into `VPC-Networking` and its authorization still
-exists (INT-22); `VN-5` its source block is in the proxy's allow-list (`PX-3`'s rule, per unit); `VN-6` its
-SSO group has exactly one assignment. **Write it against the hand-built unit first**, where every answer is
-already known — a check that has only ever run against the thing it was written from is not a check.
+**The mechanical half, which the stage gets before the first vend:** a vend's failure mode is *an account
+that is 90 % configured*, and **`./aws/vending.py`** reads it ([`aws/INDEX.md`](../../../aws/INDEX.md)).
+Its checks are the same list eight `aws/` scripts already run, parameterised by unit and generated from
+`scripts/tfhygiene/backend.py`'s tables: `VN-1` the account is in `Sandboxes` with no policy attachment of
+its own, nor the OU (D37), and every active account in `Sandboxes` is a declared unit; `VN-2` its CIDR is
+inside `10.16.0.0/13` and overlaps nothing in `backend.VPC_CIDRS`; `VN-3` **both** peerings exist with
+routes on both sides (`NT-11`'s rule, per unit), no other peering does, and the unit names the hand-built
+unit's peer slices; `VN-4` its child zone is associated into `VPC-Networking` and its authorization still
+exists (INT-22), and the unit's VPC resolves the apex and its child zone alone; `VN-5` its source block is
+in the proxy's allow-list and its security group (`PX-3`'s and `PX-1`'s rules, per unit); `VN-6` its SSO
+group has exactly one assignment in `Sandboxes`. **Against the hand-built unit**, where every answer is
+already known, it read `sandbox` on 2026-10-18 with the environment down as nine passes and one note.
+`VN-6`'s discriminator (Lesson 50) is the reason the note is not a failure: the shared
+`sso-group-data-scientists` is unit 1's principal while one unit is declared, and its two seats in
+`Workloads` stay on it by design (`docs/ORGANIZATION.md`, the dagger under Assignments); at the second unit
+the shared group holding a unit's seat fails. A check that has only ever run against the thing it was
+written from is not a check, so the same day it read `Staging`, which is no unit, as four failures (`VN-1`,
+`VN-2`, `VN-3`'s peer slices, `VN-6`), and every failure branch was exercised against fabricated readings.
+The proof is still step 7's second unit.
 
 **Deliverables:** a business unit's Sandbox account, its VPC, its identity assignment and its
 domain association all produced from one name in a merge request; a second unit created without editing any
@@ -270,9 +403,13 @@ module; **two peering pairs, one child zone and one proxy source block generated
 than authored; and the quota headroom restated in units rather than in accounts — **one slot per business
 unit**. The VPN-topology decision this stage used to owe is D38's, taken on 2026-09-05 at N = 1.
 
-**Cost:** measured into [`docs/PRICING.md`](../../PRICING.md) per unit before the first vended one, not after
-(Lesson 6). The dominant term is not the account — it is **one set of interface VPC endpoints per unit**,
-which is what decides whether centralized endpoints shared by RAM stop being optional (D35).
+**Cost:** measured into [`docs/PRICING.md`](../../PRICING.md) §3, *A Sandbox unit*, before the first vended
+one (Lesson 6), from the hand-built unit's counts on 2026-10-18: **3.50 USD/month at rest** in year one
+(three CMKs and the child zone; 6.50 and 9.50 as the keys gain versions), **0.180/h** of interface
+endpoints while the unit works, and 0.36-0.87 of Config per `[E]` cycle. The account and the hub add
+nothing. The dominant term is not the account — it is **one set of interface VPC endpoints per unit**,
+N × 0.180/h with N units working, which is what decides whether centralized endpoints shared by RAM stop
+being optional (D35).
 
 ---
 

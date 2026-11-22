@@ -50,6 +50,13 @@ variable "account_folder" {
   nullable    = false
 }
 
+variable "build_runner" {
+  description = "Whether this apply creates the build runner, its role and its instance profile (decision 5). True only through `make gitlab-up BUILD=1`, which sets TF_VAR_build_runner: the host takes every untagged job of a protected ref and bills 0.2117 USD/h, and on 2026-10-12..22 its image builds held 1.25 of the 30.91 hours it ran (Stage 7's log, 2026-10-24). The deploy and test runners exist either way."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "instance_type" {
   description = "The runner's size - the buildbox's measured shape (decision 5): m8i.xlarge, 4 vCPU, 16 GiB, 0.2117 USD/h (docs/PRICING.md 8), because the dev-env build is CPU-bound and saturated four burstable vCPUs on 2026-09-11. x86_64, and not a preference: the images are amd64 and SageMaker runs them on x86."
   type        = string
@@ -128,9 +135,9 @@ variable "cost_center" {
 # awsds/deploy-image's pipeline printed, committed, so the approved image is a reviewed line in this
 # repository and never only a fact inside an [E] host (Lesson 4).
 variable "deploy_image_digest" {
-  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.2.0: built 2026-10-16 from b064ba80, with the SageMaker CI/CD CLI 1.0.9 in /opt/smus-cli, on python:3.14-slim through the cache."
+  description = "The deploy image the deploy runner's jobs run, by digest (sha256:...), in awsds-<env>-ecr-deploy. Null creates no deploy runner. v0.3.0: built 2026-10-25 on Terraform 1.16.6 (upstream-releases.md, Lesson 76), after v0.2.0 of 2026-10-16, which added the SageMaker CI/CD CLI 1.0.9 and the pins of CLAUDE.md's toolchain."
   type        = string
-  default     = "sha256:ee31048e743c9d05bd26bbdfdf28cca18cb834313c5c6445f754c4168c7e91ac"
+  default     = "sha256:9965f1b2a3f1d5705bfdebceb02191de66e5b2c10b68e6789da9a4e941f26736"
 
   validation {
     condition     = var.deploy_image_digest == null || can(regex("^sha256:[0-9a-f]{64}$", var.deploy_image_digest))

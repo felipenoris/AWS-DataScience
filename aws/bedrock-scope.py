@@ -8,10 +8,10 @@
 #   run:      ./aws/bedrock-scope.py                       # sandbox
 #             ./aws/bedrock-scope.py awsds-infra-staging   # any awsds-* profile
 #   writes:   aws/output/bedrock-scope.txt   (untracked - see .gitignore)
-#   reads:    bedrock:ListInferenceProfiles, GetInferenceProfile, GetFoundationModel,
-#             GetFoundationModelAvailability, GetAccountDataRetention; account:ListRegions;
-#             sts:GetCallerIdentity. Every one is a read: this script creates nothing, changes
-#             nothing and invokes no model.
+#   reads:    bedrock:ListInferenceProfiles for the SYSTEM_DEFINED type, GetInferenceProfile,
+#             GetFoundationModel, GetFoundationModelAvailability, GetAccountDataRetention;
+#             account:ListRegions; sts:GetCallerIdentity. Every one is a read: this script creates
+#             nothing, changes nothing and invokes no model.
 #   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
 #
 # WHY THIS FILE EXISTS. Stage 6e's scoped set is ONE LIST WITH SEVERAL CONSUMERS, and two of the
@@ -63,13 +63,14 @@ import json
 import sys
 from datetime import UTC, datetime
 
-from awslib import context, profiles
+from awslib import context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.bedrockscope import (
     GRANT_VARS,
     SCP_PATH,
     SID_REGIONS,
     grant_models,
+    scp_admitted,
     scp_declaration,
     settings_pins,
 )
@@ -107,10 +108,17 @@ def main(argv: list) -> int:
             rep.checks_table(checks)
         note(f"wrote {out_label}", why)
         return 2 if checks.n_fail() else 0
+    # Admitted beside the scope (Stage 17 decision 11): a model named without a profile, and the
+    # application inference profiles the portal invokes through. Named, never checked against the
+    # scoped set's consumers, which know nothing of them.
+    admitted, app_profiles, _admitted_why = scp_admitted(ctx.repo_root / SCP_PATH)
+    beside = sorted((admitted or set()) - set(declared))
     checks.ok(
         "BS-1",
         "the SCP declares the scope",
-        f"{len(declared)} model(s), {len(declared_regions)} region(s)",
+        f"{len(declared)} model(s), {len(declared_regions)} region(s)"
+        + (f"; admitted beside it: {', '.join(beside)}" if beside else "")
+        + ("; application inference profiles admitted" if app_profiles else ""),
     )
 
     # ------------------------------------------------------------------- what AWS actually does
@@ -119,19 +127,9 @@ def main(argv: list) -> int:
     agreements: dict[str, str] = {}
     lifecycles: dict[str, dict] = {}
 
-    res = cli.run(
-        "bedrock",
-        "list-inference-profiles",
-        "--query",
-        "inferenceProfileSummaries[].[inferenceProfileId,status]",
-        "--output",
-        "text",
-    )
-    if res.ok:
-        for line in res.text.splitlines():
-            parts = line.split("\t")
-            if len(parts) == 2:
-                live_profiles[parts[0]] = parts[1]
+    # The declared `us.` profiles are of the SYSTEM_DEFINED type.
+    for pid, (status, _arns) in (inferenceprofiles.listing(cli, "SYSTEM_DEFINED") or {}).items():
+        live_profiles[pid] = status
 
     for model, profile_id in sorted(declared.items()):
         res = cli.run(

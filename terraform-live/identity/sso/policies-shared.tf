@@ -173,3 +173,74 @@ data "aws_iam_policy_document" "shared_denies" {
     resources = ["*"]
   }
 }
+
+# The warehouse denies the two data-science sets carry - Stage 5b step 2.3, Stage 9 step 5.1.
+#
+# One document, two readers (DataScientistAccess and DataScientistProdAccess), for the reason the
+# fragment above is one: a deny that must appear in two sets by hand is missing from one of them
+# (Lesson 14), and two copies kept equal by discipline diverge the day one is edited for its own
+# account (Lesson 51). The read-only Staging set holds neither service and needs neither statement.
+data "aws_iam_policy_document" "redshift_denies" {
+
+  # THE LOAD-BEARING ABSENCE, WRITTEN AS A DENY (Stage 5b step 2.3). `GetCredentials` mints a
+  # database session, so a persona holding it reaches the warehouse with no connection, no
+  # project tag and no project - around both gate layers of the Stage 6h design at once, and
+  # onto a shared RPU meter where an ad-hoc query and a project's job are the same money. In
+  # Production the same call would reach the governed warehouse (Stage 9 step 9), whose only
+  # writer is the job role and whose readers come through Lake Formation (its 9.5).
+  #
+  # `redshift-data:` is here for the same reason by a different route: the Data API needs no
+  # network path at all, so a grant of ExecuteStatement is a query path from anywhere the
+  # persona can reach the AWS endpoint. Measured on 2026-09-20, from a laptop outside the VPC:
+  # the Data API runs SQL on this warehouse with nothing but an IAM identity and the admin
+  # secret. That is how this repository's own instruments read the database, and it is exactly
+  # why the persona must not have it.
+  #
+  # `redshift:` is the PROVISIONED-cluster family. Nothing here has a cluster and Stage 5b 3.1
+  # denies creating one organization-wide, but `GetClusterCredentials` is a credential call of
+  # the same shape and is refused here so the persona's ceiling does not depend on that SCP
+  # staying attached.
+  #
+  # Written as a Deny rather than left to omission for the reason the Lake Formation deny of
+  # each set gives: these actions sit in services the sets are granted real reads on, so an
+  # omission would be one AWS managed policy away from being undone.
+  statement {
+    sid    = "DenyMintingARedshiftDatabaseSession"
+    effect = "Deny"
+
+    actions = [
+      "redshift-data:BatchExecuteStatement",
+      "redshift-data:ExecuteStatement",
+      "redshift-data:GetStatementResult",
+      "redshift:GetClusterCredentials",
+      "redshift:GetClusterCredentialsWithIAM",
+      "redshift-serverless:GetCredentials",
+    ]
+
+    resources = ["*"]
+  }
+
+  # The cost guard is not the persona's to edit (Stage 5b step 2.3 and decision 3). There is NO
+  # IAM condition key for base capacity, so no policy anywhere can say "never above 4": the
+  # ceiling is the workgroup's own two fields plus the usage limit, and what a policy can do is
+  # stop those being edited away. This is the persona's half; the organization's half is 5b
+  # 3.2's SCP, which covers every principal this document does not reach.
+  statement {
+    sid    = "DenyRedshiftCostGuardAndCompute"
+    effect = "Deny"
+
+    actions = [
+      "redshift-serverless:CreateNamespace",
+      "redshift-serverless:CreateUsageLimit",
+      "redshift-serverless:CreateWorkgroup",
+      "redshift-serverless:DeleteNamespace",
+      "redshift-serverless:DeleteUsageLimit",
+      "redshift-serverless:DeleteWorkgroup",
+      "redshift-serverless:UpdateNamespace",
+      "redshift-serverless:UpdateUsageLimit",
+      "redshift-serverless:UpdateWorkgroup",
+    ]
+
+    resources = ["*"]
+  }
+}

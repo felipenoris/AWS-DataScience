@@ -28,20 +28,24 @@
 #
 # The `check` list, each offline and failing on one mistake: check-tf-conventions (9.1),
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
-# copied), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc,
-# check-plan-refs (the plan's relative links, stable IDs and the two size budgets),
+# copied), check-copies (Stage 8 4.1: files copied across slices), model-chain.py --check (Stage 10
+# steps 5.2 and 5.4: the model chain's requests carry the settings the Workloads OU's document demands), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
+# deploy fills every variable a target stage of the template's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
+# relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
-# keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses) and
-# check-sg-descriptions (no security group or rule description EC2 refuses at apply).
+# keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses),
+# check-sg-descriptions (no security group or rule description EC2 refuses at apply) and
+# check-aws-supplement (docs/AWS_SUPPLEMENT.md's ids are unique, every SUP-nnn cited elsewhere
+# exists, and CLAUDE.md indexes its sections).
 
 SHELL := /bin/bash
 
 # make takes an unknown variable in silence, and every flag here is upper case: `auto=1` applies with
 # no -auto-approve and `runners=0` raises the runner anyway (both seen 2026-10-12). The lower-case
 # spellings of the flags are refused before any target runs.
-ifneq ($(strip $(auto)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
-$(error the flags are upper case - AUTO, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
+ifneq ($(strip $(auto)$(build)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
+$(error the flags are upper case - AUTO, BUILD, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
 endif
 .PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
 
@@ -52,35 +56,41 @@ help:
 	@printf '\033[1mREAD\033[0m - safe at any time; offline unless a session is named\n'
 	@printf '  help        this text\n'
 	@printf '  check       Stage 2 step 9, offline - what a commit must pass: conventions,\n'
-	@printf '              wildcard ARNs, bootstrap parity, slice layers, tfvars shapes, the\n'
-	@printf '              policy index, the network doc, the plan references, account ids\n'
-	@printf '              and e-mails, provider locks, the GitLab CI files, security group\n'
-	@printf '              descriptions\n'
+	@printf '              wildcard ARNs, bootstrap parity, copied files, the workflow render,\n'
+	@printf '              slice layers, tfvars shapes, the policy index, the network doc,\n'
+	@printf '              the plan references, account ids and e-mails, provider locks, the\n'
+	@printf '              GitLab CI files, security group descriptions\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
 	@printf '  check-all   check and check-ou\n'
 	@printf '  slices      the D11 layer table, offline - which slice is [P], [D] or [E]\n'
-	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3).\n'
-	@printf '              Reads the [D] power states from EC2 and each [E] state file after a\n'
-	@printf '              local terraform init - a session per account read; a slice it cannot\n'
-	@printf '              read is UNREADABLE and the total is then a floor, not a measurement\n'
+	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3 and 8).\n'
+	@printf '              Reads the [D] power states from EC2, each [E] state file after a\n'
+	@printf '              local terraform init, and the Studio apps from SageMaker, each priced\n'
+	@printf '              by its instance type - a session per account read; a slice or an\n'
+	@printf '              account it cannot read is UNREADABLE and the total is then a floor.\n'
+	@printf '              The EMR Serverless applications started and the OpenSearch\n'
+	@printf '              Serverless collections, which the portal deploys and down never\n'
+	@printf '              deletes, are listed unpriced, and each makes the total a floor\n'
 	@printf '  clean       LOCAL delete only: aws/output, .venv, .ruff_cache, every .terraform/.\n'
 	@printf '              Never secrets/, never anything in AWS\n'
 	@printf '\n'
 	@printf '\033[1mWRITE\033[0m - changes AWS; run one only when it was asked for by name\n'
-	@printf '  up   ENV=x  START the [D] hosts of one account folder, then terraform APPLY its\n'
-	@printf '              [E] slices in dependency order. Refuses while a hub host is stopped.\n'
-	@printf '              ENV=production leaves the hub pair to hub-up (Stage 7 step 1.6)\n'
-	@printf '  down ENV=x  DELETE the running Studio apps, terraform DESTROY the [E] slices in\n'
-	@printf '              reverse order, then STOP the [D] hosts. Spaces and their volumes stay\n'
+	@printf '  up   ENV=x  START the [D] hosts and terraform APPLY the [E] slices of one account\n'
+	@printf '              folder, in one dependency order: a host starts where its rank falls.\n'
+	@printf '              Refuses while a hub host is stopped. ENV=production leaves the hub\n'
+	@printf '              pair to hub-up (Stage 7 step 1.6)\n'
+	@printf '  down ENV=x  DELETE the running Studio apps, then terraform DESTROY the [E] slices\n'
+	@printf '              and STOP the [D] hosts in reverse order. Spaces and their volumes stay\n'
 	@printf '  hub-up      START the two hub hosts and nothing else - no apply, no endpoint\n'
 	@printf '  hub-down    STOP them - nothing is destroyed: the addresses, the host key and\n'
 	@printf '              the security groups are [P] anchors and survive the stop\n'
-	@printf '  gitlab-up   START GitLab and APPLY production/egress and production/runners - a\n'
-	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6)\n'
-	@printf '  gitlab-down DESTROY the runners and the SharedServices endpoints, STOP GitLab; the\n'
-	@printf '              hub keeps running for every other session\n'
+	@printf '  gitlab-up   APPLY production/egress, START GitLab, APPLY production/runners - a\n'
+	@printf '              GitLab session, leaving the hub to hub-up (Stage 7 step 1.6): the\n'
+	@printf '              deploy and test runners always, the build runner with BUILD=1\n'
+	@printf '  gitlab-down DESTROY the runners, STOP GitLab, DESTROY the SharedServices\n'
+	@printf '              endpoints; the hub keeps running for every other session\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
 	@printf '    DRY=1       print every command the target would run, and run none\n'
@@ -88,13 +98,20 @@ help:
 	@printf '                start/stop and DeleteApp never ask, with or without it\n'
 	@printf '    ENV=x       up and down: one account folder from the list at the end. Never\n'
 	@printf '                optional - `make down` with no ENV fails, it never means all\n'
-	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply (see GROUPS)\n'
+	@printf '    GROUPS=a,b  up only - optional endpoint families for THIS apply, and `redshift`\n'
+	@printf '                the warehouse too (see GROUPS)\n'
 	@printf '    ONLY=a,b    up and down - these slices of ENV and no other (Stage 8 step 4.4)\n'
 	@printf '    PROFILE=p   up and down - every command runs as profile p instead of the\n'
 	@printf '                account default: the deploy runner names its deploy role. A deploy\n'
 	@printf '                role applies no sandbox slice (refusal 8, Stage 8 step 2.4)\n'
-	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints without the runners\n'
-	@printf '                (0.2493 USD/h); gitlab-down destroys them regardless\n'
+	@printf '    RUNNERS=0   gitlab-up only - GitLab and the endpoints, production/runners left\n'
+	@printf '                unapplied: neither the deploy nor the test runner rises (0.0376\n'
+	@printf '                USD/h), one raised earlier keeps running, gitlab-down destroys it\n'
+	@printf '    BUILD=1     gitlab-up only - the build runner too (m8i.xlarge, 0.2117 USD/h),\n'
+	@printf '                the one runner that takes untagged jobs on a protected ref: image\n'
+	@printf '                builds and app-etl tag pipelines. Like GROUPS it lasts one apply: a\n'
+	@printf '                gitlab-up without it destroys a build runner raised earlier, and so\n'
+	@printf '                does `make up ENV=production`, which applies production/runners too\n'
 	@printf '\n'
 	@printf '\033[1mLAYERS\033[0m - what [P], [D] and [E] mean, and what each target does to a slice\n'
 	@printf 'wearing one (D11; the definitions and the reasoning: docs/plan/conventions.md 5.1)\n'
@@ -147,25 +164,38 @@ help:
 	@printf '    bedrock-base   2 endpoints, ~0.020 USD/h - `bedrock` and `bedrock-runtime`, the\n'
 	@printf '                   control plane and the invocation path. Stage 6e s assistant in a\n'
 	@printf '                   space needs both, so a session that runs it names this group\n'
-	@printf '    bedrock-agent  2 endpoints, ~0.020 USD/h - the agent pair, for the six\n'
+	@printf '    bedrock-agent  2 endpoints, ~0.020 USD/h - the agent pair, for the\n'
 	@printf '                   AmazonBedrock* blueprints; it needs bedrock-base beside it\n'
 	@printf '    emr            7 endpoints, ~0.070 USD/h - EmrServerless\n'
 	@printf '    mlflow         1 endpoint, ~0.010 USD/h - the MLflow App s tracking API, for\n'
 	@printf '                   MLflowApp (Stage 17); a space logging a run names it\n'
 	@printf '    redshift       1 endpoint, ~0.010 USD/h - redshift-serverless, the warehouse API\n'
-	@printf '                   door (5b 1.10); a session that queries the warehouse names it\n'
-	@printf '    mwaa           reserved and empty - names nothing. D7 settled MWAA Serverless only;\n'
-	@printf '                   no Sandbox endpoint for it has been measured as needed\n'
+	@printf '                   door (5b 1.10), and the warehouse itself: without ONLY=, `up`\n'
+	@printf '                   applies warehouse-compute/ only with this group (refusal 11),\n'
+	@printf '                   1.44 USD per query-hour, 0 idle. A session that queries the\n'
+	@printf '                   warehouse names it, the portal query editor included\n'
+	@printf '    mwaa           1 endpoint, ~0.010 USD/h - airflow-serverless, the MWAA Serverless\n'
+	@printf '                   API, whose only name is under .api.aws, which the proxy refuses.\n'
+	@printf '                   A space that deploys with the CI/CD CLI names it (Stage 10 2.1).\n'
+	@printf '                   Sandbox only: the other callers pin vpc-egress-v0.17.0, where the\n'
+	@printf '                   group is still empty\n'
 	@printf '\n'
-	@printf '  The default is none: `make up ENV=sandbox` creates no optional endpoint. The flag\n'
-	@printf '  lives in the environment, not in a file, so it lasts exactly one apply, and a\n'
-	@printf '  `make up` without it destroys the optional endpoints.\n'
+	@printf '  The default is none: `make up ENV=sandbox` creates no optional endpoint and no\n'
+	@printf '  warehouse. The flag lives in the environment, not in a file, so it lasts exactly one\n'
+	@printf '  apply, and a `make up` without it destroys the optional endpoints. It leaves a\n'
+	@printf '  warehouse raised earlier running: only `make down` destroys the workgroup.\n'
 	@printf '\n'
 	@printf '    make up ENV=sandbox GROUPS=bedrock-base\n'
 	@printf '    make up ENV=sandbox GROUPS=bedrock-base,bedrock-agent,emr\n'
+	@printf '    make up ENV=sandbox GROUPS=redshift\n'
 	@printf '\n'
-	@printf '  Wired in sandbox/egress only: the blueprints it serves are SMUS blueprints and\n'
-	@printf '  the SMUS surface lives in that account alone.\n'
+	@printf '  Wired in sandbox/egress, for the SMUS blueprints, and in production/workloads-egress,\n'
+	@printf '  where a job inside VPC-Workloads calls the warehouse API (redshift, Stage 9 9.1).\n'
+	@printf '  There it rides on ONLY=, or the apply takes every Production [E] slice. ONLY= is an\n'
+	@printf '  explicit list, so the warehouse rises only when it is named:\n'
+	@printf '\n'
+	@printf '    make up ENV=production ONLY=workloads-egress GROUPS=redshift\n'
+	@printf '    make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift\n'
 	@printf '\n'
 	@./scripts/slices.py envs
 
@@ -175,11 +205,16 @@ check:
 	for c in "./scripts/check-tf-conventions.py" \
 	         "./scripts/check-iam-wildcards.py" \
 	         "./scripts/check-bootstrap-parity.py" \
+	         "./scripts/check-copies.py" \
+	         "./scripts/model-chain.py --check" \
+	         "./scripts/deploy-application.py --self-check" \
+	         "./aws/catalog.py --self-check" \
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \
 	         "./scripts/check-network-doc.py" \
 	         "./scripts/check-plan-refs.py" \
+	         "./scripts/check-aws-supplement.py" \
 	         "./scripts/check-identifiers.py" \
 	         "./scripts/check-provider-locks.py" \
 	         "./scripts/check-gitlab-ci.py" \
@@ -215,10 +250,11 @@ guard-env:
 slices:
 	@./scripts/slices.py list $(ENV)
 
-# GROUPS becomes TF_VAR_optional_service_groups here, not in the script, because it is a Terraform
-# input rather than a slice-lifecycle concept: slices.py passes the whole environment through to
-# every `terraform` it runs. Unset means empty (the variable's own `[]`), the zero-cost case. The
-# expansion is printed before the apply so the operator sees the JSON list Terraform receives.
+# GROUPS becomes TF_VAR_optional_service_groups here, not in the script: slices.py passes the whole
+# environment through to every `terraform` it runs. Unset means empty (the variable's own `[]`), the
+# zero-cost case. The expansion is printed before the apply so the operator sees the JSON list
+# Terraform receives. The same list reaches slices.py as --groups, where `redshift` also selects
+# warehouse-compute/ (refusal 11).
 #
 # ONLY and PROFILE are Stage 8 step 4.4's, for the deploy runner (step 3.1): ONLY narrows ENV to the
 # slices named, PROFILE replaces the account's default profile, and both pass through to slices.py.
@@ -227,7 +263,7 @@ up:
 	@if [ -n "$(GROUPS)" ]; then \
 	  groups="[$$(printf '%s' '$(GROUPS)' | sed 's/[^,][^,]*/"&"/g')]"; \
 	  printf '\033[1moptional endpoint groups\033[0m: %s\n' "$$groups"; \
-	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
+	  TF_VAR_optional_service_groups="$$groups" ./scripts/slices.py up --env $(ENV) --groups '$(GROUPS)' $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	else \
 	  ./scripts/slices.py up --env $(ENV) $(if $(ONLY),--only $(ONLY),) $(if $(PROFILE),--profile $(PROFILE),) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,); \
 	fi
@@ -249,23 +285,34 @@ hub-up:
 hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# GitLab's session (Stage 7 step 1.6): the [D] host started, VPC-SharedServices' endpoints and the
-# runners applied, and the hub left to `hub-up`. `make up ENV=production` would do the same
-# and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
+# GitLab's session (Stage 7 step 1.6), in the script's rank order: VPC-SharedServices' endpoints
+# applied, the [D] host started (its Session Manager agent registers through the `ssm` endpoint
+# among them), the runners applied, and the hub left to `hub-up`. `make up ENV=production` would do
+# the same and also raise `workloads-egress/` and `probes/`, which a GitLab session never needs.
 #
 # RUNNERS=0 leaves the runners out: a session that runs no pipeline, or one before a runner's
 # token is in its container (runbook K). Any other value but 1 is refused, so a typo never raises
-# 0.2493 USD/h of hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+# hosts unasked. `$(comma)` keeps the separator out of `$(if)`'s own arguments.
+#
+# BUILD=1 adds the build runner (Stage 7 decision 5) by becoming TF_VAR_build_runner, the way GROUPS
+# becomes TF_VAR_optional_service_groups in `up`. Unset or 0 is false, the variable's default, so a
+# session with no image build and no protected pipeline bills 0.0376 USD/h of runners, not 0.2493.
+# It lasts one apply: a `make gitlab-up` without it destroys a build runner an earlier one raised.
+# With RUNNERS=0 it is refused, since it acts on the slice RUNNERS=0 leaves out.
 comma := ,
 
 gitlab-up:
 	@case "$(RUNNERS)" in ""|0|1) ;; *) printf 'RUNNERS must be 0 or 1 (unset means 1), not "%s"\n' "$(RUNNERS)"; exit 2;; esac
-	@./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
+	@case "$(BUILD)" in ""|0|1) ;; *) printf 'BUILD must be 0 or 1 (unset means 0), not "%s"\n' "$(BUILD)"; exit 2;; esac
+	@if [ "$(RUNNERS)" = 0 ] && [ "$(BUILD)" = 1 ]; then printf 'BUILD=1 acts on production/runners/, which RUNNERS=0 leaves out\n'; exit 2; fi
+	@$(if $(filter 0,$(RUNNERS)),true,printf '\033[1mbuild runner\033[0m: %s\n' '$(if $(filter 1,$(BUILD)),yes - BUILD=1,no - BUILD=1 raises it)')
+	@TF_VAR_build_runner=$(if $(filter 1,$(BUILD)),true,false) ./scripts/slices.py up --env production --only tooling,egress$(if $(filter 0,$(RUNNERS)),,$(comma)runners) $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
-# The reverse order is the script's: the runners and the endpoints are destroyed, then GitLab is
-# stopped. Nothing here touches the hub, so every other session's proxy and tunnel stay up.
-# RUNNERS is ignored: destroying an absent runner is a no-op, and a forgotten one is this stage's
-# likeliest leak.
+# The reverse order is the script's: the runners are destroyed, GitLab is stopped, then the
+# endpoints are destroyed. Nothing here touches the hub, so every other session's proxy and tunnel
+# stay up.
+# RUNNERS and BUILD are ignored: destroying an absent runner is a no-op, and a forgotten one is this
+# stage's likeliest leak.
 gitlab-down:
 	@./scripts/slices.py down --env production --only tooling,egress,runners $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 

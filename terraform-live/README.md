@@ -18,7 +18,8 @@ is a broken caller.
 
 ## What is here today
 
-**Twenty-eight slices across five account folders: eighteen `[P]`, two `[D]`, eight `[E]`** (2026-09-08).
+**Forty-eight slices across five account folders: thirty-six `[P]`, three `[D]`, nine `[E]`** (`make slices`,
+2026-11-17).
 That is a summary, not an authority — `make slices` prints the live table, and a slice that reaches disk
 without a row in it fails `make check`.
 
@@ -31,7 +32,7 @@ the count never changed. `./scripts/check-bootstrap-parity.py` is what keeps the
 `sagemaker/` and `data/` on the way (destroyed, steps 1.7 and 2.4) and carrying `foundation/`,
 `egress/` and `probes/` across (step 4.3). `production/` grew `networking/`, `workloads/` and
 `workloads-egress/` the same day, and its existing `foundation/` VPC became **VPC-SharedServices**;
-`vpn/` and `proxy/` arrive at 6c pass 4 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)).
+`vpn/` and `proxy/` arrived at 6c pass 4 ([Stage 6c](../docs/plan/stages/stage-06c-networking-hub.md)).
 
 `sandbox/`, `staging/`, `data-governance/`, `production/` and `identity/` each carry the same
 `main.tf`, `variables.tf`, `outputs.tf`, `providers.tf`, `versions.tf` and `.terraform.lock.hcl` — **the state
@@ -44,6 +45,11 @@ out until a slice has migrated, and `production/bootstrap/pki-key.tf`, D36's sec
 the comment markers stripped, and any other unshared file a failure. A module would have been the other
 answer, and step 2.3 rules it out: modules are consumed **by git tag**, which cannot exist before
 `terraform-modules/` does.
+
+**`staging/foundation/` and `production/foundation/` share copied files**: `apply-application.tf` and
+`deploy-project.tf`, the deploy role's grants (Stage 8 step 4.1, Stage 19 step 4.8). What one account
+adds sits in its deploy role's own file. **`./scripts/check-copies.py` fails on a divergence.** A module would turn each change of a grant that changes at its first applies
+into a tag.
 
 **Two files per slice are generated and untracked**, because a `.tf` file may hold neither of the values they
 carry — the backend cannot interpolate anything, and the region may not be a literal (step 9.1's check
@@ -71,9 +77,11 @@ and five byte-variants exist today. What is enforced is the property that matter
 [`scripts/check-provider-locks.py`](../scripts/check-provider-locks.py): the `required_version` and the
 `hashicorp/aws` constraint must equal `sandbox/foundation`'s, **a second provider block is explicitly
 permitted**, and every committed `.terraform.lock.hcl` must carry Stage 2 step 6.3's three platforms.
-`sandbox/sagemaker/` and `data-governance/governance/` add that second provider, `awscc`, and each says so
-in its own file. The `aws` block is unchanged — what the drift rule is about — and the second one is there
-because three resources exist in no other provider at all: the V2 project profile, the blueprint
+Ten slices add that second provider, `awscc`, and each says so in its own file (read 2026-11-17):
+`data-governance/governance/` and `publishing/`, `sandbox/sagemaker/`, `dev-env/`, `bedrock/`, `warehouse/`
+and `warehouse-compute/`, `production/warehouse/`, and both `studio/` slices. The `aws` block is unchanged —
+what the drift rule is about — and the second one is there because some resources exist in no other
+provider at all, the first three of them: the V2 project profile, the blueprint
 configuration's `environment_role_permission_boundary` — which is how the D13 boundary reaches roles
 **DataZone authors** (INT-15) — and the DataZone policy grant (`awscc_datazone_policy_grant`, both layers
 of the create authorization since 2026-08-22). `docs/plan/conventions.md` §6 anticipated that split.
@@ -85,21 +93,27 @@ plus the peerings and zone associations pass 2 adds on a second apply of the sam
 `[E]` — the interface endpoints (and a NAT gateway, whose code 6c step 5.1 removed), which are this
 tree's entire hourly bill. `probes/` is `[E]` as well and is an **instrument rather than infrastructure**:
 the hosts the perimeter, both peerings and the flow logs were measured from, kept on disk because a probe
-that has to be rewritten is a probe nobody re-runs. **`data-governance/` has no `foundation/` and never
-will** (D22 — a registry needs no VPC), which is why `layers.py` carries an explicit comment where its row
-would be. What stands right now is the `[P]` half alone: the `[E]` slices are destroyed and the tree bills
-**USD 0.0000/h** between sessions, while `foundation/` re-plans `No changes` — that pair is D11's proof.
+that has to be rewritten is a probe nobody re-runs. Staging's left at Stage 8 step 3.1: its target is in
+`VPC-SharedServices`, which Staging stopped peering with at 6c. **`data-governance/` has no
+`foundation/` and never will** (D22 — a registry needs no VPC), which is why `layers.py` carries an
+explicit comment where its row would be; its one VPC is Stage 6f step 11's, inside
+`data-governance/publishing/`, because the managed `Tooling` template of the lake-publishing project
+takes one, and it peers with nothing. What stands right now is the `[P]` half alone: the `[E]`
+slices are destroyed and the tree bills **USD 0.0000/h** between sessions, while `foundation/`
+re-plans `No changes` — that pair is D11's proof.
 
 **Stage 5a put the lake on disk in the one account that has no network — `data-governance/data/`**
 (2026-08-18/19, applied in three passes). It is all `[P]`, and nothing in it is ever torn down: the
 account data CMK (`alias/awsds-data-data`), the five `awsds-data-*` buckets under it, the Glue databases
 and the Iceberg sample table, the `awsds-data-catalog-maintenance` role with its two unscheduled crawlers,
 the Lake Formation settings/registrations/LF-Tags, the governance manager's grants, and `shares.tf` — the
-cross-account grants that are how a consumer reaches the lake at all - Sandbox alone since 6b step
-2.4 destroyed `development/data/`.
+cross-account grants that are how a consumer reaches the lake at all: Sandbox's read, Staging's read
+since Stage 9 decision 3 (2026-10-22) and Production's read and governed write (Stage 9 2.1);
+`development/data/`'s left at 6b step 2.4.
 
 **The consumer side is `sandbox/data/` and `development/data/`** (pass 4, 2026-08-19; the second was
-**destroyed** at Stage 6b step 2.4, so `sandbox/data/` is the only caller left). They are the tree's first
+**destroyed** at Stage 6b step 2.4, and `staging/data/` and `production/data/` joined at Stage 9 on
+2026-10-22, so three slices call the module at `consumer-data-v0.6.0`). They are the tree's first
 slices that are **one module applied twice** — `terraform-modules/consumer-data/` — so the design lives
 once and each slice says only which account. Each holds the account's own `DataLakeSettings`, its
 `alias/awsds-<env>-data` CMK (one data CMK per account, the 2026-08-19 revision that withdrew the
@@ -156,13 +170,15 @@ reads a `[D]` row's **power state from EC2**, not its state file, or a stopped h
 forever.
 
 **GitLab is the third `[D]` row** (Stage 7 step 1.2, 2026-10-12): [`production/tooling/`](production/tooling/)
-(rank 42) holds the `t4g.large`, its 50 GiB data volume and the two internal records, and is applied by
-hand like the hub hosts. Its session is **`make gitlab-up` / `make gitlab-down`** — `--only
-tooling,egress,runners`: the host started, VPC-SharedServices' endpoints and the build runner applied,
-and the hub left alone. `make up`/`make down ENV=production` **never touch the hub pair** since the
-same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the proxy would
-blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's name, and
-`layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
+(rank 52, above `egress/`'s 50: the host's Session Manager agent registers through the `ssm` endpoint,
+so the host starts after the endpoints exist and stops before they are destroyed) holds the `t4g.large`,
+its 20 GiB data volume and the two internal records, and is applied by hand like the hub hosts. Its
+session is **`make gitlab-up` / `make gitlab-down`** — `--only tooling,egress,runners`, in rank order:
+VPC-SharedServices' endpoints applied, the host started, the runners applied, and the hub left alone;
+`gitlab-down` walks the same order backwards. `make up`/`make down ENV=production` **never touch the
+hub pair** since the same step (refusal 6 in `scripts/slices.py`): a Production session that stopped the
+proxy would blackhole every peer's spoke. The host's Name tag is `awsds-prod-gitlab`, not the slice's
+name, and `layers.DORMANT_HOST_NAMES` is where the dormant hook learns it.
 
 **The WireGuard host was also a NAT instance for the isolated tier, from Stage 6 step 5.0 until 6c step
 5.8.** `wireguard-v0.4.0`'s `vpc_nat_cidrs` input turned source/destination checking **off** and added
@@ -177,7 +193,9 @@ endpoints are the only door into the host) rather than a slice a build could avo
 
 **`runners/` is raised by `make gitlab-up`**, with GitLab and `egress/` (`RUNNERS=0` leaves it out), and
 destroyed by `make gitlab-down`; `make up ENV=production` applies it too, with the account's other `[E]`
-slices. Its first boot waits for GitLab and registers from the token container
+slices. The build runner exists only while an apply sets `build_runner`, which `make gitlab-up BUILD=1`
+alone does; every other apply of the slice creates or keeps the deploy and test runners and destroys a
+build runner. Each runner's first boot waits for GitLab and registers from its token container
 ([`docs/plan/runbooks/gitlab.md`](../docs/plan/runbooks/gitlab.md) §K).
 
 **The `[D]` slices are where the layer decides the folder rather than the topic.** The hub's durable
@@ -189,8 +207,7 @@ instances that consume them. Each is named from outside the slice (every client 
 WireGuard address as its `Endpoint`; Stage 7's GitLab rule names the group; every instance the `[D]`
 slices ever boot reads the key), and **a reference is only worth writing if what it names outlives the
 thing using it**: a WireGuard address that changed would strand every client config until each was
-edited. No policy names either address (D39, Stage 6g); whether the proxy's stays `[P]` is 6g's decision
-due 1.
+edited. No policy names either address (D39, Stage 6g).
 The **value** in that secret is never Terraform's — it is put there by the user at enrollment and read by
 the host at first boot ([`docs/plan/runbooks/vpn.md`](../docs/plan/runbooks/vpn.md) Part K owns every
 event that touches it). The Sandbox copies went at 6c step 6.5 (2026-09-08), once nothing read them; `sandbox/foundation/vpn-anchors.tf` is now one `removed {}`
@@ -247,16 +264,21 @@ reads.
 set: one design split by *which account is allowed to hold what*, D26's argument made concrete:
 
 - **`data-governance/governance/` `[P]` — the registry, and nothing else.** The DataZone V2 domain, its
-  execution and service roles, the two project profiles, and the two `CREATE_PROJECT_FROM_PROJECT_PROFILE`
-  grants on the root domain unit (`grants.tf`, 2026-08-22 — without them the profiles were templates
-  nobody could instantiate). **No compute lives here and none ever may**:
+  execution and service roles, the project profiles (`experimentation`, `lake-publishing`,
+  `deployment-staging`, `deployment-production`, and the model governance project's), and a
+  `CREATE_PROJECT_FROM_PROJECT_PROFILE` grant per profile on the root domain unit (`grants.tf`, since
+  2026-08-22 — without them the profiles were templates nobody could instantiate). `sagemaker-share.tf`
+  shares the domain through RAM with `sagemaker.amazonaws.com`, the share a SageMaker data source needs
+  (Stage 17 3.3, `EXC-11`; applied 2026-11-19). **No compute lives here and none ever may**:
   `sagemaker:Create*` is denied in this account by the `Data` OU document, a deny that stays free because
-  no blueprint is enabled here, and Stage 6 step 0.4 reads the slice's own plan for any `aws_sagemaker_*`
-  resource before every apply.
+  no blueprint is enabled here but the lake-publishing pilot's `Tooling`, with spaces off
+  (`data-governance/publishing/`, Stage 6f step 11), and Stage 6 step 0.4 reads the slice's own plan for
+  any `aws_sagemaker_*` resource before every apply.
 - **`sandbox/sagemaker/` `[P]` — the runtime's prerequisites**, one module
   (`terraform-modules/sagemaker-prereqs/`). It was applied **twice** until 2026-09-06, in Sandbox and in
   Development, so the two could not drift; **Stage 6b step 1.7 destroyed the Development copy and deleted
-  the slice** — that account is becoming the headless `Staging` and provisions no Studio project. The blueprint
+  the slice** — that account became `Staging`, whose deployment project's prerequisites are
+  `staging/studio/` since Stage 19. The blueprint
   provisioning and manage-access roles, the account's project CMK, the `/awsds/<env>/studio` log group,
   the **D13 permissions boundary** the blueprint imposes on every project role it authors — and, since
   v0.3.x (2026-08-22), the projects bucket `awsds-<env>-smus-projects` (SSE under the project CMK) and the
@@ -269,7 +291,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   2026-10-12) added `awsds-prod-ecr-app-etl` and the three pull-through cache rules (ECR Public,
   `registry.k8s.io`, Quay) with their creation templates — `MUTABLE` tags, since an immutable tag
   blocks the cache's own update, and AES256 for a public upstream's bytes. **Stage 8 decision 20**
-  (written 2026-10-16, unapplied) adds `awsds-prod-releases`, the bucket each application release's
+  (applied 2026-10-16) adds `awsds-prod-releases`, the bucket each application release's
   bundle is stored in, under the slice's key, versioned, with its deletes and its versioning and
   lifecycle changes denied to every principal but `InfrastructureAccess`.
 - **`production/pki/` `[P]` — the internal CA** (Stage 7 step 2, D36): the root and the two leaves
@@ -286,24 +308,29 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `egress/`'s output. Anchors in `production/foundation/`: the two buckets, their key, the
   `gitlab-secrets.json` and runner-token containers.
 - **`production/runners/` `[E]` — the build runner** (Stage 7 step 6, the buildbox's successor): one
-  `m8i.xlarge`, registered against GitLab at boot with the token in the runner-token container, pushing
+  `m8i.xlarge`, on `make gitlab-up BUILD=1` alone (decision 5), registered against GitLab at boot with the token in the runner-token container, pushing
   to the three image repositories with its own instance profile and pulling through the cache - and no
   deploy permission. It reads `egress/`'s generated `no_proxy`, which is the dependency the rank records.
   Since Stage 8 pass 1 (2026-10-13) the slice also holds the **deploy runner** `awsds-prod-runner-deploy`,
   protected and project-locked, whose role assumes only the deploy roles (`awsds-deploy-sandbox-test` the
-  fourth, Stage 8 decision 19, written 2026-10-16) and whose AWS config carries one profile per role,
-  rendered from `production/foundation/`'s `deploy_role_arns_by_name`; since pass 2 the **test runner**,
-  with no AWS identity reachable from its jobs; and since decision 20 the build runner's role also writes
-  `awsds-prod-releases`.
+  fourth, Stage 8 decision 19, written 2026-10-16, the bundle role since Stage 19 decision 19 (c)) and
+  whose AWS config carries one profile per role, rendered from `production/foundation/`'s
+  `deploy_role_arns_by_name`; since pass 2 the **test runner**, with no AWS identity reachable from its
+  jobs; and since decision 20 the build runner's role also writes `awsds-prod-releases`.
 - **`sandbox/dev-env/` `[P]` — the house image, registered** (Stage 6d step 2, 2026-09-10): the SageMaker
-  AI image, one immutable version pointing at `awsds-prod-ecr-dev-env:<tag>`, an app image configuration
-  per app type, and the role SageMaker assumes to read that repository across the account boundary. It is
+  AI image, an app image configuration per app type, and the role SageMaker assumes to read that
+  repository across the account boundary. The image's versions, each an immutable pointer at
+  `awsds-prod-ecr-dev-env` by digest, are the release pipeline's since Stage 8 decision 18 (2026-10-15):
+  `awsds/dev-env`'s `register` and `retire` jobs create and delete them through the API and apply no
+  slice (INT-18); version 7, the last Terraform created, left the state. It is
   the one slice here whose only real input lives in another account, so it reads
   `production/registry/`'s state rather than carrying an ECR URI. **What it does not hold is the
-  attachment**: `CustomImages` is a field of the SageMaker AI domain the `Tooling` blueprint provisions,
-  so making the image *selectable* is a hand step — [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
-  Stage 8 step 1's pipeline takes the slice over (INT-18).
-- **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, written 2026-09-11, unapplied): one
+  attachment**: `CustomImages` is a field of the project's SageMaker AI domain, which the
+  `SageMakerAIDomain` blueprint writes from the profile's pin, `var.sandbox_dev_env_version` in
+  `data-governance/governance/` (6d decision 16 (a)), so a release moves that variable; the three
+  `Tooling` domains of `docs/AWS_STATE.md` `EXC-26` carry it from a hand step —
+  [`docs/plan/runbooks/dev-env.md`](../docs/plan/runbooks/dev-env.md).
+- **`sandbox/bedrock/` `[P]` — the Bedrock grant** (Stage 6e step 3, applied 2026-09-11): one
   `awsds-<env>-bedrock-assistant` policy naming the three scoped Claude models — as inference-profile
   ARNs *and* as region-less foundation-model ARNs, because authorization evaluates both — and one
   attachment per SMUS project role. **It is the slice whose input cannot be derived**: the role is minted
@@ -311,24 +338,62 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   blueprint configuration has no field that grants anything (a boundary for every project role, a grant
   for none). So `project_roles` is hand-written per project, guarded by a precondition that the role
   carries the D13 boundary — [`claude-code-sagemaker.md`](../docs/plan/runbooks/claude-code-sagemaker.md)
-  section P is the procedure, in both the Terraform and the `aws` CLI form.
+  section P is the procedure, in both the Terraform and the `aws` CLI form. A second policy,
+  `awsds-<env>-bedrock-application`, gives the roles of `application_roles` the calls that keep their own
+  guardrail (Stage 17 10.4, applied 2026-11-19); the deny of an unguarded invocation and the
+  account's guardrail with its enforced configuration (`awscc`) each stand behind a variable that
+  defaults to `false`.
 - **`sandbox/workflows/` `[P]` — the workflows grant** (Stage 6i decision 6): one `awsds-<env>-workflows`
   policy allowing `sagemaker:DescribeProcessingJob` on a processing job that carries no
   `AmazonDataZoneProject` tag, which every name not yet taken satisfies, and `sagemaker:AddTags` of that
-  tag with the caller's own value, which creating a tagged job needs; one attachment per SMUS project
-  role. `SageMakerProcessingOperator` describes the name it proposes before creating the job,
+  tag with the caller's own value, which creating a tagged job needs; and `glue:GetJob` on an untagged job
+  named for the caller's project, which `GlueJobOperator` reads before creating it (Stage 10 decision
+  12, 2026-10-16); one attachment per SMUS project role. The publishing task's
+  `datazone:StartDataSourceRun` is Production's `studio/` slice's alone (Stage 19 decision 17). `SageMakerProcessingOperator` describes the name it proposes before creating the job,
   and the blueprint's policy lets a project role describe only jobs tagged with its project, so without
   this grant the operator fails before any job exists. Like `sandbox/bedrock/`, its role list is
-  written by hand after a project exists. Since Stage 8 decision 19 (written 2026-10-16, unapplied) the
-  slice also holds `awsds-deploy-sandbox-test`, the CI/CD CLI's `test` deploy role (INT-25), on the
-  `deploy-role` module with its own ceiling `awsds-sandbox-deploy-test-boundary`, trusted by the deploy
-  runner's role alone and confined to the `test` project's storage prefix, key, log groups and workflows.
+  written by hand after a project exists. Since Stage 8 decision 19 (applied 2026-10-16) the
+  slice also holds `awsds-deploy-sandbox-test`, the role the pipeline's `bundle` job runs as, reading the
+  `dev` project (INT-25; Stage 19 decision 19 (c)), on the `deploy-role` module with its own ceiling
+  `awsds-sandbox-deploy-test-boundary`, trusted by the deploy runner's role alone and holding the DataZone
+  reads of that project and of the catalog it owns, with no write. That shape is the code's since
+  2026-11-11 and AWS's since the apply of 2026-11-14, which also put the workflows policy on
+  `app-etl-dev`'s role (Stage 19's release T). Stage 17 9.5 adds, applied 2026-11-19, the
+  transform pair, the model's tag, a pending version's registration for each application in
+  `model_applications` and the bundle role's read of its model prefix, and the training pair behind
+  `training_pair_enabled`.
+- **`sandbox/ml/` `[P]` — the notebook grant** (Stage 17 decision 7 (a), applied
+  2026-11-19): one `awsds-<env>-ml` policy allowing `sagemaker:AddTags` of the `AmazonDataZoneProject` tag
+  alone, with the caller's own value, on a model package group that carries no project tag or already the
+  caller's, which creating a tagged group from a notebook needs; one attachment per SMUS project role,
+  `eighth-experimentation`'s and `app-ml-dev`'s. What a workflow's operators create stays in
+  `sandbox/workflows/`; an endpoint configuration, an endpoint, a pipeline or an MLflow App joins this
+  slice once a refusal is measured on it.
+- **`staging/studio/` and `production/studio/` `[P]` — the deployment project's blueprint prerequisites**
+  ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.4), applied 2026-11-11 in
+  two applies, the second adding the two blueprint configurations:
+  `terraform-modules/sagemaker-prereqs/` with `Tooling` and `DataLake` alone, the workflows grant and
+  the deny on a person's session on the project's role. The two are one slice copied
+  but `project-roles.tf` and `fence.tf` (`check-copies.py`), and `sagemaker/` beside each keeps Stage 9's
+  job roles. `fence.tf` names the account's own buckets and repositories the project's role never
+  touches, which the module denies in the D13 boundary (Stage 19 decision 21 (b), `TM-30`), applied
+  2026-11-11 at `sagemaker-prereqs-v0.10.0`. Applied 2026-11-12: the fence's warehouse half, the
+  deny's growth to a warehouse session, and the file one account adds, Production's `warehouse.tf`
+  (the load's session as the project's role) and Staging's `staging-test.tf` (the deploy role's
+  `DESCRIBE` on each product database and on its tables, two Lake Formation grants per database).
+- **`staging/chains/` and `production/chains/` `[P]` — the chain layer above a deployment project's
+  workflows** ([Stage 19](../docs/plan/stages/stage-19-smus-native-data-product.md) step 4.11), applied
+  2026-11-15 in Staging and 2026-11-16 in Production: `terraform-modules/orchestration/` at
+  `orchestration-v0.3.1`, per chain a state machine that finds the workflow the CI/CD CLI created by its
+  name and passes the run the stage's variables, a schedule and a failure rule. Release T's
+  `orchestration/` and `app/app-etl/` slices, which they replaced, retired at Stage 19 item 31.
 
-**`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` pair is specified and unwritten until [Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) step 9. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make down ENV=sandbox` removes the compute and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
+**`warehouse/` (rank 53, `[P]`) and `warehouse-compute/` (rank 54, `[E]`) exist in `sandbox/` since 2026-09-20** ([D40](../docs/plan/decisions/D40-redshift-warehouse.md), [Stage 5b](../docs/plan/stages/stage-05b-redshift-serverless.md) pass 1); the `production/` namespace exists since 2026-10-23 ([Stage 9](../docs/plan/stages/stage-09-deployment-targets.md) 9.1) and `production/warehouse-compute/` was raised for 9.3's SQL on 2026-10-24 and destroyed by the same sitting's `make down`. **It is the tree's only slice that splits one store across two layers**, and the reason is that Redshift Serverless has `create-workgroup` and `delete-workgroup` and nothing in between — no pause, no stop, no zero-capacity setting — so *powered off* means *does not exist*, which is `[E]`. The namespace stays `[P]` because it holds the schemas, the database users, the roles and every `GRANT`, none of which Terraform wrote and none of which a plan can see (§5.1 rule 2). `make up ENV=sandbox` raises the compute only with `GROUPS=redshift` (`slices.py` refusal 11), and `make down ENV=sandbox` removes it and **not** the Redshift Managed Storage, which is the irreducible price of keeping the data. The slice's own README is [`sandbox/warehouse/README.md`](sandbox/warehouse/README.md).
 
 **Two of them apply twice, and the second apply is a different sitting rather than a continuation.** The
-SMUS account association is **console-only — there is no public API** — so the blueprint configurations
-(in each member's `sagemaker/`) and the project profiles (in `governance/`) cannot exist until the
+SMUS account association is an act outside Terraform, the console's or `ram associate-resource-share` on
+the domain's share (`SUP-349`), so the blueprint configurations (in each member's `sagemaker/`, and in
+a deployment target's `studio/`) and the project profiles (in `governance/`) cannot exist until the
 account association exists (it auto-accepts — org-scoped RAM share, no invitation is ever issued;
 measured 2026-08-21). Both halves ride on `SMUS_ASSOCIATED` in `scripts/tfhygiene/backend.py`, a
 list whose rows are **measurements, not intentions**.
@@ -337,10 +402,10 @@ list whose rows are **measurements, not intentions**.
 
 1. **Which account?** → the top-level folder. The account is the only hard boundary AWS offers
    ([`README.md`](../README.md), "Account segregation"), so it is the first cut.
-2. **Which slice?** → the sub-folder, or for an application one folder further down,
-   `<account>/app/<app>/` (Stage 8 decision 12): `layers.slice_dirs_on_disk` is the one reader of that
-   shape, so `make check`, the lock check and the network-doc check see such a slice, and `make up` never
-   applies one (refusal 7). A slice is one Terraform state and one `apply`. The seam between two
+2. **Which slice?** → the sub-folder. `layers.slice_dirs_on_disk` also reads an application's slice one
+   folder further down, `<account>/app/<app>/` (Stage 8 decision 12), a shape no account holds since
+   Stage 19 item 31: an application deploys through the CI/CD CLI. A slice is one Terraform state and one
+   `apply`. The seam between two
    slices is a *reason*, not a size: `identity/` is split into `sso/` and `org-policies/` because the two
    reach their objects through **different delegations**; `production/pki/` is split from `foundation/`
    because foundation is opened to change a CIDR and that edit would otherwise decrypt the root CA; and
@@ -400,7 +465,7 @@ created there, the account has stopped being what it is for.
 | What the policy documents are and what each may not become | [`identity/org-policies/README.md`](identity/org-policies/README.md) |
 | **What every policy statement does, and why it exists** — all four types | [`identity/org-policies/POLICIES.md`](identity/org-policies/POLICIES.md) |
 | **What governs the lake** — bucket-policy branches, the key policy, tag assignments, LF grants | [`data-governance/data/README.md`](data-governance/data/README.md) — the same one-row-each discipline, for the lake's own controls |
-| **What governs the lake's CONSUMER side** — the per-account CMK policy, the account's `DataLakeSettings`, the four re-grants (the derived zone and workgroup left 2026-08-26 — D19 revised) | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module both `data/` slices call, because the design lives once and is applied twice; the persona's identity-side half is `identity/sso/`'s |
+| **What governs the lake's CONSUMER side** — the per-account CMK policy, the account's `DataLakeSettings`, the four re-grants (the derived zone and workgroup left 2026-08-26 — D19 revised) | [`terraform-modules/consumer-data/README.md`](../terraform-modules/consumer-data/README.md) — one README for the module the three consumer `data/` slices call, because the design lives once and is applied per account; the persona's identity-side half is `identity/sso/`'s |
 | Which stage builds a given slice | [`docs/plan/stages/INDEX.md`](../docs/plan/stages/INDEX.md) |
 | What is deployed right now | [`aws/INDEX.md`](../aws/INDEX.md) and [`docs/AWS_STATE.md`](../docs/AWS_STATE.md) |
 

@@ -3,9 +3,11 @@
 # data platform (buckets, CMK, the enforced workgroup), the runtime (the job role under
 # D13, the model package groups with their resource policies), the Lake Formation settings
 # in every account that has any (DT-5), the write share with its links and invitations
-# (INT-03), the drop-box contract from both sides (INT-10), the Staging mirror and the
-# absence that is a control (D20), the escape hatch with its alarm, the persona sets' owed
-# allows read back through the delegated admin, and the job settings on the Workloads OU (DT-11).
+# (INT-03), the drop-box contract from both sides (INT-10), Staging's read-only share and the
+# absence of any copy (decision 3), the escape hatch with its alarm, the persona sets' owed
+# allows read back through the delegated admin, the job settings on the Workloads OU (DT-11), and,
+# since Stage 19 gave each target a SageMaker Unified Studio project, Lake Formation's full-table
+# flag there (DT-13) and what stands between that project's role and the rest of the account (DT-14).
 #
 #   needs:    a live SSO session, and nothing else:
 #
@@ -16,11 +18,14 @@
 #             python3 aws/deploytargets.py -            # CloudShell, ambient credentials
 #   writes:   aws/output/deploytargets.txt   (untracked - see .gitignore)
 #   reads:    s3api get-bucket-*, kms list-aliases/get-key-policy/list-grants,
-#             athena get-work-group, sagemaker list-model-package-groups /
+#             athena get-work-group, logs describe-log-groups,
+#             sagemaker list-model-package-groups /
 #             get-model-package-group-policy, iam get-role/list-role-policies/
 #             get-role-policy, lakeformation get-data-lake-settings/list-permissions,
 #             glue get-databases/get-tables, ram get-resource-share-invitations,
 #             events list-rules, cloudtrail lookup-events, sso-admin (reads only),
+#             resourcegroupstaggingapi get-resources, secretsmanager list-secrets (names and
+#             tag keys, never a value), s3control list-access-grants-locations,
 #             organizations list-roots/list-organizational-units-for-parent/
 #             list-policies-for-target/describe-policy, sts get-caller-identity. It never
 #             creates, updates or deletes anything.
@@ -45,13 +50,16 @@
 #   - Staging's job role is awsds-staging-job-exec (step 4.3)
 #   - the Workloads OU carries awsds-org-scp-ou-workloads, holding sagemaker-denies' five Sids
 #     and DenySageMakerServerlessInference (steps 3.5, 3.7)
+#   - a deployment project's bucket is awsds-<env>-smus-projects (Stage 19 step 4.4), the one
+#     bucket its account's S3 Access Grants locations may name
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - the LF write landing, the direct PutObject dying, the
 #     pickup emptying the letterbox, the console fraction (INT-06) - are the stage's own
 #     (Lesson 20).
 #   - Whether the write share works is 2.4's job run; this file only shows it was granted.
-#   - `Staging` rows appear only once the account is vended and holds a profile.
+#   - `Staging` rows need the `awsds-infra-staging` profile; the account is the renamed
+#     `Development` (Stage 6b), so no vend is owed.
 
 from __future__ import annotations
 
@@ -80,6 +88,7 @@ ALARM_RULE_STATE = "ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS"
 PROD_WG = "awsds-prod-athena"
 STAGING_WG = "awsds-staging-athena"
 STAGING_JOB_ROLE = "awsds-staging-job-exec"
+STAGING_CMK_ALIAS = "alias/awsds-staging-data"  # staging/data/'s key (4.1)
 OUT_BUCKET = "awsds-prod-outputs"
 # consumer-data v0.6.0 (2026-08-26) dropped the derived bucket and the enforced workgroup from
 # the module: D19 was revised and the Interactive derived zone re-homed onto the SMUS project
@@ -92,7 +101,9 @@ MPG_PREFIX = "awsds-prod-model-"
 PROD_CMK_ALIAS = "alias/awsds-prod-data"  # one data CMK per account
 DROPBOX_SUBSTR = "dropbox"
 LAKE_BUCKET_SUBSTR = "awsds-data-"
-MIRROR_DBS = ("raw", "curated")  # the lake databases the Staging catalog mirrors (4.1)
+LAKE_DBS = ("raw", "curated")  # the lake databases a consumer reads through its share (2.1, 4.1)
+# What a read share grants: Staging receives these and nothing else (decision 3).
+READ_PERMISSIONS = {"DESCRIBE", "SELECT"}
 SETS_READ = ("DataScientistProdAccess", "DataScientistStagingAccess")
 WORKLOADS_OU = "Workloads"
 WORKLOADS_DOC = "awsds-org-scp-ou-workloads"
@@ -106,11 +117,78 @@ JOB_DENY_SIDS = (
     "DenySageMakerJobsWithoutVolumeEncryption",
     "DenySageMakerServerlessInference",
 )
-LOOKUP_MAX = 50
+
+# The job log groups each job role's slice declares with a retention (steps 3.1 and 4.3, EXC-10):
+# the names SageMaker and Glue write to by default, which each service creates with no retention
+# when a job runs before the slice (Stage 18 4.4 did so in Staging on 2026-10-19).
+JOB_LOG_GROUPS = (
+    "/aws/sagemaker/ProcessingJobs",
+    "/aws/sagemaker/TrainingJobs",
+    "/aws/sagemaker/TransformJobs",
+    "/aws-glue/jobs/output",
+    "/aws-glue/jobs/error",
+    "/aws-glue/jobs/logs-v2",
+)
+
+# Step 5.1's marks in DataScientistProdAccess, one apply: the workgroup, the debug role and the
+# Redshift deny land together, so some of them without the others is a partial 5.3.
+PROD_SET_OWED = (PROD_WG, DEBUG_ROLE, "DenyMintingARedshiftDatabaseSession")
+# Step 5.1's allows are a customer-managed policy production/data/ creates and the set attaches by
+# name (backend.py PERSONA_PRODUCTION_POLICY_NAME): the inline document holds the denies and the
+# Lake Formation read, the policy holds every allow that names an object of Production's. DT-10
+# reads both, so the markers are searched in the two documents together.
+PROD_PERSONA_POLICY = "awsds-prod-data-scientist"
 
 # The branches the outputs bucket's network deny carries (Stage 9 step 1.1, D39): the endpoint
 # and service branches, and a principal branch for DataScientistProdAccess's read of the named
 # prefixes. An address branch is refused: a person reaches AWS by identity from any network.
+# Stage 19: each target holds a SageMaker Unified Studio project whose role runs on AWS's managed
+# policies (TM-30). Those policies select resources by the tags below, allow kms through S3 on every
+# key and glue on the whole catalog, so what keeps the role inside its project is what these names
+# do not reach: no hub resource wears a selector tag, the Access Grants instance names the projects
+# bucket alone, and Lake Formation grants the lake's databases to named principals only.
+FULL_TABLE_ACCESS_OFF = (
+    PROD_PROFILE,
+    STAGING_PROFILE,
+)  # step 4.7; the lake's flag is on by decision 13
+PROJECTS_BUCKET = {
+    PROD_PROFILE: "awsds-prod-smus-projects",
+    STAGING_PROFILE: "awsds-staging-smus-projects",
+}
+SELECTOR_TAG_ALL = "for-use-with-all-datazone-projects"
+SELECTOR_TAGS = ("AmazonDataZoneProject", "AmazonDataZoneDomain", SELECTOR_TAG_ALL)
+HUB_SECRET_PREFIXES = ("awsds-", "redshift!")  # the estate's own secrets, never a project's
+FENCED_DBS = LAKE_DBS  # the databases a project's role holds nothing on
+# Stage 19 decision 21 (b): the same reach denied in the D13 boundary of each target, so that it
+# binds whatever version of AWS's policies the role carries. The statements are
+# terraform-modules/sagemaker-prereqs/boundary.tf's; the buckets are <env>/studio/fence.tf's list.
+BOUNDARY_NAME = {
+    PROD_PROFILE: "awsds-prod-project-boundary",
+    STAGING_PROFILE: "awsds-staging-project-boundary",
+}
+FENCE_SIDS = (
+    "DenyTheAccountsOwnBuckets",
+    "DenyCustomerKeysButTheProjectKey",
+    "DenyTheAccountsOwnSecrets",
+    "DenyServicesNoProjectUsesHere",
+)
+FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes")  # one of the two
+# The services DenyServicesNoProjectUsesHere names, <env>/studio/fence.tf's fenced_services: the
+# generative ones in both targets; the warehouse's doors but redshift-serverless in Production,
+# which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging, which holds
+# no warehouse.
+FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "codewhisperer", "q")
+FENCED_SERVICES = {
+    PROD_PROFILE: (*FENCED_GENERATIVE, "redshift-data", "sqlworkbench"),
+    STAGING_PROFILE: (
+        *FENCED_GENERATIVE,
+        "redshift",
+        "redshift-data",
+        "redshift-serverless",
+        "sqlworkbench",
+    ),
+}
+
 POLICY_BRANCHES = (
     ("vpce", "aws:SourceVpce"),
     ("via", "aws:ViaAWSService"),
@@ -264,18 +342,19 @@ def main(argv: list) -> int:
             wg_row = json.loads(res.stdout)
 
     # ----------------------------- 3. the runtime: job role (D13) and the registry (D28)
-    job_role_state = "(not measured)"
-    job_trust_bad: list = []
-    job_lake_hits: list = []  # (policy, resource) - an s3 statement reaching a lake bucket
-    mpg_rows: list = []  # (group, policy state)
-    if prod_live:
-        cli = cli_for(PROD_PROFILE)
-        note(f"measuring {PROD_PROFILE} (job role, registry) ...")
+    def read_job_role(cli: AwsCli, role: str, dropbox_excepted: bool) -> tuple:
+        """The role's state, its trust findings, and its s3 allows reaching a lake bucket (D13).
+
+        The drop-box is the producer's one excepted bucket (Stage 5a decision 3). In Staging it is a
+        finding like every other lake bucket: it reads the lake through Lake Formation alone (D13).
+        """
+        trust_bad: list = []
+        lake_hits: list = []  # (policy, resource) - an s3 statement reaching a lake bucket
         res = cli.run(
             "iam",
             "get-role",
             "--role-name",
-            JOB_ROLE,
+            role,
             "--query",
             "Role.AssumeRolePolicyDocument",
             "--output",
@@ -284,51 +363,64 @@ def main(argv: list) -> int:
             tolerate="NoSuchEntity",
         )
         if res.tolerated:
-            job_role_state = "(absent)"
-        elif res.ok and res.stdout:
-            job_role_state = "present"
-            for st in _stmts(json.loads(res.stdout)):
-                principal = st.get("Principal", {}) or {}
-                services = _as_list(principal.get("Service"))
-                for svc in services:
-                    if str(svc) not in ("glue.amazonaws.com", "sagemaker.amazonaws.com"):
-                        job_trust_bad.append(f"service {svc}")
-                if principal.get("AWS") or principal.get("Federated"):
-                    job_trust_bad.append("a non-service principal in the trust policy")
-            res = cli.run(
+            return "(absent)", trust_bad, lake_hits
+        if not (res.ok and res.stdout):
+            return "(failed)", trust_bad, lake_hits
+        for st in _stmts(json.loads(res.stdout)):
+            principal = st.get("Principal", {}) or {}
+            for svc in _as_list(principal.get("Service")):
+                if str(svc) not in ("glue.amazonaws.com", "sagemaker.amazonaws.com"):
+                    trust_bad.append(f"service {svc}")
+            if principal.get("AWS") or principal.get("Federated"):
+                trust_bad.append("a non-service principal in the trust policy")
+        res = cli.run(
+            "iam",
+            "list-role-policies",
+            "--role-name",
+            role,
+            "--query",
+            "PolicyNames",
+            "--output",
+            "json",
+            log=False,
+        )
+        for pname in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+            r = cli.run(
                 "iam",
-                "list-role-policies",
+                "get-role-policy",
                 "--role-name",
-                JOB_ROLE,
+                role,
+                "--policy-name",
+                pname,
                 "--query",
-                "PolicyNames",
+                "PolicyDocument",
                 "--output",
                 "json",
                 log=False,
             )
-            for pname in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
-                r = cli.run(
-                    "iam",
-                    "get-role-policy",
-                    "--role-name",
-                    JOB_ROLE,
-                    "--policy-name",
-                    pname,
-                    "--query",
-                    "PolicyDocument",
-                    "--output",
-                    "json",
-                    log=False,
-                )
-                if not (r.ok and r.stdout):
+            if not (r.ok and r.stdout):
+                continue
+            for st in _stmts(json.loads(r.stdout)):
+                actions = " ".join(_as_list(st.get("Action")))
+                if "s3:" not in actions or str(st.get("Effect")) != "Allow":
                     continue
-                for st in _stmts(json.loads(r.stdout)):
-                    actions = " ".join(_as_list(st.get("Action")))
-                    if "s3:" not in actions or str(st.get("Effect")) != "Allow":
-                        continue
-                    for arn in _as_list(st.get("Resource")):
-                        if LAKE_BUCKET_SUBSTR in str(arn) and DROPBOX_SUBSTR not in str(arn):
-                            job_lake_hits.append((str(pname), str(arn)))
+                for arn in _as_list(st.get("Resource")):
+                    if LAKE_BUCKET_SUBSTR in str(arn) and not (
+                        dropbox_excepted and DROPBOX_SUBSTR in str(arn)
+                    ):
+                        lake_hits.append((str(pname), str(arn)))
+        return "present", trust_bad, lake_hits
+
+    job_role_state = "(not measured)"
+    job_trust_bad: list = []
+    job_lake_hits: list = []  # (policy, resource) - an s3 statement reaching a lake bucket
+    mpg_rows: list = []  # (group, policy state)
+    if prod_live:
+        cli = cli_for(PROD_PROFILE)
+        note(f"measuring {PROD_PROFILE} (job role, registry) ...")
+        job_role_state, job_trust_bad, job_lake_hits = read_job_role(
+            cli, JOB_ROLE, dropbox_excepted=True
+        )
         res = cli.run(
             "sagemaker",
             "list-model-package-groups",
@@ -364,9 +456,52 @@ def main(argv: list) -> int:
             else:
                 mpg_rows.append((group, "(read failed)"))
 
+    # ------------------- 3b. the job log groups, both accounts (steps 3.1 and 4.3, EXC-10)
+    log_rows: list = []  # (profile, group, retention, key) - "(absent)" when the group does not exist
+    data_key_arns: dict = {}  # profile -> the account data key's ARN, the job groups' key
+    for p, alias in ((PROD_PROFILE, PROD_CMK_ALIAS), (STAGING_PROFILE, STAGING_CMK_ALIAS)):
+        if p not in live:
+            continue
+        found: dict = {}
+        for prefix in ("/aws/sagemaker/", "/aws-glue/"):
+            res = cli_for(p).run(
+                "logs",
+                "describe-log-groups",
+                "--log-group-name-prefix",
+                prefix,
+                "--query",
+                "logGroups[].[logGroupName,retentionInDays,kmsKeyId]",
+                "--output",
+                "json",
+                log=False,
+            )
+            for name, days, key in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+                found[str(name)] = (days, key)
+        res = cli_for(p).run(
+            "kms",
+            "describe-key",
+            "--key-id",
+            alias,
+            "--query",
+            "KeyMetadata.Arn",
+            "--output",
+            "text",
+            log=False,
+            tolerate="NotFoundException",
+        )
+        if res.ok and not res.tolerated and res.stdout.strip():
+            data_key_arns[p] = res.stdout.strip()
+        for group in JOB_LOG_GROUPS:
+            if group not in found:
+                log_rows.append((p, group, "(absent)", "-"))
+            else:
+                days, key = found[group]
+                log_rows.append((p, group, f"{days}d" if days else "(none)", key or "(AWS-owned)"))
+
     # -------------------- 4. the Lake Formation settings, every account that has any
-    lf_rows: list = []  # (profile, parameters, create defaults, admins)
-    lf_data_params: dict = {}
+    lf_rows: list = []  # (profile, parameters, create defaults, full-table flag, admins)
+    lf_params: dict = {}  # profile -> DataLakeSettings.Parameters
+    lf_flag: dict = {}  # profile -> AllowFullTableExternalDataAccess, absent read as False
     for p in (DATA_PROFILE, PROD_PROFILE, STAGING_PROFILE):
         if p not in live:
             continue
@@ -376,60 +511,188 @@ def main(argv: list) -> int:
             "get-data-lake-settings",
             "--query",
             "DataLakeSettings.[Parameters,CreateDatabaseDefaultPermissions,"
-            "CreateTableDefaultPermissions,DataLakeAdmins[].DataLakePrincipalIdentifier]",
+            "CreateTableDefaultPermissions,DataLakeAdmins[].DataLakePrincipalIdentifier,"
+            "AllowFullTableExternalDataAccess]",
             "--output",
             "json",
             log=False,
         )
         if not (res.ok and res.stdout):
-            lf_rows.append((p, "(read failed)", "-", "-"))
+            lf_rows.append((p, "(read failed)", "-", "-", "-"))
             continue
-        params, db_defaults, tb_defaults, admins = json.loads(res.stdout)
-        if p == DATA_PROFILE:
-            lf_data_params = params or {}
+        params, db_defaults, tb_defaults, admins, full_table = json.loads(res.stdout)
+        lf_params[p] = params or {}
+        lf_flag[p] = bool(full_table)
         param_txt = ",".join(f"{k}={v}" for k, v in sorted((params or {}).items())) or "(empty)"
         defaults_txt = f"db:{len(db_defaults or [])} tbl:{len(tb_defaults or [])}"
         admin_txt = " ".join(str(a).rsplit("/", 1)[-1] for a in (admins or [])) or "(none)"
-        lf_rows.append((p, param_txt, defaults_txt, admin_txt))
+        lf_rows.append((p, param_txt, defaults_txt, "on" if full_table else "off", admin_txt))
+
+    # --------- 11. what stands between a deployment project's role and its account (TM-30)
+    fence: dict = {}  # profile -> the readings below; a key is absent when its call failed
+    for p in (PROD_PROFILE, STAGING_PROFILE):
+        if p not in live:
+            continue
+        cli = cli_for(p)
+        got: dict = {}
+        res = cli.run(
+            "resourcegroupstaggingapi",
+            "get-resources",
+            "--tag-filters",
+            f"Key={SELECTOR_TAG_ALL}",
+            "--query",
+            "ResourceTagMappingList[].ResourceARN",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            got["tagged"] = json.loads(res.stdout or "[]")
+        res = cli.run(
+            "secretsmanager",
+            "list-secrets",
+            "--query",
+            "SecretList[].[Name,Tags[].Key]",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            hub = [
+                (name, keys or [])
+                for name, keys in json.loads(res.stdout or "[]")
+                if name.startswith(HUB_SECRET_PREFIXES)
+            ]
+            got["secrets"] = len(hub)
+            got["secrets_tagged"] = sorted(n for n, keys in hub if set(keys) & set(SELECTOR_TAGS))
+        res = cli.run(
+            "s3control",
+            "list-access-grants-locations",
+            "--account-id",
+            account_of.get(p, ""),
+            "--query",
+            "AccessGrantsLocationsList[].LocationScope",
+            "--output",
+            "json",
+            tolerate="AccessGrantsInstanceNotExists|NoSuchAccessGrantsInstance",
+        )
+        if res.tolerated:
+            got["locations"] = None  # no instance: no project was ever provisioned here
+        elif res.ok:
+            got["locations"] = json.loads(res.stdout or "[]")
+        open_grants: list = []
+        listed = True
+        for db in FENCED_DBS:
+            for resource in (
+                {"Database": {"Name": db}},
+                {"Table": {"DatabaseName": db, "TableWildcard": {}}},
+            ):
+                listing = cli.pages(
+                    "lakeformation",
+                    "list-permissions",
+                    "--resource",
+                    json.dumps(resource),
+                    tolerate="EntityNotFoundException|InvalidInputException",
+                )
+                if not listing.complete and not listing.last.tolerated:
+                    listed = False
+                for grant in listing.items("PrincipalResourcePermissions"):
+                    who = grant.get("Principal", {}).get("DataLakePrincipalIdentifier", "")
+                    if who == "IAM_ALLOWED_PRINCIPALS" or who.endswith(":IAMPrincipals"):
+                        kind = "database" if "Database" in resource else "tables"
+                        open_grants.append(
+                            f"{db} {kind}: {who.rsplit(':', 1)[-1]} "
+                            f"{','.join(grant.get('Permissions', []))}"
+                        )
+        if listed:
+            got["open_grants"] = sorted(set(open_grants))
+        res = cli.run(
+            "iam",
+            "list-policies",
+            "--scope",
+            "Local",
+            "--query",
+            f"Policies[?PolicyName=='{BOUNDARY_NAME[p]}'].[Arn,DefaultVersionId] | [0]",
+            "--output",
+            "json",
+        )
+        found = json.loads(res.stdout or "null") if res.ok else None
+        if found:
+            res = cli.run(
+                "iam",
+                "get-policy-version",
+                "--policy-arn",
+                found[0],
+                "--version-id",
+                found[1],
+                "--query",
+                "PolicyVersion.Document.Statement",
+                "--output",
+                "json",
+            )
+            if res.ok:
+                statements = json.loads(res.stdout or "[]")
+                got["boundary_sids"] = [s.get("Sid", "") for s in statements]
+                got["boundary_buckets"] = sorted(
+                    {
+                        arn.split(":::", 1)[1].split("/", 1)[0]
+                        for s in statements
+                        if s.get("Sid") == "DenyTheAccountsOwnBuckets"
+                        for arn in _as_list(s.get("Resource"))
+                    }
+                )
+                got["boundary_services"] = sorted(
+                    {
+                        action.split(":", 1)[0]
+                        for s in statements
+                        if s.get("Sid") == "DenyServicesNoProjectUsesHere"
+                        for action in _as_list(s.get("Action"))
+                    }
+                )
+        elif res.ok:
+            got["boundary_sids"] = None  # no boundary: the slice is not applied here
+        res = cli.run("s3api", "list-buckets", "--query", "Buckets[].Name", "--output", "json")
+        if res.ok:
+            got["buckets"] = json.loads(res.stdout or "[]")
+        fence[p] = got
 
     # ------------------------- 5. the write share, the links, the invitations (INT-03)
     share_perm_rows: list = []  # (principal tail, resource, permissions)
     write_share_seen = False
+    staging_account = account_of.get(STAGING_PROFILE)
+    staging_share_rows: list = []  # (resource, permissions) granted to Staging's account
+    staging_write_grants: list = []  # (resource, permissions beyond DESCRIBE and SELECT)
+    staging_local_dbs: list = []  # Staging's databases that are not resource links
+    share_listed = False  # the grantor's listing read to its last page
     link_rows: list = []  # (profile, database, target catalog tail, target database)
     pending_invites: list = []  # (profile, share name, status)
     if data_live:
         cli = cli_for(DATA_PROFILE)
         note(f"measuring {DATA_PROFILE} (grantor permissions) ...")
-        res = cli.run(
-            "lakeformation",
-            "list-permissions",
-            "--output",
-            "json",
-            log=False,
-        )
-        if res.ok and res.stdout:
-            for entry in json.loads(res.stdout).get("PrincipalResourcePermissions", []):
-                principal = str(
-                    (entry.get("Principal") or {}).get("DataLakePrincipalIdentifier") or ""
-                )
-                if prod_account and prod_account not in principal:
-                    continue
-                if not prod_account:
-                    continue
-                perms = ",".join(entry.get("Permissions") or [])
-                resource = entry.get("Resource") or {}
-                if "Table" in resource:
-                    r = resource["Table"]
-                    where = f"table:{r.get('DatabaseName')}.{r.get('Name') or '*'}"
-                elif "Database" in resource:
-                    where = f"database:{resource['Database'].get('Name')}"
-                else:
-                    where = next(iter(resource.keys()), "?")
-                share_perm_rows.append((principal[-12:], where, perms))
-                if "INSERT" in perms:
-                    write_share_seen = True
-        elif not res.ok:
-            logerr(DATA_PROFILE, "lakeformation list-permissions", res.stderr)
+        # ListPermissions has no CLI paginator: one call answers the first page and a NextToken.
+        listing = cli.pages("lakeformation", "list-permissions")
+        share_listed = listing.complete
+        for entry in listing.items("PrincipalResourcePermissions"):
+            principal = str((entry.get("Principal") or {}).get("DataLakePrincipalIdentifier") or "")
+            granted = list(entry.get("Permissions") or [])
+            optioned = list(entry.get("PermissionsWithGrantOption") or [])
+            perms = ",".join(granted)
+            resource = entry.get("Resource") or {}
+            if "Table" in resource:
+                r = resource["Table"]
+                where = f"table:{r.get('DatabaseName')}.{r.get('Name') or '*'}"
+            elif "Database" in resource:
+                where = f"database:{resource['Database'].get('Name')}"
+            else:
+                where = next(iter(resource.keys()), "?")
+            if staging_account and staging_account in principal:
+                staging_share_rows.append((where, perms))
+                beyond = sorted(set(granted + optioned) - READ_PERMISSIONS)
+                if beyond:
+                    staging_write_grants.append((where, ",".join(beyond)))
+            if not prod_account or prod_account not in principal:
+                continue
+            share_perm_rows.append((principal[-12:], where, perms))
+            if "INSERT" in perms:
+                write_share_seen = True
     for p in (PROD_PROFILE, STAGING_PROFILE):
         if p not in live:
             continue
@@ -448,6 +711,8 @@ def main(argv: list) -> int:
         ):
             if target_catalog:
                 link_rows.append((p, str(name), str(target_catalog)[-4:], str(target_db)))
+            elif p == STAGING_PROFILE:
+                staging_local_dbs.append(str(name))
         res = cli.run(
             "ram",
             "get-resource-share-invitations",
@@ -543,17 +808,20 @@ def main(argv: list) -> int:
             else:
                 dropbox_key_names_role = "(no drop-box key alias)"
 
-    # ------------------- 7. the Staging mirror, and the absence that is a control (D20)
-    staging_links_to_data: list = []  # resource links pointing at Data Governance
-    mirror_rows: list = []  # (database, lake tables, staging tables, verdict)
+    # --------------------------- 7. Staging's read of the lake, through its share (decision 3)
+    staging_links_to_data: list = []  # resource links resolving into Data Governance
+    staging_copies: list = []  # (local database, table) named like a lake table
     staging_wg_row = None
     staging_job_state = "(not measured)"
+    staging_trust_bad: list = []
+    staging_lake_hits: list = []  # (policy, resource) - any lake bucket, the drop-box included
+    staging_cmk_present = False
     if staging_live:
         for p, db, catalog_tail, target_db in link_rows:
             if p == STAGING_PROFILE and data_account and data_account.endswith(catalog_tail):
                 staging_links_to_data.append((db, target_db))
         cli = cli_for(STAGING_PROFILE)
-        note(f"measuring {STAGING_PROFILE} (mirror) ...")
+        note(f"measuring {STAGING_PROFILE} (the read share) ...")
         res = cli.run(
             "athena",
             "get-work-group",
@@ -569,50 +837,49 @@ def main(argv: list) -> int:
         )
         if res.ok and not res.tolerated and res.stdout:
             staging_wg_row = json.loads(res.stdout)
-        res = cli.run(
-            "iam",
-            "get-role",
-            "--role-name",
-            STAGING_JOB_ROLE,
-            "--query",
-            "Role.RoleName",
-            "--output",
-            "text",
-            log=False,
-            tolerate="NoSuchEntity",
+        staging_job_state, staging_trust_bad, staging_lake_hits = read_job_role(
+            cli, STAGING_JOB_ROLE, dropbox_excepted=False
         )
-        staging_job_state = "(absent)" if res.tolerated else ("present" if res.ok else "(failed)")
-        if data_live:
-            for db in MIRROR_DBS:
-                lake_tables: set = set()
-                staging_tables: set = set()
-                for profile, sink in (
-                    (DATA_PROFILE, lake_tables),
-                    (STAGING_PROFILE, staging_tables),
-                ):
-                    r = cli_for(profile).run(
-                        "glue",
-                        "get-tables",
-                        "--database-name",
-                        db,
-                        "--query",
-                        "TableList[].Name",
-                        "--output",
-                        "json",
-                        log=False,
-                        tolerate="EntityNotFoundException",
-                    )
-                    if r.ok and not r.tolerated and r.stdout:
-                        sink.update(str(t) for t in json.loads(r.stdout))
-                if not staging_tables and not lake_tables:
-                    verdict = "(neither exists)"
-                elif staging_tables == lake_tables:
-                    verdict = "mirrored"
-                else:
-                    missing = lake_tables - staging_tables
-                    extra = staging_tables - lake_tables
-                    verdict = f"DIVERGES (missing {len(missing)}, extra {len(extra)})"
-                mirror_rows.append((db, str(len(lake_tables)), str(len(staging_tables)), verdict))
+        res = cli.run(
+            "kms", "list-aliases", "--query", "Aliases[].AliasName", "--output", "json", log=False
+        )
+        aliases = json.loads(res.stdout or "[]") if res.ok and res.stdout else []
+        staging_cmk_present = STAGING_CMK_ALIAS in aliases
+        # A copy reads as a local table carrying a lake table's name: the application's own tables are
+        # its schemas, and a governed table is read through the links, never re-created here.
+        if data_live and staging_local_dbs:
+            lake_tables: set = set()
+            for db in LAKE_DBS:
+                r = cli_for(DATA_PROFILE).run(
+                    "glue",
+                    "get-tables",
+                    "--database-name",
+                    db,
+                    "--query",
+                    "TableList[].Name",
+                    "--output",
+                    "json",
+                    log=False,
+                    tolerate="EntityNotFoundException",
+                )
+                if r.ok and not r.tolerated and r.stdout:
+                    lake_tables.update(str(t) for t in json.loads(r.stdout))
+            for db in staging_local_dbs:
+                r = cli.run(
+                    "glue",
+                    "get-tables",
+                    "--database-name",
+                    db,
+                    "--query",
+                    "TableList[].Name",
+                    "--output",
+                    "json",
+                    log=False,
+                    tolerate="EntityNotFoundException",
+                )
+                for t in json.loads(r.stdout or "[]") if r.ok and r.stdout else []:
+                    if str(t) in lake_tables:
+                        staging_copies.append((db, str(t)))
 
     # ------------------------------ 8. the escape hatch: role, alarm, assumptions (step 6)
     debug_state = "(not measured)"
@@ -623,6 +890,8 @@ def main(argv: list) -> int:
     debug_session_max = "-"
     debug_rules: list = []  # (rule, state)
     debug_events: list = []  # (time, caller tail)
+    debug_arn = ""
+    debug_read = False  # the role's AssumeRole history answered
     if prod_live:
         cli = cli_for(PROD_PROFILE)
         note(f"measuring {PROD_PROFILE} (escape hatch) ...")
@@ -632,7 +901,7 @@ def main(argv: list) -> int:
             "--role-name",
             DEBUG_ROLE,
             "--query",
-            "Role.[AssumeRolePolicyDocument,MaxSessionDuration]",
+            "Role.[AssumeRolePolicyDocument,MaxSessionDuration,Arn]",
             "--output",
             "json",
             log=False,
@@ -642,7 +911,7 @@ def main(argv: list) -> int:
             debug_state = "(absent)"
         elif res.ok and res.stdout:
             debug_state = "present"
-            trust, max_duration = json.loads(res.stdout)
+            trust, max_duration, debug_arn = json.loads(res.stdout)
             debug_session_max = str(max_duration)
             for st in _stmts(trust):
                 cond = (st.get("Condition") or {}).get("DateLessThan") or {}
@@ -670,20 +939,23 @@ def main(argv: list) -> int:
         for rname, state in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
             if DEBUG_RULE_SUBSTR in str(rname):
                 debug_rules.append((str(rname), str(state)))
-        res = cli.run(
-            "cloudtrail",
-            "lookup-events",
-            "--lookup-attributes",
-            "AttributeKey=EventName,AttributeValue=AssumeRole",
-            "--max-results",
-            str(LOOKUP_MAX),
-            "--query",
-            "Events[].CloudTrailEvent",
-            "--output",
-            "json",
-            log=False,
-        )
-        for raw in json.loads(res.stdout or "[]") if res.ok and res.stdout else []:
+        # Looked up by the role's ARN, every page: Production held 80,211 AssumeRole events of
+        # every kind on 2026-10-21, about 1,100 a day, and the latest 50 spanned 95 minutes.
+        raws: list = []
+        if debug_arn:
+            res = cli.run(
+                "cloudtrail",
+                "lookup-events",
+                "--lookup-attributes",
+                f"AttributeKey=ResourceName,AttributeValue={debug_arn}",
+                "--query",
+                "Events[?EventName=='AssumeRole'].CloudTrailEvent",
+                "--output",
+                "json",
+            )
+            debug_read = res.ok
+            raws = json.loads(res.stdout or "[]") if res.ok else []
+        for raw in raws:
             try:
                 ev = json.loads(raw)
             except (TypeError, ValueError):
@@ -695,7 +967,7 @@ def main(argv: list) -> int:
             debug_events.append((str(ev.get("eventTime") or "-"), caller.rsplit("/", 1)[-1][:40]))
 
     # --------------------- 9. the persona sets' owed allows, read back (step 5, D18)
-    set_rows: list = []  # (set, finding)
+    set_rows: list = []  # (set, finding, verdict: ok, owed, partial or bad)
     if identity_live:
         cli = cli_for(IDENTITY_PROFILE)
         note(f"measuring {IDENTITY_PROFILE} (permission sets) ...")
@@ -710,6 +982,7 @@ def main(argv: list) -> int:
         )
         instance = (res.stdout or "").strip() if res.ok else ""
         inline_by_name: dict = {}
+        prod_refs: list = []
         if instance:
             res = cli.run(
                 "sso-admin",
@@ -753,22 +1026,80 @@ def main(argv: list) -> int:
                     log=False,
                 )
                 inline_by_name[name] = r.stdout or "" if r.ok else ""
+                if name == "DataScientistProdAccess":
+                    r = cli.run(
+                        "sso-admin",
+                        "list-customer-managed-policy-references-in-permission-set",
+                        "--instance-arn",
+                        instance,
+                        "--permission-set-arn",
+                        ps_arn,
+                        "--query",
+                        "CustomerManagedPolicyReferences[].Name",
+                        "--output",
+                        "json",
+                        log=False,
+                    )
+                    prod_refs = json.loads(r.stdout or "[]") if r.ok and r.stdout else []
         prod_inline = inline_by_name.get("DataScientistProdAccess", "")
+        # The managed half (step 5.1): the attached policy's document, read in Production. Absent
+        # from the set's references or from the account, the inline document alone is searched,
+        # and the markers it lacks read as owed.
+        prod_managed = ""
+        if prod_inline and PROD_PERSONA_POLICY in prod_refs and prod_live and prod_account:
+            pcli = cli_for(PROD_PROFILE)
+            parn = f"arn:aws:iam::{prod_account}:policy/{PROD_PERSONA_POLICY}"
+            r = pcli.run(
+                "iam",
+                "get-policy",
+                "--policy-arn",
+                parn,
+                "--query",
+                "Policy.DefaultVersionId",
+                "--output",
+                "text",
+                log=False,
+            )
+            version = (r.stdout or "").strip() if r.ok else ""
+            if version:
+                r = pcli.run(
+                    "iam",
+                    "get-policy-version",
+                    "--policy-arn",
+                    parn,
+                    "--version-id",
+                    version,
+                    "--query",
+                    "PolicyVersion.Document",
+                    "--output",
+                    "json",
+                    log=False,
+                )
+                prod_managed = r.stdout or "" if r.ok else ""
         if prod_inline:
+            searched = prod_inline + prod_managed
+            marks = [m for m in PROD_SET_OWED if m in searched]
+            attached = PROD_PERSONA_POLICY in prod_refs
             set_rows.append(
                 (
                     "DataScientistProdAccess",
-                    f"names {PROD_WG}: {'yes' if PROD_WG in prod_inline else 'NO (owed by 5.1)'}; "
-                    f"names {DEBUG_ROLE}: {'yes' if DEBUG_ROLE in prod_inline else 'NO (owed by 5.1)'}",
+                    "; ".join(f"{m}: {'yes' if m in marks else 'no'}" for m in PROD_SET_OWED)
+                    + f"; {PROD_PERSONA_POLICY}: {'attached' if attached else 'not attached'}",
+                    "ok"
+                    if len(marks) == len(PROD_SET_OWED) and attached
+                    else ("owed" if not marks else "partial"),
                 )
             )
         staging_inline = inline_by_name.get("DataScientistStagingAccess", "")
         if staging_inline:
+            write_denied = "DenyEveryWrite" in staging_inline
+            athena_absent = "athena:StartQueryExecution" not in staging_inline
             set_rows.append(
                 (
                     "DataScientistStagingAccess",
-                    f"DenyEveryWrite: {'yes' if 'DenyEveryWrite' in staging_inline else 'MISSING'}; "
-                    f"athena allow: {'ABSENT (correct)' if 'athena:StartQueryExecution' not in staging_inline else 'PRESENT - forbidden'}",
+                    f"DenyEveryWrite: {'yes' if write_denied else 'MISSING'}; "
+                    f"athena allow: {'absent (correct)' if athena_absent else 'present - forbidden'}",
+                    "ok" if write_denied and athena_absent else "bad",
                 )
             )
 
@@ -826,12 +1157,27 @@ def main(argv: list) -> int:
                 content = {}
             workloads_sids = [str(st.get("Sid") or "") for st in _stmts(content)]
 
-    built = (
-        job_role_state == "present"
-        or bool(mpg_rows)
+    # Each check fails on an absence only once the pass that creates the object has applied, and
+    # notes it before (Lesson 50): a stage applied pass by pass would otherwise read red at every
+    # pass but its last. A pass is read from its own objects:
+    #   pass 1  production/sagemaker/ - the job role, a package group or the debug role stands
+    #   pass 3  production/data/ - a bucket, the workgroup or the account data CMK stands; its first,
+    #           targeted apply seats Production's data lake administrator (1.3, Recipe D)
+    #   pass 4  identity/sso/ - one of step 5.1's statements is in DataScientistProdAccess (DT-10)
+    #   pass 5  staging/data/ - a resource link, the workgroup or the account data CMK stands, and
+    #           its targeted apply seats Staging's administrator; staging/sagemaker/ - the job role
+    runtime_built = job_role_state == "present" or bool(mpg_rows) or debug_state == "present"
+    prod_data_built = (
+        cmk_present
         or wg_row is not None
         or any(state == "present" for _b, state, *_ in bucket_rows)
     )
+    staging_data_built = (
+        bool(staging_links_to_data) or staging_wg_row is not None or staging_cmk_present
+    )
+    lf_seated = {
+        p: admins != "(none)" for p, _params, _defaults, _flag, admins in lf_rows if admins != "-"
+    }
 
     # -------------------------------------------------------------------------- the checks
 
@@ -839,9 +1185,14 @@ def main(argv: list) -> int:
     if prod_live:
         for bucket, state, versioning, sse, branches, expiry in bucket_rows:
             if state == "(absent)":
-                (checks.fail if built else checks.note)(
-                    "DT-1", f"bucket {bucket}", "absent - expected before step 1.5."
-                )
+                if prod_data_built:
+                    checks.fail(
+                        "DT-1",
+                        f"bucket {bucket}",
+                        "absent while production/data/'s other objects stand - a partial 1.5.",
+                    )
+                else:
+                    checks.note("DT-1", f"bucket {bucket}", "absent - expected before step 1.5.")
                 continue
             problems = []
             if versioning != "Enabled":
@@ -864,7 +1215,7 @@ def main(argv: list) -> int:
                 checks.ok(
                     "DT-1", f"bucket {bucket}", f"{sse}, branches {branches}, expiry {expiry}"
                 )
-        if built and not cmk_present:
+        if prod_data_built and not cmk_present:
             checks.note(
                 "DT-1",
                 PROD_CMK_ALIAS,
@@ -874,8 +1225,12 @@ def main(argv: list) -> int:
     # DT-2: the workgroup enforces its configuration - the documented override (1.2).
     if prod_live:
         if wg_row is None:
-            (checks.fail if built else checks.note)(
-                "DT-2", f"workgroup {PROD_WG}", "absent - expected before step 1.5."
+            (checks.fail if prod_data_built else checks.note)(
+                "DT-2",
+                f"workgroup {PROD_WG}",
+                "absent while production/data/'s other objects stand - a partial 1.5."
+                if prod_data_built
+                else "absent - expected before step 1.5.",
             )
         else:
             enforce, location, cutoff, encryption = wg_row
@@ -900,10 +1255,12 @@ def main(argv: list) -> int:
     # DT-3: every package group carries a resource policy (D28 item 6, step 3.2).
     if prod_live:
         if not mpg_rows:
-            (checks.fail if built else checks.note)(
+            (checks.fail if runtime_built else checks.note)(
                 "DT-3",
                 f"package groups {MPG_PREFIX}*",
-                "none exist - expected before step 3.4.",
+                "none while production/sagemaker/'s other objects stand - a partial 3.4."
+                if runtime_built
+                else "none exist - expected before step 3.4.",
             )
         else:
             for group, state in mpg_rows:
@@ -919,8 +1276,12 @@ def main(argv: list) -> int:
     # DT-4: the job role - service-only trust, and no s3 allow reaching a lake bucket (D13).
     if prod_live:
         if job_role_state == "(absent)":
-            (checks.fail if built else checks.note)(
-                "DT-4", f"role {JOB_ROLE}", "absent - expected before step 3.4."
+            (checks.fail if runtime_built else checks.note)(
+                "DT-4",
+                f"role {JOB_ROLE}",
+                "absent while production/sagemaker/'s other objects stand - a partial 3.4."
+                if runtime_built
+                else "absent - expected before step 3.4.",
             )
         elif job_role_state == "present":
             if job_trust_bad:
@@ -948,42 +1309,91 @@ def main(argv: list) -> int:
                     "no inline s3 allow reaches a lake bucket (drop-box excepted)",
                 )
 
-    # DT-5: the LF settings discipline, three accounts (DL-5's twin).
-    for p, param_txt, defaults_txt, admin_txt in lf_rows:
-        if p == DATA_PROFILE:
-            version = str(lf_data_params.get("CROSS_ACCOUNT_VERSION", ""))
-            set_context = str(lf_data_params.get("SET_CONTEXT", "")).upper()
-            if version and int(version) >= 4 and set_context == "TRUE":
-                checks.ok("DT-5", f"{p} parameters", param_txt)
+    # DT-4, Staging: the same trust, and no s3 allow reaching any lake bucket, the drop-box included
+    # (4.3, D13). Absent until 4.5 applies staging/sagemaker/.
+    if staging_live:
+        if staging_job_state == "(absent)":
+            checks.note("DT-4", f"role {STAGING_JOB_ROLE}", "absent - expected before step 4.5.")
+        elif staging_job_state == "present":
+            if staging_trust_bad:
+                for what in sorted(set(staging_trust_bad)):
+                    checks.fail(
+                        "DT-4",
+                        f"trust on {STAGING_JOB_ROLE}",
+                        f"{what} - 4.3 admits glue and sagemaker only.",
+                    )
             else:
-                checks.fail(
-                    "DT-5",
-                    f"{p} parameters",
-                    f"{param_txt} - the INT-11 values regressed; stop and re-read Stage 5a step 5.4.",
+                checks.ok(
+                    "DT-4",
+                    f"trust on {STAGING_JOB_ROLE}",
+                    "glue + sagemaker service principals only",
                 )
+            if staging_lake_hits:
+                for pname, arn in sorted(set(staging_lake_hits)):
+                    checks.fail(
+                        "DT-4",
+                        f"D13 on {STAGING_JOB_ROLE}",
+                        f"inline {pname} allows s3 on {arn} - Staging reads the lake through Lake Formation alone.",
+                    )
+            else:
+                checks.ok(
+                    "DT-4",
+                    f"D13 on {STAGING_JOB_ROLE}",
+                    "no inline s3 allow reaches a lake bucket, the drop-box included",
+                )
+
+    # DT-5: the LF settings discipline, three accounts (DL-5's twin). A DataLakeSettings apply that
+    # omits `parameters` empties them, which reads as SET_CONTEXT gone. The grantor and Production,
+    # the share's two ends, read CROSS_ACCOUNT_VERSION 4 (Production's own reading, 2026-10-22, the
+    # value 1.5 copies); Staging reads 1, takes no share, and is held to SET_CONTEXT alone.
+    for p, param_txt, defaults_txt, _flag_txt, admin_txt in lf_rows:
+        if param_txt == "(read failed)":
+            continue
+        params = lf_params.get(p, {})
+        version = str(params.get("CROSS_ACCOUNT_VERSION", ""))
+        set_context = str(params.get("SET_CONTEXT", "")).upper() == "TRUE"
+        version_held = p == STAGING_PROFILE or (version.isdigit() and int(version) >= 4)
+        if set_context and version_held:
+            checks.ok("DT-5", f"{p} parameters", param_txt)
         else:
-            if defaults_txt == "db:0 tbl:0":
-                checks.ok("DT-5", f"{p} create-defaults", "emptied (step 1.3/4.1's kill)")
-            elif built:
-                checks.fail(
-                    "DT-5",
-                    f"{p} create-defaults",
-                    f"{defaults_txt} - IAMAllowedPrincipals defaults still granting; the regrants restrict nothing.",
-                )
-            else:
-                checks.note(
-                    "DT-5", f"{p} create-defaults", f"{defaults_txt} - expected before 1.5/4.5."
-                )
+            checks.fail(
+                "DT-5",
+                f"{p} parameters",
+                f"{param_txt} - the INT-11 values regressed; stop and re-read Stage 5a step 5.4.",
+            )
+        if p == DATA_PROFILE:
+            continue
+        if defaults_txt == "db:0 tbl:0":
+            checks.ok("DT-5", f"{p} create-defaults", "emptied (step 1.3/4.1's kill)")
+        elif lf_seated.get(p):
+            checks.fail(
+                "DT-5",
+                f"{p} create-defaults",
+                f"{defaults_txt} with an administrator seated - IAMAllowedPrincipals defaults still "
+                "granting, so the regrants restrict nothing (1.3's two-step).",
+            )
+        else:
+            checks.note(
+                "DT-5", f"{p} create-defaults", f"{defaults_txt} - expected before 1.5/4.5."
+            )
 
     # DT-6: the write share arrived and nothing is pending (INT-03, INT-11's tax).
     if data_live and prod_account:
         if write_share_seen:
             checks.ok("DT-6", "the write share", "an INSERT grant names the Production account")
-        elif built:
+        elif not share_listed:
+            checks.note(
+                "DT-6",
+                "the write share",
+                "no INSERT grant to Production in what was read - the grantor's listing was not "
+                "read to its last page (section 14).",
+            )
+        elif lf_seated.get(PROD_PROFILE):
             checks.fail(
                 "DT-6",
                 "the write share",
-                "no INSERT grant to Production in the grantor's listing - step 2.1 has not landed.",
+                "no INSERT grant to Production in the grantor's listing, with Production's "
+                "administrator seated - pass 3 ran before 2.1's grant landed.",
             )
         else:
             checks.note("DT-6", "the write share", "not granted yet - expected before step 2.2.")
@@ -997,7 +1407,7 @@ def main(argv: list) -> int:
     # DT-7: the drop-box contract names the exact role, on both the bucket and the key.
     if data_live and dropbox_bucket:
         if "NO" in dropbox_stmt:
-            (checks.fail if built else checks.note)(
+            (checks.fail if job_role_state == "present" else checks.note)(
                 "DT-7",
                 f"drop-box policy ({dropbox_bucket})",
                 dropbox_stmt + " - the Stage 5a statement and the 3.1 contract disagree.",
@@ -1005,7 +1415,7 @@ def main(argv: list) -> int:
         elif dropbox_stmt.startswith("names"):
             checks.ok("DT-7", f"drop-box policy ({dropbox_bucket})", dropbox_stmt)
         if dropbox_key_names_role == "NO":
-            (checks.fail if built else checks.note)(
+            (checks.fail if job_role_state == "present" else checks.note)(
                 "DT-7",
                 "drop-box KMS grant",
                 f"neither key policy nor grants name {JOB_ROLE} - the pickup dies as an S3 error (2.5).",
@@ -1013,47 +1423,66 @@ def main(argv: list) -> int:
         elif dropbox_key_names_role == "yes":
             checks.ok("DT-7", "drop-box KMS grant", f"the key names {JOB_ROLE}")
 
-    # DT-8: Staging touches nothing governed - no link to Data Governance; the mirror agrees.
+    # DT-8: Staging reads the lake through its share and writes none of it (decision 3): every grant
+    # to its account is DESCRIBE or SELECT, its links resolve into Data Governance once staging/data/
+    # stands, and no local table carries a lake table's name.
     if staging_live:
+        if data_live and share_listed:
+            if staging_write_grants:
+                for where, beyond in staging_write_grants:
+                    checks.fail(
+                        "DT-8",
+                        f"staging grant {where}",
+                        f"carries {beyond} - Staging reads the lake and writes none of it (decision 3).",
+                    )
+            elif staging_share_rows:
+                checks.ok(
+                    "DT-8",
+                    "staging share",
+                    f"{len(staging_share_rows)} grant(s) to Staging, DESCRIBE and SELECT alone",
+                )
+            else:
+                (checks.fail if staging_data_built else checks.note)(
+                    "DT-8",
+                    "staging share",
+                    "no grant to Staging while staging/data/ stands - pass 2 precedes pass 5."
+                    if staging_data_built
+                    else "no grant to Staging yet - expected before pass 2's apply.",
+                )
         if staging_links_to_data:
-            for db, target in staging_links_to_data:
+            checks.ok(
+                "DT-8",
+                "staging links",
+                "resolve into Data Governance: "
+                + ", ".join(sorted(t for _db, t in staging_links_to_data)),
+            )
+        else:
+            (checks.fail if staging_data_built else checks.note)(
+                "DT-8",
+                "staging links",
+                "none while staging/data/ stands - the read share is consumed through them (4.1)."
+                if staging_data_built
+                else "none yet - expected before step 4.5.",
+            )
+        if staging_copies:
+            for db, t in staging_copies:
                 checks.fail(
                     "DT-8",
-                    f"staging link {db}",
-                    f"resolves into Data Governance ({target}) - D20 forbids the share; remove it.",
+                    f"staging table {db}.{t}",
+                    "carries a lake table's name - Staging holds no copy (decision 3).",
                 )
         else:
-            checks.ok("DT-8", "staging isolation", "no resource link reaches Data Governance")
-        # `built` separates "not built yet" from "drifted" (Lesson 13): it is true once any
-        # Stage 9 object stands in the account - the job role, a model package group, the
-        # workgroup, a bucket. Until then Staging holds zero tables against the lake's, which
-        # reads exactly like a mirror that fell behind; the first run, 2026-09-06, reported
-        # `curated: DIVERGES (missing 1, extra 0)` with nothing drifted. So a divergence is a
-        # note until the first Stage 9 apply, and the same reading fails after it, with no edit
-        # here.
-        for db, lake_n, staging_n, verdict in mirror_rows:
-            if verdict == "mirrored":
-                checks.ok("DT-8", f"mirror {db}", f"{staging_n} table(s), names agree")
-            elif verdict.startswith("DIVERGES"):
-                (checks.fail if built else checks.note)(
-                    "DT-8",
-                    f"mirror {db}",
-                    f"{verdict} - "
-                    + (
-                        "a drifted mirror produces false test failures (4.1, decision 3)."
-                        if built
-                        else "and nothing in Stage 9 stands in this account yet, so the lake's "
-                        f"{lake_n} table(s) have nothing to be mirrored BY. Expected until "
-                        "step 4.1 builds the mirror; it becomes a failure on the first Stage 9 "
-                        "apply, with no edit here."
-                    ),
-                )
+            checks.ok("DT-8", "staging copies", "no local table carries a lake table's name")
 
     # DT-9: the escape hatch - windowed trust, closed at rest, 1 h sessions, alarmed.
     if prod_live:
         if debug_state == "(absent)":
-            (checks.fail if built else checks.note)(
-                "DT-9", f"role {DEBUG_ROLE}", "absent - expected before step 3.4."
+            (checks.fail if runtime_built else checks.note)(
+                "DT-9",
+                f"role {DEBUG_ROLE}",
+                "absent while production/sagemaker/'s other objects stand - a partial 3.4."
+                if runtime_built
+                else "absent - expected before step 3.4.",
             )
         elif debug_state == "present":
             if not debug_trust_ok:
@@ -1103,15 +1532,19 @@ def main(argv: list) -> int:
                         checks.fail("DT-9", f"rule {rname}", f"state {state} - not watching.")
 
     # DT-10: the persona halves, read through the delegated administrator (step 5).
-    for set_name, finding in set_rows:
-        if "NO (owed" in finding and built:
-            checks.fail("DT-10", set_name, finding + " - apply step 5.3.")
-        elif "MISSING" in finding or "forbidden" in finding:
-            checks.fail("DT-10", set_name, finding + ".")
-        elif "NO (owed" in finding:
-            checks.note("DT-10", set_name, finding + ".")
-        else:
+    for set_name, finding, verdict in set_rows:
+        if verdict == "ok":
             checks.ok("DT-10", set_name, finding)
+        elif verdict == "owed":
+            checks.note("DT-10", set_name, finding + " - owed by step 5.1, pass 4.")
+        elif verdict == "partial":
+            checks.fail(
+                "DT-10",
+                set_name,
+                finding + " - a partial 5.3: step 5.1's statements are one apply.",
+            )
+        else:
+            checks.fail("DT-10", set_name, finding + ".")
 
     # DT-11: the job settings bind whoever calls Create*Job in Staging and Production (step 3.5,
     # decision 9 shape (a), verification xv), and serverless inference is refused there (3.7).
@@ -1124,11 +1557,15 @@ def main(argv: list) -> int:
                 "not attached - the OU documents are 1c's and never come off.",
             )
         elif missing:
-            (checks.fail if built else checks.note)(
+            (checks.fail if runtime_built else checks.note)(
                 "DT-11",
                 f"{WORKLOADS_DOC} on {WORKLOADS_OU}",
                 f"missing {', '.join(missing)} - "
-                + ("apply step 3.5 (battery first)." if built else "expected before 3.5's apply."),
+                + (
+                    "apply step 3.5 (battery first)."
+                    if runtime_built
+                    else "expected before 3.5's apply."
+                ),
             )
         else:
             checks.ok(
@@ -1137,11 +1574,211 @@ def main(argv: list) -> int:
                 f"attached, the {len(JOB_DENY_SIDS)} job Sids present",
             )
 
+    # DT-12: the job log groups, declared with a retention by the slice that holds the account's
+    # job role (3.1, 4.3, EXC-10), each under the account data key once data/ stands. Before that
+    # slice, a group a job created is the import 4.3 owes.
+    for p, role_state in ((PROD_PROFILE, job_role_state), (STAGING_PROFILE, staging_job_state)):
+        rows = [(g, days, key) for q, g, days, key in log_rows if q == p]
+        if not rows:
+            continue
+        if role_state == "present":
+            bad = [f"{g} {days}" for g, days, _key in rows if days in ("(absent)", "(none)")]
+            if bad:
+                checks.fail(
+                    "DT-12",
+                    f"{p} job log groups",
+                    f"{', '.join(bad)} - the job role's slice declares each with a retention.",
+                )
+            else:
+                checks.ok(
+                    "DT-12",
+                    f"{p} job log groups",
+                    f"{len(rows)} declared, retention {', '.join(sorted({d for _g, d, _k in rows}))}",
+                )
+            # The key, once the account data key exists: every group carries it since 2026-10-22
+            # (3.1, 4.3), so the AWS-owned key, another key, or the data key on some groups only, fails.
+            data_key = data_key_arns.get(p)
+            standing = [(g, key) for g, days, key in rows if days != "(absent)"]
+            if data_key and standing:
+                other = [g for g, key in standing if key not in ("(AWS-owned)", data_key)]
+                keyed = [g for g, key in standing if key == data_key]
+                unkeyed = [g for g, key in standing if key == "(AWS-owned)"]
+                if other:
+                    checks.fail(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{', '.join(other)} under a key other than the account data key.",
+                    )
+                elif keyed and unkeyed:
+                    checks.fail(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{', '.join(unkeyed)} under the AWS-owned key while {len(keyed)} carry the "
+                        "account data key - a partial apply.",
+                    )
+                elif keyed:
+                    checks.ok(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        f"{len(keyed)} under the account data key",
+                    )
+                else:
+                    checks.fail(
+                        "DT-12",
+                        f"{p} job log groups' key",
+                        "the AWS-owned key on all of them - each group carries the account data key "
+                        "since 2026-10-22 (3.1, 4.3).",
+                    )
+        else:
+            early = [f"{g} {days}" for g, days, _key in rows if days != "(absent)"]
+            if early:
+                checks.note(
+                    "DT-12",
+                    f"{p} job log groups",
+                    f"{', '.join(early)} before the job role's slice - 4.3 imports each group "
+                    "a job created first.",
+                )
+
+    # DT-13: Lake Formation's full-table external access in the targets (Stage 19 step 4.7, TM-26).
+    # SageMaker Unified Studio's provisioning turns it on in an account that gains a project, and
+    # may again at a later one; with it on, a principal holding full-table permissions vends a
+    # table's objects outside an integrated engine.
+    for p in FULL_TABLE_ACCESS_OFF:
+        if p not in lf_flag:
+            continue
+        if lf_flag[p]:
+            checks.fail(
+                "DT-13",
+                f"{p} full-table external access",
+                "AllowFullTableExternalDataAccess is on - TM-26 is open in this account. Stage 19 "
+                "step 4.7 turns it off in the console after a project's provisioning.",
+            )
+        else:
+            checks.ok("DT-13", f"{p} full-table external access", "off")
+
+    # DT-14: what AWS's managed policies on a project's role do not reach (TM-30). Each rule is
+    # one layer the role's containment rests on; a failure means the role now reaches it by IAM.
+    for p, got in fence.items():
+        if "tagged" in got:
+            if got["tagged"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} resources tagged for every project",
+                    f"{len(got['tagged'])} resource(s) wear {SELECTOR_TAG_ALL}: every project role "
+                    "in the account reads and writes them by AWS's policy.",
+                )
+            else:
+                checks.ok("DT-14", f"{p} resources tagged for every project", "none")
+        if "secrets" in got:
+            if got["secrets_tagged"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} the estate's secrets",
+                    f"{', '.join(got['secrets_tagged'])} carry a DataZone selector tag: a project "
+                    "role reads and overwrites a secret by its tags alone (INV-20's rule).",
+                )
+            else:
+                checks.ok(
+                    "DT-14",
+                    f"{p} the estate's secrets",
+                    f"{got['secrets']} secret(s), none with a DataZone selector tag",
+                )
+        if "locations" in got:
+            locations = got["locations"]
+            bucket = PROJECTS_BUCKET[p]
+            if locations is None:
+                checks.note(
+                    "DT-14",
+                    f"{p} Access Grants locations",
+                    "no Access Grants instance - no project was provisioned in this account.",
+                )
+            else:
+                foreign = [s for s in locations if not s.startswith(f"s3://{bucket}/")]
+                if foreign:
+                    checks.fail(
+                        "DT-14",
+                        f"{p} Access Grants locations",
+                        f"{', '.join(foreign)} outside {bucket}: a grant on it gives a project "
+                        "role the objects, and AWS's policy the key through S3.",
+                    )
+                else:
+                    checks.ok(
+                        "DT-14",
+                        f"{p} Access Grants locations",
+                        f"{len(locations)} location(s), all under {bucket}",
+                    )
+        if "open_grants" in got:
+            if got["open_grants"]:
+                checks.fail(
+                    "DT-14",
+                    f"{p} Lake Formation on the lake's databases",
+                    f"{'; '.join(got['open_grants'])} - a grant to every IAM principal, which a "
+                    "project role's unscoped glue allows then meet.",
+                )
+            else:
+                checks.ok(
+                    "DT-14",
+                    f"{p} Lake Formation on the lake's databases",
+                    f"{', '.join(FENCED_DBS)}: named principals only",
+                )
+        if "boundary_sids" in got:
+            sids = got["boundary_sids"]
+            what = f"{p} the fence in the project roles' boundary"
+            if sids is None:
+                checks.note("DT-14", what, f"no {BOUNDARY_NAME[p]}: no project can exist here yet.")
+            else:
+                missing = [s for s in FENCE_SIDS if s not in sids]
+                if not any(s in sids for s in FENCE_ASSUME_SIDS):
+                    missing.append(FENCE_ASSUME_SIDS[0])
+                if missing:
+                    checks.fail(
+                        "DT-14",
+                        what,
+                        f"{BOUNDARY_NAME[p]} lacks {', '.join(missing)} - Stage 19 decision 21 (b)'s "
+                        "deny, whose apply is owed or was undone: what the rows above read is then "
+                        "all that holds a project role (TM-30).",
+                    )
+                else:
+                    checks.ok("DT-14", what, f"{len(FENCE_SIDS) + 1} statements present")
+                    if "buckets" in got:
+                        bare = sorted(
+                            set(got["buckets"])
+                            - set(got["boundary_buckets"])
+                            - {PROJECTS_BUCKET[p]}
+                        )
+                        every = f"{p} every bucket fenced but the projects bucket"
+                        if bare:
+                            checks.fail(
+                                "DT-14",
+                                every,
+                                f"{', '.join(bare)} in no statement of the boundary - a bucket joins "
+                                "<env>/studio/fence.tf in the commit that creates it.",
+                            )
+                        else:
+                            checks.ok(
+                                "DT-14", every, f"{len(got['boundary_buckets'])} bucket(s) named"
+                            )
+                    services = f"{p} the services the fence denies"
+                    lacking = sorted(set(FENCED_SERVICES[p]) - set(got["boundary_services"]))
+                    if lacking:
+                        checks.fail(
+                            "DT-14",
+                            services,
+                            f"{', '.join(lacking)} not in DenyServicesNoProjectUsesHere - "
+                            "<env>/studio/fence.tf's fenced_services, whose apply is owed or was "
+                            "undone: the project role then holds that service by AWS's policies "
+                            "(TM-30).",
+                        )
+                    else:
+                        checks.ok("DT-14", services, ", ".join(got["boundary_services"]))
+
     # ---------------------------------------------------------------------- the report
     with open(out_path, "w", encoding="utf-8") as stream:
         rep = Report(stream)
 
-        rep.banner("DEPLOY TARGETS - the Stage 9 evidence: producer path, registry, mirrors")
+        rep.banner(
+            "DEPLOY TARGETS - the Stage 9 evidence: producer path, registry, the read shares"
+        )
         rep.text(f"""generated : {context.utc_stamp()}
 profiles  : {source}
 region    : {context.REGION}
@@ -1150,21 +1787,23 @@ produced  : aws/deploytargets.py   (index: aws/INDEX.md)
 SECTIONS
   1. Which accounts were measured, and as whom
   2. The Production data platform: buckets, CMK, the enforced workgroup
-  3. The runtime: the job role (D13) and the Model Registry (D28)
+  3. The runtime: the job roles (D13), their log groups and the Model Registry (D28)
   4. The Lake Formation settings, every account that has any (DT-5)
   5. The write share, the links, the invitations (INT-03)
   6. The drop-box contract, both sides (INT-10)
-  7. The Staging mirror, and the absence that is a control (D20)
+  7. Staging's read of the lake, through its share (decision 3)
   8. The escape hatch: role, alarm, assumptions (step 6)
   9. The persona sets' owed allows (step 5)
  10. The job settings on the Workloads OU (step 3.5)
- 11. CHECKS
- 12. The accounts nothing here is measuring
- 13. Calls that failed
+ 11. A deployment project's role and the rest of its account (DT-13, DT-14)
+ 12. CHECKS
+ 13. The accounts nothing here is measuring
+ 14. Calls that failed
 
 HOW TO READ THIS FILE
-  - "NOT BUILT YET" IS THE EXPECTED ANSWER UNTIL STAGE 9 RUNS - each such reading
-    is a note, not a failure; it becomes a regression the moment the stage closes.
+  - An object absent before the pass that creates it is a note, and the same absence
+    after that pass is a failure: each check reads its pass from the pass's own
+    objects (Lesson 50), so a stage applied pass by pass reads clean at every pass.
   - THIS IS A CONTROL-PLANE READING. Whether the LF write LANDS, the direct
     PutObject DIES, the pickup EMPTIES the letterbox and the console survives the
     endpoint condition are the stage's behavioural proofs (Lesson 20).
@@ -1213,7 +1852,7 @@ visibility of query output is the stage's stated limit (risk 6), and the CMK is
 what keeps it from the approvers and from Staging (D31).""")
 
         # ==============================================================================
-        rep.h1("3. The runtime: the job role (D13) and the Model Registry (D28)")
+        rep.h1("3. The runtime: the job roles (D13), their log groups and the Model Registry (D28)")
         if not prod_live:
             rep.line(f"{PROD_PROFILE} was not measured - nothing to show.")
         else:
@@ -1228,17 +1867,28 @@ what keeps it from the approvers and from Staging (D31).""")
                 rep.tabulate(["PACKAGE GROUP\tRESOURCE POLICY"] + ["\t".join(r) for r in mpg_rows])
             else:
                 rep.line(f"No package group matches {MPG_PREFIX}*.")
+        if log_rows:
+            rep.line()
+            rep.tabulate(
+                ["PROFILE\tJOB LOG GROUP\tRETENTION\tKEY"]
+                + ["\t".join((q, g, days, key.rsplit(":", 1)[-1])) for q, g, days, key in log_rows]
+            )
+        if prod_live:
             rep.text("""
 D13 read from the role's own policies: the governed write must arrive only
 through lakeformation:GetDataAccess vending, so an inline s3 allow naming a lake
 bucket is the finding, and the drop-box statements are the named exception. The
-Staging principals join the group policies at the vend (step 4.6).""")
+Staging principals join the group policies at step 4.6. A service creates its
+job log group with no retention when a job runs before the slice that declares
+it, so DT-12 reads the six in every account with a job role, and the key each
+carries: the account data key once data/ stands.""")
 
         # ==============================================================================
         rep.h1("4. The Lake Formation settings, every account that has any (DT-5)")
         if lf_rows:
             rep.tabulate(
-                ["PROFILE\tPARAMETERS\tCREATE-DEFAULTS\tADMINS"] + ["\t".join(r) for r in lf_rows]
+                ["PROFILE\tPARAMETERS\tCREATE-DEFAULTS\tFULL-TABLE\tADMINS"]
+                + ["\t".join(r) for r in lf_rows]
             )
         else:
             rep.line("No account with an LF read was measured.")
@@ -1255,8 +1905,10 @@ of data-governance/data/, production/data/ or staging/data/.""")
                 ["PRINCIPAL (TAIL)\tRESOURCE\tPERMISSIONS"]
                 + ["\t".join(r) for r in share_perm_rows]
             )
-        elif data_live:
+        elif data_live and share_listed:
             rep.line("No grantor-side permission names the Production account yet (pre-2.2).")
+        elif data_live:
+            rep.line("The grantor's listing was not read to its last page - section 14.")
         if link_rows:
             rep.line()
             rep.tabulate(
@@ -1288,33 +1940,44 @@ contract this section watches. A NO on either line is the pickup failing later
 with an error that names S3 and means KMS or a typo (2.5, D25).""")
 
         # ==============================================================================
-        rep.h1("7. The Staging mirror, and the absence that is a control (D20)")
+        rep.h1("7. Staging's read of the lake, through its share (decision 3)")
         if not staging_live:
-            rep.line(f"{STAGING_PROFILE} has no profile until the vend - the whole section waits.")
+            rep.line(
+                f"{STAGING_PROFILE} did not answer - the whole section waits for a session on it."
+            )
         else:
+            if staging_share_rows:
+                rep.tabulate(
+                    ["GRANT TO STAGING\tPERMISSIONS"] + ["\t".join(r) for r in staging_share_rows]
+                )
+            else:
+                rep.line("No grant of the lake names Staging's account (pass 2 grants its read).")
+            rep.line()
             if staging_links_to_data:
                 rep.tabulate(
                     ["LINK\tRESOLVES INTO"] + ["\t".join(r) for r in staging_links_to_data]
                 )
             else:
-                rep.line("No Staging resource link reaches Data Governance - D20 holding.")
-            if mirror_rows:
-                rep.line()
-                rep.tabulate(
-                    ["DATABASE\tLAKE TABLES\tSTAGING TABLES\tVERDICT"]
-                    + ["\t".join(r) for r in mirror_rows]
-                )
+                rep.line("No Staging resource link reaches Data Governance (4.1 creates them).")
+            rep.line(f"local databases: {', '.join(staging_local_dbs) or '(none)'}")
             if staging_wg_row is not None:
                 enforce, location, cutoff = staging_wg_row
-                rep.line()
                 rep.line(
                     f"workgroup {STAGING_WG}: enforce={enforce} location={location} cutoff={cutoff}"
                 )
             rep.line(f"role {STAGING_JOB_ROLE}: {staging_job_state}")
+            if staging_lake_hits:
+                rep.tabulate(
+                    ["INLINE POLICY\tLAKE-BUCKET RESOURCE"]
+                    + ["\t".join(r) for r in sorted(set(staging_lake_hits))]
+                )
+            rep.line(f"{STAGING_CMK_ALIAS}: {'present' if staging_cmk_present else '(absent)'}")
             rep.text("""
-The mirror agreeing is 4.1 working; the link NOT existing is the control (D20:
-Staging is never on the share). The workgroup serves the integration tests and
-the app - DataScientistStagingAccess holds no Athena at all (Stage 2).""")
+Staging reads the governed lake through the share Sandbox holds and writes none of it
+(decision 3, amending D20): a grant beyond DESCRIBE and SELECT is the finding, and so is a
+local table carrying a lake table's name, since each deploy creates the application's own
+tables and a governed table is read through the links. The workgroup serves the integration
+tests and the application; DataScientistStagingAccess holds no Athena (Stage 2).""")
 
         # ==============================================================================
         rep.h1("8. The escape hatch: role, alarm, assumptions (step 6)")
@@ -1334,20 +1997,25 @@ the app - DataScientistStagingAccess holds no Athena at all (Stage 2).""")
             if debug_events:
                 rep.line()
                 rep.tabulate(["TIME\tCALLER"] + ["\t".join(r) for r in debug_events[:25]])
+            elif not debug_arn:
+                rep.line("The AssumeRole history was not read: it is looked up by the role's ARN.")
+            elif not debug_read:
+                rep.line("The AssumeRole history was not read: the lookup failed (section 14).")
             else:
                 rep.line("No AssumeRole event names the debug role in the last 90 days.")
             rep.text("""
 Closed at rest is the design: the DateLessThan default sits in the past, an
 approval is a recorded apply, and EVERY assumption alarms (not just misuse).
 The read-only-by-API shape is imposed by the Workloads OU SCP - a session
-under this role cannot become a notebook (6.3 proves it once). The events above
-are API AssumeRole calls only: a console switch records a sign-in SwitchRole
-event, which the second rule watches and 6.3 locates.""")
+under this role cannot become a notebook (6.3 proves it once). The events read
+are API AssumeRole calls that succeeded: a refused one records no roleArn
+(6.2), and a console switch records a sign-in SwitchRole event, which the
+second rule watches and 6.3 locates.""")
 
         # ==============================================================================
         rep.h1("9. The persona sets' owed allows (step 5)")
         if set_rows:
-            rep.tabulate(["PERMISSION SET\tFINDING"] + ["\t".join(r) for r in set_rows])
+            rep.tabulate(["PERMISSION SET\tFINDING"] + ["\t".join(r[:2]) for r in set_rows])
         elif identity_live:
             rep.line("Neither set answered through the delegated administrator.")
         else:
@@ -1379,7 +2047,52 @@ identity/org-policies compares the document with sagemaker-denies on every plan,
 and the SCP battery's Stage 9 rows measure each deny (scp-battery.md).""")
 
         # ==============================================================================
-        rep.h1("11. CHECKS")
+        rep.h1("11. A deployment project's role and the rest of its account (DT-13, DT-14)")
+        if fence:
+            rows = ["PROFILE\tREADING\tVALUE"]
+            for p, got in fence.items():
+                rows.append(f"{p}\tfull-table external access\t{'on' if lf_flag.get(p) else 'off'}")
+                if "tagged" in got:
+                    rows.append(f"{p}\tresources tagged {SELECTOR_TAG_ALL}\t{len(got['tagged'])}")
+                if "secrets" in got:
+                    tagged = ", ".join(got["secrets_tagged"]) or "none"
+                    rows.append(
+                        f"{p}\tthe estate's secrets, {got['secrets']}, with a selector tag\t{tagged}"
+                    )
+                if "locations" in got:
+                    scopes = got["locations"]
+                    value = "(no instance)" if scopes is None else (", ".join(scopes) or "(none)")
+                    rows.append(f"{p}\tAccess Grants locations\t{value}")
+                if got.get("boundary_sids") is not None and "boundary_sids" in got:
+                    present = [
+                        s for s in (*FENCE_SIDS, *FENCE_ASSUME_SIDS) if s in got["boundary_sids"]
+                    ]
+                    rows.append(
+                        f"{p}\tthe fence in {BOUNDARY_NAME[p]}\t{', '.join(present) or '(none)'}"
+                    )
+                    denied = ", ".join(got.get("boundary_services", [])) or "(none)"
+                    rows.append(f"{p}\tthe services the fence denies\t{denied}")
+                if "open_grants" in got:
+                    value = "; ".join(got["open_grants"]) or "none"
+                    rows.append(
+                        f"{p}\tgrants to every IAM principal on {', '.join(FENCED_DBS)}\t{value}"
+                    )
+            rep.tabulate(rows)
+        else:
+            rep.line("No deployment target was measured.")
+        rep.text("""
+Since Stage 19 each target holds one SageMaker Unified Studio project, and its
+role runs on AWS's managed policies, which AWS moves. Those policies allow
+sts:AssumeRole on every role, kms through S3 on every key and glue on the whole
+catalog, and select the rest by tag (TM-30). The rows above are what the role's
+containment rests on in this account, read from the resources' side; the trust
+policies are studio.py's US-12, in every account that holds a project role.
+Stage 19 decision 21 (b) denies the same reach in the roles' D13 boundary, which
+binds whatever version of AWS's policies they carry: the last row is its
+statements, and the account's buckets are read against the one that names them.""")
+
+        # ==============================================================================
+        rep.h1("12. CHECKS")
         rep.checks_table(checks)
         n_fail = checks.n_fail()
         rep.line()
@@ -1390,26 +2103,40 @@ What the checks are, and where each comes from:
          ip, D39), results expiry (1.1)
   DT-2   the workgroup enforces location + scan limit (1.2, D19)
   DT-3   every awsds-prod-model-* group carries a resource policy (3.2, D28 item 6)
-  DT-4   the job role: service-only trust, no s3 allow on lake buckets (3.1, D13)
-  DT-5   the LF settings discipline in all three accounts (1.3/2.2/4.1, DL-5's twin)
+  DT-4   the job roles: service-only trust, no s3 allow on lake buckets - Production's
+         drop-box excepted (3.1, D13), Staging's with no exception (4.3, D13)
+  DT-5   the LF settings discipline in all three accounts: parameters carried, create
+         defaults emptied once an administrator is seated (1.3/2.2/4.1, DL-5's twin)
   DT-6   the write share granted, no pending invitation (2.1-2.2, INT-03/INT-11)
   DT-7   the drop-box statement and key both name awsds-prod-job-exec (2.5, INT-10)
-  DT-8   no Staging link to Data Governance; the mirror agrees (4.1, D20)
+  DT-8   Staging's grants on the lake are DESCRIBE or SELECT, its links resolve into Data
+         Governance once staging/data/ stands, and no local table copies a lake table (4.1,
+         decision 3)
   DT-9   the escape hatch: windowed trust pinned to the Region, closed at rest, <=1h,
          alarmed by rules that receive AssumeRole (6.1-6.2)
   DT-10  the persona halves read back through the delegated admin (5.1-5.2)
   DT-11  the Workloads OU document attached, with the five job settings and the
-         serverless-inference deny (3.5-3.7, decision 9, verification xv)""")
+         serverless-inference deny (3.5-3.7, decision 9, verification xv)
+  DT-12  the six job log groups declared with a retention wherever the job role stands,
+         each under the account data key once data/ stands, and a group a job created
+         before the slice named for import (3.1, 4.3, EXC-10)
+  DT-13  Lake Formation's full-table external access off in both targets (Stage 19
+         step 4.7, TM-26); the lake's own flag is on by Stage 9 decision 13
+  DT-14  what a deployment project's role does not reach: no resource tagged for every
+         project, no estate secret with a DataZone selector tag, no Access Grants
+         location outside the projects bucket, no Lake Formation grant to every IAM
+         principal on raw or curated (Stage 19, TM-30); and the D13
+         boundary's fence, with every bucket of the account named in it but the
+         projects bucket and the services the account's fence.tf names, the
+         warehouse's doors among them (decisions 21 (b) and 16 (b))""")
 
         # ==============================================================================
-        rep.h1("12. The accounts nothing here is measuring")
-        rep.text("""Read this BEFORE reading section 11 as a pass.
+        rep.h1("13. The accounts nothing here is measuring")
+        rep.text("""Read this BEFORE reading section 12 as a pass.
 
-  - `Staging` HAS a profile since 2026-09-06 and this text used to say it would
-    not until a vend. That vend was refused; Stage 6b made the account by
-    renaming `Development`, so sections 5, 7 and the DT-8 pair are no longer
-    blind - and neither is INT-07's registry half (4.6). What they report is a
-    real reading now, not an absence.
+  - `Staging` has a profile since 2026-09-06: Stage 6b made the account by
+    renaming `Development`, so sections 5 and 7, DT-8 and INT-07's registry
+    half (4.6) report a real reading, not an absence.
   - `Development` is gone as an account name. Where this report still says it,
     read `Staging`: same account, renamed 2026-09-06. INT-04 was retired into
     INT-07 at the 2026-09-05 re-scope.
@@ -1417,7 +2144,7 @@ What the checks are, and where each comes from:
     lives there.""")
 
         # ==============================================================================
-        rep.h1("13. Calls that failed")
+        rep.h1("14. Calls that failed")
         failed_calls_epilogue(rep, errors)
         rep.line()
         rep.line("Regenerate with:  ./aws/deploytargets.py")
@@ -1426,10 +2153,10 @@ What the checks are, and where each comes from:
     n_fail = checks.n_fail()
     note("")
     if errors:
-        note(f"wrote {out_label} (some calls FAILED - see section 13)")
+        note(f"wrote {out_label} (some calls FAILED - see section 14)")
         return 1
     if n_fail > 0:
-        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 11)")
+        note(f"wrote {out_label} ({n_fail} CHECK(S) FAILED - see section 12)")
         return 2
     note(f"wrote {out_label} (all checks passed)")
     return 0

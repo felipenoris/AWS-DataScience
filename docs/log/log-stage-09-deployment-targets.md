@@ -182,3 +182,2991 @@ row of Stage 6b's for the policy id.*
   [inference] One cause would fit all six rows and spare both endpoint-configuration rows: a refusal after
   authorization that a configuration call never meets, such as an instance quota of 0 for processing jobs
   in Production. Reading that reply is owed before step 3 relies on the row.
+
+## 2026-10-18 — pass 0 read and pass 1 applied, from the laptop
+
+*Claude's hand, in the session "Execução local no Mac", as the infrastructure user (`InfrastructureAccess`).
+The user's authorization, in that chat: "Você está autorizado a utilizar leituras com usuário sso infra e
+realizar os applies necessários de terraform", and, for this pass's document, "Autorizo os applies de SCP em
+identity/org-policies das Stages 9 e 10 e a bateria de SCP depois de cada um". The app refused to hand the
+SCP apply to a parallel session, so it ran here.*
+
+- **[Claude] 7.1.** `./aws/cicd.py awsds-infra-prod awsds-infra-sandbox-1 awsds-infra-staging`: every check
+  passed. `CI-2` reads a boundary on each of the four deploy roles and `CI-3` every trust naming
+  `awsds-prod-runner-deploy` with `sts:AssumeRole` only.
+- **[Claude] 7.2.** `./aws/datalake.py`: 0 checks failed. `DL-5` reads `CROSS_ACCOUNT_VERSION=4`,
+  `SET_CONTEXT=TRUE`, and the drop-box policy names `awsds-prod-job-exec` in
+  `AllowProductionPickupReadDelete` and `AllowProductionPickupList`.
+- **[Claude] The six `UNTESTED` replies of 2026-10-17 are quota refusals.** CloudTrail in Production holds
+  six `CreateProcessingJob` events between 23:21:12 and 23:21:18 UTC, each `ResourceLimitExceeded`: *"The
+  account-level service limit 'ml.m5.large for processing job usage' is 0 Instances"*, and
+  `ml.m5.2xlarge` for the ceiling row. The inference of 2026-10-17 holds: the service checks the quota after
+  authorization and before the role. Production and Staging both read 0 for `ml.m5.large` (`L-8541302D`),
+  `ml.m5.xlarge` (`L-0307F515`) and `ml.m5.2xlarge` (`L-1D84B9D2`) for processing job usage, so no
+  processing job runs in either account until a quota request is granted. `aws/probes/probes.py` now reads
+  `ResourceLimitExceeded` as authorized on the six rows (`_JOB_AUTHORIZED`), and the runbook's compliant row
+  says so.
+- **[Claude] 3.5 and 3.7 applied.** `identity/org-policies/` as `awsds-infra-identity`: plan 0 to add,
+  1 to change, 0 to destroy, `aws_organizations_policy.this["awsds-org-scp-ou-workloads"]` (`p-83t232f4`)
+  in place, content and description, `policy_document_bytes` 640 → 2499. Apply 19:54:06-19:54:15 UTC,
+  *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-plan *"No changes."*;
+  `describe-policy` reads nine statements, `DenyInteractiveSageMakerSurface`, `DenyDataZoneEntirely`,
+  `DenyAthenaSparkStartSession`, `DenySageMakerJobsOffVpc`, `DenySageMakerInstanceCeiling`,
+  `DenySageMakerJobsWithoutNetworkIsolation`, `DenySageMakerJobsWithoutInterContainerEncryption`,
+  `DenySageMakerJobsWithoutVolumeEncryption`, `DenySageMakerServerlessInference`. Every peer session was
+  told before the apply, and the session holding PR #108 confirmed its branch carries the same document.
+- **[Claude] The battery's after-half**, `./aws/probes/scp-battery.py --phase ou`, started 19:55:13 UTC (the
+  driver stamps the laptop's clock), the Stage 9 rows verbatim with the phase's totals:
+
+  ```
+  SCP battery - 2026-10-18 16:55:13  (phase ou)
+    MARK PHASE    ACCOUNT   EXPECT OUTCOME       DETAIL                 PROBE
+    ok   ou       prod      allow  ALLOWED       reached-authorization  workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)
+    ok   ou       prod      deny   DENY-SCP      p-83t232f4             workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)
+    ok   ou       prod      allow  ALLOWED       reached-authorization  workloads: instance-backed CreateEndpointConfig still authorized (3.7 contrast)
+  39 as expected, 0 unexpected, 7 not measured
+  ```
+
+  Each Stage 9 row is as expected, and both halves of each statement are now read: the 2026-10-17 run is
+  the before half. The seven not measured are the phase's standing notes (Athena's denies name no policy;
+  Data Governance and Identity hold no subnet). The *must still succeed* trio in Production answered:
+  `sts get-caller-identity`, `s3 ls` and `ec2 describe-vpcs` (three VPCs).
+- **[Claude] 3.6.** `./aws/deploytargets.py`: `DT-11` passes, *"attached, the 6 job Sids present"*.
+- **[Claude] 3.4 applied.** The pre-reads: no log group under `/aws/sagemaker/` or `/aws-glue/` in
+  Production, so nothing to import, and one `AWSReservedSSO_DataScientistProdAccess_*` role.
+  `production/sagemaker/` as `awsds-infra-prod`: plan 16 to add, 0 to change, 0 to destroy (the two roles
+  and their inline policies, the package group and its policy, the two rules and their targets, the six job
+  log groups). Apply 19:58:55-19:59:07 UTC, *"Apply complete! Resources: 16 added, 0 changed, 0 destroyed."*;
+  re-plan *"No changes."*. `./aws/deploytargets.py` after it: `DT-3` (the group's policy, 3 statements),
+  `DT-4` (glue and sagemaker service principals only; no S3 allow reaches a lake bucket, the drop-box
+  excepted), `DT-7`, `DT-9` (the window closed, ending 2026-01-01T00:00:00Z; both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`) and `DT-11` pass; `DT-1` notes `alias/awsds-prod-data`
+  absent, pass 3's.
+- **[Claude] 3.3a planned, read-only.** `production/workloads-egress/`'s first plan: 15 to add, the six
+  endpoints (`sts`, `logs`, `kms`, `glue`, `sagemaker.api`, `secretsmanager`) and the DNS Firewall's nine
+  pieces. Nothing applied: the slice is `[E]`, and the next Production `make up` raises it.
+- **[Claude] 4.0 and 5.2.** `./aws/AZs.py`: six accounts, mappings identical. `./aws/account-bpa.py`: all four
+  flags `true` in the six measured accounts, Staging included. `DT-10` reads `DataScientistStagingAccess`
+  with `DenyEveryWrite` and no Athena allow (verification viii, the policy half).
+- **[Claude] Owed after this pass.** 3.4's registry proof and 6.3's window are the user's; pass 2 waits on
+  decision 3; the processing-job quotas in Production and Staging are a quota request, the user's, before any
+  job runs there (Stage 10's processing step included).
+
+## 2026-10-18 — verification viii's assignment half, and text the stage had overtaken
+
+*Claude's hand, in a task the orchestrating session ran on the laptop (branch
+`claude/stages-09-10-18-readings`), with the environment down. Every call is a read, as the infrastructure
+user (`InfrastructureAccess`) through `awsds-infra-identity`; nothing was applied.*
+
+- **[Claude] Verification viii, the assignment half.** `./aws/list-identities.py`, report stamped
+  2026-10-18T22:20:57Z, section 6 empty: `Staging Account` carries seven assignments, the seven of 6b's
+  last reading ([its log](log-stage-06b-development-becomes-staging.md), 2026-09-06):
+  `AWSAdministratorAccess` to the infrastructure user (`USER`, re-asserted by the Control Tower account
+  update of 6b step 3.5, D32), the landing zone's `AWSOrganizationsFullAccess`, `AWSPowerUserAccess` and
+  `AWSReadOnlyAccess` to their groups, `DataScientistStagingAccess` to `sso-group-data-scientists`,
+  `DeploymentManagerAccess` to `sso-group-deployment-managers` and `InfrastructureAccess` to
+  `sso-group-infrastructure`. `DataScientistStagingAccess` is assigned in no other account.
+- **[Claude] The assignment's provenance, from CloudTrail.** `lookup-events` in the Identity account,
+  `us-west-2`, since 2026-08-20: one `CreateAccountAssignment`, at 2026-09-06T04:35:35Z, by
+  `InfrastructureAccess`, no error code, permission set `DataScientistStagingAccess`, principal type
+  `GROUP` with the id of `sso-group-data-scientists`, target `Staging Account`; and two
+  `DeleteAccountAssignment` in the same account at 04:35:25Z, `DataScientistAccess` and
+  `DevEnvStewardAccess`. Those three are 6b step 2.1's apply, *"1 added, 0 changed, 2 destroyed"*, and no
+  call has touched the assignment since. With `DT-10`'s reading of the policy, verification viii is
+  answered: yes to both halves.
+- **[Claude] 7.3 carried no marker** though this file's first entry records it (2026-10-16); the step now
+  says so.
+- **[Claude] Two sentences the estate had overtaken.** The Prerequisites said Stage 18 adds Staging to the
+  `readers` of `production/sagemaker/`: `readers` is `SMUS_MEMBERS` (`scripts/tfhygiene/backend.py`), and
+  Stage 18 step 2.3 (PR #174) gave a deployment account a list of its own, `SMUS_DEPLOYMENT_MEMBERS`,
+  which `readers` does not read. And 9.1's alarms bullet said neither alarm notifies anyone: Sandbox's two
+  publish to `awsds-sandbox-alerts` since 21:19Z today (PR #181, [the 5b log](log-stage-05b-redshift-serverless.md)),
+  and `awsds-prod-alerts` admits CloudWatch since PR #179 (`CloudWatchAlarmsOfThisAccount`,
+  [the Stage 12 log](log-stage-12-observability-finops.md)), so the copies publish there.
+
+## 2026-10-20 — the instance-preference rows and decision 1's scoping written; Production's quotas and Bucket Keys read
+
+*Claude's hand. The first two entries record PR #216, written offline in a task session on 2026-10-20
+and merged at 21:52Z: no AWS call, plan or battery ran in it. The readings after them were taken in a
+later task session as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, in
+Production, with the tunnel down (`NO_PROXY='*'`). Every call is a read; nothing was applied.*
+
+- **[Claude] 3.5's instance-preference rows, written and not run** (PR #216). `aws/probes/probes.py`'s `ou`
+  phase gains seven rows in Production, each `blocked`, for a job naming its types in
+  `InstancePreferences`: for `CreateProcessingJob` and for `CreateTrainingJob`, a list naming
+  `ml.m5.2xlarge` and a list naming `ml.m5.large` then `ml.m5.2xlarge`, each expected `DENY-SCP`, beside a
+  list naming `ml.m5.large`, expected authorized; and for training, `ml.m5.2xlarge` as `InstanceType`, the
+  control. Each argv was checked offline against the installed CLI's SageMaker model, and `scp-battery.md`
+  moves the entry from its uncovered list to phase 4b. No `scp-battery-*` report in any checkout on the
+  laptop is dated after 2026-10-19. The run is owed: the infrastructure user, account Production,
+  permission set `InfrastructureAccess` (`awsds-infra-prod`), `./aws/probes/scp-battery.py --phase ou`,
+  before Stage 10's processing step and Stage 17 pass 2's training job.
+- **[Claude] Decision 1's scoping, written as a recommendation** (PR #216): Staging reads
+  `awsds-prod-outputs/models/*/model.tar.gz`, `s3:GetObject` with no `s3:ListBucket`, as
+  `awsds-staging-job-exec` and `awsds-deploy-staging`; the bucket policy alone holds them to the archives,
+  because with S3 Bucket Keys the KMS encryption context is the bucket's ARN (AWS's S3 guide). The
+  decision, and Stage 10 decision 6's sentence with it, stay the user's.
+- **[Claude] The Bucket Keys on Production's buckets**, `s3api get-bucket-encryption` at 22:00:16Z:
+  `awsds-prod-outputs` answered *"An error occurred (NoSuchBucket) when calling the GetBucketEncryption
+  operation: The specified bucket does not exist"*; 1.1 creates it in pass 3, from the module. The three
+  buckets `terraform-modules/s3-bucket` created in Production, `awsds-prod-releases` (`s3-bucket-v0.4.0`),
+  `awsds-prod-gitlab-objects` and `awsds-prod-gitlab-backup` (`v0.3.0`), each read `aws:kms` with
+  `BucketKeyEnabled: true`, as does `awsds-prod-tfstate`, the bootstrap's. Every module tag, `v0.1.0` to
+  `v0.4.0`, sets `bucket_key_enabled = true` with no variable, so decision 1's finding holds for the bucket
+  1.1 creates, and D31 records its zero-cost variant as unavailable on the module's buckets.
+- **[Claude] Production's processing quotas**, `service-quotas list-service-quotas --service-code
+  sagemaker` at 22:00:35Z: `ml.t3.medium for processing job usage` (`L-0CE343FE`) 4.0, adjustable, AWS's
+  default (`get-aws-default-service-quota` 4.0); `ml.m5.large` (`L-8541302D`), `ml.m5.xlarge`
+  (`L-0307F515`) and `ml.m5.2xlarge` (`L-1D84B9D2`) 0.0. The SageMaker request history is empty. Stage 12's
+  reading of 2026-10-18 gave Production the same 4 ([its log](log-stage-12-observability-finops.md)). A
+  Production job on `ml.t3.medium`, the type `app-etl`'s `process` task names, passes the quota, and the
+  processing rows' reading of `ResourceLimitExceeded` as authorized still holds for the three `ml.m5`
+  types.
+
+## 2026-10-20 — Production's training quotas read
+
+*Claude's hand. The first reading is the orchestrating session's; the task session it started to carry
+the reading into the plan re-read it and added AWS's defaults and the ceiling's other types. Both as the
+infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`, in Production, with the tunnel
+down (`NO_PROXY='*'`). Every call is a read; nothing was applied.*
+
+- **[Claude] The three `ml.m5` training quotas**, `service-quotas list-service-quotas --service-code
+  sagemaker`, read by the orchestrating session at 22:22:36Z: `ml.m5.large for training job usage`
+  (`L-611FA074`), `ml.m5.xlarge` (`L-CCE2AFA6`) and `ml.m5.2xlarge` (`L-AD0A282D`) 0.0. The task
+  session's re-read at 22:34Z gave the same three 0.0, `get-aws-default-service-quota` 0.0 for each, and
+  an empty SageMaker request history.
+- **[Claude] The ceiling's other types, from the same listing**: `ml.t3.large` (`L-B95AAE44`),
+  `ml.t3.xlarge` (`L-823DAB46`) and `ml.c5.xlarge` (`L-E2BB44FE`) for training 0.0, AWS's default 0.0
+  each (22:36Z); `ml.t3.medium` and `ml.c5.large` have no training quota. No type inside the ceiling can
+  train in Production without an increase, so Stage 10 5.1's training job waits on one.
+
+## 2026-10-21 — the stage's text brought to `EXC-13`'s rotation and the training quotas on 2026-10-20 (PR #230), recorded
+
+*Claude's sitting, no AWS call: the task session the orchestrating session "Stage 18 checklist" started
+opened PR #230 (merged 2026-10-20T22:55:05Z), which carried two readings into the plan: `EXC-13`'s first
+rotation ([the 5b log](log-stage-05b-redshift-serverless.md), 2026-10-20) and Production's training
+quotas (this log's entry "Production's training quotas read", the PR's one AWS reading). It logged the
+reading and not the text it changed; this entry is written on 2026-10-21 by the orchestrating session
+from the PR's body and diff, with no AWS call.*
+
+- **[Claude] 9.1, "The admin secret"**: the claim that the rotation "fails permanently" with no workgroup
+  gives way to Sandbox's reading, the first rotation succeeding on 2026-10-20. `EXC-13` still gains a
+  Production row: the Production secret rotates on the same schedule.
+- **[Claude] The training quotas in the stage file**: the Status row, 3.5 and the instance-preference
+  risk say that no type inside the ceiling can train in Production without an increase, so Stage 10 5.1's
+  training job waits on one.
+- **[Claude] The battery's training rows**: [`scp-battery.md`](../plan/runbooks/scp-battery.md) phase 4b
+  and the comment over the rows in `aws/probes/probes.py` no longer call the quotas unread; whether
+  `CreateTrainingJob` checks them after authorization still is. No probe changed.
+- **[Claude] "Who executes"**: the `[user]` row reads "the log entries the user writes", as PR #228 has it
+  in the other stage files.
+
+## 2026-10-22 — the stage reviewed and prepared with the environment down
+
+*Claude's hand, in the session "Stage 9 — revisão e preparação", one of three the orchestrating session
+started on the user's request of that day to review and prepare Stages 8, 9 and 10. Every AWS call is a
+read, as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`, `awsds-infra-identity` and `awsds-infra-sandbox-1`, with the
+tunnel down (`NO_PROXY='*'`); the plans ran on Terraform 1.15.8 and were saved under `$HOME/tmp/stage-09/`.
+Nothing was applied. Times UTC.*
+
+- **[user] The request**, to the orchestrating session: *"Revise o plano dos estágios 8, 9 e 10,
+  considerando o andamento atual do plano, em especial as decisões registradas na sessão atual, bem como o
+  aprendizado com a conclusão do stage 18. Faça todas as leituras que não dependam do ambiente no ar.
+  [...] Faça a preparação necessária para todas as etapas dos estágios 8, 9 e 10 que forem possíveis de
+  serem preparadas e que não precisam da minha intervenção ou decisão."*
+- **[Claude] What Stage 8's decisions of the day change here.** Its 2.5 makes this stage's
+  `awsds-<env>-job-exec` the job role in Staging and Production, with Staging's twin arriving by 4.3 before
+  Stage 8's pass 4 (decision 23), so 4.3 moves ahead of the rest of pass 5. Its decision 2 (`awsds/infrastructure`
+  kept as pass 4's reader), 3.9 (no S3 grant to `DeploymentManagerAccess`) and decision 20 (no
+  `If-None-Match` deny) leave this stage's text as it was.
+- **[Claude] Lake Formation, before 1.5 and 4.1**, `get-data-lake-settings` at 04:55:27Z. Staging: no
+  administrator, both default lists empty, `CROSS_ACCOUNT_VERSION` `1`, `SET_CONTEXT` `TRUE`, as Stage 18's
+  pass 8 left them. Production: no administrator, both default lists
+  `IAM_ALLOWED_PRINCIPALS` with `ALL`, `CROSS_ACCOUNT_VERSION` `4`, `SET_CONTEXT` `TRUE`.
+- **[Claude] The job log groups**, `describe-log-groups` at 04:55:40Z: none under `/aws/sagemaker/` or
+  `/aws-glue/` in Staging, whose whole list is the Control Tower forwarder's group and
+  `awsds-staging-vpc-flow-logs`; Production's six at 30 days with no CMK, as 3.4 created them.
+- **[Claude] The SageMaker quotas**, `service-quotas list-service-quotas` at 04:56:01Z, identical in
+  Staging and Production: processing `ml.t3.medium` 4, `ml.t3.large` 4, `ml.t3.xlarge` 2, and 0 for
+  `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`; training 0 for `ml.t3.large`, `ml.t3.xlarge`,
+  `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`; transform 0 for `ml.m5.large` (`L-236AE59F`),
+  `ml.m5.xlarge` (`L-7939E4EC`) and `ml.c5.xlarge` (`L-09C9B23C`). `ml.t3.*` and `ml.c5.large` have no
+  transform quota, and `ml.c5.large` none for processing or training either. Both accounts' SageMaker
+  request history is empty. So Staging's training quotas are Production's, and Stage 10 5.4's batch
+  transform waits on an increase in both accounts.
+- **[Claude] The instruments.** `./aws/datalake.py`: *"0 check(s) FAILED."*, `DL-5`
+  `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE - the 5.4 bracket holds`. `./aws/deploytargets.py` as it stood:
+  *"7 check(s) FAILED."*, every one an object of a pass not yet applied (the two buckets and the workgroup,
+  Production's create-defaults, the write share, the `curated` mirror, the persona's owed allows), since
+  its `built` flag turned every absence into a failure once pass 1 stood (Lesson 50).
+- **[Claude] `./aws/deploytargets.py` amended.** Each check reads the pass that creates its object from that
+  pass's own objects: pass 1 the job role, a package group or the debug role; pass 3 a bucket, the
+  workgroup or the CMK, and Production's seated administrator for `DT-5` and `DT-6`; pass 4 one of 5.1's
+  statements; pass 5 a mirror database, Staging's workgroup or CMK. `DT-4` reads `awsds-staging-job-exec`
+  with no lake exception, `DT-5` reads every account's parameters (`SET_CONTEXT` everywhere,
+  `CROSS_ACCOUNT_VERSION` 4 in Data Governance and Production, the value 1.5 copies), and `DT-12` reads the
+  six job log groups in both accounts. Live, as the five infrastructure profiles: *"0 check(s) FAILED."*,
+  16 passes and 8 notes. Against a stand-in `aws` on `PATH` serving a half-applied world, with no AWS call:
+  *"11 check(s) FAILED."*, each planted defect named (a bucket without its sibling, the workgroup missing
+  beside it, a Staging role reaching `awsds-data-dropbox`, Production's defaults granting with an
+  administrator seated, Staging's parameters emptied, the share missing after pass 3 began, a partial
+  5.3, a missing job group in each account), and `DT-11` failing on the document the stand-in did not
+  serve. `aws/INDEX.md` follows.
+- **[Claude] 4.3, `staging/sagemaker/`.** `awsds-staging-job-exec` with 3.1's trust and permissions, without
+  the drop-box pickup, with S3 on `awsds-staging-outputs` (Stage 10 decision 17, taken 2026-10-15) and
+  `awsds-staging-derived` (decision 11's name) and none on `awsds-staging-data`, the mirror's content,
+  which 4.1 registers with Lake Formation; the image from Production's `awsds-prod-ecr-app-etl`, the
+  repository's ARN read from `production/registry/`'s state cross-account; the six job log groups at 30
+  days. `backend.py` gains `DATA_MIRRORS = ["staging"]` and the slice's registry map, `layers.py` its `[P]`
+  row. Plan as `awsds-infra-staging`: *"Plan: 8 to add, 0 to change, 0 to destroy."* The inline policy is
+  known after apply, since it names the groups' ARNs, as Production's was.
+- **[Claude] `glue:GetConnection` on both job roles.** Stage 18's CloudTrail of 2026-10-19 shows Glue's
+  `GlueJobRunnerSession`, a session of that job's role, calling `glue:GetConnection` four times before the
+  job ran; `awsds-prod-job-exec` had no such action. `ReadTheJobsConnection` grants it on the account's
+  connections and catalog. `production/sagemaker/` plan as `awsds-infra-prod`: *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, the job role's inline policy alone, no other drift.
+- **[Claude] 4.3a, `staging/egress/`.** Re-cut to `VPC-Workloads`' six (`sts`, `logs`, `kms`, `glue`,
+  `sagemaker.api`, `secretsmanager`) on `vpc-egress-v0.17.0`, the firewall's list AWS's namespaces alone,
+  from Stage 18's reading of this account's run of 2026-10-19: the worker called `glue` 30 times,
+  `sagemaker.api` 19, `kms` 11 and `logs` 4 through the endpoints, and the job's image pull and Glue's
+  job runner called from AWS's own addresses. `staging.awsds.internal` holds its NS and SOA records alone
+  (read 2026-10-22), so blocking its names costs nothing. The two module versions declare the same
+  resource types, so the deploy role that raises the slice in the promotion leg meets nothing new. Plan as
+  `awsds-infra-staging`: *"Plan: 15 to add, 0 to change, 0 to destroy."*, the six endpoints and the
+  firewall's nine pieces, the coverage precondition passing; the next `make up ENV=staging` applies it.
+  `layers.py` 0.110 → 0.060/h; `docs/NETWORK.md` §10 and conventions §6 follow, `check-network-doc.py`
+  clean.
+- **[Claude] Two readings behind decision 12.** The lake's `DenyOutsideTrustedNetworks` admits a call made
+  through a trusted gateway endpoint, by a Data Governance principal or by a service, so a Glue job's
+  vended reads and writes, made as the registration role, pass from any network, while the pickup's
+  direct `GetObject` and `DeleteObject` as `awsds-prod-job-exec` pass only through `VPC-Workloads`'
+  gateway endpoint; and that endpoint's policy admits every bucket of the organization
+  (`AllowWithinOrganization`). The deploy roles' ceiling is `CeilingIsEverythingTheIdentityPolicyGrants`
+  (`Allow *`) beside the module's denies, so 9.4's grant needs no line in it.
+- **[Claude] The plan corrected.** The Status row; the build table's Staging and egress rows; the contracts
+  gain `awsds-staging-outputs` and a paragraph of the outputs other slices read by state key; 1.3 carries
+  `datalake.py`'s `DL-8` and `DL-9`, which would fail Production's derived bucket and workgroup once
+  Production joins its consumers; 1.5 the Production reading; 2.4 decision 12; 3.1 the connection read;
+  3.2 `awsds-deploy-staging`'s own registry allow; 3.4's proof in two halves, the approval as a pipeline
+  job on the deploy runner; 4.1, 4.3, 4.3a, 4.4's timing in the Staging leg and 4.6; 6.3's prerequisite,
+  marked as an inference; 9.4 without "and its boundary"; verification xvii without a subject; the
+  quota risk; the endpoint cost; and the Decisions-due header, which said no question blocks on the user.
+- **[Claude] Owed, by the user or an authorized apply**: the applies of `staging/sagemaker/` (as
+  `awsds-infra-staging`) and `production/sagemaker/` (as `awsds-infra-prod`) from their saved plans or a
+  fresh re-plan; decision 12 and the decisions the waiting list holds; the transform and training quota
+  requests before Stage 10 5.4 and 5.1.
+
+## 2026-10-22 — `production/workloads/` on `vpc-v0.4.0` for Stage 10, and Stage 10's requirements
+
+*Claude's hand, the same session, after the session "Stage 10 — revisão e preparação" answered the
+ownership message of the morning. Its message is information, not authorization; nothing was applied.*
+
+- **[Claude] The slices between the two stages.** This stage holds `production/workloads/`,
+  `production/workloads-egress/`, `staging/egress/` and the two `data/` slices; Stage 10's 1.2 and its
+  `data/` statements land in them, written by this stage alone. Stage 10 keeps `vpc-egress`'s `mwaa` group
+  empty, `monitoring` joining both VPCs only when its verification xvi reads the workers' metrics refused,
+  so no module release and no `GROUPS=` follow.
+- **[Claude] `production/workloads/` pins `vpc-v0.4.0`** (Stage 10 1.2 item 4, the
+  `mwaa-serverless-code-files-*` family `staging/foundation/` took on 2026-10-19). The module's interface
+  moved by descriptions alone between the two tags. Plan as `awsds-infra-prod`: *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `module.vpc.aws_vpc_endpoint.s3` updated in place, its policy gaining
+  `arn:aws:s3:::mwaa-serverless-code-files-*-us-west-2-prod` and its objects; the endpoint's id, INT-05's
+  anchor, stays. `docs/NETWORK.md` §8 follows.
+- **[Claude] Parity on `ecr.*`.** The Stage 10 session noted that every worker run so far had `ecr.api` and
+  `ecr.dkr` present, so whether a worker needs them is unmeasured. 4.3a removes them from Staging as
+  `VPC-Workloads` lacks them, so the Staging leg is where a worker that needs them fails first.
+- **[Claude] Stage 10's requirements on `awsds-<env>-outputs` and `alias/awsds-<env>-data`**, written into its
+  own file as the exact list and pointed to from 1.1: its decision 12's deny on `workflows/*`, which
+  exempts the release job's deploy role and the account's `InfrastructureAccess` role (Stage 8 3.8's by-hand
+  parity), the same pair admitted to `workflows/*` from outside `VPC-Workloads`' endpoint, the EventBridge
+  notification, and the key's statements for the deploy role, the chain role, the `awsds-<env>-wf-*` roles
+  and CloudWatch Logs. `awsds-staging-job-exec` already matches what it reads: Production's shape, the two
+  outputs `job_role_arn` and `job_role_name`, read on the whole of `awsds-staging-outputs`, and no
+  `iam:PassRole` of its own.
+
+## 2026-10-22 — decisions 1 and 3 carry a revised recommendation
+
+*Claude's hand, the same session, on a message from the orchestrating session "Pendências estágios 7 e 8"
+relaying the user's words in that chat. No AWS call; the decisions stay the user's.*
+
+- **[user] The instruction**, relayed verbatim from the orchestrating session's chat: *"Sim, aplique esta
+  recomendação revisada na sessão do Stage 9."* The revision rests on the user's reasoning on environment
+  isolation: in data science code and artifacts are promoted and data is not, and the governed lake is the
+  one source of truth.
+- **[Claude] Decision 3**, rewritten as "whether Staging keeps a mirror of the lake". Recommended: no
+  mirror; Staging reads the governed lake read-only through Lake Formation, by the LF-Tag share Sandbox
+  holds, writes only to its own catalog, buckets and key, creates the application's schemas from the
+  repository at each deploy, and pins an Iceberg snapshot or reads by time travel for a reproducible
+  test. Controls: no write grant outside Production on the governed catalog, the read scoped by
+  `classification` with `restricted` excluded or filtered (Stage 11 decision 12), Stage 11's data events
+  on every read from outside Production, and the residual accepted in `threat-model.md`. The mirror stays
+  listed as the alternative. Taken, it amends D20's off-the-share and sampled-data sentences and reverses
+  6b 2.3's revocation.
+- **[Claude] Decision 1**, rewritten to cover what Staging reads of Production's outputs. Recommended: a
+  dedicated key, and Staging reads nothing of Production's outputs, model archives included, so Stage 10
+  decision 6 holds as written; a model crosses environments as a release artifact or is retrained in
+  Staging from governed data, its archive carrying its data's classification. The archive read of the
+  2026-10-20 entry is now option (a); the Bucket Keys finding stays.
+- **[Claude] Steps 4.1, 4.4 and 4.6** point at the two recommendations and stand as written until the user
+  decides; no code changed. `staging/sagemaker/`'s role serves either design: it reads through
+  `lakeformation:GetDataAccess` and holds S3 on no lake bucket.
+
+## 2026-10-22 — decisions 2, 5, 6, 7, 8, 11 and 12 taken by the user, as recommended
+
+*Claude's hand, the same session. The user's words were relayed from the orchestrating session "Pendências
+estágios 7 e 8", where the user took the decisions after the orchestrator showed them the options and
+recommendations of this stage's file. No AWS call, and no preparation beyond the record.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session: *"Pode registrar como aceitas as
+  recomendações de decisão em relação aos seguintes itens: # Stage 9 * #2 Limite de dados por query no
+  athena. * #11 onde ficam os resultados de query em Staging e Produção * #12 a rede do job glue * #5 como
+  um projeto do sandbox lê uma tabela governada no redshift * #6 Quem cria as tabelas do warehouse
+  governado * #7 Os limites de custo do warehouse * #8 os logs de auditoria do warehouse"*
+- **[Claude] What each acceptance takes**, recorded in the Decisions-due table:
+  - 2: 10 GB per query.
+  - 11: each data slice authors `awsds-<env>-derived`, `results/` at 30 days, and `awsds-<env>-athena`.
+  - 12: option (a), the Glue connection and the job security group `[P]` in `*/sagemaker/`. The
+    application slice references them through `*/sagemaker/`'s outputs (Stage 10 decision 20 (b)).
+  - 5: the Lake Formation-managed datashare, after 9.5a's reading.
+  - 6: the DDL and the load job in the repository, the deployer's database user the only creator.
+  - 7: 10 RPU-hours and `auto_mv` off.
+  - 8: 30 days and the account data CMK.
+- **[Claude] Still open**: decisions 3 (whether Staging keeps a mirror) and 1 (the Production data key and
+  what Staging reads of Production's outputs), which hold pass 2 onward.
+
+## 2026-10-22 — decisions 3 and 1 taken by the user, as recommended
+
+*Claude's hand, the same session. The user's words were relayed from the orchestrating session "Pendências
+estágios 7 e 8", which reads them as the two decisions taken on 2026-10-22 as revised and recommended. No
+AWS call; the saved plan of `staging/sagemaker/` was refreshed.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session: *"Avise às sessões que irei
+  acatar as recomendações em relação às decisões 3 e 1, conforme conversamos nesta sessão."*
+- **[Claude] Decision 3**: no mirror. Staging reads the governed lake read-only through the LF-Tag share
+  Sandbox holds, writes only to its own catalog, buckets and key, and creates the application's schemas
+  from the repository at each deploy. **Decision 1**: a dedicated Production data key, and Staging reads
+  nothing of Production's outputs, model archives included, so Stage 10 decision 6 holds as written. Every
+  decision of the stage is now taken, and none holds a pass.
+- **[Claude] The stage file brought to the two decisions**: the Status row and the Decisions-due table;
+  the build table's `data-governance/data/` and `staging/data/` rows; the outputs paragraph, where
+  `staging/data/` gives `production/data/`'s names; the diagram's Staging node; 1.4 and 2.1 (Staging joins
+  `DATA_CONSUMERS`, the share map gains its `DESCRIBE` and `SELECT`); section 4's Action and Why; 4.1 as
+  1.1-1.3's shape without the write; 4.4 withdrawn; 4.6 without the archive read; 8.5, the Deliverables,
+  verification xiii, two risks, the cost table and decision 6's sentence on the schema's source.
+- **[Claude] The code made true to them, behaviour unchanged**: `DATA_MIRRORS` is `READ_ONLY_TARGETS` in
+  `backend.py`; `staging/sagemaker/`'s comments and role description name the lake read through Lake
+  Formation, and its Sid `VendTheMirrorCredentials` is `VendTheLakeCredentials`. Re-plan as
+  `awsds-infra-staging`: *"Plan: 8 to add, 0 to change, 0 to destroy."*, saved over the earlier plan.
+  `deploytargets.py`'s `DT-4` cites D13 for Staging's role; `./aws/deploytargets.py` *"0 check(s)
+  FAILED."*
+- **[Claude] Owed before 4.5's apply**: `DT-8` still reads the superseded design, an isolation check that
+  fails on a link to Data Governance and a table-by-table comparison with a mirror; it is rewritten with
+  pass 5's preparation to read that every Staging grant on the lake is `DESCRIBE` or `SELECT`. Passes 2,
+  3 and 5 can now be prepared: no decision blocks them.
+
+## 2026-10-22 — 4.4 aligned with Stage 8 3.3
+
+*Claude's hand, the same session, on the orchestrating session's message that it applied decisions 3
+and 1 to the shared files in PR #244. No AWS call.*
+
+- **[Claude] What the message asked was already on this branch**: decisions 2, 5, 6, 7, 8, 11 and 12
+  (commit `f96db8bf`) and 3 and 1 (`29302c94`) recorded, and 4.1, 4.4 and 4.6 rewritten to them.
+- **[Claude] 4.4 names where the application's tables come from**, the shape Stage 8 3.3 now assumes: in
+  the Staging leg the deploy creates them from the repository's schemas, after Stage 8's 3.2 and before
+  its 3.3, in 4.1's local database, and the tests read them beside the governed tables through the share.
+
+## 2026-10-22 — Stage 10's definitions home renamed to `applications/`
+
+*Claude's hand, the same session, on a message from the session "Stage 10 — revisão e preparação". No AWS
+call.*
+
+- **[Claude] 1.1's pointer to Stage 10's statements** names `applications/*` where it named `workflows/*`:
+  the user took Stage 10 decision 1, revised, on 2026-10-22, and the definitions home's prefix moved with
+  it. Each leg extracts the release bundle's tree there (`workflows/<name>.yaml`, `code/`, `src/`,
+  `glue/`); the deny's two exemptions and the principal branch's pair are unchanged, and Stage 10's file
+  carries the list as of its commit `f2bd47a7` on PR #246.
+
+## 2026-10-22 — passes 2, 3 and 5 and decision 12 (a) prepared, `DT-8` rewritten
+
+*Claude's hand, the same session, on the user's words relayed from the orchestrating session. Every AWS
+call is a read, as the infrastructure user (`InfrastructureAccess`) through `awsds-infra-data`,
+`awsds-infra-prod`, `awsds-infra-staging` and `awsds-infra-identity`, with the tunnel down; the plans ran
+on Terraform 1.15.8 and were saved under `$HOME/tmp/stage-09/`. Nothing was applied.*
+
+- **[user] The words, verbatim**, relayed from the orchestrating session's chat: *"Peça à sessão do Stage 9
+  para preparar os passes 2, 3 e 5 e reescrever o DT-8, sem aplicar nada."*
+- **[Claude] `backend.py`.** `DATA_CONSUMERS` holds Sandbox, Staging and Production; `DATA_CONSUMER_VPC_SLICE`
+  sends the lake's read of Production's gateway endpoint to `production/workloads/` (1.4), and the
+  generated `consumers` map carries it as `vpc_slice`; a deployment target's `data/` slice receives its
+  account folder, VPC slice and deploy role's name; the two `sagemaker/` slices their zone ids and, in
+  Staging, the account folder. `layers.py` gains `production/data/` and `staging/data/` (`[P]`).
+- **[Claude] Pass 2, `data-governance/data/`.** An aliased provider and identity read for Staging; the
+  consumers' endpoint read from each one's VPC slice; the read shares (`share_databases`, `share_tables`)
+  for Staging and Production beside Sandbox's; `production_write_database` and `production_write_tables`,
+  named on `curated` with the grant option; the table `curated.trades` (Iceberg, the columns of
+  `app-etl`'s input: `trade_date`, `desk`, `instrument`, `quantity`, `price`) and its
+  `classification=internal`, the Governance Manager's to approve; the output `producer_table_name`.
+  `DL-5`'s bracket: `get-data-lake-settings` at 18:44:47Z read `CROSS_ACCOUNT_VERSION` `4` and
+  `SET_CONTEXT` `TRUE`, and the plan touches no settings. Plan: *"Plan: 8 to add, 5 to change, 0 to
+  destroy."*; each of the five lake bucket policies gains two `aws:SourceVpce` ids, the Production one
+  read from `production/workloads/terraform.tfstate`.
+- **[Claude] Pass 3, `production/data/`.** The `consumer-data-v0.6.0` call with fourteen added key
+  statements (the job role, the persona, the debug role, the release roles and their workflows, the chain
+  role, the workflow roles, the jobs' volume grants, CloudWatch Logs for the job and workflow groups,
+  Redshift Serverless); `awsds-prod-outputs` with eight statements (the network deny with its named
+  exemptions, the persona's and debug role's reads, the release role's prefixes `applications/` and
+  `inbox/`, Stage 10 decision 12's deny on `applications/*` exempting the deploy role and
+  `InfrastructureAccess`) and its EventBridge notification; `awsds-prod-derived` at 30 days;
+  `awsds-prod-athena`, enforced, 10 GB per query; `app_outputs` and its grants; 2.3's regrants to the job
+  role, the read by expression and the write on `curated` by name. Plan: *"Plan: 35 to add, 0 to change, 0
+  to destroy."*; Recipe D's first step, `-target` on the settings: *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, `CROSS_ACCOUNT_VERSION` `4`, `SET_CONTEXT` `TRUE`, the create-time defaults known after
+  apply.
+- **[Claude] Pass 5, `staging/data/`.** The same shape without the write, the debug role and the Redshift
+  statement; the persona held to reads on the whole bucket. Plan: *"Plan: 34 to add, 0 to change, 0 to
+  destroy."*; the first step *"Plan: 1 to add"*. The module writes `CROSS_ACCOUNT_VERSION` 4 where Staging
+  read 1.
+- **[Claude] Decision 12 (a).** `network.tf` in both `sagemaker/` slices: `awsds-<env>-jobs`, a
+  self-referencing rule for every TCP port in and out, TCP/443 to the endpoints' group and to the S3
+  prefix list, and the `NETWORK` Glue connection on the first zone's private subnet; outputs
+  `job_security_group_id` and `glue_connection_name`. EC2 refuses an apostrophe in a description, which
+  `check-sg-descriptions.py` caught before a plan. Plans: `production/sagemaker/` *"Plan: 6 to add, 1 to
+  change, 0 to destroy."* (the change is `glue:GetConnection`), `staging/sagemaker/` *"Plan: 14 to add, 0
+  to change, 0 to destroy."*. `lakeformation` joins both egress slices: *"Plan: 16 to add"* each.
+- **[Claude] `DT-8` rewritten.** It reads every grant of the lake to Staging's account (fail on anything
+  beyond `DESCRIBE` and `SELECT`), Staging's resource links into Data Governance (a failure once
+  `staging/data/` stands without them) and Staging's local tables against the lake's names (a failure on
+  a copy). Live, the five infrastructure profiles: *"0 check(s) FAILED."*, `DT-8` two notes (no grant, no
+  link yet) and one pass. Against a stand-in `aws`: a planted `INSERT`, a missing link with the Staging key
+  present and a local `app_outputs.trades` each fail by name; a world with `DESCRIBE`/`SELECT` grants,
+  both links and no copy reads three passes.
+- **[Claude] What the plans do not stop on, and what they wait for.** No plan reads an object another
+  stage creates: the policies name Stage 10's roles by `aws:PrincipalArn`. The applies have an order:
+  pass 2 before `production/data/` and `staging/data/` (the regrants need the share);
+  `staging/sagemaker/` before `staging/data/` (Lake Formation refuses a grant to a role that does not
+  exist); Recipe D's two steps in each data slice. Once merged, `data-governance/data/`'s change sits on
+  `main` unapplied, and any later apply of that slice carries it (Lesson 69).
+- **[Claude] Documents.** `docs/NETWORK.md` §2.1 and §9 name the jobs' groups and §10 the seven
+  endpoints; the producer README gains the write grants, the trusted endpoints' sources and `curated.trades`;
+  `production/data/` and `staging/data/` carry READMEs indexing every added `Sid` and grant; conventions §6,
+  `docs/PRICING.md` §3, `docs/plan/cost-model.md` and `aws/INDEX.md` follow. `check-network-doc.py`,
+  `check-sg-descriptions.py`, `check-plan-refs.py`, `check-index.py` and `slices.py check` (41 slices) are
+  clean.
+
+## 2026-10-22 — 4.4 carries Stage 10 decision 20 (d)'s exception
+
+*Claude's hand, the same session, on the orchestrating session's message that the user took Stage 10
+decision 20 (d) in its chat. No AWS call.*
+
+- **[Claude] 4.4** keeps Staging free of any seeded stand-in for governed data, with one exception named:
+  the release job seeds `inbox/app-etl/` of the account's outputs bucket from the bundle's `samples/`, in
+  Staging and Production alike, because `app-etl` is a template with no producer and the samples are its
+  own test input; a real application names its governed source in its release. `production/data/` and
+  `staging/data/` already admit the release role to `inbox/`, and Stage 10 decision 2, taken the same day,
+  confirms the workflow statements their data keys carry.
+
+## 2026-10-22 — the deployment manager's run read on both data keys; Stage 8's halves in PR #244
+
+*Claude's hand, the same session, on messages from the sessions "Stage 10 — revisão e preparação" and
+"Pendências estágios 7 e 8". No AWS call beyond the re-plans; nothing applied.*
+
+- **[Claude] `AllowTheDeploymentManagerToReadWorkflowRuns`** joins the data keys of `production/data/` and
+  `staging/data/`: the user took Stage 10 decision 11 that day, so `DeploymentManagerAccess` reads
+  workflow runs, and under decision 2 the service decrypts a run in the reader's session at each
+  `GetWorkflowRun`. `kms:Decrypt`, the reserved role matched by pattern, and the encryption context
+  `aws:airflow-serverless:workflow-arn` matched to `awsds-<env>-wf-*`, narrower than the context's
+  presence the request named. No S3 object carries that context, so the approver still decrypts no
+  output (D31). Re-plans: *"Plan: 35 to add, 0 to change, 0 to destroy."* and *"Plan: 34 to add, 0 to
+  change, 0 to destroy."*, the full plans saved again; Recipe D's first-step plans are unchanged, since the
+  settings carry no key statement.
+- **[Claude] Stage 8's halves, in PR #244 and unapplied**: `awsds-<env>-app-boundary` in both
+  `foundation/` slices (4.0 now says so), `PassTheJobRole` on both deploy roles, and on
+  `awsds-deploy-staging` `ReadTheApprovedModelVersions` and `ListTheModelVersions`, the two actions
+  `production/sagemaker/`'s group policy grants that role.
+
+## 2026-10-22 — passes 2, 3 and 5, decision 12 (a) and `production/workloads/` applied
+
+*Claude's hand, the same session, as the infrastructure user, on the user's "Autorizado" in this
+session's chat: the applies in the report's order, `curated.trades`' classification with pass 2. The
+session told "Pendências estágios 7 e 8", "Stage 10 — revisão e preparação" and "Chat lateral" before
+the first write, and started after the orchestrating session reported its `foundation/` and
+`identity/sso/` applies done. Every plan was made afresh with `-input=false`, and its changes in
+`terraform show -json` compared with the reviewed plan's: identical each time.*
+
+- **[Claude] Pass 2, `data-governance/data/`** (Data Governance, `InfrastructureAccess`,
+  `awsds-infra-data`), 19:35:58-19:36:25Z: *"Apply complete! Resources: 8 added, 5 changed, 0
+  destroyed."*, re-planned `No changes`. `DL-5` read `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE` before
+  (19:35:09Z) and after (19:39:12Z), and `DL-7` 9 shares out where it read 3, no invitation pending.
+  `DT-6` passes (an `INSERT` grant names Production's account) and `DT-8` reads 2 grants to Staging,
+  `DESCRIBE` and `SELECT` alone (19:45:20Z); `DT-5` read Production's two default lists holding one
+  `IAMAllowedPrincipals` entry each.
+- **[Claude] `production/workloads/` and `production/sagemaker/`** (Production, `awsds-infra-prod`) and
+  **`staging/sagemaker/`** (Staging, `awsds-infra-staging`): 19:46:42-19:47:00Z, 1 changed, the S3 gateway
+  endpoint's policy on `vpc-v0.4.0`; 19:47:00-19:47:22Z, 6 added and 1 changed, decision 12 (a)'s group,
+  rules and Glue connection and `ReadTheJobsConnection`; 19:47:23-19:47:54Z, 14 added. Each re-planned
+  `No changes`.
+- **[Claude] `production/data/` by Recipe D**: the settings alone, 19:51:00-19:52:37Z, 1 added;
+  `get-data-lake-settings` read the `InfrastructureAccess` seat alone, both default lists `[]`,
+  `CROSS_ACCOUNT_VERSION=4` and `SET_CONTEXT=TRUE`, so nothing was revoked, and `DT-5` read the lists
+  emptied (19:54:38Z). Then the rest, 19:55:07-19:56:36Z, *"Apply complete! Resources: 34 added, 0 changed,
+  0 destroyed."*, re-planned `No changes`.
+- **[Claude] `staging/data/` by Recipe D**: the settings alone, 19:57:27-19:57:36Z, 1 added, read back
+  with the `InfrastructureAccess` seat alone, both lists `[]`, `SET_CONTEXT=TRUE` and
+  `CROSS_ACCOUNT_VERSION` 4 where it read 1. Then the rest, 19:58:08-19:59:30Z, *"Apply complete!
+  Resources: 33 added, 0 changed, 0 destroyed."*, re-planned `No changes`.
+
+## 2026-10-22 — the readings after the applies
+
+*Claude's hand, the same session, read-only. Both instruments exit 1 for the persona profiles that were
+not signed in (their "Calls that failed" section), with 0 checks failed.*
+
+- **[Claude] `./aws/deploytargets.py`**, 20:01:24Z: 0 failed, one note, `DT-10`'s `DataScientistProdAccess`
+  allows, owed by 5.1. `DT-1` reads `awsds-prod-outputs` under `aws:kms` with its vpce, via and principal
+  branches and `awsds-prod-derived` expiring at 30 days; `DT-2` the workgroup enforced, its results in
+  `awsds-prod-derived`, cutoff 10737418240, `SSE_KMS`; `DT-4` both job roles' trust and D13; `DT-5` every
+  account's parameters and both consumers' lists emptied; `DT-8` the share, the links `curated` and `raw`
+  resolving into Data Governance, and no copy; `DT-12` six job log groups at 30 days in each account.
+- **[Claude] `./aws/datalake.py`**, 20:03:39Z: 0 failed, `DL-5` 4 / TRUE, `DL-7` 9 shares out.
+- **[Claude] Verification xiv**: no grant names `IAM_ALLOWED_PRINCIPALS` in Production (21 grants: 9 to
+  `awsds-prod-job-exec`, 7 to `DataScientistProdAccess`, 3 to `InfrastructureAccess`, 2 to
+  `awsds-deploy-prod`) or in Staging (22). Production's RAM holds four `LakeFormation-V4-*` shares and
+  Staging's two, each `ACTIVE`, with no invitation pending; through the links, `curated` lists
+  `sample_trades` and `trades` in both accounts and `raw` lists none.
+- **[Claude] The jobs' network**: `awsds-prod-jobs` and `awsds-staging-jobs` each read ingress TCP
+  0-65535 from itself, and egress TCP 0-65535 to itself, 443 to the endpoints group and 443 to the S3
+  prefix list. The Glue connections of the same names are `NETWORK`, on that group, in `us-west-2b`.
+  `./aws/egress.py`'s `EG-4` matches `mwaa-code` on VPC-Workloads' gateway endpoint and on neither of
+  Production's other two, 0 failed.
+- **[Claude] Stage 8's ceilings**: `awsds-prod-app-boundary` and `awsds-staging-app-boundary` read at
+  `v1`, created 19:27:16Z and 19:27:35Z, attached to nothing.
+- **[Claude] The branch on `main`**: the user asked to rebase on `main`; the branch is pushed, so the
+  app's sync merged `origin/main` (PR #246) per `CLAUDE.md`'s rule, one conflict in `docs/NETWORK.md` §9
+  where both stages added a row, both kept. The six applied slices re-planned on the merged code read
+  `No changes`.
+
+## 2026-10-22 — the job log groups under the data key, written and planned
+
+*Claude's hand, the same session, on the user's "Sim, prepare a migração dos seis grupos de log dos jobs
+para a chave de dados em production/sagemaker e staging/sagemaker, só até o plano, sem aplicar." AWS
+reads only; nothing applied.*
+
+- **[Claude] The association**: each `*/sagemaker/` slice reads the account data key's ARN from
+  `*/data/`'s state, with a null default so a first build still applies the job role before `data/`
+  (whose Lake Formation grants name it), and sets `kms_key_id` on its six job log groups. CloudWatch Logs
+  uses the key as its own principal under the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups`;
+  no role holds a grant on it. The `CKV_AWS_158` skips are gone.
+- **[Claude] The policies name the groups by ARNs built from their names**: a first plan listed the job
+  role's and the debug role's inline policies as updates, their documents read only at the apply because
+  they referenced the group resources. With the ARNs built from `local.job_log_groups` the documents are
+  identical and plan as no change.
+- **[Claude] Plans** as `awsds-infra-prod` and `awsds-infra-staging`, each *"Plan: 0 to add, 6 to change,
+  0 to destroy."*, `kms_key_id` the only attribute that moves, no data source deferred to the apply; saved
+  as `production-sagemaker-logkey.tfplan` and `staging-sagemaker-logkey.tfplan` outside the repository.
+- **[Claude] `DT-12`** reads each group's key: live, a note in both accounts (all twelve groups under the
+  AWS-owned key), 0 failed. Against a stand-in `aws`: all six under the data key passes, three of six
+  fails as a partial apply, another key fails, none is the note.
+- **[Claude] Lesson 69**: once PR #245 merges, both `sagemaker/` slices carry this change on `main`
+  unapplied, and any later plan of either shows the six associations.
+
+## 2026-10-22 — the job log groups under the data key, applied
+
+*Claude's hand, the same session, as the infrastructure user, on the user's "Sim, aplique a associação
+dos grupos de log à chave de dados em production/sagemaker (awsds-infra-prod) e staging/sagemaker
+(awsds-infra-staging), a partir de planos novos." The session told "Pendências estágios 7 e 8" and
+"Chat lateral" before the write.*
+
+- **[Claude] Fresh plans**, each *"Plan: 0 to add, 6 to change, 0 to destroy."*, their changes in
+  `terraform show -json` identical to the reviewed plans', no data source deferred to the apply.
+- **[Claude] `production/sagemaker/`** (Production, `awsds-infra-prod`), 20:51:10-20:51:22Z, and
+  **`staging/sagemaker/`** (Staging, `awsds-infra-staging`), 21:00:02-21:00:15Z: *"Apply complete!
+  Resources: 0 added, 6 changed, 0 destroyed."* each. Staging re-planned `No changes`. Production's first
+  re-plan failed on the laptop's DNS (`lookup ec2.us-west-2.amazonaws.com: no such host`; the
+  orchestrating session reported the same drop interrupting its `identity/sso/` apply), and the second, at
+  21:00:44Z, read `No changes`.
+- **[Claude] `DT-12`**, 21:03:22Z: *"6 under the account data key"* in both accounts, 0 failed; the
+  CLI reads each of the twelve groups' `kmsKeyId` as its account's data key. Its branch for the AWS-owned
+  key turned from a note into a fail, exercised against the stand-in.
+- **[Claude] Owed**: the first job in each account shows whether its logs land and whether the debug role
+  reads them, neither role holding a grant on the key.
+
+## 2026-10-22 — the documents brought to the applied state
+
+*Claude's hand, the same session, in commit `d3610844` with the applies of passes 2, 3 and 5. No AWS call
+beyond the readings recorded above.*
+
+- **[Claude] The stage file**: the Status, steps 1, 1.5, 2.1-2.3, 3.1's `glue:GetConnection` note, 4.0's
+  ceiling, 4.1, 4.3, 4.5, 7.2 and verification xiv carry the applies and their readings where they said
+  planned and unapplied.
+- **[Claude] The indexes**: the rows of `production/data/`'s, `staging/data/`'s and the producer's READMEs
+  read applied; `consumer-data`'s README names its three callers; conventions §6 counts seven endpoints in
+  both egress slices, `lakeformation` among them; `docs/NETWORK.md` marks the jobs' groups and
+  VPC-Workloads' `vpc-v0.4.0` applied.
+- **[Claude] `docs/PRICING.md`**: the KMS row counts 17 keys with the two deploy targets' data keys, and
+  the monthly floor rises by 2 USD in both Regions (`sa-east-1` ~USD 32-45, central ~38; `us-west-2`
+  ~USD 27-36, central ~32), in §2 and in the regional comparison.
+
+## 2026-10-22 — the third sitting with the environment down: 5.1 as a managed policy, the warehouse pair written, 2.4 has no job
+
+*Claude's hand, in the session `stages-8-9-10-review`, on the user's request quoted in Stage 8's entry of
+the same sitting. AWS read as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`,
+`awsds-infra-staging`, `awsds-infra-data`, `awsds-infra-identity`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down (`NO_PROXY='*'`); the plans saved outside the repository. Nothing applied.
+Times UTC.*
+
+- **[Claude] The instruments, between 22:00 and 22:10**: `./aws/deploytargets.py` 0 FAILED, `DT-10` a
+  note (`DataScientistProdAccess`: the three markers `no`, owed by 5.1); `./aws/datalake.py` 0 FAILED,
+  `DL-5` 4 / TRUE.
+- **[Claude] 5.1, first as inline statements**: the six allows and the two Redshift denies, with the
+  ARNs read from `production/data/` and `production/sagemaker/`'s states through a `deployment_target`
+  map. The plan as `awsds-infra-identity` at 22:14:09 failed the slice's own precondition:
+  *"Inline policy for DataScientistProdAccess is 10550 characters, over the 10240 the plan allows. See
+  step 5.2: the way out is a customer-managed policy, not a larger threshold."* The set read 7,098
+  before. The set also lacked `lakeformation:GetDataAccess` (read in the document), without which 2.3's
+  regrants reach nothing.
+- **[Claude] 5.1 as written**: `production/data/persona.tf`, the `aws_iam_policy`
+  `awsds-prod-data-scientist` (`backend.py`'s `PERSONA_PRODUCTION_POLICY_NAME`, generated into both
+  slices) with seven statements on the slice's own objects: the six Athena query and history actions on
+  `awsds-prod-athena`, `GetObject` and `GetObjectVersion` under `PERSONA_READ_PREFIXES`
+  (`app-etl/outbox/`, one list in `backend.py`, generated into `production/data/` for the bucket policy
+  and the policy alike), `ListBucket` held to those prefixes, the results' read and write under
+  `results/` of `awsds-prod-derived`, `Decrypt` and `GenerateDataKey` on the data key through S3, and
+  `sts:AssumeRole` on `awsds-prod-debug`; `identity/sso/` attaches it to `data_scientist_prod` by name,
+  keeps `ReadThroughLakeFormation` inline, and composes the two Redshift denies from the new fragment
+  `redshift_denies`, which both data-science sets read. `production/data/`'s key policy admits
+  `/aws/redshift/*` for 9.1's audit groups. Plans: `production/data/` as `awsds-infra-prod` at 22:22:18
+  *"Plan: 1 to add, 1 to change, 0 to destroy."* (the policy; the key policy's CloudWatch statement);
+  `identity/sso/` as `awsds-infra-identity` at 22:22:31 *"Plan: 1 to add, 1 to change, 0 to destroy."*
+  (the attachment; `DataScientistProdAccess` 7,098 to 8,438), `DataScientistAccess` unchanged.
+- **[Claude] `DT-10` amended**: it reads the set's customer-managed policy references and, when
+  `awsds-prod-data-scientist` is among them, the policy's default version in Production, and searches
+  the markers in both documents; live at 22:28: a note, the markers `no` and the policy `not attached`,
+  0 failed.
+- **[Claude] 9.1, written by a fork of this session**: `terraform-live/production/warehouse/` and
+  `production/warehouse-compute/` from the Sandbox slices with the step's differences; the four states'
+  outputs read at 22:08:20; the namespace planned as `awsds-infra-prod` at 22:13:52 to 22:14:12,
+  *"Plan: 9 to add, 0 to change, 0 to destroy."* (three log groups, two alarms, the role, the namespace,
+  the security group, the ingress rule); the compute's plan at 22:14:16 to 22:14:26 *"Error: Unable to
+  find remote state … No stored state was found"* for `production/warehouse/`, the expected reading;
+  `awsds-prod-tfstate` holds no object under `production/warehouse` (22:14:51). `layers.py` gains the
+  two rows and refusal 9, `HELD_FROM_UP`, keyed `("production", "warehouse-compute")`: `make up
+  ENV=production DRY=1` prints the refusal and raises nothing of it. `docs/NETWORK.md` gains the pair's
+  rows in §2, §2.1 and §9; `check-network-doc.py` clean.
+- **[Claude] 2.4 read against the code**: no job writes `curated.trades`. The pipeline's Glue job runs
+  `glue/transform.py` (inbox to one CSV), and the template carries no schema, so 2.4 to 2.6 have no job
+  to run; the step now specifies the proof job (`awsds-prod-producer-proof`, `[P]` in
+  `production/sagemaker/`, its scripts under `applications/stage-09-proofs/v0/glue/`), unwritten.
+- **[Claude] The plan**: the Status row, the build table, 2.4, 4.6, 5.1, 5.3 and 9.1.
+
+## 2026-10-22 — 5.1 applied: the persona's managed policy in Production, its attachment in Identity
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`, `awsds-infra-identity`,
+each `InfrastructureAccess`), on the user's authorization in this chat. Every plan was made afresh and
+applied only after its summary line read what the reviewed plan had read. Times UTC.*
+
+- **[user] The authorization**: *"Autorizo aplicar production/data como awsds-infra-prod e depois
+  identity/sso como awsds-infra-identity, cada um a partir de um plano novo, avisando as outras sessões
+  antes."*
+- **[Claude] Before**: the app's session list read at 22:49, no session running, so none to warn; both
+  profiles answered `get-caller-identity`; the worktree clean at `c9800c78`.
+- **[Claude] `production/data/`** (Production, `awsds-infra-prod`): the fresh plan at 22:50:22 to 22:50:56
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* (`aws_iam_policy.persona`; the data key's policy);
+  the apply, 22:50:56 to 22:51:16, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the
+  key modified in 8 s and the policy created in 1 s; the re-plan at 22:52:31 *"No changes."*
+- **[Claude] `identity/sso/`** (Identity, `awsds-infra-identity`): the fresh plan at 22:51:39 to 22:51:53
+  read *"Plan: 1 to add, 1 to change, 0 to destroy."* with `data_scientist_prod` 7098 → 8438; the apply,
+  22:51:53 to 22:52:13, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."*, the attachment
+  created in 7 s and the inline policy modified in 9 s, `inline_policy_bytes` reading 8438 for the set;
+  the re-plan at 22:53:50 *"No changes."*
+- **[Claude] Read back**, 22:54 to 22:56: `awsds-prod-data-scientist` at `v1`, created 22:51:13, attachment
+  count 1, its seven `Sid`s the ones `persona.tf` writes; the set's customer-managed policy references name
+  it at path `/`, provisioned in one account; Production's `AWSReservedSSO_DataScientistProdAccess_*` role
+  carries `CloudWatchLogsReadOnlyAccess` and `awsds-prod-data-scientist` attached, and its inline policy
+  `DenyMintingARedshiftDatabaseSession`, `DenyRedshiftCostGuardAndCompute` and `ReadThroughLakeFormation`;
+  the data key's `AllowCloudWatchLogsForTheJobAndWorkflowGroups` lists `/aws/redshift/*` between
+  `/aws-glue/*` and `/awsds/prod/wf/*`. `./aws/deploytargets.py` on the five infrastructure profiles at
+  22:55:43: *"0 check(s) FAILED."*, `DT-10` passing for `DataScientistProdAccess` (the three markers `yes`,
+  the policy `attached`) and for `DataScientistStagingAccess`.
+- **[Claude] The records**: the stage file (the Status, 5.1, 5.3), both slices' READMEs, the waiting
+  list, `CLAUDE.md`, the plan core and both indexes; `docs/AWS_STATE.md`'s row on `deploytargets.py`,
+  which still described the seven fails of 2026-10-18, brought to the 0-failed reading with `DT-10`
+  passing.
+- **[Claude] What follows**: 5.4 and 8.1 to 8.4 are the user's, in the data-science persona's sessions;
+  6.3 may run now, the persona holding the debug role's assumption.
+
+## 2026-10-22 — 6.3: the deployment manager's approval of a debugging window, and the apply planned
+
+*Claude's hand, the same session. The approval is the user's, in this chat; the plan a read as the
+infrastructure user (`awsds-infra-prod`); nothing applied in this entry. Times UTC.*
+
+- **[user] The approval**, as the deployment manager, 23:0x: *"Sim: registre minha aprovação como
+  deployment manager, planeje o apply da variável debug_window_end em production/sagemaker e me diga
+  o que eu faço na sessão da persona."* It answers this session's question of the same minute,
+  *"Quer abrir agora a janela do escape hatch (6.3), com sua aprovação escrita e o apply da
+  variável?"*. The window proposed: until 2026-10-23T01:00:00Z, about two hours from the approval, long
+  enough for the persona's sign-in, one assumption inside it and the refused one after it.
+- **[Claude] The plan**, `production/sagemaker/` as `awsds-infra-prod` with `-var
+  debug_window_end=2026-10-23T01:00:00Z`, 23:07:28 to 23:07:44: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the debug role's trust alone (`DateLessThan` moving from the default to the window), and
+  the slice's own check printing *"The debug window on awsds-prod-debug is open until
+  2026-10-23T01:00:00Z: close it in the same sitting with an apply without -var debug_window_end"*, the
+  reminder 6.3 relies on. The apply waits on the user's word; the persona's sequence is the step's.
+
+## 2026-10-22 — 6.3: the window opened
+
+*Claude's hand, the same session, as the infrastructure user (`awsds-infra-prod`), on the user's
+authorization in this chat: "Autorizo o apply de production/sagemaker como awsds-infra-prod a partir do
+plano salvo, abrindo a janela do awsds-prod-debug até 2026-10-23T01:00:00Z." Times UTC.*
+
+- **[Claude] Before**: the app's session list read at 23:09, no session running.
+- **[Claude] The apply**, from the plan saved at 23:07 (`production/sagemaker/`, Production): 23:09:43 to
+  23:09:55, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s,
+  the check warning *"The debug window on awsds-prod-debug is open until 2026-10-23T01:00:00Z"* printed
+  with it.
+- **[Claude] Read back**: `get-role` at 23:10:19 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-23T01:00:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:10:50 *"0 check(s) FAILED."*, `DT-9` a note, *"OPEN
+  until 2026-10-23T01:00:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 23:11:04 *"No changes."*
+  with the same warning.
+- **[Claude] What follows**: the persona's sequence (6.3), the user's; then the refused assumption after
+  01:00Z read in the trail, and the closing apply without the flag.
+
+## 2026-10-22 — 6.3: the persona's assumption inside the window, the alarm heard on the receiving side
+
+*The user's hand for the persona's commands, pasted into this chat and copied here with the account id
+and the sign-in address replaced by placeholders; Claude's hand for the readings, as the infrastructure
+user (`awsds-infra-prod`), after the user signed in again as that user (the persona's login had emptied
+the `awsds` token: *"Token for awsds does not exist"* at 23:22). Times UTC.*
+
+- **[user] A first attempt with the placeholder left in the ARN**, three calls refused the same way:
+  *"An error occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*, the resource string carrying the literal
+  `<Production>` of the step's text. The trail records them in Production as `AccessDenied` on
+  `AssumeRole` with `requestParameters` null (4 events, 23:18:16, 23:18:27, 23:18:36, 23:20:51), the shape Stage 8 4.6 read
+  for a refused assumption. The step's command now reads the account id from the persona's own profile.
+- **[user] The assumption inside the window**, the step's command with the real ARN:
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-proof"*.
+- **[user] The reads through the assuming profile**: `aws s3 ls s3://awsds-prod-outputs/` answered
+  nothing and refused nothing (the bucket holds no object yet, so the listing is the reading and
+  `GetObject` stays unexercised); `describe-log-groups` under `/aws/sagemaker/` listed
+  `/aws/sagemaker/ProcessingJobs`, `/aws/sagemaker/TrainingJobs` and `/aws/sagemaker/TransformJobs`.
+- **[Claude] The receiving side**, 23:25:44: the rule `awsds-prod-debug-assume` read `TriggeredRules` 2 in
+  the 23:21 minute and `Invocations` 1 at 23:21 and 1 at 23:22; the topic `awsds-prod-alerts`
+  `NumberOfMessagesPublished` 1 and 1 in the same minutes, its one subscription an e-mail, `confirmed`
+  (23:26:17). The trail, read at 23:26: two `AssumeRole` events naming the role, both by the persona's
+  reserved role in `us-west-2` with no error: 23:21:29 session `debug-window-proof` (event
+  `14013946-3962-41c9-8391-7cc6cc1db228`) and 23:22:00 session `botocore-session-1792711318` (event
+  `2acc588b-f660-4c47-9abc-ea3c7ff286e4`), the second the assuming profile's own call at the first read.
+  So one proof assumption produced two alarms, the direct call's and the profile's, each a message.
+- **[Claude] What follows**: the two negatives and, after 01:00Z, the refused assumption, then the closing
+  apply.
+- **[Claude] A correction to the entry above**: the trail holds four refused attempts with the
+  placeholder, not three: 23:18:16, 23:18:27, 23:18:36 and 23:20:51, each `AccessDenied` with
+  `requestParameters` null.
+
+## 2026-10-22 — 6.3: the two negatives under the debug role, each refused one layer before the one the step named
+
+*The user's hand, the commands run as the Data Scientist User through the assuming profile, pasted into
+this chat and copied here with the account id replaced by its placeholder; Claude's reading of them.*
+
+- **[user] The write**: *"upload failed: - to s3://awsds-prod-outputs/app-etl/outbox/probe.txt An error
+  occurred (AccessDenied) when calling the PutObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is not authorized to
+  perform: kms:GenerateDataKey on resource:
+  arn:aws:kms:us-west-2:<Production>:key/0415a6f0-9b15-4049-841d-d51e7a65d09c because no resource-based
+  policy allows the kms:GenerateDataKey action"*.
+- **[user] The `CreateSpace`**: *"An error occurred (AccessDeniedException) when calling the CreateSpace
+  operation: User: arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/botocore-session-1792711318 is
+  not authorized to perform: sagemaker:CreateSpace on resource:
+  arn:aws:sagemaker:us-west-2:<Production>:space/d-0000000000000/awsds-canary-probe because no
+  identity-based policy allows the sagemaker:CreateSpace action"*.
+- **[Claude] The reading** (Lesson 20): both refused, neither by the policy the step named. The write
+  met the data key before the bucket: the key policy's `AllowTheDebugRoleToDecryptViaS3` grants the role
+  `Decrypt` alone, and a `PutObject` under SSE-KMS needs `GenerateDataKey`, so the key refused and the
+  bucket's `DenyThePersonaAndTheDebugRoleAnyWrite` stays attached and unexercised for this principal. The
+  `CreateSpace` met the role's own identity policy, `Describe*` and `List*`, an implicit deny; the
+  `Workloads` document's `DenyInteractiveSageMakerSurface` names itself only to a principal whose
+  identity policy allows the action, the battery's infrastructure user, so for the debug role the SCP
+  stays attached and unexercised, as the inline policy's absence of the action already refuses it. The
+  role is read-by-API by two layers in each direction, and one of each pair is proven. The step's
+  expectation is corrected to the measured wording.
+
+## 2026-10-22 — 6.3: the alarm's messages received, and a third assumption inside the window
+
+*The user's hand for the messages and the command, pasted into this chat and copied here with the
+account id, the sign-in address and the laptop's address replaced by placeholders; Claude's reading as
+the infrastructure user (`awsds-infra-prod`). Times UTC.*
+
+- **[user] The alerts**: *"Sim, recebi dois emails de alerta"*, one per assumption; the second's body,
+  verbatim but for the placeholders, the input transformer's eight lines:
+  *"awsds-prod-debug-assume: the production debug role was assumed." / "When: 2026-10-22T23:22:00Z" /
+  "Role: arn:aws:iam::<Production>:role/awsds-prod-debug" / "Caller: AROAW6L3NRTR5S22T5TS5:<the
+  data-science user>" / "Session name: botocore-session-1792711318" / "Source address: <the laptop>" /
+  "CloudTrail event id: 2acc588b-f660-4c47-9abc-ea3c7ff286e4"*. No credential in it, as 6.2 wrote the
+  transformer; the caller is the reserved role's unique id and the sign-in name.
+- **[user] The after-window command, run before the window's end**: the step's `assume-role` with the
+  session name `debug-window-after` answered
+  *"arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-after"*, a third successful
+  assumption, since the window is open until 01:00Z. The refusal is the next reading, after the window
+  closes, by the clock or by the closing apply.
+
+## 2026-10-22 — 6.3: the window closed by the apply, read back
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), on the user's authorization in this
+chat: "Autorizo o apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano
+novo, para fechar a janela agora; depois eu rodo o assume-role e colo a recusa." Times UTC.*
+
+- **[Claude] Before**: no session running (the app's list at 23:34); the trail read at 23:34:29 holds
+  three successful `AssumeRole` events on the role, all by the persona's reserved role in `us-west-2`:
+  23:21:29 `debug-window-proof`, 23:22:00 `botocore-session-1792711318`, 23:32:07 `debug-window-after`
+  (event `371cc413-9835-40b0-aec1-86ef80c0b962`).
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  23:34:42 to 23:34:58, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-23T01:00:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 23:34:58 to
+  23:35:09, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the role modified in 1 s.
+- **[Claude] Read back**: the re-plan at 23:35:36 *"No changes."* with no warning; `get-role` at 23:35:38
+  shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z` beside `aws:RequestedRegion us-west-2`;
+  `./aws/deploytargets.py awsds-infra-prod` at 23:36:06 *"0 check(s) FAILED."*, `DT-9` passing, *"window
+  on awsds-prod-debug closed (ends 2026-01-01T00:00:00Z)"*, both rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`. The window was open 25 minutes, 23:09:55 to 23:35:09.
+- **[Claude] What follows**: the persona's `assume-role` against the closed trust, the refusal pasted
+  here and read in the trail by `errorCode`, which closes 6.3 and verification xi.
+
+## 2026-10-23 — 6.3: the assumption refused against the closed trust
+
+*The user's hand, the command run as the Data Scientist User after the closing apply of 2026-10-22
+23:35 UTC and pasted into this chat on 2026-10-23, copied here with the account id and the sign-in
+address replaced by placeholders; Claude's reading. The infrastructure user's token had expired by
+the time of the reading (15:25 UTC), so the trail's `errorCode` for this attempt is owed to the next
+sign-in.*
+
+- **[user] The refusal**, the step's command with the session name `debug-window-closed`: *"An error
+  occurred (AccessDenied) when calling the AssumeRole operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the
+  data-science user> is not authorized to perform: sts:AssumeRole on resource:
+  arn:aws:iam::<Production>:role/awsds-prod-debug"*.
+- **[Claude] The reading**: the same wording as the four refusals of the malformed ARN, now on the real
+  ARN, from the trust's `DateLessThan` with the default in the past: STS names no condition in its
+  message, so the trail's record is what attributes it, a refused `AssumeRole` with `requestParameters`
+  null and `errorCode` `AccessDenied` by the persona's reserved role, the shape Stage 8 4.6 read. The
+  escape hatch is closed at rest, open in an approved window alone, alarmed on each assumption, and
+  cannot become a notebook: 6.3 is done, verification xi answered but for the OU wording, which the
+  role's own policy pre-empts (Lesson 20).
+
+## 2026-10-23 — 6.3: the refusal's record read in the trail
+
+*Claude's hand, as the infrastructure user (`awsds-infra-prod`), after the user signed in again on
+request. Read-only. Times UTC.*
+
+- **[Claude] The trail**, every `AssumeRole` in Production from 2026-10-22 23:30 to 2026-10-23 15:28,
+  paginated whole (471 events, none truncated), two by the persona's reserved role: the third assumption
+  inside the window, 2026-10-22 23:32:07, session `debug-window-after`, no error; and the refusal,
+  **2026-10-23 15:25:28, `errorCode` `AccessDenied`, `requestParameters` null**, `us-west-2`, event
+  `47e12fbc-5061-4a34-bc1f-e73217fbf313`, its `errorMessage` the text the user pasted, both from the
+  laptop's address. The refused call records no session name and no role ARN, the shape Stage 8 4.6
+  read; the window had been closed for 15 h 50 min. 6.3 and verification xi are closed.
+
+## 2026-10-23 — the fourth sitting with the environment down: 2.4's proof job, decision 13, pass 6's grants, the persona sequences
+
+*Claude's hand, in the session `stages-8-9-10-prep-2` (the branch `claude/stages-8-9-10-prep-2`, cut from
+`main` after PR #247's merge retired the previous branch), on the user's request: "Em relação aos
+estágios 8, 9 e 10, peço fazer o seguinte: verifique o status atual de cada estágio. revise o plano
+destes estágios considerando o andamento atual, o resultado com as leituras e preparações prévias
+realizadas para execução destes estágios. Faça a preparação necessária para a execução destes
+estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente. Prepare tudo que for
+necessário para executarmos de forma mais célere estas etapas uma vez que eu consiga subir o
+ambiente. Usuário infra sso logado para as leituras." AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads and plans only, the tunnel down (`NO_PROXY='*'`); the
+plans saved outside the repository. Nothing applied. Times UTC.*
+
+- **[Claude] The instruments**, 16:05 to 16:16 over every `awsds-*` profile, where the six persona
+  profiles' identity calls failed with no session (not a check); again 16:19 to 16:23 on the five
+  infrastructure profiles alone: `cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py` and
+  `egress.py` each *"all checks passed"*, `DT-10` passing on the managed policy, `DT-12` six groups at
+  30 days in both accounts, `DL-5` `CROSS_ACCOUNT_VERSION=4, SET_CONTEXT=TRUE`, `OR-9` a note (nothing of
+  the layer exists), the burn 0.000 USD/h in the five accounts, no interface endpoint and no NAT
+  gateway; `warehouse.py` exit 0. `make check` OK at 16:17.
+- **[Claude] 2.4 read against AWS's pages** ("Using AWS Glue with AWS Lake Formation for Full Table
+  Access", "Application integration for full table access", both in `REFERENCES.md`): a Glue Spark job
+  writes a Lake Formation table in the full-table-access mode alone, which asks first for
+  `AllowFullTableExternalDataAccess`, says a write needs `ALL`, and ends an Iceberg commit in
+  `glue:UpdateTable`. Read live at 16:00: the flag unset in Production and in the lake, both reading one
+  administrator, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `AllowExternalDataFiltering` false.
+- **[Claude] 2.4 written**: `terraform-live/production/sagemaker/producer-proof.tf`, the `[P]` Glue 6.0 job
+  `awsds-prod-producer-proof` on `awsds-prod-jobs` as the job role, its script
+  `proofs/producer_proof.py` at `applications/stage-09-proofs/v0/glue/` of the outputs bucket, the Iceberg
+  catalog `lake` over the lake account's catalog (its id read from the lake state's key ARN) with Lake
+  Formation vending on, one run per `--MODE`: `producer` (the ten sample rows inserted, read back, the
+  direct put attempted and the run failed if it lands) and `pickup` (every `.csv` under `incoming/`
+  read as the role, curated, deleted and read gone; a run with nothing to pick fails). The job role
+  gains `CommitTheIcebergWrites`, `glue:UpdateTable` on the lake's `curated` tables and this account's
+  `app_outputs` tables. Plan as `awsds-infra-prod` at 16:23:43 to 16:24:07: *"Plan: 1 to add, 1 to
+  change, 0 to destroy."*, the job and the role's inline policy. The script compiles and passes `ruff`;
+  it has run nowhere (Lesson 54): the first run's readings are verification xxviii.
+- **[Claude] Decision 13 opened** (the stage file): the flag, where and by which hand, (a) Production's by
+  the console recommended, its cost in the threat model named, (b) and (c) weighed.
+- **[Claude] Pass 6's owed code**: `production/foundation/deploy-anchors.tf`'s
+  `apply_application_in_this_account` gains `RunTheGovernedWarehouseDdl` (9.4), planned as
+  `awsds-infra-prod` with the alerts var-file at 16:24:29 to 16:24:55, *"Plan: 0 to add, 1 to change, 0
+  to destroy."*, the inline `apply-application`; `production/workloads-egress/` gains
+  `optional_service_groups` and its wiring, so `make up ENV=production GROUPS=redshift` raises the
+  warehouse's endpoint (9.1), its plan unchanged at 16:24:07 to 16:24:29, *"Plan: 16 to add, 0 to
+  change, 0 to destroy."*; `aws/warehouse.py` `WH-15` names each account's own `make down` (9.8);
+  9.3's statements prepared in the step, the theme `trades` and 1 TB proposed; `docs/NETWORK.md`'s
+  firewall paragraph carries the group.
+- **[Claude] The quotas**, read in both accounts with `list-service-quotas` (16:10 to 16:45, the
+  Staging read slow enough to move to the background): every training and transform code of the
+  ceiling's types at 0 in Staging as in Production, `ml.t3.medium`, `ml.t3.large` and `ml.t3.xlarge`
+  processing at 4, 4 and 2 in both; `list-requested-service-quota-change-history` empty in both, so no
+  request was ever made in either account. The codes and the request commands are in 3.5.
+- **[Claude] The persona sequences written**, each runnable with nothing up (D39): 3.4's laptop half,
+  5.4, 8.1's laptop half, 8.2, 8.3, 8.4 (no laptop profile reaches `DataScientistStagingAccess`; the
+  block to add is in the step) and 2.5's drop, 2.6's read-back; Stage 10 6.2's in its file.
+- **[Claude] The sittings in order**: [`runbooks/promotion.md`](../plan/runbooks/promotion.md), §0 to §R,
+  one section per sitting, the command and the reading of each step; `waiting-on-the-user.md`'s
+  Production and GitLab rows, its decision and act rows, and the three stage files point at it.
+- **[Claude] The plan**: the Status row, the build table, 2.4, 2.5, 2.6, 3.1, 3.4, 3.5, 5.4, 8.1-8.4,
+  9.1, 9.3, 9.4, 9.8, decision 13 and verification xxviii.
+
+## 2026-10-23 — decision 13 taken by the user, as recommended: (a)
+
+*Claude's hand, the same session; no AWS call.*
+
+- **[user]** Asked for the decision's context, its options and the recommendation, read them, and took
+  it: *"Ok com a recomendação (a)."* `AllowFullTableExternalDataAccess` goes on in Production by the
+  console's Application integration settings, the user's act as the infrastructure user, between two
+  `DT-5` readings of Claude's, with nothing up; the lake's half waits for the proof job's first wording.
+- **[Claude]** The decision recorded in the stage file (decision 13, the Status row), the act in
+  `waiting-on-the-user.md`'s acts and in `runbooks/promotion.md` §0.3 with its three steps, the indexes
+  and `CLAUDE.md` following. Stage 11's threat-model row and `AWS_STATE.md`'s word on the flag are
+  written when the flag reads on.
+
+## 2026-10-23 — decision 13's act: the full-table-access flag turned on in Production, read before and after
+
+*Claude's hand, the same session; the readings as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-data`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads only;
+the write the user's, in the console. Times UTC.*
+
+- **[Claude] The before-reading**, 19:29:52, `get-data-lake-settings` in Production: one administrator,
+  `InfrastructureAccess`; `ReadOnlyAdmins` empty; both create-default lists empty;
+  `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`; `AllowExternalDataFiltering` false;
+  `AllowFullTableExternalDataAccess` absent; the allow list empty; `AuthorizedSessionTagValueList`
+  absent. `DT-5` passing (parameters and create-defaults).
+- **[user]** The console refused the settings page first, pasted (the account ids and the address
+  masked): *"Unable to load settings. User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure user> is not authorized to perform: lakeformation:GetDataLakeSettings on resource: arn:aws:lakeformation:us-east-2:<Production>:catalog:<Production> with an explicit deny in a service control policy: arn:aws:organizations::<Management>:policy/<organization>/service_control_policy/p-i0ney7mx"*.
+- **[Claude]** `p-i0ney7mx` read as `awsds-infra-identity`: `aws-guardrails-nYsweH`, Control Tower's
+  `CTMULTISERVICEPV1`, `StringNotEquals aws:RequestedRegion us-west-2`: the console had opened in Ohio,
+  and the Region ceiling refused the page to the account's own Lake Formation administrator, the first
+  console-side reading of that control in Production (INV-12's hand-probe was a CLI call in CloudShell).
+- **[user]** The console switched to `us-west-2`; *Administration → Application integration settings →
+  Allow external engines to access data in Amazon S3 locations with full table access* marked and saved:
+  *"Pronto"*.
+- **[Claude] The after-reading**, 19:49:19: `AllowFullTableExternalDataAccess` `true`; the administrator,
+  both lists, the parameters, `AllowExternalDataFiltering` and the allow list as before;
+  `AuthorizedSessionTagValueList` now an empty list, which the console wrote and the API had returned
+  absent. `DT-5` passing at 19:49:30, 0 failed. The other accounts the same minute: the lake absent,
+  Staging absent, Sandbox `true` with its three administrators.
+- **[Claude]** `TM-26` written in the threat model's ledger, the flag per account in `AWS_STATE.md` §C,
+  decision 13 and the Status row brought to the act, the act's rows out of `waiting-on-the-user.md`,
+  `runbooks/promotion.md` §0.3 marked done with the Region note.
+
+## 2026-10-23 — 3.5: the `ml.m5.large` quota pair requested in both accounts
+
+*Claude's hand, the same session; the requests the user's, from the laptop as the infrastructure user
+(`awsds-infra-prod`, `awsds-infra-staging`); the reading Claude's. Times as printed, then UTC.*
+
+- **[user]** Ran 3.5's two commands, training `L-611FA074` and transform `L-236AE59F` of `ml.m5.large`
+  at 2 in each account, and pasted the history read in both:
+
+  ```
+  -----------------------------------------------------------------------------------------------
+  |                           ListRequestedServiceQuotaChangeHistory                            |
+  +--------------------------------------+------+----------+------------------------------------+
+  |  ml.m5.large for transform job usage |  2.0 |  PENDING |  2026-10-23T17:00:45.330000-03:00  |
+  |  ml.m5.large for training job usage  |  2.0 |  PENDING |  2026-10-23T17:00:42.296000-03:00  |
+  +--------------------------------------+------+----------+------------------------------------+
+
+  -----------------------------------------------------------------------------------------------
+  |                           ListRequestedServiceQuotaChangeHistory                            |
+  +--------------------------------------+------+----------+------------------------------------+
+  |  ml.m5.large for transform job usage |  2.0 |  PENDING |  2026-10-23T17:00:54.511000-03:00  |
+  |  ml.m5.large for training job usage  |  2.0 |  PENDING |  2026-10-23T17:00:52.318000-03:00  |
+  +--------------------------------------+------+----------+------------------------------------+
+  ```
+
+- **[Claude]** Read again at 20:02:06 UTC in Production and 20:02:07 in Staging: the four requests
+  `PENDING`, created 20:00:42 to 20:00:54 UTC, no case id yet. Stage 17's requests of 2026-10-17 moved
+  to `CASE_OPENED` and stayed there for days, so the next reading is the sitting's. The stage's 3.5,
+  `waiting-on-the-user.md`, `runbooks/promotion.md` §0.2 and `CLAUDE.md` carry the state.
+
+## 2026-10-23 — 5.4 and 8.3 run by the user from the laptop: the workgroup's override, the Production negatives, the prefixes
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistProdAccess` (`awsds-scientist-prod`), the tunnel down; the paste the user's, the account id
+and the address masked; the readings Claude's. The user's hand ran every command; Claude's hand wrote
+this entry. Times: the paste carries none; the block ran about 20:20 to 20:35 UTC.*
+
+- **[user] Block A, pasted:**
+
+  ```
+  aws athena start-query-execution --work-group awsds-prod-athena --query-string 'SELECT count(*) AS n FROM curated.trades' --query-execution-context Database=curated --result-configuration OutputLocation=s3://awsds-prod-outputs/not-enforced/ --profile awsds-scientist-prod --region us-west-2
+
+  {
+      "QueryExecutionId": "74895f10-caf8-460d-9186-654049b0820d"
+  }
+
+  aws athena get-query-execution --query-execution-id "74895f10-caf8-460d-9186-654049b0820d" --query 'QueryExecution.[Status.State,ResultConfiguration.OutputLocation,Statistics.DataScannedInBytes]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  SUCCEEDED       s3://awsds-prod-derived/results/74895f10-caf8-460d-9186-654049b0820d.csv        0
+
+  aws athena get-query-results --query-execution-id "74895f10-caf8-460d-9186-654049b0820d" --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text --profile awsds-scientist-prod --region us-west-2
+
+  n
+  0
+
+  aws athena get-work-group --work-group awsds-prod-athena --query 'WorkGroup.Configuration.[EnforceWorkGroupConfiguration,BytesScannedCutoffPerQuery]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  True    10737418240
+
+  ➜  AWS-DataScience git:(main) aws sagemaker create-model-package-group --model-package-group-name awsds-canary-probe --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateModelPackageGroup operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: sagemaker:CreateModelPackageGroup on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-canary-probe with an explicit deny in an identity-based policy
+  ➜  AWS-DataScience git:(main) aws glue start-job-run --job-name awsds-prod-producer-proof --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartJobRun operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: glue:StartJobRun on resource: arn:aws:glue:us-west-2:<Production>:job/awsds-prod-producer-proof with an explicit deny in an identity-based policy
+  ➜  AWS-DataScience git:(main) aws redshift-data execute-statement --workgroup-name awsds-prod-warehouse --database warehouse --sql 'select 1' --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (ValidationException) when calling the ExecuteStatement operation: Redshift endpoint doesn't exist in this region.
+  ➜  AWS-DataScience git:(main)
+
+  ➜  AWS-DataScience git:(main) aws s3 ls s3://awsds-prod-outputs/app-etl/outbox/ --profile awsds-scientist-prod --region us-west-2
+  ➜  AWS-DataScience git:(main) aws s3 ls s3://awsds-prod-outputs/ --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-prod-outputs" with an explicit deny in a resource-based policy
+  ➜  AWS-DataScience git:(main) aws s3 cp s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py - --profile awsds-scientist-prod --region us-west-2
+  download failed: s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py to - An error occurred (403) when calling the HeadObject operation: Forbidden
+  ```
+
+- **[Claude] The readings.** The override, verification vi's first half: the query asked for
+  `s3://awsds-prod-outputs/not-enforced/` and its result landed under `s3://awsds-prod-derived/results/`,
+  the enforced location, `SUCCEEDED`, 0 bytes scanned, the count 0 (the table empty until 2.4's job);
+  the workgroup reads `EnforceWorkGroupConfiguration` true and the cutoff 10,737,418,240 bytes, decision
+  2's 10 GB. The two negatives of the set: `CreateModelPackageGroup` and `StartJobRun` refused *"with an
+  explicit deny in an identity-based policy"*, `DenyProductionControlPlane`'s families (`sagemaker:Create*`,
+  `glue:Start*`), the one layer that answers a control-plane action the `Workloads` document does not name.
+  **`redshift-data:ExecuteStatement` validated before it authorized** (Lesson 21): with no workgroup in
+  Production, the Data API answered *"Redshift endpoint doesn't exist in this region"*, a
+  `ValidationException` and no authorization at all, so `DenyMintingARedshiftDatabaseSession` stays
+  attached and unexercised for this set; the same command is run again at pass 6, with the workgroup up.
+  The prefixes, 8.3's reading too, the tunnel down: `app-etl/outbox/` answered, empty; the bucket's root
+  refused *"with an explicit deny in a resource-based policy"*, the bucket's
+  `DenyThePersonaListingsOutsideTheNamedPrefixes`; the release's tree refused as a bare `403` on
+  `HeadObject`, which carries no wording, so that refusal is attributed by a `get-object` instead, whose
+  error body names the policy (the next command).
+
+## 2026-10-23 — 5.4's read outside the prefixes, attributed by `get-object`
+
+*The command the user's, as the Data Scientist User through `DataScientistProdAccess`; the paste the
+user's, the account id and the address masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws s3api get-object --bucket awsds-prod-outputs --key applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data scientist user> is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::awsds-prod-outputs" with an explicit deny in a resource-based policy
+  ```
+
+- **[Claude]** The object does not exist yet (the script is uploaded at the Production sitting), so S3
+  evaluated `s3:ListBucket` to choose between a 403 and a 404, and the bucket's
+  `DenyThePersonaListingsOutsideTheNamedPrefixes` answered. The read deny,
+  `DenyThePersonaReadsOutsideTheNamedPrefixes`, is attached and still unexercised for this principal: the
+  same `get-object` after the upload is the reading that names it (Lesson 20).
+
+## 2026-10-23 — 3.4's laptop half, the read: the persona from Sandbox reads the group
+
+*The command the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistAccess` (`awsds-scientist-sandbox`); the paste the user's, the account id, the addresses
+and the principal's unique id masked; the reading Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sagemaker describe-model-package-group --model-package-group-name "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl" --profile awsds-scientist-sandbox --region us-west-2
+
+
+  {
+      "ModelPackageGroupName": "awsds-prod-model-app-etl",
+      "ModelPackageGroupArn": "arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-app-etl",
+      "ModelPackageGroupDescription": "app-etl's model versions: registered and approved by the Production deploy role alone (Stage 9 step 3.2, D28 item 6)",
+      "CreationTime": "2026-10-18T16:59:03.981000-03:00",
+      "CreatedBy": {
+          "IamIdentity": {
+              "Arn": "arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115/<the infrastructure user>",
+              "PrincipalId": "<unique id>:<the infrastructure user>"
+          }
+      },
+      "ModelPackageGroupStatus": "Completed"
+  }
+  ```
+
+- **[Claude]** The read-status half of verification v, the persona's side: the group's record came back
+  across the account boundary, through the group policy's read-status statement (3.2, decision 10) and
+  the set's `ReadSageMakerStatus`, both halves of Lesson 28's intersection exercised by one call. The
+  write half is the next command, `create-model-package`.
+
+## 2026-10-23 — 3.4's write half, 8.1's laptop half, 2.5's drop and 2.6's read-back, from Sandbox
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistAccess` (`awsds-scientist-sandbox`), the Production account id in a shell variable; the
+paste the user's, the account ids and the address masked; the readings Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws sagemaker create-model-package --model-package-group-name "arn:aws:sagemaker:us-west-2:${PROD}:model-package-group/awsds-prod-model-app-etl" --model-package-description probe --inference-specification "{\"Containers\":[{\"Image\":\"${PROD}.dkr.ecr.us-west-2.amazonaws.com/awsds-prod-ecr-app-etl:v0.2.1\"}],\"SupportedContentTypes\":[\"text/csv\"],\"SupportedResponseMIMETypes\":[\"text/csv\"]}" --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the CreateModelPackage operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: sagemaker:CreateModelPackage on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package/awsds-prod-model-app-etl/new because no resource-based policy allows the sagemaker:CreateModelPackage action
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://awsds-data-curated/warehouse/trades/probe.txt --profile awsds-scientist-sandbox --region us-west-2
+  upload failed: - to s3://awsds-data-curated/warehouse/trades/probe.txt An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::awsds-data-curated/warehouse/trades/probe.txt" because no identity-based policy allows the s3:PutObject action
+  ➜  AWS-DataScience git:(main) aws sts assume-role --role-arn "arn:aws:iam::${PROD}:role/awsds-prod-debug" --role-session-name probe --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the AssumeRole operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Production>:role/awsds-prod-debug
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://noaa-ghcn-pds/awsds-probe.txt --profile awsds-scientist-sandbox --region us-west-2
+  upload failed: - to s3://noaa-ghcn-pds/awsds-probe.txt An error occurred (AccessDenied) when calling the PutObject operation: Access Denied
+  ➜  AWS-DataScience git:(main) aws s3 cp examples/app-etl/samples/trades.csv "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" --profile awsds-scientist-sandbox --region us-west-2
+  upload: examples/app-etl/samples/trades.csv to s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv
+  ➜  AWS-DataScience git:(main) aws s3 cp "s3://awsds-data-dropbox/incoming/$(date -u +%Y/%m/%d)/trades.csv" - --profile awsds-scientist-sandbox --region us-west-2
+  download failed: s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv to - An error occurred (403) when calling the HeadObject operation: Forbidden
+  ```
+
+- **[Claude] The readings.** **The registry gate (3.4, verification v's Sandbox half)**: the write was
+  refused *"because no resource-based policy allows the sagemaker:CreateModelPackage action"*, the
+  group policy's absence of a grant and no network condition, the wording the step asked for; the
+  identity side had allowed it, or IAM would have named the identity policy first, so the gate is the
+  resource policy alone (3.2). **8.1**: the direct put into the lake's own bucket refused by the set's
+  implicit deny, *"no identity-based policy allows the s3:PutObject action"*, which keeps the bucket's
+  branches unreached from this principal; the debug role refused at the trust, *"not authorized to
+  perform: sts:AssumeRole"*, which STS never attributes; **the perimeter put answered a bare `Access
+  Denied`**, S3's form for a bucket another account owns, which names no policy, and the set holds no
+  `s3:PutObject` on that bucket anyway, so the implicit deny would answer before the perimeter document
+  even in the attributed form (Lesson 20): `DenyS3ObjectWriteOutsideOrganization`'s exercise stays 1c's
+  inverted document, and no laptop persona can exercise it. **2.5's drop** landed at
+  `s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv`, the writer's put by principal, waiting for the
+  pickup run; **2.6's read-back** was refused as a bare `403` on `HeadObject`, the asymmetry holding,
+  its wording owed to a `get-object` (the next command), as 5.4's was.
+
+## 2026-10-23 — 8.4 run by the user from the laptop: Staging readable, the writes refused
+
+*The commands the user's, from the laptop signed in as the Data Scientist User through
+`DataScientistStagingAccess`, on the profile `awsds-scientist-staging` the user added to the laptop's
+config this evening (8.4's block); the paste the user's, the account id and the address masked; the
+readings Claude's.*
+
+- **[user]**
+
+  ```
+  aws glue get-tables --database-name app_outputs --profile awsds-scientist-staging --region us-west-2
+
+  {
+      "TableList": []
+  }
+
+  ➜  AWS-DataScience git:(main) echo probe | aws s3 cp - s3://awsds-staging-outputs/probe.txt --profile awsds-scientist-staging --region us-west-2
+  upload failed: - to s3://awsds-staging-outputs/probe.txt An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<Staging>:key/74f5ebbc-41bb-4165-9047-f84a952a833f because no resource-based policy allows the kms:GenerateDataKey action
+  ➜  AWS-DataScience git:(main) aws glue start-job-run --job-name awsds-staging-app-etl --profile awsds-scientist-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the StartJobRun operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: glue:StartJobRun on resource: arn:aws:glue:us-west-2:<Staging>:job/awsds-staging-app-etl with an explicit deny in an identity-based policy
+  ```
+
+- **[Claude] The readings.** The catalog read answered, an empty list: no deploy has created a table in
+  `app_outputs` yet, and an empty list is also what Lake Formation shows a principal with no grant, so
+  the read is "answered", not "sees tables" (Lesson 13). The Glue write refused *"with an explicit deny
+  in an identity-based policy"*, `DenyEveryWrite`'s `glue:Start*`. **The S3 write was refused by the
+  data key's policy first**, *"kms:GenerateDataKey … because no resource-based policy allows"*: the
+  bucket encrypts under `alias/awsds-staging-data`, which names no persona for `GenerateDataKey`, and
+  S3 asked the key before it decided the put, so `DenyEveryWrite`'s `s3:Put*` and the bucket's
+  `DenyThePersonaAnyWrite` stay attached and unexercised by this call (Lesson 20), the same order 6.3
+  read on Production's data key. A write that takes no key, a delete, exercises the set's own deny; the
+  next command.
+
+## 2026-10-23 — 2.6's read-back and 8.4's delete, attributed
+
+*The commands the user's, as the Data Scientist User through `DataScientistAccess`
+(`awsds-scientist-sandbox`) and `DataScientistStagingAccess` (`awsds-scientist-staging`); the paste the
+user's, the account ids and the address masked; the readings Claude's.*
+
+- **[user]**
+
+  ```
+  ➜  AWS-DataScience git:(main) aws s3api get-object --bucket awsds-data-dropbox --key incoming/2026/10/23/trades.csv /dev/null --profile awsds-scientist-sandbox --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the GetObject operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<the data scientist user> is not authorized to perform: s3:GetObject on resource: "arn:aws:s3:::awsds-data-dropbox/incoming/2026/10/23/trades.csv" because no identity-based policy allows the s3:GetObject action
+  ➜  AWS-DataScience git:(main) aws s3api delete-object --bucket awsds-staging-outputs --key probe.txt --profile awsds-scientist-staging --region us-west-2
+
+  aws: [ERROR]: An error occurred (AccessDenied) when calling the DeleteObject operation: User: arn:aws:sts::<Staging>:assumed-role/AWSReservedSSO_DataScientistStagingAccess_c242dbe2f89a1229/<the data scientist user> is not authorized to perform: s3:DeleteObject on resource: "arn:aws:s3:::awsds-staging-outputs/probe.txt" with an explicit deny in a resource-based policy
+  ```
+
+- **[Claude] The readings.** **2.6 is closed**: the writer's read of what it wrote is refused by the
+  set's implicit deny, *"no identity-based policy allows the s3:GetObject action"*, the wording Stage 5a
+  pass 4d read; the letterbox asymmetry holds with the consumer now existing. **8.4's delete** was
+  refused *"with an explicit deny in a resource-based policy"*, the bucket's `DenyThePersonaAnyWrite`,
+  which IAM named ahead of the set's `DenyEveryWrite` (`s3:Delete*`), two explicit denies of which one is
+  reported (Lesson 20): the set's deny is proven on Glue (`StartJobRun`), the bucket's on S3, and the
+  set's S3 half stays attached and unexercised. The Staging persona writes nothing of the outputs bucket
+  through three layers, the key, the bucket and the set, each read once.
+
+## 2026-10-23 — 8.2: the S3 console under the principal branch, read in the user's browser session
+
+*Claude's hand, reading the AWS console in the user's Chrome session, signed in by the user as the
+Data Scientist User in Production through `DataScientistProdAccess`, `us-west-2`; five pages read,
+nothing clicked but the navigation; the console's messages quoted as shown. About 21:00 UTC.*
+
+- **The bucket list** (`S3 → General purpose buckets`): *"You don't have permissions to list
+  buckets"*, naming `s3:ListAllMyBuckets`, the list empty. The persona reaches a bucket by its URL alone.
+- **`awsds-prod-outputs`, Objects at the root**: *"Insufficient permissions to list objects"*, naming
+  `s3:ListBucket`, the bucket's listing deny outside the named prefixes.
+- **`awsds-prod-outputs`, Objects at `app-etl/outbox/`** (the URL with `prefix=app-etl/outbox/`): the
+  listing opens, *"Objects (0)"*, *"You don't have any objects in this folder"*; the one page that works.
+  A download from it is the `s3:GetObject` the policy allows and waits for an object.
+- **Properties**: *"Insufficient permissions"* on the overview, and every panel refused by name:
+  versioning, ABAC, tags, default encryption, archive tiers, server access logging, event
+  notifications, transfer acceleration, Object Lock, requester pays.
+- **Permissions**: the bucket policy, Object ownership, the ACL and CORS refused; Block Public Access
+  shows the API response, `s3:GetBucketPublicAccessBlock` refused *"with an explicit deny in a
+  resource-based policy"*, the bucket's deny on the persona's reads outside the named prefixes; the
+  Access Analyzer panel *"could not load the content for the page"*.
+- **The fraction, INT-06's answer**: one page of the console works for the persona, the object listing
+  under a named prefix reached by URL, with its downloads; the bucket list, the root listing and every
+  bucket-level tab refuse. The console is a URL-and-prefix tool for this persona, and `README.md` says
+  so; open question 8 is closed, and the CLI is the whole surface beyond that page.
+
+## 2026-10-23 — the session's branch and its PR
+
+*Claude, the same session; no AWS call.*
+
+- **[Claude] The PR**: the session's first commit opened PR #248 against `main` on 2026-10-23 at
+  16:38 UTC, from the branch `claude/stages-8-9-10-prep-2` cut from `main` after PR #247's merge retired
+  the previous branch, and every later commit of the session joined it: decision 13 taken and done, the
+  quota requests, the persona proofs block by block, and the records. The description follows the branch.
+
+## 2026-10-23 — 2.4's job and 9.4's grant applied, the script uploaded, with the environment down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo as aplicações 1 a 3 do §0.4 … e o upload
+do script, cada uma de um plano fresco"*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`), the tunnel down, after the user's fresh `./aws/login.py`; no other session running
+on the machine (`list_sessions`, every row idle). Each apply from a saved plan read first (Recipe A), the
+plans outside the repository. Times UTC.*
+
+- **[Claude] `production/sagemaker/`**: the fresh plan at 21:17:03 to 21:17:19, *"Plan: 1 to add, 1 to
+  change, 0 to destroy."*, the job `awsds-prod-producer-proof` and the role's inline `job` policy;
+  applied 21:18:32 to 21:18:42, *"Apply complete! Resources: 1 added, 1 changed, 0 destroyed."* (the
+  policy modified in 1 s, the job created in 2 s); re-planned `No changes` at 21:18:54.
+- **[Claude] `production/workloads/`**: the fresh plan at 21:17:31 to 21:17:49 read **`No changes`**:
+  the `vpc-v0.4.0` bump had been applied in the evening of 2026-10-22 with Stage 9's passes (this log's
+  entry of that evening), and Stage 10's 1.2 and `runbooks/promotion.md` §0.4 still called it unapplied;
+  both are corrected. Nothing applied.
+- **[Claude] `production/foundation/`**, with `-var-file=<project folder>/secrets/alerts.auto.tfvars`:
+  the fresh plan at 21:17:49 to 21:18:12, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the deploy
+  role's inline `apply-application` gaining `RunTheGovernedWarehouseDdl` (9.4); applied 21:19:16 to
+  21:19:26, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*; re-planned `No changes`
+  with the var-file. `./aws/deploytargets.py awsds-infra-prod` at 21:19:42: all checks passed.
+- **[Claude] The script**: `aws s3 cp` of `proofs/producer_proof.py` (7,318 bytes) to
+  `s3://awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py` at 21:20:09, the
+  write the bucket's principal branch and the data key admit `InfrastructureAccess` to; `head-object`
+  reads 7,318 bytes, `aws:kms` under the data key with the bucket key on, version
+  `LhV4dvLqaXJCFqSJm.Z0tpmqShZjHM95`. `get-job` reads the job as declared: Glue 6.0, two `G.1X`, 20
+  minutes, the connection `awsds-prod-jobs`, the script's location, `--MODE producer`,
+  `--datalake-formats iceberg`, `curated`, `trades`, `incoming`.
+- **[Claude] What this leaves for the Production sitting**: `make hub-up`, `make up ENV=production
+  ONLY=workloads-egress`, the two runs and their readings (`runbooks/promotion.md` §P). With the script
+  in place, 5.4's `get-object` from the persona now meets the read deny rather than the listing deny, a
+  one-command reading the user may take at any time.
+
+## 2026-10-23 — 2.4's producer run: the write refused at the vend, naming the data lake settings; the lake's flag planned
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo a execução producer do job
+awsds-prod-producer-proof agora, como usuário de infraestrutura em Production, e a leitura dos
+resultados."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod` for the run
+and its trail, `awsds-infra-data` for the lake's readings and the plan); the hub and
+`production/workloads-egress/` up, raised by the user (`make status`: seven endpoints available). Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 21:43:25, run
+  `jr_3a45dc0e7e994943f6e4eca20664083ca0437fef7b1a2302ae8bd03ca79a287f`, started 21:43:26, **`FAILED`** at
+  21:44:42 after 56 s of execution, 113 DPU-seconds. The script's lines in `/aws-glue/jobs/output`:
+  *"running as arn:aws:sts::<Production>:assumed-role/awsds-prod-job-exec/GlueJobRunnerSession, mode
+  producer"* at 21:44:08 and *"producer: inserting 10 sample rows into lake.curated.trades"* at 21:44:25;
+  the first SQL failed with *"Failed to retrieve AWS Lake Formation temporary credentials for table
+  arn:aws:glue:us-west-2:<Data Governance>:table/curated/trades with permission SELECT. Error:
+  Insufficient Lake Formation permissions. Verify the data lake settings for account (Service:
+  LakeFormation, Status Code: 400, Request ID: 1230a16c-812b-4c80-bf11-bfa9d4401d19)"*, the sentence
+  naming no account. The error stream's last cause, *"Connection refused: /10.32.58.144:35175"*, is the
+  executor losing the driver after its exit, an address in `VPC-Workloads`' private range.
+- **[Claude] Production's trail** (`lookup-events` at 21:46 and 21:57): six `glue:GetTable` at 21:44:29
+  answered through `vpce-0925d883174fd23c1`, the `glue` endpoint; four `lakeformation:GetDataAccess` at
+  21:44:30 through `vpce-0431cce5692733205`, the `lakeformation` endpoint, each `AccessDenied` with the
+  wording above, two from the driver's SDK (`aws-sdk-java/2.44.6`) naming the lake's table and the job
+  in `auditContext`, two invoked by `glue.amazonaws.com` with no request parameters logged; one
+  `glue:GetConfig` at 21:44:30 through the Glue endpoint, `ForbiddenResponse`; the session's
+  `GetCallerIdentity` at 21:44:08 through `vpce-004b999946b362a5e`, the `sts` endpoint. No
+  `GetTemporaryGlueTableCredentials` event in three hours: the vend is logged as `GetDataAccess`.
+  **Stage 10 0.5 is answered**: the job's Lake Formation call carries the `lakeformation` endpoint's id,
+  the endpoint decision 12 (a) raised.
+- **[Claude] The lake's trail**: no Lake Formation event in the run's window. A cross-account vend the
+  lake answers is logged there too, with a `sharedEventID` and no user name: 5.4's Athena read of
+  `curated.trades` by the Data Scientist User in Production at 20:29:09 left its pair, `GetDataAccess`
+  invoked by `athena.amazonaws.com` on Production's resource link and by `glue.amazonaws.com` on the
+  lake's table, answered in both trails. The run's vend was refused in Production before any event
+  reached the lake.
+- **[Claude] The readings and the fallback**: Production's settings re-read at 21:53, the flag `true`,
+  one administrator, both lists empty, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`; the lake's at
+  21:53, the flag unset and the rest the same; `./aws/datalake.py awsds-infra-data` at 21:46 all checks
+  passed, `DL-5` 4/TRUE, `DL-6` and `DL-13` passing. The wording names the data lake settings with
+  Production's flag on, which is decision 13's fallback: `data-governance/data/lakeformation.tf` gains
+  `allow_full_table_external_data_access = true` and its README the row; the slice initialised in the
+  worktree (`gen-tfvars.py`, `gen-backend-hcl.py`, `init`) and planned as `awsds-infra-data` at 21:55:41
+  to 21:56:00, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the flag `false -> true` and eight
+  attributes unchanged, the plan saved outside the repository. The apply waits on the user's
+  authorization, then `DL-5` after it and the second run.
+
+## 2026-10-23 — decision 13's lake half applied: the flag on in Data Governance
+
+*Claude's hand, on the user's authorization in chat (*"Pode prosseguir com os applies e todas as etapas
+que você conseguir executar sem q minha intervenção."*), as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-data`); no other session running on the machine (`list_sessions`,
+every row idle). Recipe A, the plan outside the repository, `DL-5` before and after. Times UTC.*
+
+- **[Claude] Before**: `./aws/datalake.py awsds-infra-data` at 22:01:58, all checks passed, `DL-5`
+  `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `DL-6` and `DL-13` passing. The fresh plan at 22:02:36
+  to 22:02:55, *"Plan: 0 to add, 1 to change, 0 to destroy."*, one resource,
+  `allow_full_table_external_data_access = false -> true`.
+- **[Claude] The apply** at 22:02:55 to 22:03:05, *"aws_lakeformation_data_lake_settings.this:
+  Modifications complete after 1s"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*;
+  the resource's id moved from `4042482338` to `1412964709`, a hash of the settings.
+- **[Claude] After**: `get-data-lake-settings` at 22:03:49 reads the flag `true`, one administrator,
+  both create-default lists empty, the parameters `4` / `TRUE`, `ExternalDataFilteringAllowList` `[]`,
+  `AuthorizedSessionTagValueList` and `TrustedResourceOwners` absent; `./aws/datalake.py` at 22:03:50
+  all checks passed, the two standing notes (`DL-7`, `DL-11`); the re-plan at 22:04:42 **`No changes`**.
+  The flag now reads `true` in Production, Sandbox and Data Governance, unset in Staging.
+
+## 2026-10-23 — 2.4's producer run again, with both flags on: the governed write committed
+
+*Claude's hand, the same authorization and identity (`awsds-infra-prod`), the hub and
+`production/workloads-egress/` up. Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 22:04:44, run
+  `jr_954bd067091522ca86a459b9887e4ab3d0d3055fae0130aa845965de4f8e2b09`, **`SUCCEEDED`** at 22:06:27
+  after 79 s of execution, 158 DPU-seconds, 99 s after the lake's flag went on. The script's lines:
+  *"running as …awsds-prod-job-exec/GlueJobRunnerSession, mode producer"* 22:05:33; *"inserting 10
+  sample rows into lake.curated.trades"* 22:05:42; *"the insert committed"* 22:06:11;
+  *"lake.curated.trades holds 10 row(s) through the share"* 22:06:14, the ten rows printed, dated
+  2026-10-01 to 2026-10-05; *"the direct put was refused: AccessDenied: User:
+  …awsds-prod-job-exec/GlueJobRunnerSession is not authorized to perform: kms:GenerateDataKey on this
+  resource because the resource does not exist in this Region, no resource-based policies allow access,
+  or a resource-based policy explicitly denies access"* 22:06:16; *"done"*. The refusal came from the
+  lake's data key, one layer before the S3 identity-policy wording 2.4 expected, the same order 8.4
+  read for the Staging persona: the job role's missing `s3:PutObject` stays attached and unexercised
+  (Lesson 20). The error log group carries Spark's executor noise (*"SparkContext should only be created
+  and accessed on the driver"*, *"A master URL must be set"*) and no failure.
+- **[Claude] The vends in both trails**: eight `GetDataAccess` in Production between 22:05:45 and
+  22:06:15, every one answered through `vpce-0431cce5692733205`, in pairs: one from the driver's SDK
+  naming the lake's table, one invoked by `glue.amazonaws.com` whose `sharedEventID` is also in the
+  lake's trail (four events there, the role's session as the principal, `invokedBy`
+  `glue.amazonaws.com`). The first run's refused vends had reached neither leg of that pair in the lake.
+- **The readings 2.4 owed**: the mode admits a writer holding `INSERT`, `DELETE` and `ALTER` without
+  `ALL`, so the `ALL` fallback is not taken; the commit went through with `glue:UpdateTable` in the
+  role, which the next run without it would measure, and is not measured; the flag is needed in the
+  owner's account, and whether Production's is also needed is the third run's measurement, the
+  user's hand.
+
+## 2026-10-23 — 9.1's `production/warehouse/` applied: the governed namespace
+
+*Claude's hand, the same authorization (*"Pode prosseguir com os applies…"*), as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`); `runbooks/promotion.md` §W step 2. Recipe A, the
+plan outside the repository. Times UTC.*
+
+- **[Claude] The plan**, the slice initialised in the worktree, at 22:06:09 to 22:06:18: *"Plan: 9 to
+  add, 0 to change, 0 to destroy."*, the count 9.1 planned on 2026-10-22: the three audit log groups
+  (`connectionlog`, `userlog`, `useractivitylog` under `/aws/redshift/awsds-prod-warehouse/`), the
+  alarms `awsds-prod-warehouse-compute-capacity` and `-data-storage`, the role
+  `awsds-prod-warehouse-exec`, the namespace, the security group and its 5439 ingress rule.
+- **[Claude] The apply** at 22:07:07 to 22:07:20, *"Apply complete! Resources: 9 added, 0 changed, 0
+  destroyed."*, the namespace `awsds-prod-warehouse` created in 2 s, the security group
+  `sg-0f018ef6c4848a9a3`; the re-plan at 22:07:32 **`No changes`**. The outputs: the admin secret
+  `redshift!awsds-prod-warehouse-dbadmin-…`, Redshift-managed; capacity base 4, max 8, the usage
+  limit 10 RPU-hours monthly, `max_query_execution_time` 120; the namespace ARN. No workgroup exists:
+  `production/warehouse-compute/` is `[E]`, raised by `make up … ONLY=warehouse-compute GROUPS=redshift`
+  once `layers.py`'s refusal 9 is lifted, and 9.3's SQL waits on the user's schema theme and quota
+  (`waiting-on-the-user.md`).
+
+## 2026-10-23 — 2.5's pickup run: the drop consumed, curated through the write path, deleted
+
+*Claude's hand, the same authorization and identity (`awsds-infra-prod`), the hub and
+`production/workloads-egress/` up; the drop `incoming/2026/10/23/trades.csv` (362 bytes) made by the
+user as the Data Scientist User in Sandbox at 20:47 UTC. Times UTC.*
+
+- **[Claude] The run**: `start-job-run` at 22:09:38, run
+  `jr_4039ad141615c4ac81136dccb766dff822ff964b27ac84ee5db7a88ea8153683`, **`SUCCEEDED`** at 22:11:33
+  after 97 s of execution, 194 DPU-seconds. The script's lines: *"pickup: 1 CSV object(s) under
+  s3://awsds-data-dropbox/incoming/: incoming/2026/10/23/trades.csv"* 22:10:34, the three `.txt`
+  objects of `EXC-02` passed over; *"pickup: 10 row(s) read as the job role, under the lake data key
+  (the KMS half)"* 22:11:09; *"pickup: 10 row(s) curated into lake.curated.trades"* 22:11:19;
+  *"lake.curated.trades holds 20 row(s) through the share"* 22:11:20, the sample rows and the CSV's
+  carrying the same ten trades, so each prints twice; *"pickup: deleted
+  s3://awsds-data-dropbox/incoming/2026/10/23/trades.csv; a read after the delete answers 404: Not
+  Found"* 22:11:21; *"the letterbox is empty"*; *"done"*.
+- **[Claude] The drop-box after**: the listing at 22:13 holds the three `.txt` objects alone. The
+  bucket is versioned, so the delete is a **delete marker** (`YoD2rVa6…`, 22:11:22) over the object's
+  version (`.UmZxqIbd…`, 362 bytes), which stays until the bucket's lifecycle expires it.
+- **[Claude] Production's trail** (22:11): the drop-box read's `kms:Decrypt` at 22:11:08 invoked by
+  `fas.s3.amazonaws.com` as the job role's session, the KMS half of INT-10 answered by the lake's data
+  key; the vends in pairs through the `lakeformation` endpoint at 22:11:12, 22:11:18 and 22:11:21, the
+  `GetTable`s through the `glue` endpoint, and one `glue:UpdateTable` at 22:11:19 invoked by
+  `glue.amazonaws.com`, the Iceberg commit. The lake's trail had not yet shown the decrypt at 22:13.
+- **[Claude] The lake's trail at 22:26**, after the log's lag: the drop-box read's `kms:Decrypt` at 22:11:08
+  as the job role's session, the cross-account principal (`sharedEventID` with Production's event); then,
+  from 22:11:12 to 22:11:21, every `Decrypt` on the curated data is the registration role's
+  (`awsds-data-lf-registration`, sessions `AWSLF-00-NA-…`), the credentials Lake Formation vended: the
+  job role's own session touched no `curated` object, which is D13 read in the trail.
+
+## 2026-10-23 — 4.3a's first apply of the re-cut `staging/egress/`, read back
+
+*The apply the user's, `make up ENV=staging ONLY=egress` from the project folder as the infrastructure
+user with `InfrastructureAccess` (`awsds-infra-staging`), the hub up (the user's words: "staging está
+no ar"); Claude's hand reading. Times UTC.*
+
+- **[user] The apply**, the slice's first since 4.3a re-cut it to `VPC-Workloads`' endpoint set (16 to
+  add). **[Claude] Read at 22:44**: `./aws/egress.py awsds-infra-staging` all checks passed, `EG-1` and
+  `EG-2` on each endpoint, `EG-5` ~0.070 USD/h; the seven interface endpoints `available`, `glue`,
+  `kms`, `lakeformation`, `logs`, `sagemaker.api`, `secretsmanager` and `sts`, each single-AZ in
+  `usw2-az1`, no `ecr.*` among them (Stage 10 verification xvi's premise); the DNS Firewall rule group
+  `awsds-staging-egress`.
+
+## 2026-10-23 — the Production sitting's end: `workloads-egress/` down, zero burn
+
+*The teardown the user's, `make down ENV=production` from the project folder as the infrastructure user
+with `InfrastructureAccess` (the user's words: "production está sendo destruído"); Claude's hand
+reading. Times UTC.*
+
+- **[Claude] The reading**: Production's interface endpoints gone at 22:48; `./aws/egress.py
+  awsds-infra-prod` at 22:49:56 reads 0 interface endpoints, 0 NAT gateways, 0.000 USD/h, `EG-5`
+  *"none - the correct between-sessions state (D11)"*. The hub stays up for the Staging leg (Stage 8's
+  log). The sitting's balance in Production: the proof job's three runs (one refused, two
+  `SUCCEEDED`), `curated.trades` at twenty rows, the lake's flag on, the governed namespace applied.
+
+## 2026-10-23 — the sitting's end: the hub down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo make hub-down agora, com a leitura do
+make status depois."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`); no
+other session running on the machine. Times UTC, past midnight into 2026-10-24.*
+
+- **[Claude] `make hub-down`** at 00:06:39 to 00:06:49: the dormant hook stopped `awsds-prod-vpn`
+  (`i-011ffd7b…`) and `awsds-prod-proxy` (`i-0d42d039…`), every other slice refused as always. A
+  `make status` in the same minute still read the proxy `UP` while it was stopping; at 00:09 both
+  hosts read `stopped` (`t3.nano`, `t3.micro`), and `make status` at 00:10 reads every `[E]` slice down
+  with 0 resources, the three `[D]` hosts stopped, the burn **0.0000 USD/h**. The evening's balance:
+  Stage 9 2.4-2.6 and 9.1, Stage 10 0.5 and the Staging half of passes 1-2 by hand (Stage 8 3.8), two
+  policy fixes, one module release, the estate at zero burn.
+
+## 2026-10-23 — 9.3's theme and quota, the user's decision
+
+*The user's hand, in chat (00:15 UTC on 2026-10-24); Claude recording.*
+
+- **[user]** *"Confirmo o tema trades e a cota de 1 TB para o primeiro schema governado (Stage 9 9.3)."*
+  The proposal of 2026-10-23 stands as the decision: the schema `trades` in the database `governed`, owner
+  `gov_trades_owner`, `QUOTA 1 TB`, the roles `gov_trades_rw` and `gov_trades_ddl`, the statements as 9.3
+  carries them. The waiting list's row leaves; §W runs them at the next Production sitting, the compute
+  raised with `GROUPS=redshift`.
+
+## 2026-10-24 — 9.3's governed schema: the statements run through the Data API
+
+*Claude's hand, on the user's authorization in chat (*"rodei make hub-up e make up ENV=production
+ONLY=workloads-egress,warehouse-compute GROUPS=redshift. Pode prosseguir. Autorizo os applies
+necessários."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), through
+`redshift-data` with the namespace's admin secret (`redshift!awsds-prod-warehouse-dbadmin-…`), one
+`execute-statement` per statement. The workgroup `awsds-prod-warehouse` `AVAILABLE` since 00:23:05, base 4
+and max 8 RPU, the usage limit 10 RPU-hours monthly `deactivate`, the `redshift-serverless` endpoint among
+the nine of `VPC-Workloads`. Times UTC.*
+
+- **[Claude] The readings first** (00:26:52 to 00:27:05): the secret authenticated at the first call, so
+  `EXC-13`'s database half reads true for a namespace no rotation has touched; `public`'s ACL in
+  `warehouse` and in `dev` `{rdsdb=UCDA/rdsdb,=UC/rdsdb}`, so `PUBLIC` held `USAGE` and `CREATE` on both,
+  the `CREATE` owed a revoke; both databases' `datacl` null, the defaults.
+- **[Claude] The statements** (00:27:50 to 00:29:21, each `FINISHED`, none above 0.6 s): in `warehouse`,
+  `REVOKE CREATE ON SCHEMA public FROM PUBLIC`, `REVOKE ALL ON DATABASE warehouse FROM PUBLIC`,
+  `CREATE DATABASE governed`; in `dev`, the same two revokes; in `governed`, `public`'s ACL read the same
+  `=UC/rdsdb` and the two revokes ran, then `CREATE USER gov_trades_owner PASSWORD DISABLE NOCREATEDB
+  NOCREATEUSER`, `CREATE SCHEMA trades AUTHORIZATION gov_trades_owner QUOTA 1 TB`, `CREATE ROLE
+  gov_trades_rw`, `GRANT USAGE ON SCHEMA trades TO ROLE gov_trades_rw`, `CREATE ROLE gov_trades_ddl`,
+  `GRANT USAGE, CREATE ON SCHEMA trades TO ROLE gov_trades_ddl`, `CREATE USER "IAMR:awsds-prod-job-exec"`
+  and `CREATE USER "IAMR:awsds-deploy-prod"` (both `PASSWORD DISABLE NOCREATEDB NOCREATEUSER`), `GRANT
+  ROLE gov_trades_rw TO "IAMR:awsds-prod-job-exec"`, `GRANT ROLE gov_trades_ddl TO "IAMR:awsds-deploy-prod"`,
+  `ALTER DEFAULT PRIVILEGES FOR USER "IAMR:awsds-deploy-prod" IN SCHEMA trades GRANT SELECT, INSERT,
+  DELETE ON TABLES TO ROLE gov_trades_rw`. The theme and the quota are the user's decision of 00:15.
+- **[Claude] Read back** (00:30:33 to 00:31:15, the Data API as the admin): `pg_user` holds six users:
+  `rdsdb`, `dbadmin`, `gov_trades_owner`, `IAMR:awsds-prod-job-exec`, `IAMR:awsds-deploy-prod` and
+  **`IAMR:AWSReservedSSO_InfrastructureAccess_c2bcabf74c885115`, superuser**, the user 9.8 predicted
+  nobody would create, born of the first IAM-authenticated session (`./aws/warehouse.py` or the compute's
+  apply) and not of this sitting's statements; `svv_roles` the two roles, owner `dbadmin`;
+  `svv_user_grants` `IAMR:awsds-deploy-prod` → `gov_trades_ddl` and `IAMR:awsds-prod-job-exec` →
+  `gov_trades_rw`; `pg_namespace` `trades` owned by `gov_trades_owner`; `svv_default_privileges` three
+  rows for `trades`, `RELATION`, owner `IAMR:awsds-deploy-prod`, `SELECT`, `INSERT` and `DELETE` to the
+  role `gov_trades_rw`; the databases' ACLs `{dbadmin=CTA/dbadmin}` for `warehouse` and `governed`,
+  `{rdsdb=CTA/rdsdb}` for `dev`, `PUBLIC` gone from all three; `public`'s ACL `=U/rdsdb` in each, the
+  `CREATE` revoked. `./aws/warehouse.py awsds-infra-prod --sql` at 00:31:19: OK, `WH-6` *"`governed` plus
+  the inert ['dev', 'warehouse']"*, `WH-12` one themed schema, `WH-15` idle at 8 RPU-seconds, `WH-14` a note
+  until a table exists, `WH-13` the quota unreadable.
+- **[Claude] The audit groups** (read 00:35, Lesson 62): `connectionlog` carries the admin's Data API
+  session (*"authenticated | 00:26:52 | 127.0.0.1 | warehouse | dbadmin | password | TLSv1.3"*),
+  `useractivitylog` its statements (*"db=governed user=dbadmin … LOG: CREATE SCHEMA trades AUTHORIZATION
+  gov_trades_owner QUOTA 1 TB"*), `userlog` the three `create` events of 00:28:31, 00:29:01 and 00:29:06;
+  Production's export carries what Sandbox's never did (`EXC-16`).
+- **[Claude] `make down ENV=production`** (`AUTO=1`, to 00:47:16): `warehouse-compute/` *"2 destroyed"*,
+  the workgroup and its usage limit, `workloads-egress/` *"17 destroyed"*, the seven endpoints with the
+  `redshift-serverless` one `GROUPS=redshift` added and the firewall, every other `[E]` slice 0; the
+  namespace `AVAILABLE` with `governed` and its schema, `[P]`. `./aws/egress.py awsds-infra-prod` at 00:47:34
+  reads no interface endpoint and no NAT; `make status` at 00:48 reads every `[E]` slice down and the burn
+  0.0156 USD/h, the hub's two hosts, whose `make hub-down` is the user's. 9.5's datashare (both sides),
+  9.6 and 9.7 are the sitting that follows.
+- **[Claude] `make hub-down`** (00:52:15 to 00:52:20, on the user's authorization in chat, *"Autorizo make
+  hub-down agora, com a leitura do make status depois."*): the dormant hook stopped `awsds-prod-vpn` and
+  `awsds-prod-proxy`, both `stopped` a minute later; `make status` at 00:53 reads the three `[D]` hosts
+  stopped, every `[E]` slice down and the burn **0.0000 USD/h**. No other session running on the machine.
+
+## 2026-10-24 — the fifth sitting with the environment down: the readings, 9.5 as commands, decision 14
+
+*Claude's hand, in the session `stages-8-9-10-prep-f13bc2` (the branch `claude/stages-8-9-10-prep-f13bc2`,
+cut from `main` at PR #250's merge), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`,
+`awsds-infra-data`, `awsds-infra-identity`), reads only, the tunnel down; no other session running on the
+machine. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Em relação aos estágios 8, 9 e 10, peço fazer o seguinte: verifique o status
+  atual de cada estágio. revise o plano destes estágios considerando o andamento atual, o resultado com as
+  leituras e preparações prévias realizadas para execução destes estágios. Faça a preparação necessária
+  para a execução destes estágios com tudo o que pode ser feito sem que seja necessário subir o ambiente.
+  Prepare tudo que for necessário para executarmos de forma mais célere estas etapas uma vez que eu consiga
+  subir o ambiente. Verifique o andamento recente e os últimos commits. Propague as correções e alterações
+  necessárias aos passos restantes do plano considerando isso. Usuário infra sso logado para as
+  leituras."*
+- **[Claude] The quota requests**, 01:58: the four `ml.m5.large` requests of 2026-10-23 (training
+  `L-611FA074` and transform `L-236AE59F`, 2 each, Production and Staging) read `CASE_OPENED`, each with a
+  support case id, last updated between 20:03 and 21:00 on 2026-10-23.
+- **[Claude] The instruments**, 01:59 to 02:07: `./aws/egress.py` on the three compute profiles all checks
+  passed, `EG-5` *"none - the correct between-sessions state"*; `./aws/warehouse.py awsds-infra-prod` and
+  `./aws/datalake.py awsds-infra-data` OK; `./aws/deploytargets.py` on the five infrastructure profiles
+  all checks passed. A first run of it on Production and Staging alone failed `DT-8` (*"none while
+  staging/data/ stands"*) while its section 5 listed Staging's two resource links to the lake: without
+  `awsds-infra-data` the check cannot resolve the lake's account, so the failure was the invocation's
+  (Lesson 62). `make status`, 02:08 to 02:22: every `[E]` slice down with 0 resources, the estimated
+  burn 0.0000 USD/h. `terraform version` reads 1.15.8, so the 1.16.6 pins still wait on the user's install.
+- **[Claude] 9.5 read on AWS's step pages**, by a research agent of this session: the Redshift guide's
+  Lake Formation producer, consumer and considerations pages, `CREATE DATASHARE`, `ALTER DATASHARE`,
+  `GRANT`, `CREATE DATABASE`, the Lake Formation guide's prerequisites, permissions, notes, LF-Tag and
+  cross-account pages, the API references and two AWS blogs (`docs/REFERENCES.md`). 9.5 now carries shape
+  (ii) as five steps across Production, the Lake Formation account and Sandbox, and what the pages leave
+  unsaid: a read with Production's workgroup gone, a cross-account LF-Tag grant on a federated database,
+  the principal behind a `RedshiftDbUser` tag, an empty share's registration, and the `CREATE USER`
+  contradiction between one page and both blogs. Two rules open **decision 14**, the account that
+  registers and grants: an LF-Tag cannot be put on a resource shared from another account, and a
+  receiving account cannot pass a share on. Recommended: Data Governance, whose registration
+  `DenyLakeDeletionAndDeregistration` makes permanent. 9.5a is settled by decision 5 (no switch).
+- **[Claude] What 9.6 and 9.7 still need**: a table in `trades`. 9.4's DDL and load job, which decision 6
+  puts in the application repository and the pipeline runs, are unwritten; they ride a release after
+  `v0.3.0`'s first promotion.
+- **[Claude] The texts**: 3.5 (the requests' state), 9.5, 9.5a, decision 14 and the decisions' preamble,
+  the Status row (two sentences joined without a stop since PRs #248 and #250, separated);
+  `runbooks/promotion.md` (where it stands, §0.5, §W step 5, §T's prerequisite); `waiting-on-the-user.md`
+  (the quota row, decision 14, 6d decision due 11, the persona's Athena read moved out of the Production
+  sitting, since 5.4's sequence needs nothing up).
+
+## 2026-10-24 — `EXC-02`'s cleanup refused to Claude by the auto-mode classifier; 9.8's network and README rows
+
+*Claude's hand, on the user's word in chat (*"Pode prosseguir com as etapas que não dependem do ambiente no
+ar"*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-data`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `EXC-02`'s before-reading**, 03:04:20: the three `.txt` objects the row names are the current
+  versions under `incoming/` (38, 213 and 213 bytes), `trades.csv` behind its delete marker of 22:11:22;
+  the bucket policy holds no deny on `s3:DeleteObject`, so `InfrastructureAccess` in its own account may
+  delete. The three `delete-object` calls were refused before running by Claude Code's auto-mode
+  classifier (*"judged this action dangerous"*); nothing was deleted, and a listing at 03:04:48 reads the
+  three objects in place. The cleanup is the user's from the project folder, the command in
+  `runbooks/promotion.md` §0.5; the row retires after Claude's read-back.
+- **[Claude] 9.8's paperwork for what 9.3's sitting raised**: `docs/NETWORK.md`'s two rows and
+  `terraform-live/README.md` still called the governed workgroup unapplied; they now carry its first raise,
+  2026-10-24 00:23 to 00:47. `AWS_STATE.md` already held the two database users nobody created (PR #250),
+  so it is unchanged. `INT-24` carries the step pages' reading and decision 14.
+
+## 2026-10-24 — `EXC-02`'s cleanup by the user, read back; 5.4's read of the twenty rows as the persona
+
+*The user's hand for the delete and the query, Claude's for the read-back and the record. The delete as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-data`), from the project folder, with
+`runbooks/promotion.md` §0.5's command; the query as the Data Scientist User with
+`DataScientistProdAccess` (`awsds-scientist-prod`), signed in with `aws sso login --sso-session
+awsds-scientist --no-browser`, the tunnel down. Times UTC.*
+
+- **[user] `EXC-02`'s three `.txt` objects deleted** from `awsds-data-dropbox`, the auto-mode classifier
+  having refused Claude's delete. **[Claude] Read back at 03:12:47** as `awsds-infra-data`: `incoming/`
+  holds no current object; each `.txt` is a delete marker, `probe-4d-sandbox.txt` at 03:12:22,
+  `awsds-6g-24-probe.txt` at 03:12:28 and `awsds-6g-24-probe-tunnel.txt` at 03:12:32, over its version
+  (38, 213 and 213 bytes), which the bucket's 90-day noncurrent rule expires; `trades.csv` behind its
+  marker of 2026-10-23. `AWS_STATE.md`'s row is closed, and `GOVERNANCE.md`, open question 19, the lake's
+  README, `buckets.tf`'s comment and 2.5's text say the collector exists.
+- **[user] 5.4's first query**, the output pasted in chat, verbatim:
+
+  ```
+  aws athena start-query-execution --work-group awsds-prod-athena --query-string 'SELECT count(*) AS n FROM curated.trades' --query-execution-context Database=curated --result-configuration OutputLocation=s3://awsds-prod-outputs/not-enforced/ --profile awsds-scientist-prod --region us-west-2
+
+  {
+      "QueryExecutionId": "d78c3939-168a-4c28-8313-246620114d06"
+  }
+
+  aws athena get-query-execution --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'QueryExecution.[Status.State,ResultConfiguration.OutputLocation,Statistics.DataScannedInBytes]' --output text --profile awsds-scientist-prod --region us-west-2
+
+  SUCCEEDED       s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv        0
+
+  aws athena get-query-results --query-execution-id "d78c3939-168a-4c28-8313-246620114d06" --query 'ResultSet.Rows[].Data[].VarCharValue' --output text --profile awsds-scientist-prod --region us-west-2
+
+  n       20
+  ```
+
+- **[Claude] The reading**: the persona reads `curated.trades` through Production's resource link, the
+  share's `SELECT` and `awsds-prod-athena`, the count 20 the producer's ten and the pickup's ten; the
+  workgroup's enforced location overrode the request's `not-enforced/`, the override 5.4 asks about;
+  0 bytes scanned, a `count(*)` Athena can answer from the Iceberg table's metadata, so the scan limit
+  was not approached. A read-back of the query as `awsds-infra-prod` found no SSO token for the `awsds`
+  session after the persona's sign-in (*"Error loading SSO Token: Token for awsds does not exist"*); it was
+  not retried, the pasted output being the measurement.
+
+## 2026-10-24 — 5.4's query read back from the account and its trail
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), reads only,
+after the user signed the `awsds` session in again. Times UTC.*
+
+- **[Claude] The query** `d78c3939-168a-4c28-8313-246620114d06`, read at 03:31:52: workgroup
+  `awsds-prod-athena`, database `curated`, `SUCCEEDED`, submitted 03:21:58.720 and completed 03:22:01.049
+  (2,329 ms), Athena engine version 3, 0 bytes scanned, the result at
+  `s3://awsds-prod-derived/results/d78c3939-168a-4c28-8313-246620114d06.csv` under `SSE_KMS`.
+- **[Claude] Production's trail**: `StartQueryExecution` at 03:21:58 in a `DataScientistProdAccess`
+  session, from a public address (the laptop off the VPN, D39), naming the workgroup and returning that
+  id; then the vend pair at 03:21:59, `lakeformation:GetDataAccess` in the same session invoked by
+  `glue.amazonaws.com` and by `athena.amazonaws.com`, both answered. The persona's read of the governed
+  table is attributed by its own session, not by the profile's name.
+
+## 2026-10-24 — decision 14 taken by the user, as recommended: Data Governance
+
+*The user's hand, in chat; Claude recording.*
+
+- **[user]** *"Aceito as duas recomendações: Stage 9 decisão 14 como (a), Data Governance registra e
+  concede o datashare; e 6d decisão 11, manter o endpoint lakeformation do Sandbox. Registre as
+  decisões."*
+- **[Claude] What it fixes**: 9.5's `<LF>` is Data Governance. Production grants the datashare `VIA DATA
+  CATALOG` to it and authorizes `DataCatalog/<Data Governance>`; the lake's administrator associates,
+  registers, creates the federated database and grants Sandbox, with the lake's own LF-Tags; Sandbox's
+  administrator grants the project's role. The Lake Formation grants keep one grantor, so the step's
+  callout, 9.8, the risk on the register, D40's compensation paragraph and `GOVERNANCE.md` no longer
+  speak of a second grantor account; the `GRANT`s inside `governed` stay Production's, in the register's
+  Redshift half. The registration is permanent under `DenyLakeDeletionAndDeregistration`. The waiting
+  list's row leaves; 6d decision due 11 is that stage's log.
+
+## 2026-10-24 — the sixth sitting with the environment down: the quotas raised, 9.4 written, decision 15
+
+*Claude's hand, in the session `planejamento-estagios-8-9-10-847863` (the branch
+`claude/planejamento-estagios-8-9-10-847863`, cut from `main` at PR #252's merge and fast-forwarded to
+PR #253's at the user's word), on the user's request. AWS read as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`, `awsds-infra-sandbox-1`), reads and
+plans only, the tunnel down; the one other session on the machine, the runbooks review (PR #253), was
+told which stage-file forms this session takes. Nothing applied. Times UTC.*
+
+- **[user] The request**: *"Planeje as próximas atividades para concluirmos os estágios 8, 9 e 10.
+  Antecipe todas as etapas que podem ser feitas neste momento sem o ambiente no ar. Em seguida, planeje
+  a execução destas etapas e me avise para subir o ambiente e prosseguirmos com a implementação do
+  plano."* Later in the sitting: *"Peço sincronizar o repositório em relação à main. houve revisão dos
+  runbooks."*
+- **[Claude] 3.5's quotas**, 03:47 to 03:48: the four `ml.m5.large` requests still read `CASE_OPENED`,
+  last updated 2026-10-23 between 20:03 and 21:00, and the applied values `list-service-quotas` returns
+  are no longer 0. In Production and Staging alike: training 20 for `ml.m5.large`, `ml.m5.xlarge`,
+  `ml.c5.xlarge` and `ml.m5.2xlarge`, 1 for `ml.t3.large` and `ml.t3.xlarge`; transform 8, 4, 8 and 2 for
+  the first four; processing 8 for `ml.m5.large`, `ml.m5.xlarge` and `ml.c5.xlarge`, 4 for
+  `ml.m5.2xlarge`, 10 for `ml.t3.medium` (4 before) and `ml.t3.large`, 5 for `ml.t3.xlarge`. Sandbox
+  reads the same values. `get-aws-default-service-quota` still reads 0.0 for `L-611FA074`, so these are
+  the two accounts' applied quotas, raised past the requests' 2. Stage 10's pass 3 waits on no quota.
+- **[user] Decision 15**, the warehouse load's trigger, answered in the session's question: *"Workflow
+  só de Produção"*, against the recommendation of a manual job in the Production leg. The load is a
+  task of its own workflow with its own chain, Production's alone, and fails whenever the compute is
+  down.
+- **[Claude] 9.4 written** in the template (`examples/app-etl/`) and its slices: `warehouse/trades.sql`
+  (`CREATE TABLE IF NOT EXISTS trades.trades_notional`, the deployer's user its owner); the pipeline's
+  manual job `production-warehouse-ddl` (the Data API as `awsds-deploy-prod`, a read every 5 s, cancelled
+  past 300 s and read back, verifications xxii and xxvii); `glue/load_warehouse.py` (`GetCredentials` and
+  `GetWorkgroup`, then JDBC on the workgroup's port as `IAMR:awsds-prod-job-exec`, delete and insert in
+  one transaction, the count read back); the job `awsds-prod-app-etl-load`, Production's alone in the
+  shared application slice; the workflow `app-etl-warehouse` and its chain at `cron(30 7 * * ? *)`; the
+  job role's `ConnectToTheGovernedWarehouse`. AWS's JDBC page names `redshift-jdbc42-2.1.0.29` for Glue
+  5.0 and 5.1 and says Glue provides the drivers to its Spark jobs; Glue 6.0's row is not in its table,
+  so the first run reads whether the driver loads.
+- **[Claude] 8.5's half**: the template's Glue job reads `curated.trades` through the share when the
+  application slice gives it `--SOURCE_TABLE` (2.4's catalog settings), writes
+  `app_outputs.trades_notional` and reads it back against the rows read; `staging-test` reads the table
+  by `get-table` as the deploy role. A planted drift, `GOVERNED_COLUMNS` naming a column `curated.trades`
+  lacks, fails Staging's leg and passes `test` (verification xiii, Stage 8's ix).
+- **[Claude] The plans**, 17:17 to 17:21, each outside the repository: `production/data/` and
+  `staging/data/` *"Plan: 0 to add, 1 to change, 0 to destroy."*, the outputs bucket's policy with
+  `models/` among the deploy role's prefixes, and four outputs (`lake_catalog_id`, `curated_database`,
+  `curated_table`, `curated_bucket_name`); `production/sagemaker/` the same counts, the job role's inline
+  policy, and `training_image_uri`; `staging/sagemaker/` the output alone. The applies wait for the user.
+- **[Claude] What the Staging leg of v0.4.0 depends on**: Staging's `AllowFullTableExternalDataAccess`
+  is unset, and whether an engine's flag is needed beside the lake's is verification xxviii's third
+  clause. The third producer run, Production's flag off, comes before that leg; if it is refused, the
+  user turns Staging's flag on in its console as Production's was.
+
+## 2026-10-24 — v0.4.0's data and sagemaker slices applied, read before and after
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os seis applies do §0.6 (production/data,
+staging/data, production/sagemaker, staging/sagemaker, production/foundation, staging/foundation) como
+usuário de infraestrutura com InfrastructureAccess, cada um de um plano fresco, com o var-file de alertas
+nos foundation, e as leituras depois."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`, `awsds-infra-staging`, the identity read at 17:48:39); Recipe A, each plan outside
+the repository, from the branch at `be2fdf17`. The six other sessions on the machine, all idle, were told
+before the first write; one answered that PR #248's changes, live in four of the slices, must be in the
+tree, which the plans confirmed by showing only this branch's additions. Times UTC.*
+
+- **[Claude] Before**, 17:49:09: `./aws/deploytargets.py` on the five infrastructure profiles, all checks
+  passed; `DT-5` reads `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, the create-defaults emptied and one
+  administrator in Data Governance, Production and Staging.
+- **[Claude] `production/data/`**: the fresh plan at 17:51:01, *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, the outputs bucket's policy; applied 17:51:16, *"Modifications complete after 1s
+  [id=awsds-prod-outputs]"*, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*, the four
+  outputs written; re-planned `No changes` at 17:51:26.
+- **[Claude] `staging/data/`**: plan 17:51:46, the same counts; applied 17:52:02 on
+  `awsds-staging-outputs`, *"0 added, 1 changed, 0 destroyed"*; re-planned `No changes` at 17:52:11.
+- **[Claude] `production/sagemaker/`**: plan 17:52:51, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+  job role's inline policy; applied 17:53:04, *"Modifications complete after 1s
+  [id=awsds-prod-job-exec:job]"*; re-planned `No changes` at 17:53:13; the output `training_image_uri`
+  names `sagemaker-xgboost@sha256:0b5d9341…3a78`.
+- **[Claude] `staging/sagemaker/`**: plan 17:53:30, the output alone; applied 17:53:41, *"Apply complete!
+  Resources: 0 added, 0 changed, 0 destroyed."*; re-planned `No changes` at 17:53:49.
+- **[Claude] After**, 17:56:04: `./aws/deploytargets.py` on the five profiles, all checks passed, `DT-5`
+  as before; `./scripts/check-copies.py` OK. `production/data/`'s outputs read back: `curated_database`
+  `curated`, `curated_table` `trades`, `curated_bucket_name` `awsds-data-curated`, `lake_catalog_id` the
+  lake account's. The simulator, `aws:RequestedRegion` in the context: `redshift-serverless:GetCredentials`
+  and `GetWorkgroup` on a `workgroup/…` ARN `allowed` for `awsds-prod-job-exec`, matched by its inline
+  `job` policy.
+
+## 2026-10-24 — the first promotion's Production run: the job role's jobs in `VPC-Workloads`
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the run is Stage 10's, its entry of
+this date). Times UTC.*
+
+- **[Claude]** The release's Glue job `awsds-prod-app-etl`, declared by `production/app/app-etl/` at
+  `v0.3.3`, ran as `awsds-prod-job-exec` on the `[P]` connection `awsds-prod-jobs` (decision 12):
+  `jr_56c29738…e022`, `SUCCEEDED` from 21:42:08 to 21:44:01, 93 s. The processing job
+  `app-etl-20261024T214447` ran as the same role on `ml.t3.medium` with network isolation, inter-container
+  encryption and two subnets (decision 9's settings, submitted by the workflow's execution role), on the
+  release's image `awsds-prod-ecr-app-etl@sha256:89d0ea21…2aac`, `Completed` from 21:45:36 to 21:50:11.
+  The job role wrote `app-etl/work/` and `app-etl/outbox/` of `awsds-prod-outputs` (four objects,
+  21:43:51 to 21:54:12) and touched no lake prefix: v0.3.3 reads the inbox, and the governed read is
+  v0.4.0's (8.5).
+
+## 2026-10-24 — 2.4's third producer run, Production's flag off: the commit needs the owner's flag alone
+
+*The user's hand for the two console acts; Claude's for the readings and the run, on the user's
+authorization in chat (*"Autorizo a execução --MODE producer do job awsds-prod-producer-proof agora, como
+usuário de infraestrutura com InfrastructureAccess em Production (awsds-infra-prod), e as leituras dos
+resultados."*), as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), in the session
+of `runbooks/promotion.md` §V (the branch `claude/eloquent-ishizaka-04f598`); §V step 1, the hub and
+`production/workloads-egress/` up. The seven other sessions on the machine were told before the run.
+Times UTC.*
+
+- **[Claude] Before**, 22:14:40: `get-data-lake-settings` reads `AllowFullTableExternalDataAccess` `true`,
+  one administrator, both create-default lists empty, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`;
+  `./aws/deploytargets.py awsds-infra-prod` all checks passed (`DT-5`).
+- **[user]** *"Desliguei a flag de full-table access de Production no console do Lake Formation
+  (us-west-2)."* The trail holds the console's `PutDataLakeSettings` at 22:23:32. **[Claude] read back** at
+  22:23:53: the flag absent from the settings, which the console removes rather than writing `false`, the
+  rest as before; `DT-5` passing.
+- **[Claude] The run**: `start-job-run` at 22:24:58, run
+  `jr_39e590285fd3b47097708bb1a6c133c1e3080fde2415a21c9b36002ef264064d`, **`SUCCEEDED`** at 22:27:01 after
+  102 s of execution, 204 DPU-seconds. The script's lines: *"running as
+  …awsds-prod-job-exec/GlueJobRunnerSession, mode producer"* 22:26:07; *"inserting 10 sample rows into
+  lake.curated.trades"* 22:26:22; *"the insert committed"* 22:26:46; *"lake.curated.trades holds 30 row(s)
+  through the share"* 22:26:48; the direct put refused by the lake's data key, *"not authorized to perform:
+  kms:GenerateDataKey on this resource because the resource does not exist in this Region, no
+  resource-based policies allow access, or a resource-based policy explicitly denies access"*, 22:26:50, as
+  on 2026-10-23; *"done"*.
+- **[Claude] Production's trail**: eight `GetDataAccess` on the lake's `table/curated/trades` between
+  22:26:27 and 22:26:49, in pairs, one from the driver's SDK and one invoked by `glue.amazonaws.com`, every
+  one answered, each carrying a `sharedEventID`, all through `vpce-05f87e3d8b6ce302d`, the `lakeformation`
+  endpoint `workloads-egress/` raised at 18:58.
+- **[user]** *"Religuei a flag de full-table access de Production no console do Lake Formation
+  (us-west-2)."* **[Claude] read back** at 22:29:42: the flag `true`, the rest as before, `DT-5` passing.
+- **Verification xxviii's third clause**: with the lake's flag on and Production's off, the write
+  commits, so the engine account's flag is not needed. Staging's leg reads through the lake's flag alone,
+  and Staging's stays unset. Production's flag is back on, as decision 13 (a) left it; whether it stays is
+  the user's to decide against `TM-26`. `curated.trades` holds 30 rows.
+
+## 2026-10-25 — §V step 8: the DDL, the load (9.6, xxv), two grants found missing, 9.5's first three steps
+
+*The user's hand for `make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` and
+the pipeline's manual job; Claude's for the readings, the applies, the chain's runs and the datashare's
+commands, on the user's authorizations in chat (*"Autorizo o apply de production/foundation (plano salvo,
+0/1/0) como awsds-infra-prod, a chain awsds-prod-chain-app-etl-warehouse e os passos 1 a 3 do 9.5 (SQL do
+datashare em Production, authorize-data-share e o lado de Data Governance)."* and *"Autorizo o apply de
+production/warehouse (plano salvo, 1 to add: o egress 5439 do awsds-prod-jobs para o awsds-prod-warehouse)
+como awsds-infra-prod e rodar de novo a chain awsds-prod-chain-app-etl-warehouse."*), as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`,
+`awsds-infra-sandbox-1`); the planning session told before each apply. Times UTC.*
+
+- **[user] The compute**: the `redshift-serverless` endpoint `available` at 01:37:44, the workgroup
+  `awsds-prod-warehouse` created at 01:38:36 and `AVAILABLE` at 01:40:41, base 4 and max 8 RPU, not public,
+  the usage limit 10 RPU-hours monthly `deactivate`.
+- **[user] `production-warehouse-ddl`** (pipeline #80, job 449), about 01:42: **[Claude]** the trail holds
+  `ExecuteStatement` at 01:42:23 as `awsds-deploy-prod`, no error, and `DescribeStatement` at 01:42:30 in the
+  same role session, `AccessDenied`; the job stopped on *"is not authorized to perform:
+  redshift-data:DescribeStatement because no identity-based policy allows the redshift-data:DescribeStatement
+  action"*, exit 254. The statement had run: `./aws/warehouse.py awsds-infra-prod --sql` read `WH-14`
+  *"1 relation(s), each reachable by a role through a grant or a default privilege"*. The Data API
+  authorizes `DescribeStatement`, `GetStatementResult` and `CancelStatement` on no resource, so the grant
+  under `workgroup/*` matched nothing.
+- **[Claude] The deploy role's fix**: `FollowItsOwnStatements` in `production/foundation/deploy-anchors.tf`,
+  the three actions on `"*"` with `redshift-data:statement-owner-iam-userid` equal to `aws:userid`; planned
+  at 01:46:09 with the alerts var-file, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the inline policies
+  at about 3,803 of 10,240 characters after; applied at 01:47:41, *"Modifications complete after 1s
+  [id=awsds-deploy-prod:apply-application]"*; re-planned `No changes`. The simulator, with
+  `aws:RequestedRegion` in the context, reads the three `allowed` on the role's own statement and
+  `implicitDeny` on another owner's; without that key it reads every action `explicitDeny`, the Region
+  ceiling's SCP, even `ExecuteStatement` and `sagemaker:DescribeModelPackage`, which work.
+- **[Claude] The warehouse chain, first run**, `v0-4-2-by-hand-2026-10-25-app-etl-warehouse`, 01:49:52 to
+  01:54:55, `FAILED`: the load job `jr_190a5fd2…0337` (01:50:40 to 01:52:37) *"read 30 row(s) from
+  s3://awsds-prod-outputs/app-etl/tables/trades_notional/"*, *"connecting to
+  jdbc:redshift://awsds-prod-warehouse.<Production>.us-west-2.redshift-serverless.amazonaws.com:5439/governed as
+  IAMR:awsds-prod-job-exec"*, then *"java.net.SocketTimeoutException: Connect timed out"*. The name resolved;
+  the job group `awsds-prod-jobs` (`sg-0b8b0b803f6fed9cc`) held egress to the interface endpoints, the S3
+  prefix list and itself, and none to the warehouse's group `sg-0f018ef6c4848a9a3`, whose ingress from it
+  9.1 had written. The workgroup's ENIs `10.32.85.148` and `10.32.42.6`, in the connection's subnet among
+  them.
+- **[Claude] The egress fix**: `jobs_to_warehouse_5439` in `production/warehouse/security-group.tf`,
+  planned at 01:57:14, *"Plan: 1 to add"*; applied at 01:59:33, *"Creation complete after 2s
+  [id=sgr-0c9aea27065a1d2b0]"*; re-planned `No changes`.
+- **[Claude] 9.6, the second run**, `v0-4-2-by-hand-2026-10-25-app-etl-warehouse-2`, 01:59:59 to 02:05:12,
+  `SUCCEEDED`: the load job `jr_453d7bb9…2870` (02:00:53 to 02:03:15) *"trades.trades_notional: 0 row(s)
+  deleted, 30 inserted, 30 counted for the load's dates, as IAMR:awsds-prod-job-exec"*. **Verification xxv**,
+  read at 02:05:55 through the Data API as the admin: `pg_user` holds `IAMR:awsds-prod-job-exec` and
+  `IAMR:awsds-deploy-prod`, neither a superuser, beside `dbadmin`, `rdsdb`, `gov_trades_owner` and the
+  infrastructure user's `IAMR:` user; `trades.trades_notional`'s owner is `IAMR:awsds-deploy-prod`, and it
+  holds 30 rows dated 2026-10-01 to 2026-10-05, written by the job role.
+- **[Claude] 9.5's step 1**, in `governed` as the admin, 01:51:05 to 01:51:22, each `FINISHED`: `CREATE
+  DATASHARE trades_lf`, `ALTER DATASHARE trades_lf ADD SCHEMA trades`, `ADD ALL TABLES IN SCHEMA trades`,
+  `SET INCLUDENEW = TRUE FOR SCHEMA trades`, `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data
+  Governance>' VIA DATA CATALOG`; `svv_datashare_objects` the schema `trades` and the table
+  `trades.trades_notional`, `svv_datashare_consumers` `DC:<Data Governance>`.
+- **[Claude] Step 2**, as `awsds-infra-prod`: `authorize-data-share` for `DataCatalog/<Data Governance>`,
+  `AUTHORIZED` at 01:52:05, `ProducerAllowedWrites` false, no publicly accessible consumer.
+- **[Claude] Step 3**, as `awsds-infra-data`: the share `AVAILABLE` to the consumer; `associate-data-share-consumer`
+  on the lake's catalog `ACTIVE` at 01:52:29; `register-resource` on the datashare's ARN at 01:52:38, no role,
+  `HybridAccessEnabled` and `WithPrivilegedAccess` false, `NOT_VERIFIED`; the create-defaults read empty
+  first. `glue create-database` with a description was refused, *"Description and federation source cannot
+  exist together in a database!"*; without it `governed_trades` was created at 01:53:16, its
+  `FederatedDatabase` the datashare's ARN on `aws:redshift`, `CreateTableDefaultPermissions` `[]`, its only
+  permission the creator's (`InfrastructureAccess`, `ALL` with grant option), none to
+  `IAM_ALLOWED_PRINCIPALS`; its table `trades.trades_notional`. LF-Tags at 01:54:06, `layer=curated` on the
+  database and `classification=internal` on the table, no failure.
+- **[Claude] The tag grant reaches the federated database**: Sandbox's account holds the lake's TBAC grants
+  (`DESCRIBE` on databases with `layer` in `curated`, `raw`; `DESCRIBE` and `SELECT` on tables with
+  `classification` in `internal`, `public` and `layer` in `curated`, `raw`, both grantable), and from Sandbox
+  `glue get-database` and `get-table` on `<Data Governance>`'s catalog answered for `governed_trades` and
+  `trades.trades_notional` (six columns, `notional` among them), with no RAM invitation pending: no named
+  grant was needed for the account. In Sandbox the tag re-grants name the Data Scientist User's set, not a
+  project role, so step 4's grant to the project role is still owed, with steps 5 and 9.7.
+
+## 2026-10-25 — 9.5's steps 4 and 5 in Sandbox: the project role's grant, the consumer database; the administrator reads it
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de
+production/foundation (0/3/0, awsds-infra-prod) e staging/foundation (0/3/1, awsds-infra-staging) e os
+passos 4 e 5 do 9.5 no Sandbox (awsds-infra-sandbox-1)."*), as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator), in the session's
+second branch (`claude/eloquent-ishizaka-04f598-2`, cut from `main` after PRs #255 and #256); the user raised
+`sandbox/warehouse-compute/` (the workgroup `AVAILABLE`, created 02:11:54). Times UTC.*
+
+- **[Claude] Step 4**, at 02:37:27 and 02:37:28: `grant-permissions` to
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` (`eighth-experimentation`, the project the warehouse
+  admits), `DESCRIBE` on `<Data Governance>`'s `governed_trades` and `SELECT`, `DESCRIBE` on its table
+  `trades.trades_notional`, by name, so the project reaches this table alone and not every `curated` /
+  `internal` table the account's tag grant covers. Read back: `DESCRIBE` on the database and the table and
+  `SELECT` as `TableWithColumns` with the column wildcard, which a `list-permissions` filtered by principal and
+  `Table` resource does not return.
+- **[Claude] Step 5**, the Data API as the namespace's admin in `warehouse`: `CREATE DATABASE governed_trades
+  FROM ARN 'arn:aws:glue:us-west-2:<Data Governance>:database/governed_trades' WITH DATA CATALOG SCHEMA
+  governed_trades` `FINISHED` at 02:38:48, and `GRANT USAGE ON DATABASE governed_trades TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 02:38:52, the user in `pg_user` since 6h.
+  `svv_redshift_databases` reads it `shared via data catalog`, `{"datacatalog_schema":"governed_trades"}`.
+- **[Claude] What the pages left open, read**: as `dbadmin`, a password user, `svv_all_tables` lists nothing in
+  `governed_trades` and a `SELECT` is refused, *"ERROR: Current user is not authenticated with IAM
+  credentials."*: a share registered with Lake Formation is read by an IAM-derived user alone. Through the Data
+  API with IAM authentication, as `IAMR:AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, the table is
+  `governed_trades.trades.trades_notional`, an `EXTERNAL TABLE` under the producer's schema name `trades`, not
+  the Glue database's; and `SELECT count(*)` read **30**, at 02:40, with no grant to that role: the account's
+  Lake Formation administrator reads under the grant the account holds from the lake, as it reads the lake's
+  `curated` tables. The project role's read is 9.7's, the user's.
+- **[Claude] 9.6's namespace half**: `awsds-prod-warehouse-exec` holds no inline and no attached policy (read
+  02:41), so the namespace role reaches no lake prefix (9.2).
+
+## 2026-10-25 — 9.7: a Sandbox project reads the governed table, after three grants the pages did not name
+
+*The user's hand for the queries, from the project `eighth-experimentation`'s Query editor in the portal;
+Claude's for the grants and the applies, on the user's authorizations in chat (*"Autorizo, como
+awsds-infra-sandbox-1: o apply de sandbox/data (só a saída lake_catalog_id), o apply de sandbox/warehouse se
+o plano mostrar só a política do papel de acesso, e o grant DESCRIBE/SELECT em governed_trades ao
+awsds-sandbox-warehouse-access-avhvbqn37ty7m8."* and *"Autorizo, como awsds-infra-sandbox-1 pela Data API com
+o segredo do admin: GRANT TEMP ON DATABASE sandbox TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"."*),
+as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`); the planning session told
+before the writes. In the user's pasted output the account id is replaced by `<Sandbox Account 1>`. Times
+UTC.*
+
+- **[user] The first attempt**, refused: *"ERROR: AwsClientException: AccessDeniedException from glue - User:
+  arn:aws:sts::<Sandbox Account 1>:assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/28f1b390-…@5hkjdsy3umpi1c
+  is not authorized to perform: glue:GetTable on resource: ar…"*. **The principal the consumer evaluates is
+  the session's**, the project's access role, which the portal's connection assumes; the database user
+  `IAMR:datazone_usr_role_…` is a name the access role's `RedshiftDbUser` tag gives, and neither Glue nor
+  Lake Formation sees that role. Step 4's grant to the project role is unused by this door.
+- **[Claude] The access role's two layers**: `sandbox/data/` gained the output `lake_catalog_id` (planned
+  05:56:20, *"Changes to Outputs: + lake_catalog_id"*, applied 05:57:35, *"0 added, 0 changed, 0 destroyed"*,
+  re-planned `No changes`); `sandbox/warehouse/` gained `ReadTheGovernedShareCatalog` on the access role's
+  portal policy, `glue:GetDatabase`, `GetDatabases`, `GetTable` and `GetTables` on the lake's catalog,
+  `database/governed_trades` and `table/governed_trades/*` (planned 05:58:05, *"Plan: 0 to add, 1 to change, 0
+  to destroy."*, `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` alone; applied 05:58:34; re-planned
+  `No changes`); Lake Formation at 05:59:03, `DESCRIBE` on `governed_trades` and `SELECT`, `DESCRIBE` on its
+  table to `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, read back beside step 4's grant to the project role.
+- **[user] The second attempt**, refused by Redshift: *"ERROR: Failed to incorporate external table
+  "trades"."trades_notional" into local catalog. Error=permission denied to create temporary tables in database
+  "sandbox""*. The share's table is an external table, and the session's database holds the temporary objects a
+  query on one needs; 5b and 6h revoked every database privilege from `PUBLIC`, `TEMP` with it.
+- **[Claude] The third layer**: in `sandbox` as the admin, `GRANT TEMP ON DATABASE sandbox TO
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 06:04:42, the ACL from `{dbadmin=CTA/dbadmin}` to
+  `{dbadmin=CTA/dbadmin,"IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"=T/dbadmin}`.
+- **[user] The third attempt**, `SELECT current_user, count(*), min(trade_date), max(trade_date) FROM
+  governed_trades.trades.trades_notional;`: *"current_user = IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c,
+  count = 30, min 2026-10-01, max = 2026-10-05"*. **INT-24 holds**: a Sandbox project reads a governed table
+  of Production's warehouse through Lake Formation, the lake's tag grant reaching the federated database,
+  with no network path between the accounts. The door needs, per project, the access role's catalog read
+  (IAM), its Lake Formation grant, `USAGE` on the consumer database and `TEMP` on the session's database.
+
+## 2026-10-25 — 9.7 with Production's workgroup gone: the share still reads
+
+*The user's hand for `make down ENV=production ONLY=warehouse-compute` and the query; Claude's for the
+readings, as the infrastructure user with `InfrastructureAccess`. Times UTC.*
+
+- **[user]** `make down ENV=production ONLY=warehouse-compute`; **[Claude] read back** at 06:13:30: no workgroup
+  in Production, `DeleteWorkgroup` in its trail from 06:11:56 to 06:12:01, the namespace `awsds-prod-warehouse`
+  `AVAILABLE`; Sandbox's workgroup `AVAILABLE`.
+- **[user]** The same query from `eighth-experimentation` ran successfully with the producer's workgroup gone.
+  9.5's open measurement is answered: a Serverless producer with no workgroup keeps serving a Lake
+  Formation-managed datashare from its namespace, so a Sandbox read costs Sandbox's compute alone, never both
+  workgroups at once.
+
+## 2026-10-25 — Staging's `make down` refused the application table's delete; the infrastructure user's grant on `app_outputs`
+
+*The user's hand for `make down ENV=staging` and the grant that unblocked it; the forked session's for the
+reading of Staging after the down; Claude's for the trail's reading and the code, as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-staging`, `awsds-infra-prod`). Times UTC.*
+
+- **[user] `make down ENV=staging`**, as the infrastructure user: the application slice's Glue job destroyed,
+  the table refused, *"AccessDeniedException: Insufficient Lake Formation permission(s): Required Drop on
+  trades_notional"* (the forked session's quote of the output). **[Claude] Staging's trail**: `DeleteTable` on
+  `app_outputs.trades_notional` refused at 06:30:24 and 06:31:52, Terraform 1.15.8, the trail reading
+  `AccessDenied`, *"An unknown error occurred"*. The table's creator was `awsds-deploy-staging`, through
+  pipeline #87's `staging-deploy`, and Lake Formation gives a table's creator its permissions and no one else:
+  the account's administrator, who created `app_outputs`, holds no `DROP` on a table another principal created
+  in it.
+- **[user] The unblock**, `aws lakeformation grant-permissions` from the CLI at 06:34:37: `DROP` on
+  `app_outputs.trades_notional`, by name, to `InfrastructureAccess`; `DeleteTable` passed at 06:36:00 and the
+  down completed. **[forked session]** Staging read at zero at about 06:47: `./aws/egress.py awsds-infra-staging`
+  0 interface endpoints, 0 NAT, 0.000 USD/h; no workflow; the Glue job and the table gone. **[Claude] read at
+  06:49**: `app_outputs` holds no table, and the grants on its tables list the job role, the persona and the
+  deploy role; the by-name grant left with its table.
+- **[Claude] The fix**, at the forked session's request on the user's behalf: since Stage 8's decision 27 the
+  pipeline applies an application slice and the user destroys it, so every release's table meets this refusal
+  at the next down. `infrastructure_app_outputs_tables` in `staging/data/` and `production/data/` gives
+  `InfrastructureAccess` the deploy role's catalog operations on every table of `app_outputs`, `ALTER`, `DROP`
+  and `DESCRIBE`, no data permission; planned at 06:44 in each slice, *"Plan: 1 to add, 0 to change, 0 to
+  destroy."*, the plans saved, the applies waiting for the user's authorization.
+
+## 2026-10-25 — `infrastructure_app_outputs_tables` applied in both data slices
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os applies dos planos salvos de staging/data
+(1 to add, awsds-infra-staging) e production/data (1 to add, awsds-infra-prod), como usuário de infraestrutura
+com InfrastructureAccess."*), as the infrastructure user with `InfrastructureAccess`; the forked session told
+before the writes. Times UTC.*
+
+- **[Claude] The applies** of the saved plans: `staging/data/` at 06:52:58 and `production/data/` at 06:53:17,
+  each *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*; both re-planned `No changes`.
+- **[Claude] Read back** at 06:54 with `list-permissions` on every table of `app_outputs`: in each account
+  `InfrastructureAccess` holds `ALTER`, `DESCRIBE`, `DROP`, beside the deploy role's same three, the job role's
+  `ALTER`, `DELETE`, `DESCRIBE`, `INSERT`, `SELECT` and the persona's `DESCRIBE`, `SELECT`. The next
+  `make down ENV=staging` after a release is the grant's measurement.
+
+## 2026-10-25 — the warehouse instrument after the downs
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`, `awsds-infra-prod`).
+Times UTC.*
+
+- **[Claude] `./aws/warehouse.py`** at 07:15: in each account `WH-8` *"1 namespace(s), 0 workgroup(s), all
+  expected"*, and `WH-4`, `WH-4b`, `WH-5`, `WH-7` and `WH-1b` pass; run without `--sql`, since both workgroups
+  are gone, so the database readings (`WH-6`, `WH-12`, `WH-14`) and `EXC-13`'s password wait for the next
+  warehouse sitting. `WH-9` reads the Sandbox connection's `lineageSync` `ENABLED` on `cron(43 3 * * ? *)`, 15
+  runs, none completed (`EXC-17`).
+
+## 2026-10-25 — with the environment down: the verification table brought up to the log
+
+*Claude's hand, at the user's request to prepare what needs no environment; no AWS call. Times UTC.*
+
+- **[Claude]** Rows iv, v (the approval half), xiii, xviii, xix, xx (the write half), xxi, xxiii and xxvi now
+  carry the answers this log and the step text already held; xxiii has had no subject since decision 5 took
+  shape (ii). Rows i and iii stay as they were: their evidence is spread across 2.2's and 2.4's readings and
+  was not re-read in this sitting.
+
+## 2026-10-25 — with the environment down: xii's identity half by the simulator
+
+*A read-only agent of this session took the reading as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-staging`, `awsds-infra-prod`), the simulator with `aws:RequestedRegion` and `aws:ResourceOrgID`.*
+
+- **[agent] xii**: in Staging,
+  `awsds-deploy-staging`'s `DescribeModelPackage` and `ListModelPackages` read `allowed` by `apply-application`,
+  `UpdateModelPackage` `implicitDeny`. Production's group policy `ReadTheVersionsAsTheStagingDeployRole` names that
+  role for the two reads on `model-package/awsds-prod-model-app-etl/*`; the simulator cannot evaluate a role as a
+  resource-policy principal, and Production's trail holds no `DescribeModelPackage` from Staging, so the proof is a
+  call from a Staging deploy session.
+
+## 2026-10-25 — 9.5 step 4's grant to the project role revoked
+
+*Claude's hand, on the user's authorization in chat (*"Sobre "3. Decidir sobre o grant LF ao papel do projeto",
+pode fazer conforme sua recomendação e revogar."*), as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-sandbox-1`, Sandbox's Lake Formation administrator); the forked session told before the write.
+Times UTC.*
+
+- **[Claude] Before**, at 14:57: `list-permissions` filtered by principal returned nothing on `<Data Governance>`'s
+  `governed_trades` and its table, for the project role and for the access role alike, while the access role's
+  grant serves the door; listed by resource alone, the database read `DESCRIBE` for both roles and the table
+  `DESCRIBE` (`Table`) and `SELECT` (`TableWithColumns`) for both.
+- **[Claude] The revoke**, 14:57:51 to 14:57:54, each exit 0: `DESCRIBE` on the database, `DESCRIBE` on
+  `trades.trades_notional` and `SELECT` on its column wildcard, from
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`.
+- **[Claude] Read back** by resource at 14:58:07: the database holds `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`'s
+  `DESCRIBE` alone, the table its `DESCRIBE` and `SELECT`. The project's door is unchanged, since the consumer
+  evaluates the access role; the next warehouse sitting's query from `eighth-experimentation` is its reading.
+
+## 2026-10-25 — `EXC-13`'s database half was already read
+
+*Claude's hand, from this log; no AWS call.*
+
+- **[Claude] A correction of the 07:15 entry**, which left `EXC-13`'s password to the next warehouse sitting: the
+  reading was taken earlier the same day. The Data API authenticated as `dbadmin` through Sandbox's admin secret
+  at 02:38 (9.5's step 5, `CREATE DATABASE governed_trades`) and at 06:04 (`GRANT TEMP`), so the database holds
+  the password the secret's rotation of 2026-10-20 wrote. Production's secret rotates first by 2026-11-22, the
+  same reading due then.
+
+## 2026-10-25 — the plan read for what is left; the next release's sitting written
+
+*Claude's hand, with two editing agents of this session, at the user's request to review the documentation, the
+runbooks and the Terraform comments against the session's learnings, to prepare what can be anticipated and to
+review what is left; no AWS write.*
+
+- **[Claude]** The stage file's status cell ends with what is left on 2026-10-25, its stale clauses corrected
+  against this log; `runbooks/promotion.md` §N orders every step left in Stages 8, 9 and 10 by the sitting that
+  runs it (nothing up, the release through Staging and Production, the warehouses, a Sandbox space, the
+  deliberate exercises, what waits on something else). The next tag needs PR #258 merged and `main` pushed to the
+  GitLab mirror first, since the mirror at `79651026` holds `production/orchestration/` on `orchestration-v0.2.0`
+  with the app-etl and train schedules `ENABLED` (the waiting list).
+- **[Claude]** The documentation, runbooks and Terraform comments read against the learnings: Staging's release
+  stays until the user's `make down` (decision 27), the governed warehouse is a Lake Formation-managed datashare,
+  `EXC-22` in `GOVERNANCE.md`'s encryption rule and the threat model, the save's KMS grant behind every workflow
+  run, the plan's `# whitespace changes` on a JSON string in `terraform-changes.md`, the principal-filtered
+  `list-permissions` in `log-debugging.md`, and `aws/orchestration.py`'s report texts.
+
+## 2026-10-25 — with the environment down: 9.5's adoption written and planned, xii's call written, rows i and iii filled
+
+*Claude's hand, at the user's request to prepare what Stages 7 to 10 leave with nothing up, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`,
+`awsds-infra-staging`), reads and plans only. Times UTC.*
+
+- **[Claude] 9.5's objects read back** before writing: the datashare `trades_lf` on namespace
+  `b15e9682-064d-4c48-a4cc-4d607622c379`, `AUTHORIZED` for `DataCatalog/<Data Governance>` and `ACTIVE` for
+  the lake's catalog ARN, `ProducerAllowedWrites` false; the registration, which `list-resources` does not
+  list (it reads the two S3 registrations alone) and `describe-resource` on the datashare's ARN reads with no
+  role, `HybridAccessEnabled` and `WithPrivilegedAccess` false, `NOT_VERIFIED`; the database `governed_trades`,
+  its `FederatedDatabase` the datashare's ARN on `aws:redshift`, `CreateTableDefaultPermissions` `[]`, no
+  description; the LF-Tags `layer=curated` on the database and, on `trades.trades_notional`, `layer=curated`
+  inherited and `classification=internal`, six tagged columns; the creator's `ALL` with grant option the
+  database's only permission.
+- **[Claude] The provider, read in its documentation and source at the slices' pins** (6.68.0 in Production,
+  6.60.0 in the lake): `aws_redshift_data_share_authorization` imports as `<arn>,<consumer identifier>`;
+  `aws_redshift_data_share_consumer_association` as `<arn>,<entire account>,<consumer arn>,<region>` with the
+  unused fields empty; `aws_glue_catalog_database` as `<catalog id>:<name>`; `aws_lakeformation_resource`
+  declares no importer (its Create sends `UseServiceLinkedRole: true` when no role is given, its Read never
+  sets the attribute); `aws_lakeformation_resource_lf_tags` documents no import. The data source
+  `aws_redshift_data_shares` lists the shares an account sees, which gives both slices the ARN without a
+  pasted namespace id.
+- **[Claude] The adoption written**: `production/warehouse/datashare.tf` (the authorization, the consumer
+  identifier built from `production/data/`'s `lake_catalog_id` output) and
+  `data-governance/data/warehouse-share.tf` (the association on the catalog's ARN and the federated database,
+  with the two import blocks). Baseline plans of both slices read `No changes` before the edit. **The first
+  Production plan read *1 to import, 1 to add, 1 to destroy***: `allow_writes = false` *"forces replacement"*,
+  the provider reading the attribute back as unset; left undeclared, the plan reads *1 to import, 0 to add, 0
+  to change, 0 to destroy*. **The lake's plan reads *2 to import, 0 to add, 1 to change***: the association
+  with no change, the database updated in place with the provider's five default tags
+  (`tags_all`) and nothing else. Neither apply run: both wait for the user's word, `awsds-infra-prod` then
+  `awsds-infra-data`, and the import blocks go in the commit after.
+- **[Claude] xii's call written** (4.6): `staging/foundation/outputs.tf` gains
+  `registry_model_package_group_arn_prefix`, built from the deploy role's own locals (the registry account
+  resolved through the `deploy_runner` alias, the env token), planned with the alerts var-file as *Changes to
+  Outputs* alone; `tfhygiene.targets.account_values` reads it for Staging (`REGISTRY_SLICE`), and
+  `scripts/model-chain.py transform staging` lists and describes Production's newest approved version of
+  `awsds-prod-model-app-etl` before it serves Staging's own model, an empty group reported and a refusal
+  failing the job. `--check` passes offline, ruff clean. The reading is the next Staging leg's
+  (`staging-model`), once the mirror carries the script.
+- **[Claude] Rows i and iii** of the verification table filled from this log's entries of 2026-10-22 to
+  2026-10-24 (2.2's brackets, 2.4's commit and the key's refusal of the direct put).
+- **[Claude] 3.5's requests**, read in both accounts: the four `ml.m5.large` requests still
+  `CASE_OPENED`, each with its case id, the applied quotas above them since 2026-10-24; nothing waits on them.
+
+## 2026-10-25 — 9.5's adoption and xii's output applied, with the environment down
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo os três applies com nada no ar, como usuário de
+infraestrutura com InfrastructureAccess: staging/foundation (só o output, com o var-file de alertas,
+awsds-infra-staging), production/warehouse (1 to import, awsds-infra-prod) e data-governance/data (2 to import,
+1 to change, awsds-infra-data)"*), as the infrastructure user with `InfrastructureAccess`; the one peer session
+on this machine told before the writes. Recipe A: a fresh plan saved, the saved plan applied, a re-plan. Times
+UTC.*
+
+- **[Claude] `staging/foundation/`**, with the alerts var-file: the plan at 17:24:36 read *Changes to Outputs*
+  alone; the apply at 17:24:53 to 17:25:04, *"0 added, 0 changed, 0 destroyed"*, the output
+  `registry_model_package_group_arn_prefix` written as `arn:aws:sagemaker:us-west-2:<Production>:model-package-group/awsds-prod-model-`;
+  re-planned `No changes`.
+- **[Claude] `production/warehouse/`**: the plan at 17:25:19, *"1 to import, 0 to add, 0 to change, 0 to
+  destroy"*; the apply at 17:25:31 to 17:25:39, `aws_redshift_data_share_authorization.trades_lf_to_lake`
+  *"Import complete"*, *"1 imported, 0 added, 0 changed, 0 destroyed"*; re-planned `No changes`.
+- **[Claude] `data-governance/data/`**: the plan at 17:25:51, *"2 to import, 0 to add, 1 to change, 0 to
+  destroy"*; the apply at 17:26:09 to 17:26:19, `aws_redshift_data_share_consumer_association.trades_lf` and
+  `aws_glue_catalog_database.governed_trades` *"Import complete"*, the database's *"Modifications complete after
+  2s"* (the five default tags), *"2 imported, 0 added, 1 changed, 0 destroyed"*; re-planned `No changes`, the
+  import blocks still in the configuration, which Terraform treats as done.
+- **[Claude] The import blocks removed** from both files, with the warehouse slice's import-only data source,
+  and both slices re-planned `No changes`.
+- **[Claude] Read back**: both states list the adopted addresses; the database carries the five tags
+  (`Project`, `Environment`, `Owner`, `ManagedBy`, `CostCenter` `stage-05`); `./aws/datalake.py awsds-infra-data`
+  0 failed; `./aws/warehouse.py awsds-infra-prod` every check a pass or a note, the notes the absent workgroup's
+  and `--sql`'s; `make check` passing.
+
+## 2026-10-25 — Production's full-table flag turned off, decision 13's loose end
+
+*The user's hand in the console; Claude's for the two readings, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`), reads only. Times UTC.*
+
+- **[Claude] Before**, 17:38:59: `get-data-lake-settings` reads one administrator (`InfrastructureAccess`), both
+  create-default lists `[]`, `CROSS_ACCOUNT_VERSION=4`, `SET_CONTEXT=TRUE`, `AllowFullTableExternalDataAccess`
+  `true`, `AllowExternalDataFiltering` `false`; `./aws/deploytargets.py awsds-infra-prod` all checks passed.
+- **[user]** *"Desliguei a flag AllowFullTableExternalDataAccess de Production no console do Lake Formation
+  (us-west-2)."*
+- **[Claude] After**, 17:45:00: the key `AllowFullTableExternalDataAccess` absent from the settings, as the
+  console writes an off flag; the administrator, both lists, the parameters and `AllowExternalDataFiltering` as
+  before; `deploytargets.py` all checks passed. The other accounts the same minute: the lake `true`, Sandbox
+  `true`, Staging unset. `TM-26`'s Production half is closed, `AWS_STATE.md`'s flag row and the waiting list
+  brought to it; the lake's flag, the one the vend reads, stays on.
+
+## 2026-10-25 — the Redshift free-trial balances, read by the user in the console
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim; Claude's reading of it.*
+
+- **[user]** Production: *"Free trial credits remaining $299.71 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration
+  December 19, 2026"*.
+- **[Claude] The reading**: Production has spent 0.29 USD of credit on the warehouse sittings of 2026-10-24
+  and 2026-10-25 (9.3's statements, 9.4's load, 9.5's datashare, 9.6 and 9.7's reads, the compute up about four
+  hours in all), the "before" reading for the next warehouse sitting (`runbooks/promotion.md` §N.2). Sandbox
+  has spent 12.49 in all, 0.39 since 2026-10-17's 287.90. Production's expiration, 2027-01-21, is 90 days after
+  the namespace's creation (9.1, 2026-10-23 22:07 UTC) and not after the first workgroup (2026-10-24), as
+  Sandbox's 2026-12-19 is 90 days after its namespace of 2026-09-20: the free trial's window opens with the
+  namespace. The waiting list, the cost row, `PRICING.md`, `cost-model.md` and §N.2 carry the figures.
+
+## 2026-10-25 — 5.4's read deny, run by the user as the Data Scientist User
+
+*The user's hand, the command pasted in chat with the account id replaced by its placeholder and the user's
+address by its role; Claude's reading. Times UTC.*
+
+- **[user]** `aws s3api get-object --bucket awsds-prod-outputs --key
+  applications/stage-09-proofs/v0/glue/producer_proof.py /dev/null --profile awsds-scientist-prod`: *"An error
+  occurred (AccessDenied) when calling the GetObject operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data
+  scientist user> is not authorized to perform: s3:GetObject on resource:
+  "arn:aws:s3:::awsds-prod-outputs/applications/stage-09-proofs/v0/glue/producer_proof.py" with an explicit deny
+  in a resource-based policy"*.
+- **[Claude] The reading**: the bucket's `DenyThePersonaReadsOutsideTheNamedPrefixes` answers, as 5.4 expected;
+  the persona reads nothing of a release's tree.
+- **[user] Stage 8 xxi's attempt**, in the same shell right after: *"Error loading SSO Token: Token for awsds
+  does not exist"*. **[Claude]** read the same from this session at 19:46:59, one minute after the persona's
+  sign-in wrote its own token (19:45): the infrastructure user's token no longer loads, the sign-in as another
+  user in the shared browser having ended the session that issued it (`aws/AWS-CLI.md`, "Signing in"). xxi waits
+  for a new sign-in as the infrastructure user; the persona's token is untouched.
+- **[user]** Signed in again as the infrastructure user (*"usuário sso infra logado"*): the `awsds` token file
+  rewritten at 19:47:46, its access token good to 20:47:46, and `get-caller-identity` answering again from this
+  session; the persona's token file untouched. xxi's attempt is the user's next command.
+
+## 2026-10-25 — verification xii's call: Staging's deploy session reads Production's registry
+
+*Claude's hand; the job's log in the user's GitLab session, CloudTrail and IAM as the infrastructure user
+with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`), reads only. Times UTC.*
+
+- **[Claude]** `v0.4.6`'s pipeline #102, job `staging-model` (#612) on the deploy runner as
+  `awsds-deploy-staging`, 23:45:43 to 23:51:36: `scripts/model-chain.py transform staging` printed
+  *"Production's registry: version 1 of arn:aws:sagemaker:us-west-2:…:model-package-group/awsds-prod-model-app-etl
+  is Approved, v0.4.2 trained by app-etl-train-20261025T011858"* before serving Staging's own model (the
+  transform `app-etl-v0-4-6-20261025T234609`, 30 predictions).
+- **[Claude]** Production's trail at 23:52: `DescribeModelPackage` at 23:46:03 on
+  `model-package/awsds-prod-model-app-etl/1`, no `errorCode`, `principalId`
+  `AROAZ4XFWAR7MPYEZXRTM:botocore-session-1792971953`; `aws iam get-role awsds-deploy-staging` reads the
+  role id `AROAZ4XFWAR7MPYEZXRTM`. The group policy's `ReadTheVersionsAsTheStagingDeployRole` admitted the
+  Staging role across the account boundary, the half the simulator could not evaluate on 2026-10-25
+  morning. `ListModelPackages` had not reached the trail at 23:52.
+
+## 2026-10-26 — §N.2, the warehouse sitting: Production's balance, the compute up, xviii's last clause, the instrument's database half
+
+*The user's hand for the console reading and `make up ENV=production ONLY=workloads-egress,warehouse-compute
+GROUPS=redshift`, from the project folder, with `workloads-egress/` already up without the group (the user's
+`make up` of 00:03); Claude's for the readings, as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`); the two peer sessions on this machine (Stages 7-10's orchestrating session and the Stage 7
+session) told before the up, and neither holds the slices. In the instrument's output the account id is
+replaced by `<Data Governance>`. Times UTC.*
+
+- **[user] The free trial's Production balance, before the sitting**, pasted verbatim: *"Free trial credits
+  remaining $299.71 out of $300.00"*, *"Free trial expiration January 21, 2027"*. **[Claude]** Unchanged
+  since 2026-10-25: no workgroup existed in between, and the governed schema's storage, 30 rows, draws
+  nothing the balance shows.
+- **[user] The compute**: **[Claude] read back** at 00:46: the `redshift-serverless` endpoint `available` in
+  `VPC-Workloads`, created 00:42:03; the workgroup `awsds-prod-warehouse` created 00:43:06, `AVAILABLE`,
+  base 4 / max 8 RPU, not publicly accessible, no enhanced VPC routing, port 5439, the usage limit
+  `serverless-compute` 10 RPU-hours monthly `deactivate`; the ten config parameters as the slice declares
+  them (`require_ssl` true, `enable_user_activity_logging` true, `max_query_execution_time` 120, `auto_mv`
+  false).
+- **[Claude] Verification xviii's last clause**, at 00:46:12: `aws redshift-serverless get-workgroup
+  --workgroup-name awsds-prod-warehouse --query workgroup.pricePerformanceTarget` reads `{"status":
+  "DISABLED"}`. xviii is answered whole.
+- **[Claude] `./aws/warehouse.py awsds-infra-prod --sql`**, 00:46:16 to 00:46:56, every call successful:
+  `WH-1`, `WH-2` (*"price-performance target DISABLED"*), `WH-3`, `WH-4`, `WH-4b`, `WH-5`, `WH-7`, `WH-8`,
+  `WH-1b`, `WH-6`, `WH-12` and `WH-14` pass; `WH-15`, `WH-11`, `WH-9` and `WH-13` are notes (no interval
+  published yet, no project outside Sandbox, the quota view unreadable). `WH-6`: `governed` plus the inert
+  `dev` and `warehouse`. `WH-14`: *"1 relation(s), each reachable by a role through a grant or a default
+  privilege; 1 default-privilege pair(s) cover future tables"*. `WH-12`: 1 themed schema, 1 role grant and
+  **3 user-role grants** where the register writes two: `IAMR:awsds-deploy-prod` → `gov_trades_ddl`,
+  `IAMR:awsds-prod-job-exec` → `gov_trades_rw`, and `ds:trades_lf_acc_DC_<Data Governance>` →
+  `ds:trades_lf`, a user and a role Redshift created for the datashare's Lake Formation consumer
+  (`DC:<Data Governance>`, 9.5 step 1's `GRANT USAGE … VIA DATA CATALOG`), the first `--sql` reading since
+  the share exists; the pair is absent from `pg_user`'s six users. Recorded in `AWS_STATE.md`'s register as
+  the platform's, beside the `IAMR:AWSReservedSSO_InfrastructureAccess_*` user (9.8). The admin secret
+  authenticated the session, as on 2026-10-24: no rotation has run in Production, so `EXC-13`'s Production
+  reading stays due after 2026-11-22.
+
+## 2026-10-26 — 5.4's Data API negative with the workgroup up: verification vii's third, refused by the set
+
+*The user's hand, signed in as the Data Scientist User on the `awsds-scientist` session (`--no-browser`,
+answered outside the shared browser), the command pasted in chat with the account id replaced by its
+placeholder and the user's address by its role; Claude's reading, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`). Times UTC.*
+
+- **[user]** `aws redshift-data execute-statement --workgroup-name awsds-prod-warehouse --database warehouse
+  --sql 'select 1' --profile awsds-scientist-prod --region us-west-2`: *"An error occurred
+  (AccessDeniedException) when calling the ExecuteStatement operation: User:
+  arn:aws:sts::<Production>:assumed-role/AWSReservedSSO_DataScientistProdAccess_0a59097411421dd8/<the data
+  scientist user> is not authorized to perform: redshift-data:ExecuteStatement on resource:
+  arn:aws:redshift-serverless:us-west-2:<Production>:workgroup/7e4b0850-aad8-4685-89f6-1d332ec793ce with an
+  explicit deny in an identity-based policy"*.
+- **[Claude] The reading**: Production's trail holds the `ExecuteStatement` at 00:59:46, `AccessDenied`, from
+  the laptop (no `vpcEndpointId`); the resource is the workgroup's own ARN, so the call reached
+  authorization this time, where 2026-10-23's answered *"Redshift endpoint doesn't exist in this region"*
+  before it (Lesson 21). The wording names an identity-based policy and no SCP; the one statement on
+  `DataScientistProdAccess` that denies `redshift-data:ExecuteStatement` is
+  `DenyMintingARedshiftDatabaseSession`, the shared fragment `redshift_denies` of
+  `identity/sso/policies-shared.tf` carried by both persona sets (5.1's managed policy in `production/data/`
+  holds no `redshift-data` statement). **Verification vii is three of three.**
+- **[Claude]** The infrastructure user's token survived the persona's sign-in (`get-caller-identity` at
+  01:01:19), the login answered outside the shared browser, where 2026-10-25's answered inside it.
+
+## 2026-10-26 — 9.4's DDL job run again from the pipeline: idempotent, the table counted by its owner
+
+*The user's hand for the job's trigger in GitLab (`awsds/app-etl`, pipeline #102 of `v0.4.6`, the manual job
+`production-warehouse-ddl`, #616); Claude's for the readings, the job's record and trace through GitLab's API in
+the user's browser session, and the Data API as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`). The Stage 7 session held its GitLab cycle while the job ran. Times UTC.*
+
+- **[user]** The job started at 01:04:21 on `awsds-prod-runner-deploy` (runner manager 19.4.1, the deploy
+  image by digest `9965f1b2…`), `allow_failure`, after `production-deploy`'s artifacts (job 621); the
+  infrastructure clone at `2d3160f1`, `main`'s head.
+- **[Claude] The trace**: `warehouse/trades.sql` (`CREATE TABLE IF NOT EXISTS trades.trades_notional …`)
+  `85d1ae82-d706-4fef-aafe-a1537dd6c319 FINISHED` at 01:04:58, about 29 s after the script began (the Data
+  API's first session of the sitting as `awsds-deploy-prod`); the job's own read, `SELECT current_user,
+  count(*) FROM trades.trades_notional`, `8b41a5ca-0af6-44a1-b04f-9b8faa970432 FINISHED` at 01:05:12, its
+  result `IAMR:awsds-deploy-prod` and `30`; *"Job succeeded"* at 01:05:15, 54 s in all. Verification xxii:
+  a second release's DDL changes nothing, and the table keeps the 30 rows of 2026-10-25's load. The
+  deploy role's `DescribeStatement` and `GetStatementResult` on its own statements worked, as
+  `FollowItsOwnStatements` grants since 2026-10-25.
+- **[Claude]** `describe-statement` on either id as the infrastructure user: *"ResourceNotFoundException
+  … Query does not exist"*. The Data API shows a statement to the identity that ran it and to no other,
+  so the job's record is its trace and the trail; the trail's `ExecuteStatement` events are read at §R.
+
+## 2026-10-26 — xxiv deferred by the user; Production's compute and endpoints down, read back
+
+*The user's decision in chat and the user's hand for `make down ENV=production
+ONLY=workloads-egress,warehouse-compute`, from the project folder; Claude's for the readings, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`); the two peer sessions told before the
+down, the orchestrating session having released Production at 00:57 (its chain's run `SUCCEEDED`, the three
+schedules `DISABLED`). Times UTC.*
+
+- **[user] Verification xxiv's exercise skipped this sitting** (*"Pulo o exercício xxiv nesta sentada"*), as
+  recommended: §N.4's procedure, the revoke and 9.5's steps 1 to 3 by command, predates the adoption of the
+  authorization and the association by Terraform on 2026-10-25 (Lesson 35), so the exercise waits for a
+  rewrite in which the plans of `production/warehouse/` and `data-governance/data/` are read after the
+  revoke and the re-grant is their apply.
+- **[Claude] The job's calls in the trail**, read at 01:12: `ExecuteStatement` at 01:04:31 and 01:04:59, the
+  `DescribeStatement` polls every five to six seconds and `GetStatementResult` at 01:05:14, every one as
+  `awsds-deploy-prod` (`botocore-session-1792976671`) with no error, `sourceIPAddress` a public address of
+  the egress path and no `vpcEndpointId`: the module carries no `redshift-data` endpoint by design
+  (`vpc-egress/endpoints.tf`). The infrastructure user's two `DescribeStatement` calls of 01:06:35 and
+  01:06:36, which the CLI answered *"Query does not exist"*, carry no `errorCode` in the trail.
+- **[user] The down**; **[Claude] read back** at 01:20: no workgroup in Production, the namespace
+  `awsds-prod-warehouse` `AVAILABLE`; `VPC-Workloads` holds its two gateway endpoints (`s3`, `dynamodb`)
+  and no interface endpoint. The trail: `DeleteWorkgroup` refused five times from 01:10:38 to 01:10:47,
+  `ConflictException` *"There is an operation running on the workgroup. Try to delete it later."*, the
+  provider retrying (Terraform 1.16.6's user agent) until the sixth call at 01:10:55 went through; the
+  slice's `DeleteVpcEndpoints` at 01:11:12 and 01:12:54. The eight `DeleteVpcEndpoints` of 01:20:00 are the
+  Stage 7 session's `make gitlab-down` in `VPC-SharedServices`, announced in chat.
+
+## 2026-10-26 — Sandbox's compute up; the instrument's database half, `EXC-13`'s second Sandbox reading
+
+*The user's hand for `make up ENV=sandbox ONLY=warehouse-compute`, from the project folder; Claude's for the
+readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`); the two peer
+sessions told. Times UTC.*
+
+- **[user] The compute**; **[Claude] read back** at 01:25: the workgroup `awsds-sandbox-warehouse` created
+  01:22:41, `AVAILABLE`, base 4 / max 8 RPU, not publicly accessible, `pricePerformanceTarget` `DISABLED`, the
+  usage limit 10 RPU-hours monthly `deactivate`.
+- **[Claude] `./aws/warehouse.py awsds-infra-sandbox-1 --sql`**, 01:25:14 to 01:26:01, every call successful:
+  every check passes but the three notes, `WH-15` (no interval published yet), `WH-9` (`EXC-17`: `lineageSync`
+  `ENABLED` on `cron(43 3 * * ? *)`, 15 runs, none completed, the count of 2026-10-25) and `WH-13`. `WH-7`
+  and `WH-11` read `avhvbqn37ty7m8` on both objects and inside the boundary; `WH-12` 1 themed schema in
+  `sandbox`, 2 role grants, 1 user-role grant; `WH-14` 2 relations reachable, 1 default-privilege pair.
+  **`EXC-13`'s Sandbox half, a second time**: the admin secret authenticated the Data API's session, so the
+  database still holds the password the rotation of 2026-10-20 wrote (the first reading 2026-10-25, 02:38
+  and 06:04); the next rotation is due by 2026-11-19.
+
+## 2026-10-26 — 9.7 a third time: the access role's grant alone serves the door
+
+*The user's hand for the query, from the project `eighth-experimentation`'s Query editor in the portal, reported
+in chat (*"A consulta de `trades_notional` retornou os resultados esperados."*); Claude's for the reading, one
+`SELECT` on `sys_query_history` through the Data API as the namespace's admin (`awsds-infra-sandbox-1`, the
+admin secret). Times UTC.*
+
+- **[user]** `SELECT current_user, count(*), min(trade_date), max(trade_date) FROM
+  governed_trades.trades.trades_notional;`, the expected result: the project's database user, 30, 2026-10-01
+  and 2026-10-05.
+- **[Claude] The query in Sandbox's history**, read at 01:28:48: query 9876897, `success`, 01:27:20.914 to
+  01:27:22.896, 1 row returned, database `sandbox`, user `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`,
+  the text as above with the editor's `limit 100` appended. The read ran with the project role's Lake
+  Formation grant revoked (2026-10-25, 14:57) and Production's workgroup destroyed (01:10:55): the access
+  role's catalog read, its Lake Formation grant, `USAGE` on `governed_trades` and `TEMP` on `sandbox` are the
+  whole door (`redshift-connection.md` §G), and INT-24 holds on the revoke's reading too.
+
+## 2026-10-26 — Sandbox's compute down: the Studio-apps hook against the query editor's app, then §R
+
+*The user's hand for `make down ENV=sandbox ONLY=warehouse-compute AUTO=1`, twice, the first output pasted in
+chat; Claude's for the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`,
+`awsds-infra-prod`, `awsds-infra-staging`); the two peer sessions told before the down and when Sandbox was
+done. Times UTC.*
+
+- **[user] The first `make down`**, about 01:30, refused by the hook of step 8.6 (`./scripts/down-studio-apps.py
+  sandbox`): *"FAILED to delete JupyterLab/default (default-28f1b390-0041-7068-8cc7-9ccef94277d1): … (ValidationException)
+  when calling the DeleteApp operation: State transition from [PendingCheckout] to [Deleting] is not allowed."*,
+  *"1 failure(s) - `make down` stops here rather than destroying the network under an app that is still
+  billing."* **[Claude] Where the app came from**: Sandbox holds one SageMaker domain per SMUS project
+  (`d-lfgbdrjncmsu` for `test-experimentation`, `d-p6gthxc82ckg` for `eighth-experimentation`), and the
+  hook's *"no running app"* line was the first domain's. In the second, the portal's project session called
+  `CreateApp` for the space's JupyterLab at 01:26:54, as the user opened the project's Query editor for 9.7,
+  and polled `DescribeApp` every two seconds; the query itself ran through `sqlworkbench` (`ExecuteQuery`
+  01:27:20, after `redshift-serverless:GetCredentials`) and did not wait for the app. The hook's `DeleteApp`
+  met the app in `PendingCheckout` at 01:30:31 and 01:30:53, a state the API does not leave for `Deleting`;
+  a second `CreateApp` by the portal at 01:31:54 read `ResourceInUse`; the polling stopped at 01:36:20, when
+  the user closed the editor.
+- **[user] The second `make down`**, about 01:36: the hook's `DeleteApp` refused once more at 01:36:35 and
+  accepted at 01:37:03; `DeleteWorkgroup` refused four times from 01:37:26 to 01:37:30, `ConflictException`,
+  the provider retrying, and through at 01:37:34. **[Claude] read back** at 01:39: no workgroup in Sandbox,
+  the namespace `AVAILABLE`, the app `Deleted`, the space `InService`. The Query editor opens the space's
+  JupyterLab beside its own `sqlworkbench` session, so a `make down` within minutes of a portal query meets
+  an app the hook cannot delete yet: wait for `InService` (the hook deletes it) or for the portal to give
+  it up, as here.
+- **[Claude] §R**, 01:40 to 01:42. `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1`:
+  all checks passed; `EG-5` 30 interface endpoints, 0 NAT, ~0.300 USD/h, of which Production's 12 are
+  `VPC-SharedServices`' (the Stage 7 session's GitLab cycle, `VPC-Workloads` holding no interface endpoint),
+  Staging 0 and Sandbox's 18 `sandbox/egress`'s, the orchestrating session's to bring down.
+  `./aws/warehouse.py awsds-infra-prod awsds-infra-sandbox-1`: `WH-8` *"1 namespace(s), 0 workgroup(s), all
+  expected"* in each, every other check a pass or the no-workgroup note; the burn, from `ComputeSeconds`:
+  Production 79 RPU-seconds today, 0.0079 USD at the rate, 78 of them in the interval starting 01:00 (9.4's
+  two statements), and Sandbox 18 RPU-seconds, 0.0018 USD, in the same interval (9.7's query and the history
+  read), the interval starting 01:30 published at 0: both sittings' last intervals have landed. The free
+  trial's balances are the user's reading.
+- **[Claude] `make status`**, 01:43 to 01:49, read-only: `production/workloads-egress` and `production/warehouse-compute`
+  down, `sandbox/warehouse-compute` down, `staging/egress` down; up and none of this stage's, `production/vpn`,
+  `proxy` and `tooling` (the hub and the Stage 7 cycle's GitLab), `production/egress` (12 resources),
+  `sandbox/egress` (27), and the two 0.00 USD/h slices `production/app/app-etl` and `production/orchestration`;
+  the estimated burn 0.2028 USD/h in Production and 0.1800 in Sandbox, by the static rates.
+
+## 2026-10-26 — the free-trial balances after the sitting
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim at about 01:50 UTC; Claude's reading.*
+
+- **[user]** Production: *"Free trial credits remaining $299.69 out of $300.00"*, *"Free trial expiration January
+  21, 2027"*. Sandbox: *"Free trial credits remaining $287.51 out of $300.00"*, *"Free trial expiration December
+  19, 2026"*.
+- **[Claude] The reading**: Production spent 0.02 USD of credit in the sitting, 299.71 to 299.69, against 79
+  RPU-seconds in `ComputeSeconds` (0.0079 USD at the rate): the balance shows a query billed at the 60-second
+  minimum, 240 RPU-seconds, 0.024 USD, which the metric does not, so the metric under-reads a sitting of short
+  statements and the balance is the figure to keep (Lesson 6). Sandbox reads as on 2026-10-25, its 18
+  RPU-seconds (9.7's query and the history read) not yet visible, a lag or below the cent; the next reading
+  says which. The cost row, `PRICING.md` and `cost-model.md` carry both figures.
+
+## 2026-10-26 — with the environment down: xxiv's procedure rewritten (§N.4a), 3.1's logs-land half, the quota cases, the record read against the plan
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS; the session that read Stages 7 to 10 for what is left. Times UTC.*
+
+- **[Claude] Verification xxiv's procedure** for the adopted resources written as `runbooks/promotion.md`
+  §N.4a: the before-readings, the revoke by SQL as the namespace's admin, the readings after, the two
+  slices' plans read and never applied there (`production/warehouse/` expected *1 to add*, the authorization
+  gone from the read; `data-governance/data/` expected to fail at the association's `data_share_arn` if the
+  consumer no longer sees the share, since `warehouse-share.tf` finds it through
+  `data.aws_redshift_data_shares.visible`), the re-grant by SQL with the two applies as its second half, 9.7
+  again, the downs. It runs in a warehouse sitting on the user's word (§N.4).
+- **[Claude] 3.1's first-job reading, the logs-land half** (`describe-log-groups` and `describe-log-streams`,
+  03:50): the six job log groups per account are under the account's data key with 30 days' retention and
+  hold the jobs' streams, in Production `app-etl-20261026T004534` (processing), `app-etl-train-20261025T070126`
+  (training), `app-etl-v0-4-2-20261025T012931` (transform) and `jr_a910b7a1…aacdc6` (Glue output and error),
+  in Staging `app-etl-20261025T232400`, `app-etl-train-20261025T233703`, `app-etl-v0-4-6-20261025T234609` and
+  `jr_a7dbfda9…8177ff`; `/aws-glue/jobs/logs-v2` answers no stream in either account. The debug role's read
+  waits for a 6.3 window.
+- **[Claude] 3.5's four cases**: `list-requested-service-quota-change-history` reads the `ml.m5.large`
+  training and transform pair `CASE_OPENED` in both accounts, created 2026-10-23 at 20:00, the applied
+  values 20 and 8; nothing waits on them.
+- **[Claude] The record read against the plan**: xii's call (read 2026-10-25) moved out of the status cell's
+  Left list and 4.6's text; 2.4's closing sentence dated (the engine's flag not needed since the third run,
+  `glue:UpdateTable` the one clause unmeasured); Validation item 4's `WH-15` sentence brought to 9.8; 9.8's
+  carried list gains `docs/GOVERNANCE.md`; INT-07's row carries its measurements; `EXC-13`'s Production date
+  joins the waiting list's Dates; the summary rows in `CLAUDE.md`, `GENERAL_PLAN.md` and `stages/INDEX.md`
+  brought to the record. What the stage leaves is the status cell's list: the two space halves, xxiv on
+  §N.4a, `EXC-13`'s Production half after 2026-11-22, and the halves no step provokes.
+
+## 2026-10-26 — with the environment down: 3.4's project-role half placed in the Sandbox sitting
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`, no write to
+AWS. Times UTC.*
+
+- **[Claude] 3.4's project-role half** is `runbooks/promotion.md` §N.3 step 6: the two commands from
+  `eighth-experimentation`'s space with no `--profile`, Production's account id typed at the prompt and
+  never written, the calls read afterwards in Production's trail. `ReadTheStatusFromSandbox` admits
+  `datazone_usr_role_*` of Sandbox (`production/sagemaker/registry.tf`), and the project's role,
+  `datazone_usr_role_avhvbqn37ty7m8_…`, is a contributor of the project. 8.1's space half stays behind 6f
+  decision 1 (step 9).
+
+## 2026-10-26 — the Sandbox sitting: 3.4's project-role half from a space
+
+*The user's hand in `eighth-experimentation`'s space as the Data Scientist User, no `--profile`, so the
+project role answered; Claude's for the trails, as the infrastructure user. Times UTC.*
+
+- **[user] 3.4's two calls** (`promotion.md` §N.3 step 6), Production's account id typed at the prompt:
+  `describe-model-package-group` answered, `awsds-prod-model-app-etl`, `Completed`, created 2026-10-18 19:59:03
+  UTC by the infrastructure user; `create-model-package` refused, *"User: arn:aws:sts::<Sandbox>:assumed-role/
+  datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform:
+  sagemaker:CreateModelPackage on resource: arn:aws:sagemaker:us-west-2:<Production>:model-package/
+  awsds-prod-model-app-etl/new because no resource-based policy allows the sagemaker:CreateModelPackage
+  action"*, the persona's wording of 2026-10-23. Verification v's project-role half is answered.
+- **[Claude] The trails**, read at 05:59 after a first lookup at 05:10 found neither call (delivery lag):
+  `DescribeModelPackageGroup` at 05:09:37 in both accounts' trails, from `10.20.56.248` through Sandbox's
+  `sagemaker.api` endpoint `vpce-0c34c55bf1eaa47ff`, no error, Production's record carrying no caller ARN;
+  `CreateModelPackage` at 05:09:45 in Sandbox's trail alone, `AccessDenied`, through the same endpoint.
+
+## 2026-10-26 — after the Sandbox sitting, nothing up: 3.1's log read by a principal the key does not admit, the debug window prepared
+
+*Claude's hand, from a laptop session as the infrastructure user with `InfrastructureAccess`
+(`awsds-infra-prod`): reads only. Times UTC.*
+
+- **[Claude] The data key's policy** (`alias/awsds-prod-data`, 15 statements): `Decrypt` through S3 for the job
+  role, the persona, the debug role (`AllowTheDebugRoleToDecryptViaS3`) and the release roles with
+  `InfrastructureAccess`; under the workflow-ARN context for the release, chain, deployment-manager and
+  workflow roles; and for the service principal `logs.us-west-2.amazonaws.com` under
+  `kms:EncryptionContext:aws:logs:arn`. No statement admits the infrastructure user or the debug role
+  through `logs`.
+- **[Claude] A job stream read anyway**: `get-log-events` on `/aws/sagemaker/ProcessingJobs`, stream
+  `app-etl-20261026T004534/algo-1-1792975588`, at 07:02:59 returned its events (*"app-etl 0.1.0, python
+  3.12.14 at /opt/app-etl/venv/bin/python"*). Production's trail, read at 07:04:30: a `Decrypt` by the
+  infrastructure user's session `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, at
+  07:02:49 (a `filter-log-events` whose first page was empty) and at 07:02:59; and at 07:02:59 a `Decrypt`
+  by `fas.s3.amazonaws.com` under CloudWatch Logs' chunk store's `aws:s3:arn`, no error. CloudWatch Logs
+  tries the reader's identity, then decrypts through its own path, so a reader needs no key grant. The
+  debug role's read is expected to take the same path and still waits for a window.
+- **[Claude] The policy simulator** read the debug role's `kms:Decrypt` as `implicitDeny` through `logs` and
+  through S3 alike; the S3 control is false for want of `kms:ResourceAliases` in the simulated context, so
+  the simulator is no instrument here (Lesson 30).
+- **[Claude] What changed in the record**: 3.1's text; `promotion.md` §N.7.2, the window's commands (the
+  approval, the plan and apply of `production/sagemaker/`, the persona's assumption and read, the trail,
+  the closing apply); the waiting list's act row for it.
+
+## 2026-10-26 — 3.1's debug-role read: the deployment manager's approval, the window opened
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), on the user's
+approval and authorization in this chat. The approval, as the deployment manager: "Aprovo, como deployment
+manager, uma janela de uma hora no awsds-prod-debug. Planeje o apply de production/sagemaker e me diga o
+que eu faço na sessão da persona (promotion.md §N.7.2)." The authorization of the apply: "Autorizo o
+apply necessário". Times UTC.*
+
+- **[Claude] The plan** (`production/sagemaker/`, Production, the slice initialised in this worktree), 15:08:20
+  to 15:08:40, with `-var debug_window_end=2026-10-26T16:10:00Z`, an hour from the plan: *"Plan: 0 to add, 1
+  to change, 0 to destroy."*, `module.debug_role.aws_iam_role.this` alone, its trust's `aws:CurrentTime`
+  moving from `2026-01-01T00:00:00Z` to `2026-10-26T16:10:00Z`, and the slice's check warning *"The debug
+  window on awsds-prod-debug is open until 2026-10-26T16:10:00Z"*. The plan saved outside the repository.
+- **[Claude] Before the apply**: the two peer sessions on the laptop, both idle, told of the apply and of the
+  closing one to come.
+- **[Claude] The apply** of the saved plan, 15:09:12 to 15:09:55: the role modified in 1 s, *"Apply complete!
+  Resources: 0 added, 1 changed, 0 destroyed."*, the check's warning printed with it.
+- **[Claude] Read back**: `get-role` at 15:10:06 shows the trust's `DateLessThan aws:CurrentTime
+  2026-10-26T16:10:00Z` beside `aws:RequestedRegion us-west-2`, the session ceiling 3600 s;
+  `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9` a note, *"OPEN until
+  2026-10-26T16:10:00Z - close it in the same sitting (6.3)"*, both assumption rules
+  `ENABLED_WITH_ALL_CLOUDTRAIL_MANAGEMENT_EVENTS`; the re-plan with the flag at 15:10:52 *"No changes."*
+- **[Claude] What follows**: the persona's assumption and its read of
+  `app-etl-20261026T004534/algo-1-1792975588` in `/aws/sagemaker/ProcessingJobs`, the stream the
+  infrastructure user read at 07:02:59 (`promotion.md` §N.7.2 step 3); then the trail, and the closing apply
+  on the user's word.
+
+## 2026-10-26 — 3.1's debug-role read: the persona's assumption and its read answered
+
+*The user's hand, as the Data Scientist User on the laptop (`awsds-scientist-prod`, `DataScientistProdAccess`,
+then the assuming profile `awsds-scientist-prod-debug`), the outputs pasted in this chat at about 15:20 UTC,
+the account id replaced here; Claude's for the record.*
+
+- **[user] The assumption** (`promotion.md` §N.7.2 step 3):
+  `arn:aws:sts::<Production>:assumed-role/awsds-prod-debug/debug-window-logs`.
+- **[user] The read** through the assuming profile, `get-log-events` on `/aws/sagemaker/ProcessingJobs`,
+  stream `app-etl-20261026T004534/algo-1-1792975588`, `--limit 5`: *"app-etl 0.1.0, python 3.12.14 at
+  /opt/app-etl/venv/bin/python   pyarrow 25.0.1 from /opt/app-etl/venv/lib/python3.12/site-packages/pyarrow
+  trades.csv: 30 rows -> trades.parquet   1 file(s) processed"*. The debug role, whose only key grant is
+  `Decrypt` through S3, read a job stream under the data key: 3.1's debug-role half is answered.
+- **[Claude] What waits**: the trail (the two assumptions, the read and its `Decrypt` pair) and the closing
+  apply, both behind the infrastructure user's session, which the CLI reported gone at 15:20:34 (*"Error
+  loading SSO Token: Token for awsds does not exist"*); the trust ends the window at 16:10 UTC regardless.
+
+## 2026-10-26 — 3.1's debug window: the trail, the alarm, the window closed
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`), after the user's
+new login and on the user's authorization in this chat: "Fiz login como usuário de infraestrutura. Autorizo o
+apply de production/sagemaker sem a flag, como awsds-infra-prod, a partir de um plano novo, para fechar a
+janela." Times UTC.*
+
+- **[Claude] The session**: `get-caller-identity` answered at 15:23:46, the token missing at 15:20:34.
+- **[Claude] The trail**, read at 15:24: two `AssumeRole` on `awsds-prod-debug` by the persona's reserved role
+  in `us-west-2`, from the laptop's own uplink, no error: 15:17:42 `debug-window-logs` and 15:18:33
+  `botocore-session-1793027895`, the assuming profile's own. `GetLogEvents` at 15:18:34 by
+  `awsds-prod-debug/botocore-session-1793027895` on `app-etl-20261026T004534/algo-1-1792975588`, no error. In
+  the same second the pair the infrastructure user's read showed in the morning: the debug role's `Decrypt`
+  `invokedBy logs.amazonaws.com`, no encryption context, `AccessDenied`, and a `Decrypt` by
+  `fas.s3.amazonaws.com` under `aws:logs:arn` (the `/aws/sagemaker/ProcessingJobs` group) and `aws:s3:arn`
+  (CloudWatch Logs' chunk store), no error.
+- **[Claude] The alarm**: `awsds-prod-debug-assume`'s `TriggeredRules` 1 at 15:17 and 1 at 15:18, and
+  `awsds-prod-alerts`' `NumberOfNotificationsDelivered` 1 and 1 in the same minutes, one notification per
+  assumption.
+- **[Claude] Before the apply**: the three peer sessions told, the two idle ones and the session implementing
+  the CLI remedy, which queued the message.
+- **[Claude] The closing apply** (`production/sagemaker/`, Production): the fresh plan without the flag,
+  15:24:25 to 15:24:41, *"Plan: 0 to add, 1 to change, 0 to destroy."*, `aws:CurrentTime` moving from
+  `2026-10-26T16:10:00Z` back to `2026-01-01T00:00:00Z`, no check warning; the apply, 15:24:53 to 15:25:44,
+  the role modified in 5 s, *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*
+- **[Claude] Read back**: `get-role` at 15:25:58 shows `DateLessThan aws:CurrentTime 2026-01-01T00:00:00Z`
+  beside `aws:RequestedRegion us-west-2`; `./aws/deploytargets.py awsds-infra-prod` all checks passed, `DT-9`
+  *"closed (ends 2026-01-01T00:00:00Z)"*, both assumption rules enabled; the re-plan without the flag *"No
+  changes."* The window stayed open from 15:09:55 to 15:25:44.
+- **[Claude] The verdict**: 3.1's debug-role half is answered. The escape hatch reads a job's log under the
+  data key with no key grant through `logs`, the trail carrying the role's refused `Decrypt` beside the
+  service's own, and the alarm heard both assumptions.
+
+## 2026-10-26 — xxiv's warehouse sitting: the balance, the raises, the before-readings, the two plans
+
+*The user's hand for the console reading and the two `make up`s, the hub already up by the user's `make hub-up` for
+the Stage 7-8 GitLab sitting; Claude's for the readings and the plans, as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-data`, `awsds-infra-sandbox-1`), reads only; the two peer
+sessions on the laptop (the GitLab sitting and the 6f pilot, which holds `data-governance/data/`) told before each
+write of the sitting. Procedure: `runbooks/promotion.md` §N.4a. Times UTC.*
+
+- **[Claude] Before the raise**, 21:15: no workgroup in either account, the namespace `awsds-prod-warehouse`
+  `AVAILABLE`; the hub's hosts `stopped`, so the `make up`s waited for the proxy (`slices.py` refusal 7.2).
+- **[Claude] `data-governance/data/` planned from the 6f pilot's tree**: `main` at `94ed050d` lacked what the
+  pilot had applied that day (the two SMUS Lake Formation seats and the publisher's grants, behind
+  `LAKE_PUBLISHERS`), so a plan from it reverts them, *1 to change, 2 to destroy* by the 6f session's reading.
+  The slice was planned and applied from a detached checkout of `claude/angry-burnell-3c64df` (`03716c13`, then
+  `ab7e9b56`, a documentation commit), its regenerated tfvars carrying `lake_publishing_enabled = true`. PR #270
+  merged into `main` at 21:59 as `c997ef73`, after which `main` plans the same.
+- **[Claude] The control-plane before-readings**, 21:17:33: the producer lists `DataCatalog/<Data Governance>`
+  `AUTHORIZED` (status since 2026-10-25 01:52:05) and the lake's catalog `ACTIVE` (01:52:29), the consumer the
+  same pair with the first one `AVAILABLE`; the registration `NOT_VERIFIED`, no role; `governed_trades` with its
+  `FederatedDatabase`, its table `trades.trades_notional`; the creator's `ALL` with grant option the database's
+  one Lake Formation row and none on the table; `layer=curated` on the database, `classification=internal` on the
+  table and its six columns; in Sandbox the access role's `DESCRIBE` on the database and `DESCRIBE` and `SELECT` on
+  the table (2026-10-25 05:59).
+- **[Claude] The two plans**, 21:20:55 to 21:21:35: `production/warehouse/` and `data-governance/data/` read `No
+  changes`.
+- **[user] The free trial's Production balance, before**: *"$299,66 com diferença de $300,00"*, *"January 21,
+  2027"*. **[Claude]** 0.03 below the 299.69 read at about 01:50 after that night's §N.2 sitting, with no
+  `CreateWorkgroup` or `DeleteWorkgroup` in Production's trail since 01:40: that sitting's charges kept landing
+  after its after-reading, 0.05 in all.
+- **[user] The raises**: `make up ENV=sandbox ONLY=warehouse-compute` (the workgroup created 21:23:41) and `make up
+  ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift` (21:24:33). **[Claude] Read back** at
+  21:27:52: both `AVAILABLE`, base 4 / max 8 RPU, not public, price-performance `DISABLED`; the
+  `redshift-serverless` endpoint `available` in `VPC-Workloads`.
+- **[Claude] The SQL half of step 1**, as the admin in `governed`: `svv_datashare_consumers` `trades_lf` →
+  `DC:<Data Governance>`, shared 2026-10-25 01:51:19; `sys_datashare_change_log` the five statements of
+  2026-10-25 01:51, its `consumer_account` column cutting the id at twelve characters. `./aws/warehouse.py
+  awsds-infra-prod --sql`, 21:28:35 to 21:29:24: every check a pass or a note, `WH-12` 3 user-role grants with the
+  share's `ds:` pair. `./aws/datalake.py awsds-infra-data`: `main`'s copy failed `DL-2` on
+  `awsds-data-smus-projects`, the pilot's bucket it does not know; the pilot's copy passed every check (21:30:56 to
+  21:31:38).
+
+## 2026-10-26 — xxiv's positive control: the Query editor opens on the connection's database, `dev`
+
+*The user's hand for the queries, in `eighth-experimentation`'s Query editor as the Data Scientist User; Claude's
+for the readings, Sandbox's query history through the Data API as the admin and Sandbox's trail, as the
+infrastructure user with `InfrastructureAccess` (`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] What ran before it**: the 6f session's 11.7 created the `DataLake` environment
+  `eighth-experimentation-lakehouse` (`ACTIVE` 21:26:00), and the user's 11.8 subscribed the project to
+  `curated.trades` (requested 21:34:55, approved 21:36:15, its grant `COMPLETED` 21:37:18). The control-plane
+  readings taken again at about 21:44 match the first ones on every object of the chain; the lake's account-level
+  catalog policy reads *"Policy not found"*, and its RAM-set per-resource policies date from 2026-10-22 and from
+  11.8's 21:36:50.
+- **[user] The first attempt**, refused: *"ERROR: Failed to incorporate external table "trades"."trades_notional"
+  into local catalog. Error=permission denied to create temporary tables in database "dev""*. **[Claude]** In
+  Sandbox's history the editor's session sat in `dev` as `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`
+  from 21:40:07; a query through `awsdatacatalog.governed_trades…` was refused at 21:40:29, *"permission denied for
+  database awsdatacatalog"*, and 9.7's at 21:40:35. The trail's `GetCredentials` came from the access role
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, the first at 21:38:42 with `dbName` `dev`. The project's one
+  Redshift connection, `redshift-serverless.redshift`, names `dev` as its database (`WH-9` prints it), and the
+  sittings of 2026-10-25 and 26 had `sandbox` selected, the database where the user holds `TEMP`.
+- **[user] The second attempt**, with `sandbox` selected: the expected result. **[Claude]** Query 10683058,
+  `success`, 21:45:07.726 to 21:45:09.250, one row, in `sandbox`: the door open before the revoke.
+
+## 2026-10-26 — xxiv's revoke: the share leaves both control planes, the Lake Formation rows stay, no instrument notices
+
+*Claude's hand, on the user's authorization in chat (*"Autorizo o REVOKE USAGE ON DATASHARE trades_lf FROM ACCOUNT
+Data Governance VIA DATA CATALOG, como awsds-infra-prod pela Data API com o segredo do admin em governed (passo 2 do
+§N.4a)."*), as the infrastructure user with `InfrastructureAccess`; the user's hand for the Sandbox query, pasted
+with the two account ids replaced here; the two peer sessions told before the write. Times UTC.*
+
+- **[Claude] The revoke**, through the Data API as the admin in `governed`: `REVOKE USAGE ON DATASHARE trades_lf
+  FROM ACCOUNT '<Data Governance>' VIA DATA CATALOG`, submitted 21:48:32.8, `FINISHED` 21:48:51.7;
+  `sys_datashare_change_log` *"REVOKE USAGE FROM DATASHARE"* at 21:48:43, `dbadmin`, status 0, `DC:<Data
+  Governance>`; `svv_datashare_consumers` empty.
+- **[Claude] What it took**, read from about 21:49: `describe-data-shares` by ARN answers `InvalidDataShareFault`,
+  *"The datashare Amazon Resource Name (ARN) isn't valid because the ARN doesn't exist. Use a valid datashare
+  ARN."*, to the producer and the consumer alike, so both associations are gone, the authorization and the lake
+  catalog's; Data Governance's listing reads `[]`. The federated table went with them: `glue get-tables
+  governed_trades` answers *"No glue catalog datashare is found with arn <the share's ARN> and consumerId <Data
+  Governance>"*, `FromFederationSource: True`; Sandbox's `get-table` *"Entity Not Found"*, and the table's LF-Tags
+  are unreadable, *"Entity Not Found"*.
+- **[Claude] What it left**, AWS's sentence (*"the associated permissions and objects in Lake Formation are not
+  automatically deleted"*) measured: the registration (`NOT_VERIFIED`, no role), the federated database with its
+  `FederatedDatabase` unchanged, the creator's `ALL`, `layer=curated` on the database, and in Sandbox the access
+  role's `DESCRIBE` on the database and `DESCRIBE` and `SELECT` on the table nobody can resolve.
+- **[Claude] Whether the register notices: no.** `./aws/datalake.py awsds-infra-data` passed every check (21:51:09
+  to 21:51:49), its only difference from the before-reading 11.8's RAM share; `./aws/warehouse.py awsds-infra-prod
+  --sql` (21:50:22 to 21:51:08) passed every check, `WH-12` reading 2 user-role grants where it read 3, the `ds:`
+  pair gone. No instrument under `aws/` reads `describe-data-shares`, `svv_datashare_*` or `governed_trades`.
+- **[user] The Sandbox read**, `sandbox` selected, refused: *"ERROR: AwsClientException: EntityNotFoundException
+  from glue - No glue catalog datashare is found with arn
+  arn:aws:redshift:us-west-2:<Production>:datashare:b15e9682-064d-4c48-a4cc-4d607622c379/trades_lf and consumerId
+  <Data Governance>."* **[Claude]** Query 10683162, `failed`, 21:54:37: Glue's refusal and not Lake Formation's,
+  INT-24's door shut with its grants standing.
+- **[Claude] The plans**, step 4, never applied: `production/warehouse/` (21:52:18 to 21:52:34) *"Warning: AWS
+  resource not found during refresh"*, *"Original error: couldn't find resource"*, *"Plan: 1 to add, 0 to change, 0
+  to destroy."*, the authorization; `data-governance/data/` (21:52:34 to 21:52:55) *"Planning failed"*, *"Error:
+  Iteration over null value"* on `warehouse-share.tf` line 24, *"data.aws_redshift_data_shares.visible.data_shares
+  is null"*. The data source returns null rather than an empty list when the account sees no share, so the plan
+  fails one expression before the association's `data_share_arn`, which §N.4a expected, and no change of the lake's
+  slice can be planned while the share is revoked.
+
+## 2026-10-26 — xxiv's re-grant: the SQL, the two applies, the chain back
+
+*Claude's hand, on the user's authorizations in chat (*"Autorizo o GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT
+Data Governance VIA DATA CATALOG, como awsds-infra-prod pela Data API com o segredo do admin em governed (passo 5 do
+§N.4a). Os applies dos dois slices depois de ver os planos."*, then *"autorizo o apply"* for `production/warehouse/`'s
+saved plan and *"Autorizo o apply do plano salvo de data-governance/data (1 to add:
+aws_redshift_data_share_consumer_association.trades_lf) como awsds-infra-data, a partir da árvore do 6f
+(ab7e9b56)."*), as the infrastructure user with `InfrastructureAccess`; the 6f session sent the lake plan's summary
+before its apply; the two peer sessions told before each write. Recipe A. Times UTC.*
+
+- **[Claude] The grant**, as the admin in `governed`: `GRANT USAGE ON DATASHARE trades_lf TO ACCOUNT '<Data
+  Governance>' VIA DATA CATALOG`, `FINISHED` at 21:56:45; the change log's *"GRANT USAGE ON DATASHARE"* at 21:56:44,
+  `svv_datashare_consumers` the consumer again. The producer lists `DataCatalog/<Data Governance>`
+  `PENDING_AUTHORIZATION` (21:56:44) and nothing else, and Data Governance sees no share.
+- **[Claude] `production/warehouse/`**: the plan at 21:57:20, *"Plan: 1 to add, 0 to change, 0 to destroy."*, the
+  authorization after *"Original error: empty result"*; the apply of the saved plan, 21:58:46 to 21:58:57,
+  *"Creation complete after 1s"*, *"Apply complete! Resources: 1 added, 0 changed, 0 destroyed."*; re-planned `No
+  changes`. The consumer `AUTHORIZED` at 21:58:56, `AVAILABLE` to Data Governance.
+- **[Claude] `data-governance/data/`**, from the pilot's tree: the plan at 21:59:40, *"Plan: 1 to add, 0 to change,
+  0 to destroy."*, `aws_redshift_data_share_consumer_association.trades_lf` alone after *"Original error: empty
+  result"*, nothing on the settings, the publisher's grants or `governed_trades`; the apply of the saved plan,
+  22:01:14 to 22:01:27, *"Creation complete after 2s"*, *"Apply complete! Resources: 1 added, 0 changed, 0
+  destroyed."*; re-planned `No changes` at 22:01:48. The federated database was not replaced, so §N.4a's by-hand
+  half (Recipe D's read-back, the two LF-Tags) was owed nothing.
+- **[Claude] Read back** at 22:02:04: the lake catalog's association `ACTIVE` since 22:01:25 and the authorization
+  `AUTHORIZED`; `trades.trades_notional` listed again, its `classification=internal` and its six columns' tags as
+  before the revoke, the assignment kept by name; Sandbox's `get-table` answering; the registration and every Lake
+  Formation row as before. `./aws/warehouse.py awsds-infra-prod --sql` (22:03:01 to 22:03:49): every check a pass
+  or a note, `WH-12` 3 user-role grants, the `ds:` pair back. The 6f session read its pilot intact from 22:05:48:
+  the three administrators, the publisher's grants, the subscription's grant, its RAM share, and the Glue
+  per-resource policies at their earlier update times.
+
+## 2026-10-26 — xxiv's restored read, the downs, §R
+
+*The user's hand for the query and the two `make down`s, the Query editor closed before the second; Claude's for
+the readings, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`, `awsds-infra-data`); the two peer sessions told before each down. Times UTC.*
+
+- **[user] 9.7 again**, `sandbox` selected: 30 rows and the expected dates. **[Claude]** Query 11086021, 22:05:30.554
+  to 22:05:56.541, 26 s for the first read after the re-grant where the positive control took 1.5 s, and 11086028
+  at 22:06:19, 0.2 s; Sandbox's consumer database needed no re-creation.
+- **[Claude] `./aws/warehouse.py awsds-infra-sandbox-1 --sql`** (22:06:47 to 22:07:39): every check a pass or a
+  note; `WH-9` *"redshift-serverless.redshift (database dev): lineageSync ENABLED on cron(43 3 * * ? *), 16
+  run(s), none completed"* (`EXC-17`). The admin secret authenticated every Data API session of the sitting in
+  Sandbox, `EXC-13`'s Sandbox half a third time. `./aws/datalake.py awsds-infra-data` (22:07:56 to 22:08:36): all
+  checks passed.
+- **[user] The downs**: Production's, `DeleteWorkgroup` at 22:07:50 and 22:07:52 and `VPC-Workloads`' endpoints
+  deleted; Sandbox's, the hook's `DeleteApp` of `eighth-experimentation`'s JupyterLab at 22:10:09, then
+  `DeleteWorkgroup` refused five times with `ConflictException` from 22:10:35 to 22:10:44, the provider retrying,
+  and through at 22:10:52.
+- **[Claude] §R**, from 22:13:58: no workgroup in either account, both namespaces `AVAILABLE`; no Studio app in
+  either domain; `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` all checks passed,
+  `EG-5` 12 interface endpoints and 0 NAT, ~0.120 USD/h, every one in Production's `VPC-SharedServices` (the
+  GitLab sitting's `egress/`), Staging and Sandbox 0; `./aws/warehouse.py awsds-infra-prod awsds-infra-sandbox-1`
+  `WH-8` *"1 namespace(s), 0 workgroup(s), all expected"* in each. `ComputeSeconds` per half hour from 21:00:
+  Production 8, 68 and 2 RPU-seconds, 78 in all, 0.0078 USD at the rate; Sandbox 0, 130 and 110, 240 in all,
+  0.024 USD; the interval starting 22:00 still open at 22:16. `make status` (22:16 to 22:19): this sitting's three
+  slices down, the hub, `production/egress`, `tooling` and `runners` up for the GitLab sitting, estimated 0.4521
+  USD/h by the static rates.
+
+## 2026-10-26 — after xxiv's sitting, nothing up: the record, the plan brought to the findings, `WH-16`
+
+*Claude's hand. The user asked in chat to check the log against the session and to bring the plan and the
+runbooks to the sitting's findings (*"Verifique se todo o andamento desta sessão está registrado no log da
+sessão. Analise a necessidade de efetuar ajustes no plano tendo em vista os achados desta sessão e faça as
+correções necessárias, incluindo os procedimentos nos runbooks."*). Work as the infrastructure user with
+`InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-sandbox-1`, `awsds-infra-data`), reads only. Times
+UTC.*
+
+- **[Claude] The record**: the sitting's entries above, written on the branch after it was brought to `main`
+  at `c997ef73` (PR #270's merge), then PR #271 at about 22:24. `make check` refused `docs/GENERAL_PLAN.md` at
+  40,063 bytes of its 40,000 and passed once the Stage 9 row's clause was shortened (39,991). The pilot's
+  detached checkout was removed after the applies.
+- **[Claude] The log read against the session**: every step of the sitting is in its entries. One reading is
+  withdrawn rather than written. After the grant, `describe-data-shares-for-consumer` refused *"The consumer
+  ARN isn't valid because the format is incorrect"*, because zsh read `$DG:catalog` as a modifier and mangled
+  the ARN; the same call from the bash script answered `ACTIVE` at 22:02 (Lesson 30).
+- **[Claude] `WH-16`** in `./aws/warehouse.py` checks the governed datashare's two associations, read with
+  nothing up: the Data Catalog consumer `AUTHORIZED` and the lake catalog's `ACTIVE`, for each share
+  `production/warehouse/datashare.tf` names. It is a note outside Production. Read live at 22:35: a pass in
+  Production, a note in Sandbox. Read offline against built facts: a revoked share, a `PENDING_AUTHORIZATION`
+  consumer and a missing lake association each fail with their own wording, and the whole share passes.
+- **[Claude] The plan brought to the findings**:
+  - `runbooks/promotion.md` §N.4a is now the measured procedure: the hub, the tree that applied the lake's
+    slice, the positive control in `sandbox`, the registration read by `describe-resource`, the table
+    `trades.trades_notional`, each `NextToken` followed, step 4's failure at the null list, step 5's three
+    acts in order, and the balance read the next day. §N.2's step 5 now selects `sandbox` and its step 7
+    reads the balance the next day.
+  - `runbooks/redshift-connection.md`: §P (the connection keeps `dev`), §G (the share's row, `WH-16`) and §V.
+  - `runbooks/terraform-changes.md` Recipe A step 5, with Lesson 79: a slice applied from an unmerged branch
+    is a revert in every other tree.
+  - `GOVERNANCE.md`: withdrawing a reader is a Lake Formation revoke in Data Governance, because Production's
+    `REVOKE` leaves each grant to come back with the next re-grant.
+  - 6h 3.2: a session on `dev` reads no governed share.
+  - The waiting list: a decision on the connection's database.
+  - `aws/INDEX.md`, `AWS_STATE.md`, INT-24, the stage file and the summary rows now name `WH-16`.
+
+## 2026-10-26 — the estate at zero after the GitLab sitting's downs
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-prod`, `awsds-infra-staging`,
+`awsds-infra-sandbox-1`), reads only, after the Stage 7-8 GitLab sitting reported its `make gitlab-down` and
+`make hub-down`. Times UTC.*
+
+- **[Claude] Read** at 22:42:50: `awsds-prod-vpn`, `awsds-prod-proxy` and `awsds-prod-gitlab` `stopped`;
+  `./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1` 0 interface endpoints, 0 NAT
+  and 0.000 USD/h in each account, `EG-5` *"none - the correct between-sessions state (D11)"*; no workgroup in
+  Production or Sandbox. The 12 endpoints of xxiv's §R reading were the GitLab sitting's, and they are gone.
+
+## 2026-10-26 — the free trial's Production balance after xxiv's sitting
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim at about 22:45 UTC; Claude's reading.*
+
+- **[user]** Production: *"Free trial credits remaining $299.54 out of $300.00"*, *"Free trial expiration January
+  21, 2027"*.
+- **[Claude] The reading**: 0.12 USD of credit for the sitting, 299.66 to 299.54, where `ComputeSeconds` read
+  78 RPU-seconds, 0.0078 USD at the rate. 0.12 USD is 300 seconds at 4 RPU; the sitting's Production
+  statements came in four windows (21:27:58 to 21:29:24, 21:48:32 to 21:51:08, 21:56:44 to 21:56:55, 22:03:01
+  to 22:03:49), each billed 60 seconds at least. The earlier sitting read 0.05 against 79 RPU-seconds once its
+  late 0.03 had landed. So the metric under-reads a sitting of short statements by an order of magnitude, and
+  the balance is the figure kept (Lesson 6). This reading came about 38 minutes after Production's workgroup
+  went; a reading the next day says whether more lands.
+
+## 2026-10-26 — 8.1's space half: the subscription it waited on is approved
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (`awsds-infra-data`), one read. Times
+UTC.*
+
+- **[Claude]** `datazone get-subscription` on `6ubv3kbnjqjogg`, read at 22:48: `APPROVED`, updated 21:36:15, the
+  project `eighth-experimentation` subscribed to the listing `trades` (6f step 11.8). 8.1's space half, the
+  project's `SELECT` on `curated.trades` and its refused `INSERT`, no longer waits on the subscription and is
+  the next Sandbox sitting's; the status cell and 8.1's text are brought to it.
+
+## 2026-10-27 — with nothing up: the instruments, the quota cases, the admin secret's first rotation, 8.1's half placed in the portal
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` (the five `awsds-infra-*` profiles),
+reads only. Times UTC.*
+
+- **[Claude] The instruments**, 02:20 to 02:30: `./aws/deploytargets.py` and `./aws/datalake.py` on the five
+  profiles, *"all checks passed"* (`DT-9` the window closed; `DL-5` 4/`TRUE` in Data Governance and Sandbox);
+  `./aws/warehouse.py` no workgroup in either account and `WH-16` passing in Production, `trades_lf`'s Data
+  Catalog consumer `AUTHORIZED` and the lake's catalog `ACTIVE`.
+- **[Claude] 3.5's quota cases**: `list-requested-service-quota-change-history` reads the four `ml.m5.large`
+  requests of 2026-10-23 20:00 still `CASE_OPENED` in Production and Staging, the applied quotas above them
+  since 2026-10-24; nothing waits on them.
+- **[Claude] `EXC-13`'s Production half, the date**: `redshift!awsds-prod-warehouse-dbadmin`, created
+  2026-10-23 22:07:17, never rotated, `NextRotationDate` 2026-11-22 01:59:59, rotation on every 30 days.
+  Sandbox's secret, last rotated 2026-10-20 01:22:07, rotates next on 2026-11-19 01:59:59. Whether
+  Production's database takes the rotated password is the warehouse sitting's (`promotion.md` §N.8.3).
+- **[Claude] 8.1's space half needs no space**: 6f 11.10 read `curated.trades` through the subscription
+  from `eighth-experimentation`'s query editor on Athena with no space and Sandbox's `egress/` down, so the
+  read and the refused `INSERT` are the user's with nothing up (`promotion.md` §N.8.1 step 3). The insert is
+  written against `glue get-table` on `curated.trades` as `awsds-infra-data`, `ICEBERG` with five columns
+  (`trade_date` date, `desk` and `instrument` string, `quantity` and `price` double), so it reaches
+  authorization rather than stopping at its shape (Lesson 21).
+- **[Claude] The record**: 8.1's text and the status cell; the waiting list's row; `promotion.md` §N.6 and §N.8.
+
+## 2026-10-30 — 8.1's space half: the project role reads `curated.trades` and is refused the insert
+
+*The user in the portal as the Data Scientist User, `eighth-experimentation`'s query editor with *Athena (SQL)*
+as the compute, nothing up (`promotion.md` §N.8.1 step 3); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user]** The count *"retornou 30"*; the insert's error, pasted verbatim: *"Insufficient permissions to
+  execute the query. Principal does not have any privilege on specified resource . If a data manifest file
+  was generated at
+  's3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/sys/athena/c4744bec-4c60-4805-8998-64646d4cb385-manifest.csv',
+  you may need to manually clean the data from locations specified in the manifest. Athena will not delete
+  data in your account."*
+- **[Claude] The executions** in `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`, the editor appending ` LIMIT 100`
+  to each statement, the insert's included: `e13f4751-2eff-417d-996b-90c199dcea46`, the count, `SUCCEEDED`,
+  submitted 03:45:44, 0 bytes scanned, 1,866 ms in the engine, its result `30`;
+  `c4744bec-4c60-4805-8998-64646d4cb385`, the insert, `FAILED`, submitted 03:46:58 and ended 03:47:00, 0 bytes
+  scanned, its `AthenaError` category 2, type 1500: *"Principal does not have any privilege on specified
+  resource (Service: AWSLakeFormation; Status Code: 400; Error Code: AccessDeniedException; Request ID:
+  808b75b8-6f91-4d28-bec1-eafb3a933bce; Proxy: null)"*.
+- **[Claude] Sandbox's trail**: both `StartQueryExecution` (03:45:44 and 03:46:58) as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, invoked by `sqlworkbench.amazonaws.com`, the Data
+  Scientist User's profile as source identity. The count's vend at 03:45:45: `GetDataAccess` for `SELECT`,
+  invoked by `athena.amazonaws.com` on the resource link `glue_db_blerpkhn9nj7o0/trades` and by
+  `glue.amazonaws.com` on the lake's `curated/trades`. The insert's, on the same two resources: `SELECT`
+  granted at 03:46:59 (`88d5e667…`), then `INSERT` refused at 03:47:00 (`808b75b8…`, the request the error
+  names) and `DELETE` refused at 03:47:00 and 03:47:01 (`ecf078a2…`), each `AccessDenied` with *"Principal
+  does not have any privilege on specified resource"*. No `UpdateTable`.
+- **[Claude] Data Governance's trail**: the same vends in the cross-account form (`AWSAccount`, invoked by
+  `glue.amazonaws.com`), the two `SELECT` granted and the `INSERT` and `DELETE` refused with the same wording;
+  `awsds-data-lf-registration` decrypting under the lake's key with the context `awsds-data-curated` (ten
+  `Decrypt` at 03:45:45, one at 03:46:59); no `GenerateDataKey` and no `UpdateTable` in the window.
+- **[Claude] Nothing written**: `curated.trades`' current metadata is still
+  `00003-c291e115-64a5-44f0-9756-66d6197e8931.metadata.json`, the table updated last on 2026-10-24 at
+  22:26:46, xxviii's third run. The project's result prefix holds the count's `e13f4751….csv` (13 bytes,
+  03:45:47) and no object named after `c4744bec`, so no manifest was generated and nothing waits to be
+  cleaned.
+- **Verdict**: 8.1's space half is answered, and with the laptop half of 2026-10-23, 8.1. The project role
+  reads the lake's table through the subscription and cannot write it: Lake Formation refused the write at
+  the vend, the layer the step expected, after the role's IAM set had let `GetDataAccess` through (Lesson
+  20). The write never reached S3, so the lake bucket's and key's policies behind the vend are attached, not
+  exercised by this attempt; the laptop half's `aws s3 cp` met the set's implicit deny on the same bucket.
+- **[Claude] The record**: 8.1's text and the status cell; the waiting list's row and the Sandbox sitting's
+  mention; `promotion.md` §N.8.1 step 3.
+
+## 2026-10-30 — the free trial's Production balance, days after xxiv's sitting
+
+*The user's hand in the Redshift Serverless console as the infrastructure user, pasted in chat verbatim at
+about 03:58 UTC (`promotion.md` §N.8.1 step 4); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Production` (`awsds-infra-prod`), reads alone.*
+
+- **[user]** Production: *"Free trial credits remaining $299.50 out of $300.00"*, *"Free trial expiration
+  January 21, 2027"*.
+- **[Claude] No compute since the sitting**: `list-workgroups` empty at 03:58 UTC; the trail's last
+  `DeleteWorkgroup` calls at 2026-10-26 22:07:50 to 22:07:52, xxiv's teardown, and no `CreateWorkgroup` since
+  22:00 that day.
+- **[Claude] The reading**: 0.04 USD landed after the reading of 2026-10-26 at about 22:45 with no workgroup in
+  between, so xxiv's sitting cost 0.16 USD in all (299.66 to 299.50), where `ComputeSeconds` read 78
+  RPU-seconds. The reading 38 minutes after the sitting missed a quarter of its bill, as the 01:50 reading
+  missed 0.03 of §N.2's 0.05. The next pair is the next warehouse sitting's (`promotion.md` §N.8.3).
+- **[Claude] The record**: the waiting list's balance row and the trial's end row; `promotion.md` §N.8.1 step
+  4; the warehouse's cost row here, `docs/PRICING.md` and `docs/plan/cost-model.md`; `CLAUDE.md`'s Current
+  position.
+
+## 2026-11-18 — the four quota cases read closed, with nothing up
+
+*Claude, the orchestrating session, on the laptop, as the infrastructure user (`InfrastructureAccess`) on
+`awsds-infra-prod`, `awsds-infra-staging` and `awsds-infra-sandbox-1`. Read-only calls. Times are UTC.*
+
+- **[Claude] `list-requested-service-quota-change-history --service-code sagemaker`**, 16:30:22: in
+  Production and Staging, `L-611FA074` (`ml.m5.large for training job usage`) and `L-236AE59F`
+  (`ml.m5.large for transform job usage`), each asked at 2.0 on 2026-10-23 at 20:00 UTC, read
+  `CASE_CLOSED`, last updated on 2026-11-03 at 00:04 (Production's two and Staging's training) and 00:34
+  (Staging's transform). Sandbox's three requests of 2026-10-17 (Stage 17) read `CASE_CLOSED`, last
+  updated on 2026-10-28 between 00:49 and 01:19.
+- **[Claude] `get-service-quota`**, 16:30:39: `L-611FA074` 20.0 and `L-236AE59F` 8.0 in both targets, the
+  values read on 2026-10-24 (3.5).
+
+## 2026-11-20 — `EXC-13`'s Production half placed in R1
+
+*Claude, in the session that regrouped the sittings (Stage 8's log, this day), with nothing up. Reads as the
+infrastructure user with `InfrastructureAccess`, through `awsds-infra-prod` (account Production) and
+`awsds-infra-sandbox-1` (Sandbox Account 1); no AWS write. Times are UTC.*
+
+- **[Claude] The warehouse admin secrets**, read 17:04:20, Production's again at 17:49:36:
+  `redshift!awsds-prod-warehouse-dbadmin` with no `LastRotatedDate`, `NextRotationDate` 2026-11-22
+  01:59:59, rotation enabled; `redshift!awsds-sandbox-warehouse-dbadmin` rotated 2026-11-19 00:23:23, next
+  2026-12-19 01:59:59.
+- **[Claude] `promotion.md` N.8.3 rides R1** (§N.11.1): its steps on their own raises after the rotation and
+  before 2026-12-17, steps 2 and 3 on a Production raise after release G's leg, step 4's backup with GitLab
+  already up.
+
+## 2026-11-21 — the free trial's Production balance before R1
+
+*The user's hand in the Redshift Serverless console, pasted in chat verbatim (`promotion.md` §N.12.4, before
+R1); Claude read AWS as the infrastructure user with `InfrastructureAccess` in `Production`
+(`awsds-infra-prod`), reads alone.*
+
+- **[user]** Production: *"Créditos de avaliação gratuita restantes"*, *"$299,18 com diferença de $300,00"*,
+  *"Expiração da avaliação gratuita"*, *"January 21, 2027"*.
+- **[Claude] The compute since 2026-10-30**: `list-workgroups` empty. The trail holds one `CreateWorkgroup`
+  since, at 2026-11-16 03:45:46 UTC, and three `DeleteWorkgroup` from 05:33:18 to 05:33:20, each by the
+  infrastructure user: release F's sitting, with Stage 19 step 9's xxxii (Stage 19's log, 2026-11-15).
+  `ComputeSeconds` on `awsds-prod-warehouse` per half hour from 03:30: 0, 0, 56, 83 and 0 RPU-seconds,
+  139 in all, 0.0139 USD at the rate.
+- **[Claude] The reading**: 0.32 USD of credit since 299.50 on 2026-10-30, with that sitting the only
+  workgroup in between, against 0.16 for xxiv's. Read five days after the sitting, no late part is left.
+  299.18 is R1's reading before; the one after and the next day's are R1's (`promotion.md` §N.8.3).

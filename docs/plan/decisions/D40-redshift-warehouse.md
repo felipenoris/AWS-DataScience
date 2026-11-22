@@ -97,7 +97,8 @@ no compute — with only Redshift Managed Storage billing at rest, **USD 0.024/G
 **But "bills nothing" is conditional, so the warehouse is two slices rather than one** (2026-09-20, on the
 user's question of whether the compute can be switched off): the **namespace** is `[P]` because it holds the
 data, the schemas, the database users, the roles and the `GRANT`s — state no plan re-creates — and the
-**workgroup plus its usage limit** is `[E]`, destroyed by `make down` and created by `make up`.
+**workgroup plus its usage limit** is `[E]`, destroyed by `make down` and created by `make up` with
+`GROUPS=redshift`, the group of its API endpoint.
 **Redshift Serverless has no pause**: `create-workgroup` and `delete-workgroup` and nothing in between, no
 stop, no suspend, no zero-capacity setting. So *powered off* means *does not exist* — which is `[E]` by
 definition and also the strongest guarantee available, because an object that does not exist cannot receive a
@@ -163,14 +164,15 @@ Two warehouses cost no more than one at rest: compute meters per query and stora
 second namespace adds cents, not a second floor.
 
 **What the split costs, and it is a real cost.** A governed warehouse in Production is the **first governed
-store outside Data Governance**, which is D22's line. The compensation is that the governed namespace is
-**registered to the Glue Data Catalog as a federated catalog**, so Lake Formation governs its schemas and
-tables exactly as it governs the lake's — the shape
+store outside Data Governance**, which is D22's line. The compensation is that the governed namespace
+reaches readers through a **Lake Formation-managed datashare registered in Data Governance's catalog as a
+federated database** (Stage 9 decisions 5 and 14, taken 2026-10-22 and 2026-10-24), so Lake Formation
+governs its schemas and tables exactly as it governs the lake's — the shape
 [`institutional-delta.md`](../institutional-delta.md) already described as the institutional answer, now
-half-built. The grantor for those tables is Production rather than Data Governance, so the grant register
-gains a second grantor account; Stage 9 owns that consequence. Giving Data Governance a VPC to keep one
-grantor was declined for the same reasons D26 declined it for INT-13: a CIDR, two peerings, a child zone
-and an `egress/` slice, bought for tidiness.
+half-built. The grantor for those tables is Data Governance, so the Lake Formation grants keep one grantor
+without the VPC Data Governance would need to host the warehouse, which was declined for the same reasons
+D26 declined it for INT-13: a CIDR, two peerings, a child zone and an `egress/` slice, bought for tidiness.
+The `GRANT`s inside the namespace are Production's.
 
 ## D13 is not weakened, and the reason has to be written down
 
@@ -201,7 +203,7 @@ At the USD 50 ceiling this is **the most expensive thing in the estate per unit 
 against the WireGuard host's 0.0052 and the whole `egress/` estate's 0.410. Ten hours of querying in a
 month was 14.40 USD at the 40 RPU-hours first applied, roughly a third of the ceiling; it is **3.60 USD** at the 10 in force since 2026-09-20, lowered by the user after one forgotten query reached 26.3 RPU-hours in a single sitting (`log-stage-05b`, the third amendment). The guard is therefore a **hard** one: a usage limit
 whose breach action is `deactivate`, not a budget notification (D12's own open defect, which
-[Stage 6e](../stages/stage-06e-claude-code-bedrock.md) 8.3 re-opened).
+[Stage 6e](../stages/stage-06e-claude-code-bedrock.md) 8.3 re-opened). Hard for the compute only: a breach refuses every query that needs it, while the 2026-09-20 runaway, a catalog query that runs on the leader node alone, kept running through 5.1's two minutes of breach (`log-stage-05b`, 2026-10-18).
 
 ## Revision trigger
 

@@ -114,6 +114,11 @@ SANDBOX_SUPERNET = "10.16.0.0/13"  # room for 8 business units; avoids 10.30/10.
 # belongs to nobody. `./aws/networking.py`'s NT-3/NT-5/NT-6 measure that AWS agrees.
 # 10.60.0.0/16 is D38's reservation for the day an account slot frees.
 #
+# 10.70.0.0/16 is Data Governance's one VPC, Stage 6f step 11's: the managed `Tooling` blueprint
+# takes a VPC and subnets with no default and creates a security group in them, so publishing the
+# lake through a project in its own account needs a VPC there (6f decision 1, shape (b), D22 as
+# amended 2026-10-26). It peers with nothing and routes nowhere: no PEERINGS row names it.
+#
 # The two Production rows with no folder yet are here under the same rule as `layers.py`'s ranks:
 # declared before the slice arrives, because the address plan is the part that gets got wrong
 # once. `networking` is D38's hub (the estate's only IGW); `workloads` is the production runtime.
@@ -123,6 +128,7 @@ VPC_CIDRS = {
     ("production", "networking"): "10.31.0.0/16",  # VPC-Networking, D38's hub (6c step 1.2)
     ("production", "workloads"): "10.32.0.0/16",  # VPC-Workloads (6c step 1.3)
     ("staging", "foundation"): "10.50.0.0/16",  # the renamed Development - a CIDR is immutable
+    ("data-governance", "publishing"): "10.70.0.0/16",  # 6f step 11: unpeered, no route out
 }
 
 
@@ -296,13 +302,39 @@ VPN_HOST_SLICE = ("production", "networking")
 # longer has to split this list before adding Production. Production joins at Stage 9; a vended
 # Sandbox unit at Stage 14.
 #
-# One consumer since Stage 6b step 2.3: `development` becomes the headless `Staging`, and D20
-# keeps a deployment target off the lake share entirely. Dropping the row stops emitting the
-# aliased-provider identity read, stops emitting that account's `consumer_foundation` remote
-# state (whose gateway-endpoint id is INT-05's `aws:SourceVpce` allow-list), and stops emitting
-# the `lake` map to a consumer slice that step 2.4 destroys.
-DATA_CONSUMERS = ["sandbox"]
+# Three consumers since Stage 9: Sandbox; Staging, read-only by Stage 9 decision 3, the share 6b step
+# 2.3 revoked returning for the read alone; and Production, whose read rides beside the governed write.
+# A row emits the aliased-provider identity read, the `consumer_vpc` remote state (whose gateway-
+# endpoint id is INT-05's `aws:SourceVpce` allow-list) and the `lake` map to the consumer's data/ slice.
+DATA_CONSUMERS = ["sandbox", "staging", "production"]
 DATA_PRODUCERS = ["production"]
+
+# The application-output prefixes DataScientistProdAccess reads from any network (Stage 9 steps 1.1
+# and 5.1, D39), each ending in "/": each application's outbox, where its result file lands (Stage 10
+# decision 6's render table). One list, two readers: production/data/ writes the bucket policy's
+# principal branch from it, and identity/sso/ writes the persona's own allow from it, so the two
+# halves of the read (Lesson 28) cannot name different prefixes (Lesson 33).
+PERSONA_READ_PREFIXES = ["app-etl/outbox/"]
+
+# The customer-managed policy that carries DataScientistProdAccess's Stage 9 allows (its step 5.1):
+# created by production/data/ with that slice's own objects' ARNs, attached to the set by name in
+# identity/sso/. A managed policy because the set's inline document, with the allows in it, rendered
+# 10,550 characters against the 10,240 an inline role policy holds (planned 2026-10-22): the vending
+# policy's precedent (PERSONA_VENDING_POLICY_NAME). It carries the account's token, unlike the
+# vending policy's `org`: the set is assigned in Production alone (D18), so one name resolves in one
+# account and names the objects of that account. Generated into both slices' tfvars, never typed.
+PERSONA_PRODUCTION_POLICY_NAME = "awsds-prod-data-scientist"
+
+# The slice holding the VPC whose [P] S3 gateway endpoint the lake trusts for a consumer, where it is
+# not foundation/: Production's foundation/ is VPC-SharedServices (GitLab, the runners), and its jobs
+# run in VPC-Workloads (Stage 9 step 1.4). A row read from the wrong slice fails INT-05 with the
+# bucket's own deny and no word about which VPC it expected (Lesson 3).
+DATA_CONSUMER_VPC_SLICE = {"production": "workloads"}
+
+# The deployment targets that read the governed lake and write none of it: Staging, whose read share
+# Stage 9 decision 3 grants and DATA_CONSUMERS emits from step 4.1. Consumed by their sagemaker/ slice
+# (step 4.3), which holds the job role alone.
+READ_ONLY_TARGETS = ["staging"]
 
 # The other direction, added at pass 4: the account that owns the lake, read by the consumers. A
 # one-element table, and still a table for the reason the three above are: the consumer slices
@@ -335,9 +367,10 @@ REGISTRY_CONSUMERS = ["sandbox"]
 
 # The accounts that pull an APPLICATION image (`awsds-prod-ecr-app-*`): Stage 8's app-consumer entry,
 # authored apart from REGISTRY_CONSUMERS because the two grant different things to different accounts
-# (Lesson 51). Sandbox runs the image by hand while the application is engineered (step 2.4); Staging
-# joins at step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
-APP_REGISTRY_CONSUMERS = ["sandbox"]
+# (Lesson 51). Sandbox's projects pull it when their workflows run (Stage 8 decision 21); Staging joins
+# at Stage 8 step 3.0 (INT-07). The registry account is never a row: its own roles pull by identity.
+# Staging's row is that step's first half, written 2026-10-19 for Stage 18's 4.4.
+APP_REGISTRY_CONSUMERS = ["sandbox", "staging"]
 
 # The account the two ECR repositories live in - the other end of REGISTRY_CONSUMERS, kept as a
 # list so the emission below has the same shape as every other cross-account read in this tree.
@@ -362,10 +395,11 @@ REGISTRY_HOME = ["production"]
 # yet" from "this account was never meant to be a member" (D28: Staging and Production never
 # are).
 #
-#   SMUS_MEMBERS     the accounts that are meant to be associated - D26/D35's answer, and the
-#                    map the project profiles' environment configurations are built from. It
-#                    is also what the aliased providers in data-governance/governance/ resolve
-#                    account ids through, so it must be populated from the first apply.
+#   SMUS_MEMBERS     the accounts people work in that are meant to be associated - D26/D35's
+#                    answer. With SMUS_DEPLOYMENT_MEMBERS it makes the map the project profiles'
+#                    environment configurations are built from, which is also what the aliased
+#                    providers in data-governance/governance/ resolve account ids through, so it
+#                    must be populated from the first apply.
 #   SMUS_ASSOCIATED  the accounts whose association has actually been accepted. The account
 #                    association is console-only - there is no public associate-account API
 #                    (Stage 6 step 1.3) - so a row is added after the invitation is accepted in
@@ -416,7 +450,34 @@ SMUS_MEMBERS = ["sandbox"]
 # one pass the two differ: the console disassociation is Stage 6b step 1.4 and it comes after
 # the configurations are destroyed - necessarily, since only the member can delete them and only
 # while the association still exists.
-SMUS_ASSOCIATED: list = ["sandbox"]
+#
+# Staging was associated for Stage 18's window, from step 2.1 (2026-10-19) to step 8.4. Staging
+# and Production are associated since 2026-11-11 (Stage 19 step 4.2, decision 6 (b)), by
+# `ram associate-resource-share` on the domain's share, the call the console makes; RAM reads both
+# ASSOCIATED, with no invitation, and each account sees the share as ACTIVE.
+SMUS_ASSOCIATED: list = ["sandbox", "staging", "production"]
+# The associated accounts no person works in: a deployment project's account (Stage 18 step 2.3).
+# Apart from SMUS_MEMBERS because four readers of that list mean "an account people work in"
+# (Lesson 51): PERSONA_VENDING_ACCOUNTS, interactive_private_cidrs(), production/sagemaker/'s
+# `readers`, and refusal 8 in layers.py. Only governance/'s `members` map and `profiles_enabled` read
+# both lists, so a row here follows its SMUS_ASSOCIATED row, as a SMUS_MEMBERS row does, and a row
+# here needs a provider alias of its own in governance/. Staging and Production since Stage 19
+# decision 6 (b) reopened D41 item 2: each holds one deployment project.
+SMUS_DEPLOYMENT_MEMBERS: list = ["staging", "production"]
+if set(SMUS_MEMBERS) & set(SMUS_DEPLOYMENT_MEMBERS):
+    raise ValueError(
+        "SMUS_DEPLOYMENT_MEMBERS: an account people work in belongs in SMUS_MEMBERS alone"
+    )
+# The lake account publishing its own catalog through a project provisioned into it (Stage 6f
+# decision 1, shape (b), the pilot of 2026-10-26; step 11). The domain account needs no
+# association, so the row is the switch, and it moves three slices of that account in one edit:
+# publishing/'s `Tooling` configuration and its grant (`blueprints_enabled`), governance/'s
+# `lake-publishing` profile and its create grant, and data/'s two SMUS administrator seats
+# (`lake_publishing_enabled`). Written after publishing/'s first apply, whose roles data/'s seats
+# name; the three applies then run data/, publishing/, governance/, in that order (step 11.3).
+LAKE_PUBLISHERS: list = ["data-governance"]
+if not set(LAKE_PUBLISHERS) <= set(DATA_LAKE):
+    raise ValueError("LAKE_PUBLISHERS: only the account that owns the lake publishes it (D22)")
 
 # ------------------------------------------------- the persona's project-storage vending policy
 #
@@ -472,10 +533,12 @@ DEPLOY_ROLES = {
 }
 
 # Stage 8 decision 19 - a deploy role outside its account's foundation/, keyed by the (account,
-# slice) that builds it: the role that deploys an application's release to D41's `test` project. The
-# slice gets its name and the home's profile, as a foundation/ does, and the home lists it in that
-# account's `other_roles`, so the runner's AssumeRole list and its profiles carry it. The account
-# holds a DEPLOY_ROLES row and is not the home: the home lists only the targets.
+# slice) that builds it: the role the pipeline's `bundle` job makes a release's bundle as, reading
+# the `dev` project (Stage 19 decision 19 (c)). Its name records D41's `test` project, which it
+# deployed the release to until then. The slice gets its name and the home's profile, as a
+# foundation/ does, and the home lists it in that account's `other_roles`, so the runner's AssumeRole
+# list and its profiles carry it. The account holds a DEPLOY_ROLES row and is not the home: the home
+# lists only the targets.
 DEPLOY_ROLES_BY_SLICE = {
     ("sandbox", "workflows"): "awsds-deploy-sandbox-test",
 }
@@ -502,6 +565,7 @@ ZONE_IDS = {
     "production": ["usw2-az1", "usw2-az2"],
     "staging": ["usw2-az1", "usw2-az2"],
     "development": ["usw2-az1", "usw2-az2"],
+    "data-governance": ["usw2-az1", "usw2-az2"],
 }
 
 # The slices whose generated tfvars carry the allocation. bootstrap/ deliberately does not:
@@ -523,13 +587,20 @@ NETWORK_SLICES = {
     # read production/foundation/'s state for the subnet and anchor on a zone id.
     "tooling",
     "runners",
+    # Stage 6f step 11: Data Governance's VPC and the blueprint prerequisites it carries, one slice
+    # (VPC_SLICES below).
+    "publishing",
 }
 
 # The subset that creates a VPC rather than living inside one, named the day Production got three
 # (6c step 0.2). `foundation` was the whole answer while every account had one VPC; now
 # `vpc_cidr` is emitted to whichever slice owns a VPC, and every other network slice reads its
 # host VPC's [P] facts through terraform_remote_state instead.
-VPC_SLICES = {"foundation", "networking", "workloads"}
+#
+# `publishing` is Data Governance's (Stage 6f step 11): the VPC and the prerequisites of the
+# blueprint that needs it share one state, so the slice plans whole before its first apply and the
+# rollback destroys them together.
+VPC_SLICES = {"foundation", "networking", "workloads", "publishing"}
 
 # The private tier of an Interactive account's VPC, cut the way terraform-modules/vpc/main.tf
 # cuts it: a /18 per AZ, `cidrsubnet(cidr, 2, 0..1)`. Stage 7 step 1.2's GitLab security group
@@ -566,7 +637,7 @@ def interactive_private_cidrs() -> list[str]:
 # (10.30) and `probe_peer_cidrs("production")` admits `10.20.0.0/16` and `10.31.0.0/16` - Sandbox,
 # which is both the peering the Deliverables measure and INT-09 since 3.1 re-homed it, and the hub
 # itself. Staging peers only with `VPC-Networking`, so it neither reaches this host nor is admitted
-# by it; `staging/probes` was written when it did, and its header says so.
+# by it, and holds no probe slice.
 #
 # The hand-kept `PROBE_PEERS` table was deleted at 6c step 6.3, and the reading that forced it
 # arrived as a timeout rather than as a diff: the Sandbox peering probe could not reach the proxy
@@ -636,8 +707,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
 
     `pipeline` is a deploy job's run on the deploy runner (Stage 8 decision 14): the registry's
     state is read through DEPLOY_RUNNER_PROFILE instead of the laptop's SSO profile.
-    The D22 guard covers every network slice: Data Governance has no VPC and no CIDRS row,
-    so a network slice there fails loudly here rather than applying with a hole.
+    The guard covers every network slice: an account with no CIDRS row holds no VPC, so a
+    network slice there fails loudly here rather than applying with a hole. Data Governance's one
+    row is Stage 6f step 11's `publishing` VPC (D22 as amended 2026-10-26).
     """
     token = env_token(account)  # raises UnknownAccountFolder before anything else is read
     values = {
@@ -652,7 +724,8 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         if not any(a == account for a, _s in VPC_CIDRS):
             raise UnknownAccountFolder(
                 f"{account}: network slice '{slice_name}' but no CIDR allocation anywhere - "
-                "D22 accounts hold no VPC; a new account is added to VPC_CIDRS deliberately"
+                "an account without a row holds no VPC; a new one is added to VPC_CIDRS "
+                "deliberately"
             )
         values["zone_ids"] = ZONE_IDS[account]
         if slice_name in VPC_SLICES:
@@ -782,11 +855,19 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # login covers every profile, because they share the `awsds` sso-session.
     if account == "data-governance" and slice_name == "data":
         values["consumers"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_CONSUMERS
+            acct: {
+                "profile": PROFILES[acct],
+                "env": ENV_TOKENS[acct],
+                "vpc_slice": DATA_CONSUMER_VPC_SLICE.get(acct, "foundation"),
+            }
+            for acct in DATA_CONSUMERS
         }
         values["producers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_PRODUCERS
         }
+        # Stage 6f step 11: the two SMUS administrator seats the publishing project's first
+        # environment writes, declared here behind the LAKE_PUBLISHERS row.
+        values["lake_publishing_enabled"] = account in LAKE_PUBLISHERS
 
     # The consumer side of the lake (Stage 5a pass 4). Emitted for `data` in any account that
     # consumes the lake, never for data-governance itself, which owns it and whose own `data`
@@ -797,6 +878,18 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
+        # Stage 9 steps 1.1 and 4.1 - a deployment target's data/ slice reads its own sagemaker/,
+        # foundation/ and VPC slice by the account folder, for the job role, the deploy role and the
+        # gateway endpoint its outputs bucket trusts.
+        # Stage 9 step 5.1: the producer's bucket policy names the persona's read prefixes from the one
+        # list identity/sso/ reads too.
+        if account in DATA_PRODUCERS:
+            values["persona_read_prefixes"] = list(PERSONA_READ_PREFIXES)
+            values["persona_policy_name"] = PERSONA_PRODUCTION_POLICY_NAME
+        if account in DEPLOY_ROLES and account not in SMUS_MEMBERS:
+            values["account_folder"] = account
+            values["vpc_slice"] = DATA_CONSUMER_VPC_SLICE.get(account, "foundation")
+            values["deploy_role_name"] = DEPLOY_ROLES[account]
 
     # Stage 5b step 1.7 - the two warehouse slices. Both read a sibling's state through
     # terraform_remote_state, and the state key is built from the ACCOUNT FOLDER, which no .tf file
@@ -804,8 +897,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # does for every non-foundation network slice above.
     #
     #   warehouse          reads data/ for the account data CMK (docs/GOVERNANCE.md Encryption: one
-    #                      data key per account, and the namespace is a data store in this one) and
-    #                      foundation/ for the VPC the workgroup's security group lives in.
+    #                      data key per account, and the namespace is a data store in this one),
+    #                      foundation/ for the VPC the workgroup's security group lives in, and
+    #                      observability/ for the alerts topic both alarms notify.
     #   warehouse-compute  reads foundation/ for the two private subnets and warehouse/ for the
     #                      namespace name and the security group. It needs `zone_ids` as well,
     #                      because foundation/ reports its subnets as a map KEYED BY ZONE ID - the
@@ -816,6 +910,20 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         values["account_folder"] = account
         if slice_name == "warehouse-compute":
             values["zone_ids"] = ZONE_IDS[account]
+        # Stage 19 pass 5 - a member's warehouse/ grants each access role the catalog read of the
+        # products its project subscribes to, whose target ARNs carry the producer's account id. The
+        # id is resolved through an aliased provider, the data-governance/data idiom, so the map
+        # carries each producer's profile and never its id (aws/INDEX.md rule 1).
+        if slice_name == "warehouse" and account in SMUS_MEMBERS:
+            values["producers"] = {
+                acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]}
+                for acct in DATA_PRODUCERS
+            }
+
+    # Stage 12 step 1 - observability/ reads the [P] states of the slices it watches (foundation/,
+    # networking/, workloads/), by the account folder for the same reason.
+    if slice_name == "observability":
+        values["account_folder"] = account
 
     # Stage 7 step 2.1 - production/pki/ reads production/foundation/'s state for the bucket its
     # certificates are published into, and the state key is built from the account folder, which
@@ -844,15 +952,10 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
             for acct in APP_REGISTRY_CONSUMERS
         }
 
-    # Stage 8 step 2.4 - an application slice reads its account's foundation/ and data/ states (the
-    # subnets, the VPC, the data key, the outputs bucket) and the registry's (the repository its job
-    # pulls), so it takes the folder and the registry map, as dev-env/ does.
-    if slice_name.startswith("app/"):
+    # Stage 19 step 4.11 - a chains slice reads its account's foundation/ for the alerts topic and
+    # studio/ for the project key, by the account folder.
+    if slice_name == "chains":
         values["account_folder"] = account
-        values["registry"] = {
-            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
-            for acct in REGISTRY_HOME
-        }
 
     # Stage 9 step 3 - a deployment target's sagemaker/ slice, the runtime half of D17: the job
     # role, the Model Registry and the debug role. It reads its own foundation/ and registry/
@@ -862,11 +965,25 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
     # provider per key. The readers are the SMUS members, the accounts with projects.
     if slice_name == "sagemaker" and account in DATA_PRODUCERS:
         values["account_folder"] = account
+        values["zone_ids"] = ZONE_IDS[account]
         values["lake"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
         }
         values["readers"] = {
             acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+        }
+
+    # Stage 9 step 4.3 - a read-only target's sagemaker/ slice: the job role and the job log groups,
+    # without the registry and the escape hatch, which stay Production's. No `lake` map: the role
+    # reaches the lake through Lake Formation alone. It pulls the application image from the registry
+    # account, whose state is read cross-account, so the slice takes the registry map as a dev-env/
+    # slice does.
+    elif slice_name == "sagemaker" and account in READ_ONLY_TARGETS:
+        values["account_folder"] = account
+        values["zone_ids"] = ZONE_IDS[account]
+        values["registry"] = {
+            acct: {"profile": registry_profile(acct, pipeline), "env": ENV_TOKENS[acct]}
+            for acct in REGISTRY_HOME
         }
 
     # Stage 6 pass 1 and pass 2 - the blueprint prerequisites and, on the second apply, the
@@ -890,15 +1007,54 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         }
         values["blueprints_enabled"] = account in SMUS_ASSOCIATED
 
+    # Stage 17 decision 13 - the two roles of the console's model access. account_folder for the
+    # same-account sagemaker/ read (the D13 boundary), and the domain account's profile for the
+    # governance/ read (the domain ARN, whose account the provisioning role's name carries).
+    elif slice_name == "model-access":
+        values["account_folder"] = account
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+
+    # Stage 6f step 11 - the publishing project's prerequisites in the lake account: the two maps
+    # the member branch above emits, and the configuration's flag from LAKE_PUBLISHERS rather than
+    # SMUS_ASSOCIATED, since the domain's own account is configured with no association. The VPC
+    # values come from the network branch, `publishing` being a VPC slice.
+    elif slice_name == "publishing":
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+        values["blueprints_enabled"] = account in LAKE_PUBLISHERS
+
+    # Stage 19 step 4.4 - the deployment project's prerequisites in a Workloads account: the values
+    # the member branch above emits, under a slice name of its own because <env>/sagemaker/ is
+    # Stage 9's job-role slice there, and the slice that holds the VPC a project provisions into,
+    # which is not foundation/ in Production (DATA_CONSUMER_VPC_SLICE). blueprints_enabled follows
+    # SMUS_ASSOCIATED as it does for a member.
+    elif slice_name == "studio":
+        values["account_folder"] = account
+        values["vpc_slice"] = DATA_CONSUMER_VPC_SLICE.get(account, "foundation")
+        values["lake"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in DATA_LAKE
+        }
+        values["domain"] = {
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_DOMAIN
+        }
+        values["blueprints_enabled"] = account in SMUS_ASSOCIATED
+
     # Stage 6 pass 2 - the domain account's own slice. The members map is what the project
     # profiles' environment configurations are built from (one per member account); the flag is
     # a SMUS_ASSOCIATED reading over the same members, so the profiles cannot be written before
     # the blueprints they name are configured.
     if account == "data-governance" and slice_name == "governance":
+        domain_members = SMUS_MEMBERS + SMUS_DEPLOYMENT_MEMBERS
         values["members"] = {
-            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in SMUS_MEMBERS
+            acct: {"profile": PROFILES[acct], "env": ENV_TOKENS[acct]} for acct in domain_members
         }
-        values["profiles_enabled"] = bool(SMUS_MEMBERS) and set(SMUS_MEMBERS) <= set(
+        values["profiles_enabled"] = bool(domain_members) and set(domain_members) <= set(
             SMUS_ASSOCIATED
         )
         # The directory read (grants.tf): who may create a project from which profile is
@@ -907,6 +1063,8 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         # slice's locals.tf; only the profile that can resolve them comes from here, the same
         # way every other cross-account read in this table does.
         values["identity_profile"] = PROFILES["identity"]
+        # Stage 6f step 11: the `lake-publishing` profile, provisioning into this account.
+        values["lake_publishing_enabled"] = account in LAKE_PUBLISHERS
 
     # The persona's vending policy: the object half, in each account the set reaches (the name
     # block above carries the argument). foundation/ rather than sagemaker/ because a permission
@@ -957,6 +1115,9 @@ def tfvars_values(account: str, slice_name: str, pipeline: bool = False) -> dict
         # is created by each member's foundation/ (the emission above), and the apply order is
         # members first - a reference to a policy that does not exist yet fails provisioning.
         values["persona_vending_policy_name"] = PERSONA_VENDING_POLICY_NAME
+        # Stage 9 step 5.1: the production persona's managed policy, created by production/data/,
+        # attached here by name (the reference half, the vending policy's shape).
+        values["persona_production_policy_name"] = PERSONA_PRODUCTION_POLICY_NAME
 
     return values
 
@@ -990,6 +1151,8 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"zone_ids        = [{zone_list}]\n"
     if "account_folder" in v:
         out += f'account_folder  = "{v["account_folder"]}"\n'
+    if "vpc_slice" in v:
+        out += f'vpc_slice       = "{v["vpc_slice"]}"\n'
     if "peer_cidr" in v:
         out += f'peer_cidr       = "{v["peer_cidr"]}"\n'
     # Spelled in full and not `peer_cidr` (6c step 4.1). The vpn/ slice's `peer_cidr` is that
@@ -1038,8 +1201,11 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         )
         out += f"peers = {{\n{rows}}}\n"
     if "consumers" in v:
+        # The lake's consumers carry the slice of the VPC the lake trusts for them; the registry's do not.
         rows = "".join(
-            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
+            f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}"'
+            + (f', vpc_slice = "{p["vpc_slice"]}"' if "vpc_slice" in p else "")
+            + " }\n"
             for acct, p in v["consumers"].items()
         )
         out += f"consumers = {{\n{rows}}}\n"
@@ -1071,6 +1237,8 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"blueprints_enabled = {str(v['blueprints_enabled']).lower()}\n"
     if "profiles_enabled" in v:
         out += f"profiles_enabled = {str(v['profiles_enabled']).lower()}\n"
+    if "lake_publishing_enabled" in v:
+        out += f"lake_publishing_enabled = {str(v['lake_publishing_enabled']).lower()}\n"
     if "domain" in v:
         rows = "".join(
             f'  {acct} = {{ profile = "{p["profile"]}", env = "{p["env"]}" }}\n'
@@ -1097,6 +1265,13 @@ def render_tfvars(account: str, slice_name: str, pipeline: bool = False) -> str:
         out += f"readers = {{\n{rows}}}\n"
     if "persona_vending_policy_name" in v:
         out += f'persona_vending_policy_name = "{v["persona_vending_policy_name"]}"\n'
+    if "persona_read_prefixes" in v:
+        prefixes = ", ".join(f'"{x}"' for x in v["persona_read_prefixes"])
+        out += f"persona_read_prefixes = [{prefixes}]\n"
+    if "persona_policy_name" in v:
+        out += f'persona_policy_name = "{v["persona_policy_name"]}"\n'
+    if "persona_production_policy_name" in v:
+        out += f'persona_production_policy_name = "{v["persona_production_policy_name"]}"\n'
     if "identity_profile" in v:
         out += f'identity_profile = "{v["identity_profile"]}"\n'
     if "deploy_role_name" in v:

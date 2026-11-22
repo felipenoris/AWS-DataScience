@@ -24,14 +24,14 @@ data "aws_caller_identity" "current" {}
 # kms:Decrypt on that account's alias/awsds-<env>-tfstate key; the profile is that account's
 # InfrastructureAccess, which holds it.
 
-data "terraform_remote_state" "consumer_foundation" {
+data "terraform_remote_state" "consumer_vpc" {
   for_each = var.consumers
 
   backend = "s3"
 
   config = {
     bucket  = "awsds-${each.value.env}-tfstate"
-    key     = "${each.key}/foundation/terraform.tfstate"
+    key     = "${each.key}/${each.value.vpc_slice}/terraform.tfstate"
     region  = var.region
     profile = each.value.profile
   }
@@ -46,6 +46,10 @@ data "aws_caller_identity" "sandbox" {
 
 data "aws_caller_identity" "production" {
   provider = aws.production
+}
+
+data "aws_caller_identity" "staging" {
+  provider = aws.staging
 }
 
 # --------------------------------------------------------- the data lake administrator (5.3)

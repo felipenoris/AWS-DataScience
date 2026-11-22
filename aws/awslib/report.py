@@ -8,11 +8,12 @@ as BSD ``column -t -s $'\\t'`` aligns them. A diff of two runs is a standing del
 
 from __future__ import annotations
 
+import json
 import sys
 from collections.abc import Iterable
 from typing import IO, Union
 
-from .awscli import AwsCli, head2
+from .awscli import AwsCli, Listing, head2
 
 Rows = Iterable[Union[str, Iterable[str]]]
 
@@ -112,6 +113,41 @@ class Report:
             self.line("(empty result - the call succeeded and returned nothing)")
         self.line()
         return 0
+
+    def show_pages(
+        self, cli: AwsCli, *args: str, token: str = "NextToken", lead_blank: bool = False
+    ) -> Listing:
+        """``show`` for a listing the CLI does not paginate: every page, as one JSON answer.
+
+        One page prints exactly what ``show`` prints under ``--output json``. More pages are
+        named under the answer, and a listing stopped at the page limit says so in place.
+        """
+        if lead_blank:
+            self.line()
+        self.line(cli.echo(args))
+        self.line()
+        listing = cli.pages(*args, token=token)
+        if not listing.last.ok:
+            self.line(listing.last.merged)
+            self.line()
+            self.line(f"!! COMMAND FAILED (exit {listing.last.status})")
+            self.line()
+            return listing
+        doc = listing.merged()
+        if doc:
+            self.line(json.dumps(doc, indent=4, ensure_ascii=False))
+        else:
+            self.line("(empty result - the call succeeded and returned nothing)")
+        if not listing.complete:
+            self.line()
+            self.line(
+                f"!! NOT READ TO ITS LAST PAGE - {token} still present after "
+                f"{len(listing.pages)} pages"
+            )
+        elif len(listing.pages) > 1:
+            self.line(f"({len(listing.pages)} pages, joined above)")
+        self.line()
+        return listing
 
     # ------------------------------------------------------------------ checks table
     def checks_table(self, checks: Checks) -> None:

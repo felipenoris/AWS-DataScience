@@ -18,20 +18,21 @@ where §Encryption now answers.
 (the lake's build steps), [`docs/plan/stages/stage-06f-data-governance.md`](plan/stages/stage-06f-data-governance.md)
 (the catalog's measurements and open decisions) and [`docs/plan/conventions.md`](plan/conventions.md)
 (naming). The applied grants are registered in [`docs/AWS_STATE.md`](AWS_STATE.md) §"Lake Formation
-grant register". §"The development cycle of a data product" rests on Stages 7-10, which are planned: a
-sentence about a stage not yet built names that stage.*
+grant register". §"The development cycle of a data product" rests on Stages 7 to 10 and 19: Stage 7 is
+done and the others are in progress, so a sentence about a step not yet run names that step.*
 
 ## Accounts — where each thing lives
 
 The account is the only hard boundary (`README.md` §Account segregation), and governance uses it on two
 axes: the lake sits on the ownership axis, in one account that holds state and no compute (D22); the
 places code runs sit on the lifecycle axis, Sandbox → Staging → Production (D17, D20). The SageMaker
-Unified Studio domain sits with the lake, a registry and never a runtime (D26), and only the interactive
-accounts are associated with it.
+Unified Studio domain sits with the lake, a registry and never a runtime (D26). The Sandboxes are
+associated with it, and Staging and Production since 2026-11-11, each holding one deployment project
+(Stage 19 decision 6 (b), step 4.2).
 
 ```mermaid
 flowchart LR
-    subgraph DG["Data Governance · ownership axis · D22, D26<br/>no VPC · no user compute · no interactive sign-in"]
+    subgraph DG["Data Governance · ownership axis · D22, D26<br/>no user compute · no interactive sign-in · one VPC, 6f step 11's"]
         LAKE["the lake: raw · curated · dropbox · artifacts · logs<br/>Iceberg on S3 · alias/awsds-data-data"]
         GLUE["Glue Data Catalog + Lake Formation<br/>LF-Tags · registrations · the grant register"]
         DOM["SMUS domain awsds-studio<br/>SageMaker Catalog · profiles · blueprints"]
@@ -42,42 +43,47 @@ flowchart LR
         SLK["awsds-sandbox-lake<br/>per-group prefixes · Stage 16"]
         SCAT["Glue Data Catalog<br/>resource links raw, curated"]
     end
-    subgraph STG["Staging · Workloads · D20 · Stage 9"]
-        SMIR["the application under test<br/>mirror of the lake's databases · same tags<br/>sampled or synthetic rows"]
+    subgraph STG["Staging · Workloads · D20 · Stages 9, 19"]
+        SMIR["deploy-staging · the application under test<br/>its tables, created by its runs<br/>the lake read in place, read-only"]
     end
-    subgraph PRD["Production · Workloads · Stages 7-10"]
+    subgraph PRD["Production · Workloads · Stages 7-10, 19"]
         SUP["GitLab · runners · ECR · CodeArtifact · D14"]
-        JOB["awsds-prod-job-exec · MWAA Serverless<br/>awsds-prod-outputs · resource links"]
+        JOB["deploy-production · MWAA Serverless · the product listed<br/>awsds-prod-job-exec · awsds-prod-outputs · resource links"]
     end
     GLUE ==>|"LF/RAM share · read · TBAC · INT-03"| SCAT
     GLUE -.->|"LF/RAM share · read + governed write · Stage 9"| JOB
+    GLUE -.->|"LF/RAM share · read only · Stage 9 decision 3"| SMIR
     DOM ==>|"account association · blueprints provision here"| PRJ
+    DOM -.->|"association since 2026-11-11 · one deployment project"| SMIR
+    DOM -.->|"association since 2026-11-11 · one deployment project"| JOB
     CRAWL -->|"schema inference"| LAKE
     SBX -.->|"the persona · PutObject only · drop-box"| LAKE
     JOB -.->|"writes curated · empties the drop-box"| LAKE
     PRJ -->|"git · graduation · D21"| SUP
-    SUP -->|"the promotion pipeline · Stage 8"| SMIR
+    SUP -->|"the promotion pipeline · the CI/CD CLI deploys · Stage 8"| SMIR
     SMIR -->|"the gate · Deployment Manager"| JOB
 ```
 
 | Account | Holds, on the governance side | Reaches the lake | In the domain |
 |---|---|---|---|
-| Data Governance | the lake buckets (§Persistence), the lake's Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the drop-box, the crawlers (D27), the domain and the SageMaker Catalog. No user compute, no interactive sign-in (D22) | owns it | hosts it; the portal's catalog calls run here as `awsds-data-studio-domain-execution` (measured 2026-09-13) |
-| Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one yet, so no project reads the lake (Stage 6f 0.7). The one write is the persona's `PutObject` into the drop-box | associated; every project provisions here |
-| Staging | a mirror of the lake's databases with the same LF-Tag keys and values, over sampled or synthetic rows local to it (Stage 9 4.1) | no share (D20) | never (D26, `DenyDataZoneEntirely`) |
-| Production | the supply chain (D14), the job execution role, the orchestration (Stage 10), `awsds-prod-outputs`, a Glue Data Catalog of its own with resource links to the lake (Stage 9 1) | read and the governed write, the producer path (Stage 9 2); the drop-box pickup (D25) | never |
+| Data Governance | the lake buckets (§Persistence), the lake's Glue Data Catalog, Lake Formation with the LF-Tags and the D13 registrations, the drop-box, the crawlers (D27), the domain and the SageMaker Catalog. No user compute, no interactive sign-in (D22). Stage 6f decision 1's pilot adds the publishing project `governed-lake`, a `Tooling` environment with spaces off, and the VPC its template requires (step 11; the VPC, the prerequisites, the configuration, the two administrator seats and the profile applied 2026-10-26, and the project created by the Governance Manager the same evening) | owns it | hosts it; the portal's catalog calls run here as `awsds-data-studio-domain-execution` (measured 2026-09-13); since the pilot, the one project it provisions into itself publishes the lake (§Grants, the catalog road) |
+| Sandbox | the projects' apps, the projects bucket `awsds-sandbox-smus-projects`, a Glue Data Catalog of its own holding each project's databases and the resource links to `raw` and `curated`, and the sandbox lake `awsds-sandbox-lake`, outside Lake Formation by design (Stage 16) | read, through the TBAC share and the local re-grants (§Grants), which name the persona role: no project role holds one (Stage 6f 0.7). One project reads one table by the catalog road: `eighth-experimentation`'s subscription to `curated.trades`, fulfilled by DataZone and read from its query editor on 2026-10-26 (6f 11.9, 11.10). `eighth-experimentation`'s warehouse access role holds `DESCRIBE` and `SELECT` on the lake catalog's `governed_trades` alone, the governed warehouse's share, read through Redshift (Stage 9 9.7, 2026-10-25). The one write is the persona's `PutObject` into the drop-box | associated; every project of the `experimentation` profile provisions here |
+| Staging | its own Glue Data Catalog, with resource links to `raw` and `curated` (Stage 9 4.1) and `deploy-staging`'s database `app_etl`, which the release's runs fill (D20 as amended 2026-11-17) | read, through the TBAC share and the local re-grants to the job role, `DESCRIBE` and `SELECT` alone (Stage 9 decision 3, D20 as amended 2026-10-22, `TM-25`). The project role holds no lake grant, so release F's run reads its inbox (Stage 19 decision 22 (a)) | associated since 2026-11-11: `deploy-staging` imports the release's catalog unlisted (Stage 19 decisions 6 (b) and 19 (c)) |
+| Production | the supply chain (D14), the job execution role, the chains that start the workflows (`production/chains/`, Stage 10), `awsds-prod-outputs`, a Glue Data Catalog of its own with resource links to the lake (Stage 9 1), and `deploy-production`'s database `app_etl`, the product's home (Stage 19 decisions 6 (b) and 12) | read and the governed write as the job role, the producer path (Stage 9 2); the drop-box pickup (D25). The project role holds no lake grant (Stage 19 decision 22 (a)) | associated since 2026-11-11: `deploy-production` lists the product's asset since `v0.5.2` (2026-11-16); its data product is release G's (Stage 19 decisions 20 (b) and 26 (b)) |
 
-The Staging and Production rows describe Stage 9; neither data slice is built.
+The Staging and Production rows describe Stage 9, whose data slices were applied on 2026-10-22, and
+Stage 19's deployment projects, created on 2026-11-11.
 
-**The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); Production's is specified and waits for [Stage 9](plan/stages/stage-09-deployment-targets.md) step 9. **What the brief calls
+**The warehouse adds a store to two of those rows** (D40). **`Sandbox`'s exists since 2026-09-20** ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) pass 1); **Production's namespace exists since 2026-10-23** ([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.1), with the `governed` database and the schema `trades` (1 TB, owner `gov_trades_owner`, the roles `gov_trades_rw` and `gov_trades_ddl`) since 2026-10-24 (9.3). **What the brief calls
 a *base* is a Redshift `schema`** (`objectives.md`, 2026-09-20), so the Redshift `database` is only a class
 container and every grain below is per schema. `Sandbox` gains `awsds-sandbox-warehouse` with one `sandbox`
 database of themed schemas, outside Lake Formation like the sandbox lake beside it;
-`Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation as a federated
-catalog. `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
-no VPC by decision, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the
-two accounts that have VPCs. `Staging` gains nothing either: D20 keeps a deployment target off the lake, and
-a warehouse it has no writer for would be a second mirror to maintain.
+`Production` gains `awsds-prod-warehouse` with the `governed` database, inside Lake Formation through a
+datashare Data Governance registers as a federated database (Stage 9 decisions 5 and 14). `Data Governance` gains **nothing** — a Redshift Serverless workgroup needs subnets, that account has
+no VPC by decision but Stage 6f step 11's, which peers with nothing and exists for one project's
+template, and the same absence that sends INT-13 to its manual fallback sends the warehouse to the two
+accounts whose VPCs carry traffic. `Staging` gains nothing either: it reads the governed lake through its share, and
+a warehouse it has no writer for would hold nothing of its own.
 
 ## Persistence — the buckets
 
@@ -161,14 +167,19 @@ The `tfstate` keys (Stage 2), the PKI key (D36)
 and each Interactive account's project CMK (`alias/awsds-<env>-project`, Stage 6 — the SMUS projects
 bucket `awsds-<env>-smus-projects` and the blueprint-provisioned volumes sit under it since 2026-08-22;
 its key policy carries the documented SMUS statement set and is
-`terraform-modules/sagemaker-prereqs/kms.tf`'s) are separate objects: "the account's data CMK" is one
+`terraform-modules/sagemaker-prereqs/kms.tf`'s; Staging and Production hold one each since 2026-11-11,
+for their deployment project, Stage 19 step 4.4) are separate objects: "the account's data CMK" is one
 key per account for *data*, not a merger of every key in the account. A key that also served Terraform
 state and every other job in the account could not express "who may read derived data" (D31). The
 lake's own `logs` bucket *is* data and sits under the data key.
 
 The binding is mechanical and per bucket: each bucket's default-encryption configuration points at the
 account key (the `s3-bucket` module's `kms_key_arn`), so a bucket belongs to exactly one key and the key
-boundary is a bucket boundary. No catalog attribute is involved anywhere in the chain.
+boundary is a bucket boundary. A writer can still put an object under another key, which no bucket
+statement refuses: a SageMaker processing job whose `ProcessingOutputConfig` names no `KmsKeyId` uploads
+under the AWS managed key `aws/s3`, over the bucket's default, and any principal the bucket policy admits
+reads that object without the data key's grant (`EXC-22`, read 2026-10-25 in `awsds-prod-outputs`). No
+catalog attribute is involved anywhere in the chain.
 
 What the single key costs (Stage 5a decision 3's deviation): INT-10's key grants — the Production job
 role and the maintenance role need the drop-box's key — land on the account key, so at the KMS layer
@@ -209,19 +220,20 @@ holds the objects, the second the permissions over them, the third the business 
 |---|---|---|---|
 | Holds | databases, tables, schemas, S3 locations, resource links | grants on those objects, LF-Tags, registered locations, data cells filters | assets, listings, data products, glossaries, metadata forms, subscriptions, lineage nodes, domain units |
 | Scope | one per account and Region | one per account and Region | the domain, across its associated accounts and Regions |
-| In this estate | the lake's, in Data Governance; each consumer's own, holding resource links and, in Sandbox, the projects' databases | the register's TBAC shares from Data Governance; the conditioned grants SMUS writes in Sandbox | the domain `awsds-studio` in Data Governance; Sandbox the only associated account |
-| Written by | Terraform, the crawlers (D27), the engines, the SMUS provisioning role and the project role | Terraform (the register), the SMUS service roles | the portal, as `awsds-data-studio-domain-execution` |
+| In this estate | the lake's, in Data Governance; each consumer's own, holding resource links and, in Sandbox, the projects' databases | the register's TBAC shares from Data Governance; the conditioned grants SMUS writes in Sandbox; from Stage 6f step 11, the catalog road's named grants on published lake tables | the domain `awsds-studio` in Data Governance; the Sandboxes associated, and Staging and Production since 2026-11-11, one deployment project each (Stage 19 4.2, 4.6); the lake-publishing pilot's project provisioned into Data Governance itself (6f step 11) |
+| Written by | Terraform, the crawlers (D27), the engines, the SMUS provisioning role and the project role | Terraform (the register), the SMUS service roles | the portal, as `awsds-data-studio-domain-execution`; in the deployment projects, the CI/CD CLI's catalog import and the `publish` task, as Production's project role (Stage 19) |
 | Its question | what tabular data exists, and where | who may read which database, table, column and row | what the data means, who owns it, who asked for it and who approved |
 
 A publish writes to the third column only (measured 2026-09-13). Access reaches the second column when a
-subscription or a Share is fulfilled (INT-23, unexercised), and Lake Formation answers every query,
+subscription or a Share is fulfilled (INT-23: a subscription measured across accounts on 2026-10-22, a Share inside one account on 2026-11-14), and Lake Formation answers every query,
 whichever column the request came through.
 
 A data product, the lake and a warehouse are different things. A data product is a catalog object, a
 set of assets under one listing, and stores nothing. The lake is where the governed tables live,
 Iceberg on S3 in the lake's Glue Data Catalog. A Redshift warehouse is a store and an engine: it reads
 the Glue Data Catalog through its auto-mounted `awsdatacatalog` database, read-only, and a namespace
-registered to the catalog becomes a federated catalog governed by Lake Formation.
+reaches the catalog under Lake Formation either registered as a federated catalog or through a Lake
+Formation-managed datashare mapped to a federated database, the shape this estate built (Stage 9 decision 5).
 
 **A warehouse is built — the Sandbox one since 2026-09-20 — and the `RedshiftServerless` blueprint is still
 excluded** ([D40](plan/decisions/D40-redshift-warehouse.md)). [`objectives.md`](plan/objectives.md) carries the
@@ -240,7 +252,7 @@ sandbox lake. Two classes of database, on the two axes this file already separat
 | Class | Account | Written by | Under Lake Formation | Stage |
 |---|---|---|---|---|
 | **sandbox** — themed **schemas** in the `sandbox` database | `Sandbox` | SageMaker project roles, per **schema × project**, and one schema may be shared by several projects | **no, and the catalog is bypassed entirely** — `objectives.md` (2026-09-20) grants the project role directly and lets a member create tables freely in the schema, which carries a **1 TB `QUOTA`** and is owned by a **non-login database user**, never by a project. Like `awsds-sandbox-lake`, outside Lake Formation by design | [5b](plan/stages/stage-05b-redshift-serverless.md), [6h](plan/stages/stage-06h-redshift-connection.md) |
-| **governed** — the `governed` database | `Production` | `awsds-prod-job-exec` alone | **yes** — the namespace registered as a **federated catalog** | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
+| **governed** — the `governed` database | `Production` | `deploy-production`'s project role since 2026-11-16, as the user `IAMR:user-project@<project id>` holding `gov_trades_rw` (Stage 19 decision 16 (b), verification xxxii), `awsds-prod-job-exec` before it (9.4); into tables the pipeline's DDL job creates, owned by `IAMR:awsds-deploy-prod` (9.4) | **yes** — a Lake Formation-managed datashare, `trades_lf`, mapped to the federated database `governed_trades` in Data Governance (Stage 9 decision 5's shape (ii), decision 14) | [9](plan/stages/stage-09-deployment-targets.md) step 9 |
 
 **Two things the first build corrected, both measured 2026-09-20.** *Ownership is a user, not a role*:
 `CREATE SCHEMA … AUTHORIZATION` takes a database **user** and answers `user "<name>" does not exist` when
@@ -249,7 +261,8 @@ a role — which is what keeps the relation many-to-many. And *layer 1 admits on
 `AmazonDataZoneProject` is a **single-valued tag key**, on the workgroup and on the namespace alike, and its
 only alternative is `for-use-with-all-datazone-projects=true`, which admits every project in the account. So
 the per schema × project grain is real at layer 3 and the compute-admission gate in front of it is not; that
-tension arrives with the **second** project and is a decision, not a map entry.
+tension arrives with the **second** project, and 6h decision 8 (a) settles it with the wide tag, not a map
+entry.
 
 Consequences this file has to carry rather than leave to a stage:
 
@@ -267,8 +280,9 @@ Consequences this file has to carry rather than leave to a stage:
   project reads it only through a default privilege written for that creator: `SELECT`, never `INSERT` or
   `DROP`, and widening it is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8's. Measured
   2026-10-10 on the first tables a project wrote; no second project is admitted to exercise it (6h 5.2b).
-  The account's second project, `test-experimentation` (2026-10-15), is D41's `test` project, not admitted
-  to the warehouse.
+  The account's second project, `test-experimentation` (2026-10-15), was D41's `test` stage until
+  2026-11-11 ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 19 (c)) and stays a
+  project, not admitted to the warehouse.
 - **A sandbox schema's grantee is a project, by convention.** The Data page, and a notebook that first
   assumes the project's access role, reach the database as one per-project user; a notebook that connects
   directly reaches it as a per-person user SMUS creates, holding nothing (6h decision 8a, measured
@@ -277,14 +291,18 @@ Consequences this file has to carry rather than leave to a stage:
   The SQL itself would be in the warehouse's audit export, which carries nothing while a workgroup exists
   (`EXC-16`), so [Stage 11](plan/stages/stage-11-dlp.md) has no Redshift feed to build on yet.
 - **The governed class is the first governed store outside Data Governance**, which is D22's line. The
-  federated-catalog registration is the compensation and the **grant register gains a second grantor account**.
+  datashare Data Governance registers and grants is the compensation (Stage 9 decisions 5 and 14), so **the
+  Lake Formation grants keep one grantor**; the `GRANT`s inside `governed` are Production's. Withdrawing a
+  reader is a Lake Formation revoke in Data Governance. Production's `REVOKE` of the share shuts every
+  reader at once and leaves each grant standing, so the next re-grant restores them all (Stage 9 xxiv,
+  measured 2026-10-26).
 - **A sandbox schema is D19's shape in a fourth store**: a project can write into it anything it can read,
   a governed copy included. The copy is not prevented; the destination is inside the perimeter, under the
   account's own data CMK, and Lesson 1 applies — a copy somewhere less governed is not a hole to be closed.
 
 Stage 6f step 8 wrote the institutional pattern this half-implements, and
 [`plan/institutional-delta.md`](plan/institutional-delta.md)'s warehouse row carries what is still missing:
-one permission system over both storage engines, which is exactly what the the sandbox class does not have.
+one permission system over both storage engines, which is exactly what the sandbox class does not have.
 
 ### Glue Data Catalog
 
@@ -325,24 +343,26 @@ both IAM and Lake Formation (`docs/REFERENCES.md`, Lesson 28).
 
 The business catalog, an Amazon DataZone V2 domain: `awsds-studio`, in Data Governance (D26). Its unit
 of work is the project: a project owns what it publishes, its members approve who reads it, and every
-project is provisioned into an associated account, Sandbox alone (`docs/SMUS.md`). What it offers, and
-where each stands here:
+project is provisioned into an associated account: the experimentation projects into Sandbox,
+`governed-lake` into Data Governance, and since 2026-11-11 one deployment project into each of Staging
+and Production (`docs/SMUS.md`). What it offers, and where each stands here:
 
 | Feature | What it is | Here |
 |---|---|---|
-| Asset and listing | a catalog entry for a Glue table, a Redshift table or view, or a custom asset type; *publish* creates the listing other projects search | `house-price` published 2026-09-13; metadata only, no grant written |
-| Business metadata | business names and descriptions, generated on request, glossary terms, metadata forms, a README per asset | a glossary or form for `classification`: Stage 6f 4.1-4.2; the generation: decision due 3 |
-| Data product | a set of assets published and subscribed as one | `my-data-product`, 2026-09-13 |
-| Subscription | a consumer project requests, the owner project approves, DataZone fulfils: a Lake Formation grant in the table's account for a managed asset (INT-23), an EventBridge event for an unmanaged one, whose owner grants | unexercised; Stage 6f step 2 |
-| Direct Share | the owner gives an asset (S3, Glue, QuickSight) to chosen projects, users or groups; for S3, without a subscription request | decision due 5 |
-| Lineage | OpenLineage nodes from instrumented engines and from publishing (§Data lineage) | two nodes measured 2026-09-13 |
+| Asset and listing | a catalog entry for a Glue table, a Redshift table or view, or a custom asset type; *publish* creates the listing other projects search | `house-price` published 2026-09-13; metadata only, no grant written. The first lake table, `curated.trades`, is Stage 6f step 11's, published by `governed-lake` on 2026-10-26. The first table a workflow creates, `app_etl.trades_notional`, listed since 2026-11-10 (Stage 19 pass 1), and in Production by `deploy-production` since `v0.5.2` (2026-11-16) |
+| Business metadata | business names and descriptions, generated on request, glossary terms, metadata forms, a README per asset | the metadata form type `classification`, a `String`, created 2026-11-10 and carried from the asset to its listing (Stage 19 decision 4, verification iv); the generation off on every lake source (Stage 6f decision 3, 2026-10-27, `CT-5`) |
+| Data product | a set of assets published and subscribed as one | `my-data-product`, 2026-09-13; `trades-notional`, created and published 2026-11-14 over `app_etl.trades_notional` (Stage 19 pass 2); Production's is release G's `publish` task (Stage 19 decision 26 (b)) |
+| Subscription | a consumer project requests, the owner project approves, DataZone fulfils: a Lake Formation grant in the table's account for a managed asset (INT-23), an EventBridge event for an unmanaged one, whose owner grants | across accounts on 2026-10-22 ([Stage 18](plan/stages/stage-18-staging-deployment-project.md) 7.2, revoked the same night): `SELECT` under the subscribing project's context, a RAM share of the producer's whole catalog, Data Catalog resource-policy statements and a resource link, each by its side's project role. The catalog road's, from Data Governance to Sandbox, approved and fulfilled 2026-10-26 (6f 11.8, 11.9). Inside one account on 2026-11-14 (Stage 19 verification vi): `SELECT` to the account's `IAMPrincipals` under the consumer's context, by the owner's project role, and a resource link by the consumer's, no RAM share and no catalog policy |
+| Direct Share | the owner gives an asset (S3, Glue, QuickSight) to chosen projects, users or groups; for S3, without a subscription request. For a Glue-table data product it is a request the owner makes for the project, accepted at creation with no reviewer (measured 2026-11-14, `SUP-362`) | none on the lake (Stage 6f decision 5, 2026-10-27, `CT-11`); the owner's Share of `trades-notional` to `test-experimentation`, 2026-11-14 (Stage 19 pass 2) |
+| Lineage | OpenLineage nodes from instrumented engines and from publishing (§Data lineage) | two nodes, an asset and its listing, written by the publish of 2026-09-13. The first engine's events on 2026-10-19: 12 from a Glue job in Staging's project, through a `datazone` endpoint (Stage 18 7.1, `SUP-097`); since 2026-11-10 the Glue job's lineage is linked to `app_etl.trades_notional` (Stage 19 decision 10, pass 1) |
 | Domain units and authorization policies | who may create projects, glossaries and forms, and where; one unit per business data domain in the institutional pattern | Stage 6f step 9, `institutional-delta.md` |
 
 What it does not do: grant by an LF-Tag. DataZone documents no LF-TBAC support for the Glue assets it
 manages, and its grant is a named-resource grant (§Access control). Publishing wrote nothing to Lake
-Formation (measured 2026-09-13), and whether a published asset shows its tags is Stage 6f 4.1. The
-lake's entitlement stays in the register; the catalog carries discovery, ownership, the request record
-and the projects' own assets (Stage 6f decision due 1).
+Formation (measured 2026-09-13), and a published asset showed no tag on 2026-09-18, though it had none
+to show (Stage 6f 4.1). Since Stage 6f decision 1 (2026-10-26, the user's, as a pilot) a lake table
+published in the catalog is also reached through DataZone's grants, which prevail over the TBAC model for
+what enters that way (§Grants, the catalog road); every other read of the lake stays the register's.
 
 ## LF-Tags
 
@@ -424,26 +444,28 @@ database, table or column:
 3. **Lake Formation matches them** at query time: expression satisfied → access; otherwise denied.
 
 TBAC is the default method here. Named-resource grants (per table/column) stay available for the
-exceptions hybrid access mode covers (Stage 5a step 6.3) — used, they are recorded like every grant.
+exceptions hybrid access mode covers (Stage 5a step 6.3) — used, they are recorded like every grant. The
+catalog road is the other place they live (§Grants): a lake table published in the SageMaker Catalog is
+granted by DataZone, named, at each approved subscription (Stage 6f decision 1, 2026-10-26).
 
 Lake Formation's other attribute-based form, ABAC, puts the attribute on the caller's session instead of
 on the data: a named-resource grant under a Cedar condition. SMUS writes it for every project
 (`context.datazone.projectId == <project-id>`, [`docs/SMUS.md`](SMUS.md) §S3 1b). DataZone documents a
 subscription fulfilment as a named-resource grant, with no LF-TBAC support for the Glue assets it
-manages; whether a fulfilment carries a condition as well is Stage 6f verification i. Lake Formation
+manages; across accounts it carried the subscribing project's `context.datazone.projectId` (Stage 18 7.2, 2026-10-22), and inside one account the same condition on a grant to the account's `IAMPrincipals` (Stage 19 verification vi, 2026-11-14). Lake Formation
 evaluates a principal's permissions as the union of its grants, named-resource and LF-Tag alike
 (`docs/REFERENCES.md`), so a tag on a table neither gates nor blocks a named-resource grant. The forms
 meet in one account's Lake Formation without reading each other: the register holds TBAC, and a
-named-resource grant on a lake table is an exception under §Grants (Stage 6f decision due 1).
+named-resource grant on a lake table belongs to the catalog road (§Grants, Stage 6f decision 1).
 
 | | LF-TBAC, the register's form | Named-resource grants, the catalog's form |
 |---|---|---|
-| The attribute sits on | the data: an LF-Tag on a database, table or column | the caller's session, in the grants SMUS writes: `context.datazone.projectId` (measured 2026-09-12); a fulfilment's condition is Stage 6f verification i |
+| The attribute sits on | the data: an LF-Tag on a database, table or column | the caller's session, in the grants SMUS writes: `context.datazone.projectId` (measured 2026-09-12); a fulfilment's condition is the subscribing project's, across accounts (2026-10-22) and inside one (2026-11-14) |
 | The grant | `[principal, tag expression, permissions]`, standing, reaching every object that carries the tags | a named database, table or location, per project or per approved subscription |
-| Written by | Terraform: `data-governance/data/` and the consumer slices | the SMUS provisioning role at project creation (measured); DataZone at fulfilment, through the manage-access role (documented, unexercised) |
-| Governs here | the lake, `raw` and `curated` | a project's own databases and its `dev/` scope in Sandbox |
-| The control | the tag and the expression | the project id on the session, which DataZone sets (which sessions carry it is unmeasured); for a subscription, the owner project's approval |
-| Recorded in | the grant register, `AWS_STATE.md` | nowhere yet: `DL-14` reads the registrations, and `./aws/catalog.py` (Stage 6f 1.3) is to read the grants |
+| Written by | Terraform: `data-governance/data/` and the consumer slices | the SMUS provisioning role at project creation (measured); DataZone at fulfilment, as each side's project role (measured across accounts 2026-10-22 and inside one 2026-11-14) |
+| Governs here | the lake, `raw` and `curated` | a project's own databases and its `dev/` scope in Sandbox; from Stage 6f step 11, the lake tables published in the catalog, for the projects that subscribe |
+| The control | the tag and the expression | the project id the condition reads, which every session of the project role read so far met, a person's, `SYSTEM`'s and a Glue worker's with no session tag (Stage 18, 2026-10-21/22), so it comes from the role (inferred); for a subscription, the owner project's approval |
+| Recorded in | the grant register, `AWS_STATE.md` | no register row: `DL-14` reads the registrations, and `./aws/catalog.py` `CT-7` and `CT-8` read the grants a SMUS principal holds (14 on 2026-10-18, all on project-owned objects) |
 
 ## Grants
 
@@ -478,12 +500,16 @@ administrator, the `Parameters` map carried explicitly (INT-11 — the resource 
 structure), and the two `Create*DefaultPermissions` cleared before its first local catalog object
 exists, because they act at creation time.
 
-**The principals** (who the first element can be): the consumer accounts — `Sandbox Account 1`, the one
-consumer today (`Development` left the list on 2026-09-06 when the account became the headless
-`Staging`, which D20 keeps off the lake), plus one more per business unit at N>1 (INT-03's N+2) — for
-the cross-account shares; inside accounts, the persona permission-set roles;
+**The principals** (who the first element can be): the consumer accounts — `Sandbox Account 1`;
+`Staging Account`, read-only since Stage 9 4.1 (decision 3, 2026-10-22), which left the list on
+2026-09-06 as `Development`; Production, with the read and the governed write (Stage 9 2.1); plus one
+more per business unit at N>1 (INT-03's N+2) — for the cross-account shares; inside accounts, the persona permission-set roles;
 `awsds-data-catalog-maintenance` for catalog work; from Stage 6, the project execution roles; from
-Stage 9, `awsds-prod-job-exec` (read + the governed write). LF-Tags never gate the read/write direction
+Stage 9, `awsds-prod-job-exec` (read + the governed write), and a project's warehouse access role on the
+governed share it reads through Redshift (9.7); from Stage 19, each deployment project's role on its own
+product database. Lake Formation gives a table's creator its permissions and nobody else (Lesson 75):
+`app_outputs`, where the deploy roles created tables and `InfrastructureAccess` held `DROP` on them,
+was removed from both targets with release T's Terraform path (Stage 19 item 31, 2026-11-17). LF-Tags never gate the read/write direction
 — the verbs in the permission list do; the tags say what the data *is*.
 
 **The grain.** Entitlement follows the toolset's own practice: grants go to roles and projects, assumed
@@ -538,6 +564,28 @@ keeps for policy statements. It carries the catalog's own operational grants fro
 governance manager's grants landed at pass 2, the first cross-account grants — the TBAC expressions
 above — at pass 3, and each consumer account's own re-grants at pass 4.
 
+### The catalog road
+
+Decided by the user on 2026-10-26 as a pilot ([Stage 6f](plan/stages/stage-06f-data-governance.md)
+decision 1, shape (b)), in the user's words: *"vamos priorizar a solução nativa do SMUS, mesmo que isso
+implique em não utilizar as LF-TAGS"*. A lake table published in the SageMaker Catalog is reached by
+subscription: a consumer project requests, the publishing project's owner approves in the portal, and
+DataZone fulfils with named-resource grants, so no Terraform apply is owed per grant. For what enters
+this way, those grants prevail over the TBAC model, and the rule above that keeps named-resource grants
+for exceptions does not apply to them. The TBAC shares stay whole for every reader they already reach.
+
+| | On the catalog road |
+|---|---|
+| The publisher | `governed-lake`, a project provisioned into Data Governance from the profile `lake-publishing`, owned by the Governance Manager (6f step 11) |
+| What Terraform declares | the publisher role's `DESCRIBE` on the table's database and `DESCRIBE` and `SELECT` with the grant option on each published table, one list in `data-governance/data/publishing.tf`; the two SMUS service roles as Lake Formation administrators, which the first environment in the account writes anyway |
+| What DataZone writes, at each approval | `SELECT` on the table to the consumer account's `IAMPrincipals` under the subscribing project's `context.datazone.projectId`, a RAM share of the lake's whole catalog to that account and per-resource Data Catalog policies on its `catalog`, `database/*` and `table/*/*` (`glue get-resource-policies`), the account's policy staying absent, all as the publishing role (measured 2026-10-26, 6f 11.9); in the consumer account, a resource link and `DESCRIBE` on it to the project's context (Stage 18 7.2's shape, measured across accounts on 2026-10-22) |
+| The control | the owner project's approval, with no direct Share on a lake listing (6f decision 5, 2026-10-27); the publisher's grant option bounds what DataZone, or any session of the publishing role, can regrant |
+| Recorded in | the grant register by class: DataZone's subscription is each fulfilment's record (6f decision 2, 2026-10-27). `./aws/catalog.py` `CT-10` fails on a grant on a published table that neither `publishing.tf` nor an approved subscription explains, `CT-11` on an access act that skipped the owner's approval, and `CT-7` on any other SMUS grant on the lake |
+| Out of it | `restricted` and `personal` data, on a table or on a column (6f decision 2): `data/publishing.tf` refuses such a table at plan, `CT-12` reads the live tags, and the TBAC rule above stays their only path. AI name generation, off on every source over the lake (6f decision 3, `CT-5`) |
+
+The pilot is one `internal` table, `curated.trades`, subscribed by `eighth-experimentation`; what DataZone
+wrote was read before anything widened (6f step 11.11, 2026-10-27).
+
 ## Drop-box
 
 The ingestion letterbox: the only governed path for a file to enter the lake from the work accounts. The
@@ -570,11 +618,11 @@ reading. Two consequences:
   policy all fire on one call, because the drop-box is SSE-KMS and S3 calls `kms:GenerateDataKey` with
   the caller's credentials. This term is invisible on failure — it surfaces as a KMS error against the
   S3 call — and legible only in a successful `PutObject`'s `SSEKMSKeyId`.
-- The letterbox has no collector yet. The writer cannot clean up after itself by design, and the pickup
-  is Stage 9's `awsds-prod-job-exec`. Until that exists, anything written here stays — including the
-  proof object, declared as `EXC-02` in `docs/AWS_STATE.md`. This is the drop-box working, not failing;
-  the letterbox fills monotonically until Stage 9 lands, and the crawler that would at least catalogue
-  the arrivals has no demander either (open question 19).
+- The letterbox's collector is Stage 9's `awsds-prod-job-exec`, whose pickup first ran on 2026-10-23
+  and consumes CSV objects alone. The writer cannot clean up after itself by design, so anything the
+  pickup does not consume stays until a deliberate `InfrastructureAccess` cleanup, as the proof objects
+  `EXC-02` declared did until 2026-10-24. This is the drop-box working, not failing; the crawler that
+  would at least catalogue the arrivals has no demander (open question 19).
 
 The catalog half of the asymmetry: the drop-box has a catalog database and a crawler, so it has metadata
 that a grant can reach even though its bucket holds nothing a consumer may read. The controls that keep
@@ -625,7 +673,10 @@ it.
 
 The AWS-native lineage feature arrives with Stage 6's domain: SageMaker Catalog (the DataZone layer)
 provides data lineage — OpenLineage-compatible, capturing derivation events from instrumented engines
-and drawing the table/column graph in the portal. Two limitations keep the rule above human:
+and drawing the table/column graph in the portal. A Glue job's events reach the domain through a
+`datazone` endpoint: 12 from `app-etl`'s Glue task in Staging's project on 2026-10-19 (Stage 18 7.1,
+`SUP-097`), and since 2026-11-10 the domain links the job's lineage to the product's asset (Stage 19
+decision 10, pass 1). Two limitations keep the rule above human:
 
 1. **Lineage records the graph; it does not propagate classification.** It shows that a table derives
    from a restricted source — it does not tag, re-grant or deny the derivative. Auditing aid, not
@@ -640,29 +691,31 @@ containment (design), and Macie (detection, days later) — in that order.
 ## The development cycle of a data product
 
 SageMaker Unified Studio is the development tool, the SageMaker Catalog its governance surface, and the
-pipeline the only way into a deployment target. The cycle below joins them. Stages 7-10 build the
-pipeline half and Stage 6f measures the catalog half: a step is dated where it has run and named by its
-stage where it has not.
+pipeline the only way into a deployment target. The cycle below joins them. Stages 7-10 and 19 build the
+pipeline half and Stages 6f and 19 measure the catalog half: a step is dated where it has run and named
+by its stage where it has not.
 
 ```mermaid
 flowchart LR
     A["1 · Sandbox project<br/>notebooks · project tables · sandbox lake<br/>reads the lake through the share"]
     B["2 · SageMaker Catalog<br/>project assets published · business metadata<br/>data products · share and subscribe"]
     C["3 · GitLab, group awsds/<br/>graduation through git · D21<br/>D28 artifacts · schema and proposed tags"]
-    R["4 · the register, for a new table<br/>curated table declared and tagged<br/>Governance Manager approves"]
-    D["5 · Staging<br/>pipeline apply · integration tests<br/>mirror databases, same tags"]
-    E["6 · Production<br/>Deployment Manager's gate · apply<br/>the job writes through the share"]
-    F["7 · the lake, Data Governance<br/>rows in the declared table<br/>consumers read through TBAC"]
-    G["8 · SageMaker Catalog<br/>the governed table published<br/>discovery · request record"]
+    R["4 · the register, for a new lake table<br/>curated table declared and tagged<br/>Governance Manager approves"]
+    D["5 · Staging · deploy-staging<br/>the CI/CD CLI deploys the bundle · integration tests<br/>the catalog imported unlisted · tables created by its runs"]
+    E["6 · Production · deploy-production<br/>Deployment Manager's gate · the CLI deploys<br/>the product in the project's database"]
+    F["7 · the lake, Data Governance<br/>rows in a declared table<br/>consumers read through TBAC"]
+    G["8 · SageMaker Catalog<br/>Production's product listed · a lake table by governed-lake<br/>discovery · request record"]
     A --> B
     A --> C
     C --> R
     R --> D
-    C -.->|"no new table"| D
+    C -.->|"no new lake table"| D
     D --> E
-    E --> F
-    F --> G
+    E -->|"publish · release F"| G
+    E -.->|"the job role · Stage 9 2.4"| F
+    F -->|"governed-lake · 6f step 11"| G
     F -.->|"the share and the re-grants"| A
+    G -.->|"a subscription"| A
 ```
 
 ### Development in the Sandbox
@@ -678,8 +731,9 @@ flowchart LR
   condition naming the project (measured 2026-09-12/13, `docs/SMUS.md` §S3 item 1b). These tables carry
   no LF-Tag, and the register does not name them.
 - **The lake is read from here, never written.** The TBAC share reaches the account and the local
-  re-grants make it readable (§Grants); they name the persona role today, and a project role holds none,
-  so no project reads `raw` or `curated` yet (Stage 6f 0.7). The one write toward the lake is the
+  re-grants make it readable (§Grants); they name the persona role, and a project role holds none
+  (Stage 6f 0.7). A project reads a lake table only by the catalog road: `eighth-experimentation`'s
+  subscription to `curated.trades`, read on 2026-10-26 (6f 11.10). The one write toward the lake is the
   drop-box's `PutObject` (§Drop-box).
 - **The sandbox lake is the group's own store**: `awsds-sandbox-lake`, per-group prefixes, wired to a
   project as an S3 connection, outside Lake Formation by design; moving data between it and the lake is
@@ -691,51 +745,77 @@ flowchart LR
 
 - **Publish is a catalog act.** *Publish to Catalog* creates an asset and a listing; a data product
   groups assets under one listing. Neither touches Glue, Lake Formation or S3 (measured 2026-09-13).
+- **A data product's name is the domain's.** `CreateDataProduct` refuses a name another project holds,
+  as its API reference states, and every stage shares the one domain: a promoted product's data product
+  belongs to one project, Production's for Stage 19's (decision 26 (b); measured 2026-11-16,
+  `SUP-369`).
 - **Business metadata is the owner project's.** Business names and descriptions, glossary terms,
   metadata forms and the README are edited on the asset by the project that owns it; a glossary is owned
-  by the project that creates it and visible to the domain (Stage 6f 4.2). Whether an asset shows its
-  LF-Tags is Stage 6f 4.1; until then `classification` in the catalog is description for people, and
-  the tag is the control (Lesson 5).
+  by the project that creates it and visible to the domain (Stage 6f 4.2). A published asset showed no
+  LF-Tag on 2026-09-18, though that asset had none to show (Stage 6f 4.1); until a lake table is
+  published, `classification` in the catalog is description for people, and the tag is the control
+  (Lesson 5).
 - **Access between projects is the catalog's own.** A consumer project subscribes, the owner project
-  approves, and DataZone writes the grant for a managed asset (documented; INT-23, unexercised). For a
-  project's own tables this is the designed mechanism, since the register does not reach them. The Governance Manager approves as a member of the owner
-  project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3.
-- **The domain is the boundary.** Publish, subscribe and Share work inside one domain; Staging and
-  Production are never associated (D26), so a deployment target neither publishes nor subscribes.
+  approves, and DataZone writes the grant for a managed asset as the owner project's role (INT-23, measured across accounts on 2026-10-22 and inside one account on 2026-11-14). For a
+  project's own tables this is the designed mechanism, since the register does not reach them, and since
+  Stage 6f decision 1 (2026-10-26) it is also how a published lake table is read (§Grants, the catalog road). The Governance Manager approves as a member of the owner
+  project or through `GovernanceManagerAccess`'s domain ownership; which policy decides is Stage 6f 4.3. A member acts as the project role in the portal, whose query editor reads the project's tables (Stage 18 6.1, 7.2), so that route reaches rows D31 keeps from the persona.
+- **The domain is the boundary.** Publish, subscribe and Share work inside one domain. Staging and
+  Production are associated to it and each holds a deployment project since 2026-11-11
+  ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) decision 6 (b), steps 4.2 and 4.6).
+  Production lists the product's asset since `v0.5.2` (2026-11-16), creates its data product from
+  release G, and approves what Sandbox subscribes to; Staging imports the catalog unlisted; neither
+  target subscribes to anything: the `Workloads` SCP denies the request (decision 13 (b)).
 
 ### Promotion — Sandbox → Staging → Production
 
 - **The repository is the promotion vehicle** (D21, D28, D41). The application is a SageMaker application
   on the `app-etl` template in the GitLab group `awsds/` (Stages 7-8), and the deployable set is D28's
-  artifact classes — the image, the workflow definition, the code its tasks read from S3, a per-workflow
-  execution role, the orchestration resource with its chain's state machine and schedule, its log group
-  and, for ML, the model package group — carried by the repository, never by the portal.
+  artifact classes, carried by the repository and its bundle, never by the portal: the image, the
+  workflow definitions, the code their tasks read from S3 and the catalog's export. In each target the
+  CI/CD CLI creates the workflows in the deployment project, which runs them as its project role, and
+  `<env>/chains/` holds each chain's state machine and schedule (Stage 19 decision 6 (b), release F). The
+  application's own cycle, from a space to Production, hand by hand, is
+  [`plan/runbooks/sagemaker-application.md`](plan/runbooks/sagemaker-application.md).
 - **The pipelines** (Stage 8): the `dev-env` pipeline releases the runtime image behind the Dev Env
   Steward's gate; the application pipeline tests, lints and builds the image and the application's code
-  package on a release tag, then bundles the application, has the CI/CD CLI deploy the same files to
-  the Sandbox `test` project and run it there, and stores the bundle in Production's releases bucket,
-  which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20); the
-  promotion pipeline applies the tag and that bundle into Staging, runs the integration tests, tears
-  Staging down, pauses at the Deployment Manager's manual gate with the test results and the Production
-  plan in front of them, and applies into Production as `awsds-deploy-prod`.
+  package on a release tag, then has the CI/CD CLI make the bundle from the tag's files, deploying and
+  running nothing in Sandbox (Stage 19 decision 19 (c)), and stores the bundle in Production's releases
+  bucket, which the tag's GitLab release names, before Staging (Stage 8 step 2.5, decisions 19 and 20);
+  the promotion pipeline waits at a manual gate (decision 28), has the CI/CD CLI deploy that bundle into
+  `deploy-staging` as `awsds-deploy-staging` (`staging-deploy`), imports its catalog unlisted
+  (`staging-catalog`) and runs the integration tests (`staging-test`), the release's first run, with
+  `staging/egress/` raised and destroyed by the user around the leg (decision 27); it pauses at the
+  Deployment Manager's manual gate (`production-gate`) with the test results in front of them, deploys
+  into `deploy-production` as `awsds-deploy-prod` (`production-deploy`) and lists the asset
+  (`production-catalog`).
 - **A workflow is authored in the application repository** (Stage 10 steps 2.1-2.2, D41): the CI/CD CLI
-  deploys it into the Sandbox `dev` and `test` projects and bundles it, the D28 lint refuses anything
-  portal-scoped in the copy rendered per account, and in Production the definition is deployed to
-  `awsds-prod-outputs/workflows/<app>/<tag>/` and run by MWAA Serverless as the per-workflow role, started
-  by its chain's state machine.
-- **Staging tests against a mirror.** Its databases carry the lake's names, definitions and LF-Tag keys
-  and values over sampled or synthetic rows (Stage 9 4.1), and no share reaches it (D20). The integration
-  test catches schema, permission and wiring errors against the same definitions; the cross-account
-  share is exercised in Production alone.
-- **Production writes the product into the lake.** The job execution role holds the read and the
-  governed write through Stage 9's share, regranted locally (Stage 9 2.1-2.3); the table it writes is in
-  the lake's catalog, so the authoritative product never lives in Production. Its local outputs, model
-  artifacts among them, stay in Production (Stage 9 1.1).
+  deploys it into the Sandbox `dev` project and bundles it, `awsds-workflows lint` checks it against what
+  the targets' boundary refuses before the deploy, and in each target the CLI creates it in the deployment
+  project, where MWAA Serverless runs it as the project role, started by its chain's state machine.
+- **Staging reads the lake in place.** It holds the governed lake read-only through the LF-Tag share
+  Sandbox holds and writes only its own catalog, buckets and key (Stage 9 decision 3, D20 as amended
+  2026-10-22); its tables are the ones the release's runs create in `deploy-staging`'s `app_etl` (D20 as
+  amended 2026-11-17). Release F's run reads its inbox, as every stage's does, and the governed read
+  returns in a later release with a lake read for each project role (Stage 19 decision 22 (a), item 32);
+  the integration test then meets the definitions, rows and grants Production reads, `restricted`
+  excluded or filtered (`TM-25`).
+- **Production writes the product into its deployment project.** Since release F (`v0.5.2`,
+  2026-11-16) the Glue job runs as `deploy-production`'s project role and writes
+  `app_etl.trades_notional`, an Iceberg table of the project's database, which the `publish` task lists
+  in the SageMaker Catalog (Stage 19 decisions 2, 6 (b) and 20 (b)); the project path is the product's
+  home (decision 12), and its input is the inbox's sample until the governed read returns (decision 22
+  (a)). The job execution role keeps the read and the governed write through Stage 9's share, regranted
+  locally (Stage 9 2.1-2.3), the path 2.4's producer job wrote `curated.trades` through on 2026-10-23.
+  Production's local outputs, model artifacts among them, stay in Production (Stage 9 1.1).
 
 ### Assigning the LF-Tags
 
-The rite below is designed and not yet exercised: Stage 9 writes the first governed table. It is
-`curated`'s, where a data product lands. A `raw` table is catalogued by the raw crawler (D27) and
+The rite below ran once, for `curated.trades`: declared with `classification=internal` in
+`data-governance/data/` before its first write, written by Stage 9 2.4's producer job on 2026-10-23, and
+published by `governed-lake` on 2026-10-26 (6f step 11). It is `curated`'s, where a governed table lands;
+a product a deployment project creates is a project table, classified by Stage 19 decision 4's form. A
+`raw` table is catalogued by the raw crawler (D27) and
 inherits `classification=internal` from its database, readable through the default share until the
 Governance Manager reclassifies it (§`classification`).
 
@@ -744,7 +824,7 @@ A curated table exists before its first write. Production's write grant carries 
 declared in the register; a table without `classification` matches no expression and is invisible to
 every consumer (§`classification`), so the tag is part of the product's delivery. Nothing in the portal
 or the pipeline assigns one: publishing wrote nothing to Lake Formation (measured 2026-09-13), the
-per-workflow execution role holds no data permission (D28), and the job role holds the producer grants
+project role holds no lake grant (Stage 19 decision 22 (a)), and the job role holds the producer grants
 and nothing else on the catalog (Stage 9 2.3).
 
 | Moment | Act | Whose hand | Recorded in |
@@ -752,7 +832,7 @@ and nothing else on the catalog (Stage 9 2.3).
 | The product is designed, in Sandbox | the table's schema and its proposed classification, column overrides included, go into a merge request on the versioned schema source (Stage 9 decision 3) | Data Scientist | the merge request |
 | Before the promotion that first writes the table | the table and its tags are declared in `data-governance/data/` (`aws_glue_catalog_table`, `aws_lakeformation_resource_lf_tags`) from that source, and Staging's mirror takes the same definition (Stage 9 4.1) | the Governance Manager approves the classification; the infrastructure user applies as `awsds-infra-data`, inside `DL-5`'s bracket, and as `awsds-infra-staging` | the producer README, a row per tag assignment, in the same sitting; the grant register when a grant changes |
 | The promotion | the job writes the rows, and no grant changes | the pipeline, behind the Deployment Manager's gate | the pipeline run |
-| After the first write | the table is published in the SageMaker Catalog with its business metadata (Stage 6f step 7, decision due 1) | the owner project Stage 6f 3.1 names, with the Governance Manager among its members | the catalog |
+| After the first write | the table is published in the SageMaker Catalog with its business metadata (Stage 6f decision 1, shape (b); the pilot publishes `curated.trades`, step 11), and the table joins `data-governance/data/publishing.tf`'s list, which grants the publisher | the Governance Manager, owner of `governed-lake`; the infrastructure user applies the publisher's grant | the catalog; the producer README and the grant register |
 | Any later time | reclassification, a tag change in the register under the same approval. A table moved to `restricted` leaves the default share at the apply, with no grant edited | the Governance Manager approves; the infrastructure user applies | the producer README |
 
 Who may open a merge request on the schema source is not decided; Stage 9 decision 3 recommends keeping
@@ -771,8 +851,10 @@ What changes in the infrastructure, per new curated table:
   principals, one register row each.
 - **In Production, nothing** while Stage 9 2.1's write grant covers `curated`'s tables as a set; a grant
   naming tables would take a row per product.
-- **In the catalog, no infrastructure** for publishing and business metadata. Under Stage 6f decision
-  due 1 (d), an approved request for a lake table becomes a register change of the kinds above.
+- **In the catalog, one grant per published table** (§Grants, the catalog road): the publisher's, in
+  `data-governance/data/publishing.tf`. Every subscription after it is DataZone's grant, with no apply.
+  A table with `restricted` or `personal` data, on the table or on a column, is never published (Stage
+  6f decision 2, 2026-10-27): the slice's plan refuses it.
 
 The Governance Manager's place in the cycle is the taxonomy and the tags (this section), the approval
 of every tag and data grant in the register, and the approvals in the catalog (`docs/ORGANIZATION.md`

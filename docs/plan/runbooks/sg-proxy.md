@@ -29,19 +29,21 @@ export http_proxy=http://proxy.awsds.internal:3128 https_proxy=$http_proxy HTTP_
 
 ## Latest reading of `NO_PROXY`
 
-**70 entries**, sha256 `aafa08da98a61f5c`, the literal `default-v0.5.0` bakes (2026-10-10), and the
-value of `no_proxy_all_groups` in the authoring plan of `vpc-egress-v0.17.0` the same day: every
-optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`); the `mlflow` group of
-`vpc-egress-v0.18.0` (Stage 17, not applied) is not in it, and reaches a space with the image that
-carries the next literal (Stage 17 decision 4). `no_proxy` names only the groups its last apply
-enabled — 51 entries under `GROUPS=redshift` — so a copy of it drops a group's
-names, and the day that group is on its calls leave through the proxy as public calls. It was 28 until
+**73 entries**, sha256 `61f1e1646df12c14`, the value of `no_proxy_all_groups` in the plan of
+`vpc-egress-v0.19.0` (2026-10-26) and the literal version 11 of the house image bakes,
+`default-v0.10.0` (2026-10-26): every optional group's names (`bedrock-base`, `bedrock-agent`, `emr`, `redshift`, `mlflow`,
+`mwaa`). Version 10, `default-v0.9.1`, baked the 72 of 2026-10-18 (`6faf2e4761622508`), which lack
+`airflow-serverless.us-west-2.api.aws`; it was deleted with versions 7 to 9 on 2026-11-03, and Sandbox
+holds version 11 alone ([`dev-env.md`](dev-env.md) §B, *A hand cleanup*).
+`no_proxy` names only the groups its last apply enabled — 51 entries under `GROUPS=mwaa` (2026-10-26) —
+so a copy of it drops a group's names, and the day that group is on, its `.amazonaws.com` calls leave
+through the proxy as public calls and its `.api.aws` and `.app.aws` calls are refused. It was 28 until
 2026-09-09: the generator read the service's one canonical name and now reads every name the endpoint
 answers for. A copy with 28 entries lacks `datazone.us-west-2.api.aws` among twenty-three others, and
 DataZone is refused in the space.
 
 ```
-export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
+export NO_PROXY='.awsds-pages.internal,.awsds.internal,.dashboard.emr-serverless.us-west-2.amazonaws.com,.dkr-ecr.us-west-2.on.aws,.dkr.ecr.us-west-2.amazonaws.com,.elasticmapreduce-services.us-west-2.amazonaws.com,.emrappui-prod.us-west-2.amazonaws.com,.emrappui.us-west-2.on.aws,.livy.emr-serverless-services.us-west-2.amazonaws.com,.mlflow.sagemaker.us-west-2.app.aws,.s.emr-serverless-services.us-west-2.amazonaws.com,.studio.sagemaker.us-west-2.app.aws,.studio.us-west-2.sagemaker.aws,127.0.0.1,169.254.169.254,169.254.170.2,airflow-serverless.us-west-2.api.aws,api.ecr.us-west-2.amazonaws.com,api.sagemaker.us-west-2.amazonaws.com,api.sagemaker.us-west-2.api.aws,athena.us-west-2.amazonaws.com,athena.us-west-2.api.aws,bedrock-agent-runtime.us-west-2.amazonaws.com,bedrock-agent.us-west-2.amazonaws.com,bedrock-runtime.us-west-2.amazonaws.com,bedrock.us-west-2.amazonaws.com,dashboard.emr-serverless.us-west-2.amazonaws.com,datazone.us-west-2.amazonaws.com,datazone.us-west-2.api.aws,dkr-ecr.us-west-2.on.aws,dkr.ecr.us-west-2.amazonaws.com,dynamodb.dualstack.us-west-2.amazonaws.com,dynamodb.us-west-2.amazonaws.com,ec2.us-west-2.amazonaws.com,ec2.us-west-2.api.aws,ec2messages.us-west-2.amazonaws.com,ecr.us-west-2.api.aws,elasticmapreduce-services.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.amazonaws.com,elasticmapreduce.us-west-2.api.aws,emr-serverless.us-west-2.amazonaws.com,emrappui-prod.us-west-2.amazonaws.com,emrappui.us-west-2.on.aws,glue.us-west-2.amazonaws.com,glue.us-west-2.api.aws,kms.us-west-2.amazonaws.com,kms.us-west-2.api.aws,lakeformation.us-west-2.amazonaws.com,lakeformation.us-west-2.api.aws,livy.emr-serverless-services.us-west-2.amazonaws.com,localhost,logs.us-west-2.amazonaws.com,logs.us-west-2.api.aws,mlflow.sagemaker.us-west-2.app.aws,redshift-serverless.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.amazonaws.com,runtime.sagemaker.us-west-2.api.aws,s.emr-serverless-services.us-west-2.amazonaws.com,s3.dualstack.us-west-2.amazonaws.com,s3.us-west-2.amazonaws.com,s3tables.us-west-2.amazonaws.com,s3tables.us-west-2.api.aws,secretsmanager.us-west-2.amazonaws.com,ssm.us-west-2.amazonaws.com,ssm.us-west-2.api.aws,ssmmessages.us-west-2.amazonaws.com,ssmmessages.us-west-2.api.aws,streaming-logs.us-west-2.amazonaws.com,streaming-logs.us-west-2.api.aws,sts.us-west-2.amazonaws.com,sts.us-west-2.api.aws,studio.sagemaker.us-west-2.app.aws,studio.us-west-2.sagemaker.aws'
 
 export no_proxy="$NO_PROXY" http_proxy=http://proxy.awsds.internal:3128 https_proxy=http://proxy.awsds.internal:3128 HTTP_PROXY=http://proxy.awsds.internal:3128 HTTPS_PROXY=http://proxy.awsds.internal:3128
 ```
@@ -226,15 +228,16 @@ unset, connected and returned an HTTP `403`, never `getaddrinfo`. The client hon
 one fact and are read by different code.
 
 The `403` was Squid's, and it named the last missing piece: `open-vsx.org` serves the API and
-`openvsx.eclipsecontent.org` serves the `.vsix` bytes. Both are on the compute plane (committed
-2026-09-09; the second is unapplied until the parameter write). A single-name allow-list authorised
-the question and refused the answer.
+`openvsx.eclipsecontent.org` serves the `.vsix` bytes. Both are on the compute plane since
+2026-09-09, when Stage 6d step 8.5 read `openvsx.eclipsecontent.org` `200` ×3. A single-name allow-list
+authorised the question and refused the answer.
 
-The repair is two acts: the compute plane's second name, and the environment delivered to the
-`codeeditorserver` supervisord program — which can be attached only at the domain or user-profile
-level (`SpaceSettings` carries a smaller shape that has neither `LifecycleConfigArns` nor
-`CustomImages`), so it inherits Stage 6d step 2.4's reconciliation question. Until then, the by-hand
-`export` in a terminal is what works.
+The repair was two acts: the compute plane's second name, and the environment delivered to the
+`codeeditorserver` supervisord program. A lifecycle configuration attaches only at the domain or
+user-profile level (`SpaceSettings` carries a smaller shape that has neither `LifecycleConfigArns` nor
+`CustomImages`), so the environment arrived on the image instead: the house image's `ENV` reaches that
+program since `default-v0.2.0`, read against a stock-image negative control on 2026-09-11 (6d step 8.4).
+On AWS's stock image the by-hand `export` in a terminal is still what works.
 
 ### The DataZone refusal — a gap in `NO_PROXY`, not the proxy
 
@@ -256,11 +259,12 @@ is identical, and only one of the two repairs is correct.
 
 ## Installing an extension in a Code Editor space
 
-Use this whenever an extension is needed in a Code Editor space. The `Install` button in the
-Extensions view does not work, and will not until Stage 6d step 2 delivers the environment to the
-`codeeditorserver` supervisord program: the server the space starts has no proxy variables, and the
-gallery client honours `http_proxy`/`https_proxy` while ignoring the `http.proxy` setting. This
-procedure gives one invocation the environment the server lacks. It is per space and it dies with the
+Use this whenever an extension is needed in a Code Editor space on AWS's stock image. On the house
+image the gallery installs since `default-v0.2.0`, whose `ENV` reaches the `codeeditorserver`
+supervisord program (6d step 8.4, 2026-09-11). On the stock image the `Install` button in the
+Extensions view fails: the server the space starts has no proxy variables, and the gallery client
+honours `http_proxy`/`https_proxy` while ignoring the `http.proxy` setting. This procedure gives one
+invocation the environment the server lacks. It is per space and it dies with the
 space; a rebuilt or recreated space needs it again.
 
 ### 1. Install

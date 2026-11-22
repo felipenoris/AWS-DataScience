@@ -113,9 +113,9 @@ variable "root_volume_size" {
 }
 
 variable "data_volume_size" {
-  description = "The data volume mounted at /var/opt/gitlab, in GiB - repositories, the database, local Pages deployments; object storage is S3. 50 is the stage's figure (D8: ~USD 4/month at 0.08 USD/GiB-month while stopped, the largest idle item). A [D] volume is a standing cost EBS will not shrink, so the value is a commitment."
+  description = "The data volume mounted at /var/opt/gitlab, in GiB - repositories, the database, local Pages deployments; object storage is S3. 20 since Stage 12 step 5.3 (1.20 GiB written of 50 on 2026-11-09; 1.60 USD/month at 0.08 USD/GiB-month, billed stopped or running). EBS grows a volume in place and never shrinks one: a smaller value plans as an in-place change EBS does not make, and lands only through runbooks/gitlab.md section B's destroy, re-apply and restore."
   type        = number
-  default     = 50
+  default     = 20
 
   validation {
     condition     = var.data_volume_size >= 20 && var.data_volume_size <= 200

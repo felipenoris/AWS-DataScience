@@ -84,7 +84,7 @@ Every action below opens with one of three markers:
 |---|---|
 | **[Claude]** | repository edits and read-only AWS calls — done without asking |
 | **[Claude⚡]** | `terraform apply` or any AWS write — Claude runs it **only after the user authorizes that specific action in chat** (the `CLAUDE.md` standing rule), with the SSO user/account/permission set stated first |
-| **[user]** | console/CloudShell acts (Management and Audit hold no profile), everything on the laptop (keys, client config, the tunnel pairs), git commits, and every log entry |
+| **[user]** | console/CloudShell acts (Management and Audit hold no profile), everything on the laptop (keys, client config, the tunnel pairs), git commits, and the log entries the user writes |
 
 ## Step numbers are identifiers, not an order
 

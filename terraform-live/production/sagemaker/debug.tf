@@ -108,7 +108,7 @@ data "aws_iam_policy_document" "debug" {
       "logs:StartQuery",
     ]
     resources = flatten([
-      for group in aws_cloudwatch_log_group.job : [group.arn, "${group.arn}:*"]
+      for arn in local.job_log_group_arns : [arn, "${arn}:*"]
     ])
   }
 

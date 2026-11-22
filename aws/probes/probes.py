@@ -12,7 +12,7 @@
 #                  one document at a time and each phase is the measurement for the attach
 #                  that just happened. `rcp` in particular is run before widening the RCP
 #                  from Policy Test to the root - see docs/plan/runbooks/scp-battery.md.
-#     account      canary data identity dev sandbox1 prod
+#     account      canary data identity staging sandbox1 prod
 #     expect       deny   the ceiling must stop it
 #                  allow  it must still work - a cross-check, or the floor
 #     allowed_re   the wording that proves this action reached authorization. That is a
@@ -38,6 +38,10 @@
 #     @AMI@ @SUBNET@ @ACCT@ are substituted with real ids from the probed account.
 #
 # The --profile flag is added by the driver. Do not write one here.
+#
+# A probe's verdict is whether the call reached authorization, never what it answered, so one
+# page is the whole answer: several listing probes ask for a single item, and
+# ce get-cost-and-usage, which has no CLI paginator, is never followed past its first page.
 #
 # This file keeps a compact one-probe-per-block layout and is excluded from `ruff format`
 # (pyproject.toml): it is edited as a table, not as code.
@@ -254,6 +258,40 @@ probe("root", "canary", "deny", None, "blocked",
        "--usage-limit-id", "00000000-0000-0000-0000-000000000000",
        "--region", "us-west-2"])
 
+# --- DenyProvisionedMwaa (Stage 10 step 4.3). Measured in Production rather than the canary: the
+#     call names two subnets, and the canary has none. `blocked`: the execution role, the source
+#     bucket and the security group exist nowhere, so an authorized call fails validation and
+#     creates nothing. A validation that ran before authorization reads UNTESTED, never a pass.
+probe("root", "prod", "deny", None, "blocked",
+      "airflow:CreateEnvironment (no such role, bucket or security group)",
+      ["mwaa", "create-environment", "--name", "awsds-canary-probe",
+       "--execution-role-arn", "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent",
+       "--source-bucket-arn", "arn:aws:s3:::awsds-canary-probe-nonexistent",
+       "--dag-s3-path", "dags",
+       "--network-configuration",
+       '{"SubnetIds":["@SUBNET@","@SUBNET@"],"SecurityGroupIds":["sg-0123456789abcdef0"]}',
+       "--region", "us-west-2"])
+
+# --- DenyDeployRoleAssumptionOutsideTheRegion (Stage 8 decision 29). STS's refusal names no policy, so
+#     the driver reads the evaluation AWS recorded for it through the authorization id the refusal
+#     carries, and the row reads DENY-SCP with the statement's Sid. AWS issues the id on some refusals
+#     only: the user's global AssumeRole of awsds-deploy-prod at 06:09:53 UTC on 2026-10-30 carried one,
+#     whose evaluation named this statement, and the battery's same call at 06:25:03 carried none, so
+#     the row read DENY-NOT-SCP, a note. A regression never reads DENY-SCP: that reading is the
+#     measurement, and a note is none. The role exists and trusts the deploy runner alone; a role that
+#     exists nowhere hides the deny (2026-10-27: 21 global refusals of awsds-deploy-battery-probe in
+#     Policy Canary carried STS's plain text and no id, while the IAM simulator read explicitDeny).
+#     No allowed_re: the trust refuses this call with the same text whatever the ceiling does.
+#     `blocked`: with the deny lifted, the trust still refuses and no credentials are issued. The
+#     regional path has no row: its refusal carried no id on 2026-10-30, so it reads the same whether a
+#     statement denies it or not. sts-global-probe on the deploy runner, whose role the deploy roles
+#     trust, measures both paths for a caller the trust admits.
+probe("root", "prod", "deny", None, "blocked",
+      "sts:AssumeRole of awsds-deploy-prod, global endpoint (the trust names the runner alone)",
+      ["sts", "assume-role", "--role-arn", "arn:aws:iam::@ACCT@:role/awsds-deploy-prod",
+       "--role-session-name", "scp-battery", "--endpoint-url", "https://sts.amazonaws.com",
+       "--region", "us-east-1"])
+
 # --- the floor, on the canary
 probe("root", "canary", "allow", None, "ro", "floor: sts:GetCallerIdentity",
       ["sts", "get-caller-identity"])
@@ -275,9 +313,25 @@ probe("root", "canary", "allow", None, "ro", "floor: iam:ListRoles (global, us-e
 # what makes it safe to re-run at any time.
 # ==========================================================================
 
-# --- Workloads: no interactive surface, no DataZone at all
-probe("ou", "prod", "deny", None, "ro", "workloads: datazone:ListDomains",
+# --- Workloads: no interactive surface, and DataZone for three principals alone (Stage 19 step
+#     4.1, decision 13 (b)): DenyDataZoneEntirely excepts the SSO InfrastructureAccess role, the
+#     deploy roles and the project roles, so the infrastructure user's read answers here. The deny
+#     half has no principal in this account that the battery can produce (Lesson 22): it was read
+#     once as the canary, under the candidate parked on Policy Test (2026-11-11, the stage log).
+#     DenyDataZoneSubscriptionRequests binds the excepted three too, so the infrastructure user
+#     measures it: `blocked`, since the domain, the listing and the project named do not exist, and
+#     DataZone's own refusal, which names no policy, is the wording that proves authorization was
+#     reached (the canary's answer with nothing parked, 2026-11-11).
+probe("ou", "prod", "allow", None, "ro",
+      "workloads: datazone:ListDomains answers the infrastructure user (Stage 19 4.1)",
       ["datazone", "list-domains", "--region", "us-west-2"])
+probe("ou", "prod", "deny", "User is not permitted to perform operation", "blocked",
+      "workloads: datazone:CreateSubscriptionRequest (DenyDataZoneSubscriptionRequests)",
+      ["datazone", "create-subscription-request", "--domain-identifier", "dzd_canaryprobe0000",
+       "--request-reason", "scp battery probe",
+       "--subscribed-listings", "identifier=canaryprobe0000",
+       "--subscribed-principals", "project={identifier=canaryprobe0000}",
+       "--region", "us-west-2"])
 probe("ou", "prod", "deny", "ValidationException|ResourceNotFound|does not exist", "blocked",
       "workloads: sagemaker:CreateSpace (no such domain)",
       ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
@@ -295,16 +349,30 @@ probe("ou", "prod", "deny", "ValidationException|does not exist", "blocked",
 # acquired it - a membership question rather than a policy one, kept permanently because this
 # account will hold deploy credentials. `datazone:ListDomains` is the decisive row: it is `ro`,
 # it costs nothing, and DataZone is the surface Stage 6b pass 1 removed from the account by hand.
-probe("ou", "staging", "deny", None, "ro",
-      "workloads: datazone:ListDomains in the account Stage 6b moved",
+probe("ou", "staging", "allow", None, "ro",
+      "workloads: datazone:ListDomains answers the infrastructure user in the account Stage 6b moved",
       ["datazone", "list-domains", "--region", "us-west-2"])
+probe("ou", "staging", "deny", "User is not permitted to perform operation", "blocked",
+      "workloads: datazone:CreateSubscriptionRequest in the account Stage 6b moved",
+      ["datazone", "create-subscription-request", "--domain-identifier", "dzd_canaryprobe0000",
+       "--request-reason", "scp battery probe",
+       "--subscribed-listings", "identifier=canaryprobe0000",
+       "--subscribed-principals", "project={identifier=canaryprobe0000}",
+       "--region", "us-west-2"])
+probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not exist", "blocked",
+      "workloads: sagemaker:CreateSpace in the account Stage 6b moved (no such domain)",
+      ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
+       "--space-name", "awsds-canary-probe", "--region", "us-west-2"])
 
 # --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
 #     statement and keeps the other four, so a refusal names the statement it was written for
-#     (AWS names the policy, never the Sid - Lesson 20); the two allow rows are the same calls
-#     with nothing broken, which is what proves the document leaves a compliant job and an
-#     instance-backed endpoint configuration alone. The compliant job is also the reading of
+#     (AWS names the policy, never the Sid - Lesson 20); the allow rows are the same calls with
+#     nothing broken, which is what proves the document leaves a compliant job and an
+#     instance-backed endpoint configuration alone. The processing job without isolation is an
+#     allow row: DenySageMakerJobsWithoutNetworkIsolation leaves CreateProcessingJob out (Stage 20
+#     decision 13), and the training job without isolation below is the row that exercises the
+#     statement. The compliant job is also the reading of
 #     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
 #     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
 #     row into a deny.
@@ -312,18 +380,34 @@ probe("ou", "staging", "deny", None, "ro",
 #     `blocked`: the role, the image, the security group, the key and the model named exist
 #     nowhere, so an authorized call fails validation and creates nothing. The subnet is real,
 #     so a VPC check that runs before authorization cannot be mistaken for the deny.
+#
+#     A processing-job row also reads `ResourceLimitExceeded` as authorized: the service checks
+#     the instance quota after authorization and before the role. Production's processing quotas
+#     for both types read 0 on 2026-10-17 (CloudTrail, the six replies), and 8 for ml.m5.large and
+#     4 for ml.m5.2xlarge since 2026-10-24 (the Stage 9 log).
+_JOB_AUTHORIZED = "ValidationException|ResourceLimitExceeded"
 _JOB_ROLE = "arn:aws:iam::@ACCT@:role/awsds-canary-nonexistent"
 # The registry host is joined to the placeholder rather than written beside it, which
 # ./scripts/check-identifiers.py would read as an e-mail address.
 _JOB_REGISTRY = "@ACCT@" + ".dkr.ecr.us-west-2.amazonaws.com"
 _JOB_IMAGE = '{"ImageUri":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest"}'
 _JOB_KEY = "arn:aws:kms:us-west-2:@ACCT@:key/00000000-0000-0000-0000-000000000000"
-_JOB_VPC = '"VpcConfig":{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+_JOB_VPC_CONFIG = '{"SecurityGroupIds":["sg-0123456789abcdef0"],"Subnets":["@SUBNET@"]}'
+_JOB_VPC = '"VpcConfig":' + _JOB_VPC_CONFIG
 
 
-def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
+def _instances(instances):
+    """A job cluster's instance field: a string is InstanceType, a list is InstancePreferences,
+    which excludes InstanceType and leaves the one InstanceCount on the cluster."""
+    if isinstance(instances, str):
+        return '"InstanceType":"' + instances + '"'
+    return ('"InstancePreferences":['
+            + ",".join('{"InstanceType":"' + t + '"}' for t in instances) + "]")
+
+
+def _processing_job(instances, volume_key, isolation, encryption, vpc):
     """create-processing-job argv with each of the five settings chosen by the caller."""
-    cluster = '{"InstanceCount":1,"InstanceType":"' + instance_type + '","VolumeSizeInGB":1'
+    cluster = '{"InstanceCount":1,' + _instances(instances) + ',"VolumeSizeInGB":1'
     cluster += (',"VolumeKmsKeyId":"' + _JOB_KEY + '"}') if volume_key else "}"
     network = ('{"EnableInterContainerTrafficEncryption":' + encryption
                + ',"EnableNetworkIsolation":' + isolation + ((',' + _JOB_VPC) if vpc else "") + "}")
@@ -333,24 +417,89 @@ def _processing_job(instance_type, volume_key, isolation, encryption, vpc):
             "--network-config", network, "--region", "us-west-2"]
 
 
-probe("ou", "prod", "allow", "ValidationException", "blocked",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
       "workloads: compliant sagemaker:CreateProcessingJob still authorized (3.5 contrast)",
       _processing_job("ml.m5.large", True, "true", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob with no VpcConfig (DenySageMakerJobsOffVpc)",
       _processing_job("ml.m5.large", True, "true", "true", False))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling)",
       _processing_job("ml.m5.2xlarge", True, "true", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
-      "workloads: CreateProcessingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob not isolated still authorized (Stage 20 decision 13 contrast)",
       _processing_job("ml.m5.large", True, "false", "true", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob unencrypted between containers (DenySageMakerJobsWithoutInterContainerEncryption)",
       _processing_job("ml.m5.large", True, "true", "false", True))
-probe("ou", "prod", "deny", "ValidationException", "blocked",
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateProcessingJob, no VolumeKmsKeyId (DenySageMakerJobsWithoutVolumeEncryption)",
       _processing_job("ml.m5.large", False, "true", "true", True))
+
+# --- The ceiling against an instance preference list (Stage 9 step 3.5). A job may name up to five
+#     types in InstancePreferences instead of InstanceType: ProcessingResources.ClusterConfig for a
+#     processing job, ResourceConfig for a training job. DenySageMakerInstanceCeiling is
+#     ForAnyValue:StringNotEquals on sagemaker:InstanceTypes, which leaves a request alone when the
+#     key is absent, so the deny rows ask whether SageMaker fills the key from the list: one
+#     off-ceiling type, and an off-ceiling type after an admitted one, which a key filled from the
+#     first entry alone lets through. The allow rows send the same list on an admitted type, so a
+#     deny is attributed to the type, never to the list's form. Each question is asked of both
+#     actions (Lesson 21). Every row carries the other four settings.
+#
+#     Every row is `blocked` for the processing rows' reason. SageMaker checks the quota of every
+#     listed type, so an authorized processing row read ResourceLimitExceeded while Production's
+#     processing quotas were 0, and the quota check follows authorization (the ceiling row above,
+#     2026-10-18). Production's training quotas for the three ml.m5 types read 0 (2026-10-20) and
+#     20 each since 2026-10-24, and that order for CreateTrainingJob is unread, so the training
+#     rows carry the processing ceiling row's twin, ml.m5.2xlarge as InstanceType: its deny places
+#     authorization before the role and quota checks of this action, so a list row answering the
+#     contrast row's role or quota refusal is a hole. A refusal that names the list itself may
+#     precede authorization, and leaves the row untested.
+
+
+def _training_job(instances, isolation=True):
+    """create-training-job argv with the VPC, the encryption between containers and the volume key
+    met, and EnableNetworkIsolation sent as the caller chooses."""
+    resources = ('{"InstanceCount":1,' + _instances(instances)
+                 + ',"VolumeSizeInGB":1,"VolumeKmsKeyId":"' + _JOB_KEY + '"}')
+    return ["sagemaker", "create-training-job", "--training-job-name", "awsds-canary-probe",
+            "--role-arn", _JOB_ROLE,
+            "--algorithm-specification",
+            '{"TrainingImage":"' + _JOB_REGISTRY + '/awsds-canary-probe:latest",'
+            '"TrainingInputMode":"File"}',
+            "--output-data-config", '{"S3OutputPath":"s3://awsds-canary-does-not-exist/out"}',
+            "--resource-config", resources,
+            "--stopping-condition", '{"MaxRuntimeInSeconds":3600}',
+            "--vpc-config", _JOB_VPC_CONFIG,
+            "--enable-network-isolation" if isolation else "--no-enable-network-isolation",
+            "--enable-inter-container-traffic-encryption",
+            "--region", "us-west-2"]
+
+
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.large still authorized (3.5 preference-list contrast)",
+      _processing_job(["ml.m5.large"], True, "true", "true", True))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.2xlarge (DenySageMakerInstanceCeiling, preference list)",
+      _processing_job(["ml.m5.2xlarge"], True, "true", "true", True))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateProcessingJob listing ml.m5.large, then ml.m5.2xlarge (DenySageMakerInstanceCeiling, every entry)",
+      _processing_job(["ml.m5.large", "ml.m5.2xlarge"], True, "true", "true", True))
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: compliant sagemaker:CreateTrainingJob listing ml.m5.large still authorized (3.5 contrast)",
+      _training_job(["ml.m5.large"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+      _training_job(["ml.m5.large"], isolation=False))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling, the training control)",
+      _training_job("ml.m5.2xlarge"))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob listing ml.m5.2xlarge (DenySageMakerInstanceCeiling, preference list)",
+      _training_job(["ml.m5.2xlarge"]))
+probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob listing ml.m5.large, then ml.m5.2xlarge (DenySageMakerInstanceCeiling, every entry)",
+      _training_job(["ml.m5.large", "ml.m5.2xlarge"]))
 
 probe("ou", "prod", "deny", "ValidationException", "blocked",
       "workloads: serverless CreateEndpointConfig (DenySageMakerServerlessInference, 3.7)",
@@ -474,15 +623,40 @@ probe("ou", "canary", "allow", "InvalidRequestException|WorkGroup is not found",
 #     Claude Code session calls.
 #
 #     The model statement, in us-west-2, where the Region statement cannot fire. The deny row's
-#     sample is amazon.nova-lite-v1:0, which the account may invoke with no agreement
+#     sample is Amazon Nova Lite, which the account may invoke with no agreement
 #     (claude-code-sagemaker.md, M4): it answered as InfrastructureAccess on 2026-09-12 and was
 #     refused an hour later, after the attach, naming the Interactive document. A sample from
-#     outside Anthropic keeps the row true whatever the scoped set becomes.
+#     outside Anthropic keeps the row true whatever the scoped set becomes. Since Stage 17 decision
+#     23 (a) the statement admits the model's us-west-2 foundation-model ARN, so the row invokes it
+#     through the US system profile, us.amazon.nova-lite-v1:0 (SYSTEM_DEFINED, ACTIVE, routing to
+#     us-east-1, us-west-2 and us-east-2, read 2026-11-19), refused on the profile's own pass.
 _NOVA_BODY = ('{"messages":[{"role":"user","content":[{"text":"ping"}]}],'
               '"inferenceConfig":{"max_new_tokens":1}}')
 probe("ou", "sandbox1", "deny", "ValidationException", "ro",
       "interactive (inherited): bedrock:InvokeModel outside the scoped set (decision 15)",
+      _invoke("us.amazon.nova-lite-v1:0", _NOVA_BODY))
+
+# --- Stage 17 decision 23 (a) - Amazon Nova Lite admitted on its us-west-2 foundation-model ARN, the
+#     model of app-genai. The row invokes the model on demand in us-west-2, the deny row above the
+#     same model through the system profile, so the pair differs by the ARN the statement reads.
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:InvokeModel on amazon.nova-lite-v1:0 in us-west-2 (Stage 17 decision 23)",
       _invoke("amazon.nova-lite-v1:0", _NOVA_BODY))
+
+# --- Stage 17 decision 11 - the statement's two entries beside the scope. Titan Text Embeddings V2,
+#     the knowledge base's embeddings model, is admitted by its foundation-model ARN: the row invokes
+#     it with Titan's body, an embedding of one word.
+#
+#     The application inference profiles, admitted as a family, have no row. A profile id that does
+#     not exist is refused before authorization, "The provided model identifier is invalid"
+#     (ValidationException, measured 2026-10-19 with the entry absent), so a fake id reads the same
+#     on both sides of the amendment (Lesson 21), and a real one is an id the service mints. The
+#     profile's pass, and the model checked behind it, are measured through the portal by Stage 17
+#     7.3's playground chat.
+_TITAN_BODY = '{"inputText":"ping"}'
+probe("ou", "sandbox1", "allow", None, "ro",
+      "interactive (inherited): bedrock:InvokeModel on amazon.titan-embed-text-v2:0 (Stage 17 decision 11)",
+      _invoke("amazon.titan-embed-text-v2:0", _TITAN_BODY))
 
 # The allow rows invoke each profile the house image pins, read from its managed settings, so they
 # follow the scoped set when the image moves. The statement's NotResource is the list under test:
@@ -671,11 +845,11 @@ probe("region", "canary", "allow", None, "dryrun",
 # works; these prove it was enabled where it was meant to be - a different claim, and the one
 # an enable-per-OU design can get wrong five times.
 #
-# `sandbox1` is not a repetition of `dev`: it is verification (xi)'s second half. The SCP an
-# enabled control attaches is *inherited* by a nested OU whether or not that OU is itself a
-# registered target, so a deny in Sandbox Account 1 says the accounts are covered and says
-# nothing about which OU covers them. What distinguishes the two readings is whether the
-# enablement on `Sandboxes` was *accepted*, and that is read from the OU's attached policies.
+# `sandbox1` is verification (xi)'s second half. The SCP an enabled control attaches is
+# *inherited* by a nested OU whether or not that OU is itself a registered target, so a deny in
+# Sandbox Account 1 says the accounts are covered and says nothing about which OU covers them.
+# What distinguishes the two readings is whether the enablement on `Sandboxes` was *accepted*,
+# and that is read from the OU's attached policies.
 probe("region", "data", "deny", None, "dryrun", "region: us-east-1 denied in Data Governance",
       ["ec2", "create-key-pair", "--key-name", "awsds-canary-probe", "--dry-run",
        "--region", "us-east-1"])
