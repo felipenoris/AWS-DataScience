@@ -2343,3 +2343,65 @@ infrastructure user, and authorized the two `ssm:SendCommand`s in chat ("autoriz
   indexes and `CLAUDE.md`. `make check` OK; `check-plan-refs` unchanged. **What the sitting leaves running**:
   the two hub hosts, `sandbox/egress` and `sandbox/probes` — `make down ENV=sandbox`, then `make hub-down`,
   are the user's.
+
+## 2026-11-22 — the hub hosts' user data held to EC2's 16,384 bytes at plan, and `wireguard-v0.9.0`
+
+*Claude, in the session "Hub hosts: a plan-time guard for EC2's 16 KB user data", started by the Stage 11
+`TM-01` session for the user's request of 2026-11-22, on branch `claude/hub-userdata-16kb-767c16`. AWS
+calls: EC2 reads and plans in Production as the infrastructure user (`awsds-infra-prod`,
+`InfrastructureAccess`), no write. The padded plans used a temporary `*_override.tf`, deleted after each.
+The infrastructure user's SSO token expired at 01:30:42, and a new sign-in renewed it before 01:37. Times
+are UTC.*
+
+- **[Claude] The deployed user data**, decoded from `describe-instance-attribute --attribute userData` and
+  counted with `wc -c`, all of it ASCII:
+  - at 01:13:09, the proxy `i-071bcc561f75b51d7` carried 15,148 bytes and the VPN host
+    `i-03ae94285145bff76` 13,435;
+  - at 01:26:13, the VPN host was `i-0e3ae32bacd61c9b2`, a `t3.nano` launched 01:15:54 by #356's apply
+    (Stage 12's log), carrying 14,456.
+- **[Claude] The brief's premise, measured false.** It said an over-limit user data would pass `terraform
+  plan`. `hashicorp/aws` 6.60.0 refuses one at plan (`SUP-407`):
+  - offline, every endpoint on a closed local port: 16,385 bytes from a variable known only at plan
+    failed with `expected length of user_data to be in the range (0 - 16384)` and 16,384 planned; a
+    literal of 8,193 characters and 16,385 bytes failed `validate`;
+  - `production/proxy/` without the guard, padded to 16,385 bytes, failed the same way and printed the
+    whole script: 303 lines, 17,975 bytes of output;
+  - #356 met the refusal with `wireguard-v0.8.0` at about 16,432 bytes (Stage 12's log, 2026-11-22).
+- **[Claude] The guard**, the same in `production/proxy/main.tf` and in the module (`wireguard-v0.9.0`,
+  `d2b23482`, read on origin by `git ls-remote`): a local
+  `user_data_bytes = length(base64encode(local.user_data)) / 4 * 3 - length(regexall("=", base64encode(local.user_data)))`
+  and a `precondition` on `aws_instance.this`, `local.user_data_bytes <= 16384`. The module also outputs
+  `user_data_bytes`. Beside the provider's check, the precondition is evaluated first, names the size in
+  one line, and holds the bound in this repository rather than in a schema the provider's page does not
+  state. No `.tftpl` changed, so the guard replaces no host (Lesson 64).
+- **[Claude] Positive control.** In `terraform console`, the expression over the deployed bytes read
+  15,148 and 13,435, the `wc -c` counts. In the slices, `local.user_data_bytes` read 15,685, the byte count
+  of `production/proxy/`'s planned `user_data` in the plan's JSON; `module.wireguard.user_data_bytes` read
+  14,456, and the planned `user_data` was byte for byte that of `i-0e3ae32bacd61c9b2`.
+- **[Claude] Negative control.** In `terraform console`: 16,385 ASCII bytes read 16,385 and fail; 8,193
+  characters of 16,385 bytes read 16,385 and fail, where `length()` reads 8,193; 16,384 passes; `""`, `a`,
+  `ab`, `abc`, `é` and `😀` read 0, 1, 2, 3, 2 and 4. In the slices, padded at the boundary:
+  - `production/proxy/` at 16,384 bytes planned `1 to add, 2 to change, 1 to destroy`, and at 16,385
+    stopped on `Resource precondition failed`, `local.user_data_bytes is 16385`, with no provider error;
+  - `production/vpn/`, the module on its local path, at 16,384 planned `2 to add, 3 to change, 2 to
+    destroy`, and at 16,385 stopped the same way.
+- **[Claude] The plans, read-only.**
+  - `production/proxy/` at 01:23:22 with the guard: `Plan: 1 to add, 2 to change, 1 to destroy.`, line
+    for line the plan of `main` without it. The instance is `delete,create` on `user_data` alone, whose
+    difference from the running host is #356's step (0), ten lines, not applied.
+  - `production/vpn/` with the module on its local path at 01:26:42, and on `wireguard-v0.9.0` at
+    01:38:05: `No changes.`
+- **[Claude] The margins under 16,384**: the proxy 699 bytes on `main` (15,685) and 1,236 on the running
+  host (15,148); the VPN 1,928 (14,456). A roster entry costs the VPN's user data about 160 bytes (159 for
+  `mbp`, 163 for `raspi`), so about eleven more devices fit before the plan refuses the roster.
+- **[Claude] The other user data in the tree**, no guard added:
+  - `production/tooling/`'s GitLab host, stopped, launched 2026-11-15: 10,978 bytes deployed, and the same
+    rendered from the tree in `terraform console`, 5,406 under;
+  - `production/runners/`'s three `[E]` hosts, down. Their `no_proxy` is `production/egress/`'s output,
+    unknown while egress is down, so the plan was taken with egress's `no_proxy_all_groups` in its place,
+    1,843 characters and 56 entries, the list with every optional endpoint group on. Build 9,216, deploy
+    11,543 and test 9,205 bytes, at least 4,841 under;
+  - `production/probes/` and `sandbox/probes/`: heredocs of 626, 1,516 and 3,556 bytes before
+    interpolation.
+- **[Claude] Records**: `SUP-407`; `REFERENCES.md`'s provider page; `runbooks/vpn.md` §S1's roster row;
+  the stage file's `Status` row.
