@@ -2477,8 +2477,8 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 - **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
   up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
 - **[user] With nothing up:**
-  - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #363 merged before day 1,
-    which also gives 5.2b's network door (N.12.4).
+  - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #363, merged 2026-11-22 at
+    03:24 UTC, which also gives 5.2b's network door (N.12.4).
   - Sandbox's free-trial balance, before the sitting, after each day and the next day.
 - **[user] The identities**: `eighth-experimentation`'s contributor in a browser profile of its own (6h
   0.4); the Data Scientist User signed in (6h 5.4).
@@ -2697,7 +2697,7 @@ bound it stay N.6's.
 | 2026-11-22, after 01:59:59 UTC | R1 (N.11.1), N.6 item 6 inside it | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation; N.9's day 1, for `app-dbt`'s release |
 | 2026-11-23 | N.9's day 2, 6d's remainder at its end | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-24 | N.9's day 3, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | `app-ml-dev`'s MLflow App |
-| 2026-11-25 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | R1's subscriptions and Stage 20 5.1's tar; day 2's registered version; 6h decision 8 (a)'s merge (N.12.4) |
+| 2026-11-25 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | R1's subscriptions and Stage 20 5.1's tar; day 2's registered version; 6h decision 8 (a)'s merge, done 2026-11-22 (N.12.4) |
 | 2026-11-26 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-27 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; #321 merged in R1 |
 
@@ -2818,7 +2818,7 @@ The waiting list holds each as a row. In the calendar's order:
   `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Which portal act counts as that first use, the
   playground's or a notebook's, is read on the day.
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
-- **Before N.10's day 1**: N.10.1's acts, and 6h decision 8 (a)'s merge. `sandbox/warehouse/`'s security group
+- **Before N.10's day 1**: N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
