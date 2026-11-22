@@ -815,3 +815,41 @@ Governance Account` (`awsds-infra-data`); the portal's acts in the Data Scientis
   finding. Planned from this branch at 23:02 with both switches named (`all_projects_tag_enabled=true`,
   `data_transfer_role_enabled=false`): *"Plan: 0 to add, 2 to change, 0 to destroy."*, the portal policies of
   `avhvbqn37ty7m8` and `4gqfau9xuo6e4w`, saved. Not applied: the user's word first.
+
+## 2026-11-22 — §N.10's day 2: the access role's statement applied, 2.2's run read
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat:
+*"Autorizo o apply do warehouse"* (about 23:08). As the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`); the portal's act in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner. N.9's day 3 and the session preparing the SSO infrastructure told first;
+N.9 answered that its 6d 7.5 window was not open. Times UTC.*
+
+- **[Claude] `sandbox/warehouse/` applied** from this branch, the plan saved at 23:02, 23:09:33 to 23:09:46:
+  *"Apply complete! Resources: 0 added, 2 changed, 0 destroyed."*, the portal policies
+  `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8` and `-4gqfau9xuo6e4w`. Re-planned at 23:10:07 with
+  both switches named: *"No changes."*.
+- **[Claude] 2.2's run**, *Run* on `brnatob4h2kwb4` in the portal: run `501gj8x6pmqck0`, created 23:10:43,
+  started 23:10:44.29, stopped 23:10:53.68, `SUCCESS`, added 3, updated 0, unchanged 0, failed 0; the
+  failed run `be2j095629d6kw` stays in the list. The include rule `trades_hot*` took the view with the
+  tables:
+
+  | Asset | Id | Type, revision | Forms |
+  |---|---|---|---|
+  | `trades_hot` | `cgpzdjxcumuzrk` | `amazon.datazone.RedshiftTableAssetType` 18 | `RedshiftTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm`, `AssetCommonDetailsForm` |
+  | `trades_hot_daily` | `57py2yrv0o93ww` | `amazon.datazone.RedshiftTableAssetType` 18 | the same |
+  | `trades_hot_by_desk` | `4o4k5h7uxxsj68` | `amazon.datazone.RedshiftViewAssetType` 19 | `RedshiftViewForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm`, `AssetCommonDetailsForm` |
+
+  Each asset stands at revision 2, unlisted, owned by `avhvbqn37ty7m8`. `AssetCommonDetailsForm`'s
+  `sourceIdentifier` is `arn:aws:redshift-serverless:us-west-2:<account>:table/awsds-sandbox-warehouse/sandbox/lab/<name>`
+  for a table and `…:view/awsds-sandbox-warehouse/sandbox/lab/trades_hot_by_desk` for the view; the
+  `externalIdentifier` reads `avhvbqn37ty7m8:redshift:serverless:awsds-sandbox-warehouse:<account>:us-west-2:sandbox:lab:<TABLE|VIEW>:<name>`.
+  `get-asset` answers `awsds-infra-sandbox-1`, a contributor of the project, and refuses `awsds-infra-data`
+  with *"User is not permitted to perform operation: GetAsset"*, as Stage 19's log read on 2026-11-14.
+- **[Claude] The run in Sandbox's trail**: as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c`,
+  `ExecuteStatement` at 23:10:45 and 23:10:46, each `statementName` `Console Query: <uuid>`, database
+  `sandbox`; `DescribeStatement` and `GetStatementResult` on each; no `ListTables`, `DescribeTable` or
+  `ListStatements`. `sys_query_history` between 23:10:40 and 23:11:00 holds one statement, query 15519947 at
+  23:10:47 by user 103, `success`: a catalog query over `pg_catalog.svv_all_columns`,
+  `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, filtered to schema `lab` and the names
+  `trades_hot`, `trades_hot_daily` and `trades_hot_by_desk`. The first statement is not in it. `SUP-460`
+  gains the reading, and the two statements' comments in `iam.tf` say what the run calls.

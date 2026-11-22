@@ -4045,9 +4045,13 @@ entry is still true is the reading.
   `ListDatabases` and `ListSchemas` (`schemaPattern` `lab`), and the source stood `READY`. Its first run then
   called `redshift-data:ExecuteStatement` in a second session of the same name, three attempts in 3 s,
   `requestParameters` `{}`, each refused, and no `ListTables` or `DescribeTable` followed. The run failed
-  with `VALIDATION_EXCEPTION` and IAM's wording, nothing imported. A run's first call is SQL through the Data
-  API, run as the access role's database user; whether it calls the metadata actions after that is
-  unmeasured. Where:
+  with `VALIDATION_EXCEPTION` and IAM's wording, nothing imported. With `ExecuteStatement` granted on the
+  workgroups and `DescribeStatement` and `GetStatementResult` on the session's own statements (23:09Z), the
+  next run at 23:10:44Z added 3 assets in 9.4 s: two `ExecuteStatement` named `Console Query: <uuid>`,
+  each polled with `DescribeStatement` and read with `GetStatementResult`, and no `ListTables` or
+  `DescribeTable`. The second statement, run as the access role's database user, is a catalog query over
+  `svv_all_columns`, `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, limited to the schema and
+  the names the include rule matched; the first is absent from `sys_query_history`. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 ## SageMaker AI spaces and images

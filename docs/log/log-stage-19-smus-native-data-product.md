@@ -4994,3 +4994,13 @@ the same day (2.2). Times UTC.*
   run at 22:59:30 was refused on `redshift-data:ExecuteStatement` for the access role, nothing imported, so the
   asset 5.3 publishes does not exist yet; the statement is written in `sandbox/warehouse/iam.tf` and waits for
   the user's word.
+
+## 2026-11-22 — Step 6's run on §N.10's day 2
+
+*Claude, in the session of `promotion.md` §N.10's day 2, recording a step whose full reading is Stage 21's log of
+the same day. Times UTC.*
+
+- **[Claude] Step 6's run** at 23:10:44, after the access role's `ExecuteStatement` was applied at 23:09 on the
+  user's word: `SUCCESS`, 3 assets added, `lab.trades_hot` as `cgpzdjxcumuzrk`,
+  `amazon.datazone.RedshiftTableAssetType` revision 18, unlisted. *Publish* waits for the user's word with
+  Stage 21's 2.3.

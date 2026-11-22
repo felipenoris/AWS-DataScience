@@ -455,11 +455,12 @@ data "aws_iam_policy_document" "project_access_portal" {
 
   # A Redshift data source on the project's connection (Stage 19 step 6, Stage 21 2.2). DataZone
   # validates it at creation as this role, in a session the project role opens, and calls
-  # `redshift-data:ListDatabases` first; the source's run then calls `redshift-data:ExecuteStatement`
-  # in the same session (SUP-460). The metadata reads and `ExecuteStatement` take the workgroup as
-  # their resource (the Service Authorization Reference), so the scope is the layer-2 pattern above.
-  # The statement runs as this role's database user, the per-project user, and reaches what its
-  # `GRANT`s reach, through the Data API from wherever the role's credentials work.
+  # `redshift-data:ListDatabases` first; each run of the source calls `redshift-data:ExecuteStatement`
+  # for its catalog queries, in a session of the same name (SUP-460). The metadata reads and
+  # `ExecuteStatement` take the workgroup as their resource (the Service Authorization Reference), so
+  # the scope is the layer-2 pattern above. The statement runs as this role's database user, the
+  # per-project user, and reaches what its `GRANT`s reach, through the Data API from wherever the
+  # role's credentials work.
   statement {
     sid    = "ImportTheWarehousesMetadataForADataSource"
     effect = "Allow"
@@ -475,9 +476,11 @@ data "aws_iam_policy_document" "project_access_portal" {
     ]
   }
 
-  # The reads of a statement the source's run started. These actions take no resource, so the scope
-  # is the session: AWS's `RSDataIAMSession` (SageMakerStudioProjectUserRolePolicy v77) limits them to
-  # the statements the calling session owns.
+  # A run polls the statements it started with `DescribeStatement` and reads them with
+  # `GetStatementResult` (SUP-460); `CancelStatement` and `ListStatements` complete AWS's set. These
+  # actions take no resource, so the scope is the session: AWS's `RSDataIAMSession`
+  # (SageMakerStudioProjectUserRolePolicy v77) limits the same four to the statements the calling
+  # session owns.
   statement {
     sid    = "ReadTheDataSourcesOwnStatements"
     effect = "Allow"
