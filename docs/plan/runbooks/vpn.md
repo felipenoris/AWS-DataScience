@@ -242,6 +242,15 @@ both directions, the disk only grows. The pre-flight reads are common to both; t
 asymmetries have their own subsection, and the switch procedure is written for the type, with the disk's
 differences called out where they land.
 
+**The nano builds again from `wireguard-v0.8.1`.** On v0.7.0 a `t3.nano`'s first boot stopped at step
+(1): the AL2023 repository's metadata, 91 MB on 2026-11-21, takes a cold `dnf` to about 620 MiB, the
+nano holds 415 MiB of RAM and as much zram, and the OOM killer took the install. The host was rebuilt
+on `t3.medium`, which the tracked file still selects. v0.8.1's step (0) writes a 1 GiB swap file and
+masks update-motd, whose `dnf check-update` runs at every boot, before the first `dnf`, so the first
+boot fits every admitted size. The first apply on v0.8.1 replaces the host, because the user data
+changed; the size it builds is still the tracked file's selection, and after that a size switch is
+the stop and start below, with the swap file already on the disk.
+
 **The AMI decides the family; the parameter decides only the size within it.** The `wireguard` module
 pins the Amazon Linux 2023 x86_64 image by SSM parameter —
 `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64` — and an AMI is specific to its

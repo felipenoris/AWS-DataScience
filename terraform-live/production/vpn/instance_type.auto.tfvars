@@ -38,6 +38,8 @@
 # t3.medium since 2026-11-21, for the rebuild: a t3.nano's first-boot `dnf install` was OOM-killed
 # on the AL2023 repository's 91 MB of metadata, so the host came up without WireGuard (Stage 12's
 # log). A switch alone keeps the disk and never re-runs the user data, so that apply was a -replace.
+# From wireguard-v0.8.1 the nano builds again (its step (0): a swap file, update-motd masked), so
+# going back is a choice made here, not a repair (vpn.md S6).
 #instance_type = "t3.nano"
 instance_type    = "t3.medium"
 root_volume_size = 8
