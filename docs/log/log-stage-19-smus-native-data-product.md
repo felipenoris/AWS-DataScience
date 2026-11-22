@@ -4489,3 +4489,8 @@ acts are named. Times are UTC.*
   owns answering none; `app_etl`'s newest run `wITFYNHoLyyEsev`, of 2026-11-16 03:19:11. Inside one page
   `list-workflow-runs` orders runs by no time (`SUP-436`), and it carried `RunType` on every run in
   Sandbox, Staging and Production (`SUP-251`, read again).
+- **[user] Step 3's backup by hand**, `sudo gitlab-backup create STRATEGY=copy` in a Session Manager
+  shell on the host. **[Claude] read** at 03:00 in `awsds-prod-gitlab-backup`:
+  `1795315677_2026_11_22_19.4.2_gitlab_backup.tar`, 15,708,160 bytes, uploaded at 02:48:08, `aws:kms`,
+  expiring 2026-12-23 by the rule `expire-current-versions`; its release, 19.4.2, is `gitlab_ce_version`'s.
+  The newest backup now leaves the bucket on 2026-12-23, where the one of 2026-11-16 leaves on 2026-12-17.
