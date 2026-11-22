@@ -2720,8 +2720,8 @@ entry is still true is the reading.
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
   actions on `*` with no domain scope and, since v47, Bedrock AgentCore's managed browser and code
-  interpreter** (read in Sandbox's policy documents on 2026-08-26, 2026-10-30 and 2026-11-08; not
-  exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
+  interpreter, joined in v48 by its web search and the Agent Registry** (read in Sandbox's policy documents
+  on 2026-08-26, 2026-10-30, 2026-11-08 and 2026-11-22; not exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
   "*"`, where the user-role policy beside it is scoped to the role's domain, and S3 reach keyed on principal
   tags,
   `${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`.
@@ -2733,6 +2733,36 @@ entry is still true is the reading.
   `RevokeSubscription` on `*`, and no managed policy on the role grants `StartDataSourceRun` (2026-11-08).
   Where: `log-stage-06a-unified-studio.md`, 2026-08-26; `upstream-releases.md`, the project role's managed
   policies; `threat-model.md` `TM-28`; `log-stage-19-smus-native-data-product.md`, 2026-11-08.
+  v48 (2026-11-13 20:47:08 UTC, the default version) was read 2026-11-22 in Sandbox by the infrastructure
+  user (`InfrastructureAccess`) against v47: 96 statements where v47 held 90, 339 distinct actions where it
+  held 312, nothing removed. Six statements are new. `ACApiKeySecret` allows `secretsmanager:CreateSecret`,
+  `PutSecretValue`, `DeleteSecret` and `GetSecretValue` on `secret:bedrock-agentcore-identity!*` when
+  `aws:CalledVia` names `bedrock-agentcore.amazonaws.com`. `ARConsumerPublisher` allows the Agent Registry's
+  `agent-registry:List*`, `GetRegistry`, `GetRegistryRecord`, `GetDiscoverableRegistryRecord` and
+  `SearchDiscoverableRegistryRecords` on `*` with no condition; `ARCreate` allows `CreateRegistryRecord`
+  under the request's `AmazonDataZoneProject` tag; `ARPublisher` allows `UpdateRegistryRecord`,
+  `UpdateRegistryRecordStatus`, `DeleteRegistryRecord`, `SubmitRegistryRecordForApproval` and
+  `TagResource` on records carrying the role's project tag. `IdCKmsDecrypt` and `IdCKmsDescribe` allow
+  `kms:Decrypt` and `DescribeKey` through `sso` and `identitystore`. Seven statements gain actions:
+  `ACManagedBuiltInTools` `bedrock-agentcore:InvokeWebSearch` on AWS's `tool/web-search.v1`, with no
+  condition; `ACProjectResources` `*ApiKeyCredentialProvider` and `GetResourceApiKey` on project-tagged
+  resources; `ACIdentityDirectory` the same two, `*TokenVault` and `ListTagsForResource` on the account's
+  `token-vault/default`; `ACUnscopedMetadata` `ListApiKeyCredentialProviders`; `DataZoneUserPermissions`
+  `datazone:UpdateAssetOwner` on `*`; `SSOReadOnlyPermissions` `identitystore:GetUserId`, `GetGroupId`,
+  `sso-directory:DescribeUser`, `DescribeGroup` and `sso:ListInstances` under `aws:ViaAWSService`;
+  `CreateSLR` the Agent Registry's service-linked role. No statement grants `agent-registry:CreateRegistry`
+  or `InvokeRegistryMcp`. Simulated the same day as `eighth-experimentation`'s project role, with the
+  Region, the project tag and the account in the context (`SUP-008`): `InvokeWebSearch`, a browser and a
+  code interpreter session, the registry's search, create, submit and status calls,
+  `CreateApiKeyCredentialProvider`, `GetResourceApiKey` and `UpdateAssetOwner` each `allowed` by this
+  policy, `AllowedByOrganizations` and `AllowedByPermissionsBoundary` true; the secret's create `allowed`
+  through AgentCore and `implicitDeny` without `aws:CalledVia`. The negative controls: `athena:StartSession`
+  `explicitDeny` by the organization, `s3:GetObject` on `awsds-data-curated` `explicitDeny` by the boundary.
+  As Staging's and Production's deployment project roles the same day, `InvokeWebSearch`, a browser session
+  and `CreateApiKeyCredentialProvider` read `explicitDeny` by the boundary's
+  `DenyServicesNoProjectUsesHere`, and the registry's search, create, submit and status calls and
+  `UpdateAssetOwner` read `allowed`: `agent-registry` is a service prefix of its own, which the fence does
+  not name. Where: `upstream-releases.md`, the project role's managed policies; `threat-model.md` `TM-28`.
 
 - `SUP-177` **`SageMakerStudioProjectUserRolePolicy` lets every SMUS project role send to other accounts'
   queues, invoke other accounts' functions, regrant Lake Formation permissions with no condition and, since
