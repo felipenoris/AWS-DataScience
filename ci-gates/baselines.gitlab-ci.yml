@@ -177,7 +177,8 @@
     # pair CVE-2026-128066 and CVE-2026-128067 was read 2026-11-22 the same way, from the lock that moves
     # langgraph, langgraph-sdk, msgpack, nltk, oauthlib, opentelemetry-api, pyasn1, soupsieve and tornado
     # past their findings; autogluon-multimodal 1.6.3, the latest on PyPI that day, still requires
-    # Pillow<13. The pair awaits the user's acceptance by name as the Dev Env Steward, for gates-v0.7.0.
+    # Pillow<13. The pair was accepted by name by the user as the Dev Env Steward on 2026-11-22, for
+    # gates-v0.7.0.
     GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: |
       CVE-2026-104851|fsspec         # 2025.3.0, fixed in 2026.6.0; autogluon-multimodal 1.6.1 requires fsspec[http]<=2025.3
       CVE-2026-96636|pillow          # 12.3.0, fixed in 13.0.0; autogluon-multimodal 1.6.1 requires Pillow<13
