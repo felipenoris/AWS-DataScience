@@ -733,3 +733,28 @@ No AWS call for this entry. Times UTC.*
   `ListTables` and `DescribeTable` on Sandbox's workgroups, written on the user's *"Sim, escreva"* and applied on
   *"Sim, aplique"* at 21:23 in `sandbox/warehouse/` (0 added, 2 changed, re-planned `No changes`). The earlier
   entry's "Left for day 2" is answered: 2.2 runs again on day 2, `c4n05wth04ll3k` deleted first.
+
+## 2026-11-22 — §N.10's day 2: the opening readings
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the raise of 18:16 UTC that day 1 and N.9's day 3
+share; reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] The other sessions told** at 22:37: N.9's day 3, whose 6d 7.5 window holds every AWS call of this
+  session while it is open, and which lowers only by agreement, the last session to finish lowering.
+- **[Claude] `make status`** at about 22:39: the hub's two hosts up, `sandbox/egress` with 25 interface
+  endpoints, `sandbox/warehouse-compute` and `sandbox/probes` up; passive 0.3394 USD/h, the warehouse's active
+  1.44 USD per query-hour. One Studio app bills, `jup` in `eighth-experimentation-ai-domain`, since 2026-11-21
+  20:07. The apps of `jup-test-experimentation` and of `eighth-experimentation`'s `default-28f1b390-…` read
+  `Deleted`, their spaces `InService`.
+- **[Claude] The usage limit** `8627a6cb-…`, 10 RPU-hours, period `monthly`, `deactivate`, created by the day's
+  raise: `UsageLimitConsumed` 2.0 and `UsageLimitAvailable` 7.0 in every quarter hour from 21:15 to 22:30;
+  `ChargedSeconds` 4,916, 4,560 and 480 in the hours from 18:00, 19:00 and 20:00, and none since. The limit
+  bites between 9 and 10 (`SUP-123`), so day 2 holds about seven RPU-hours on the warehouse, some 1.75
+  query-hours at 4 RPUs.
+- **[Claude] What 2.1 finds**: `lab.trades_hot`, 10 rows, its columns `trade_date date`, `desk varchar`,
+  `instrument varchar`, `quantity integer`, `price double precision` and `notional double precision`, owner
+  `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; no view in `lab`. The source `c4n05wth04ll3k` reads
+  `FAILED_CREATION`, its error naming `redshift-data:ListDatabases` for
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c`; the access role's portal policy holds
+  `ImportTheWarehousesMetadataForADataSource`, the four Data API reads on `workgroup/*`.
