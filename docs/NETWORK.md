@@ -73,7 +73,7 @@ module's arithmetic:
 
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
-| **WireGuard host** `awsds-prod-vpn`, `t3.medium`: the tracked `instance_type.auto.tfvars`'s selection since 2026-11-21, D4's default being `t3.nano` (Stage 12 decision due 4) | VPC-Networking · public · az1 | `10.31.160.131`, read 2026-11-22 (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
+| **WireGuard host** `awsds-prod-vpn`, `t3.nano`: D4's default, which governs again since 2026-11-22 (#356, Stage 12 decision due 4) after `t3.medium` from 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.195`, read 2026-11-22 (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
 | **Squid proxy** `awsds-prod-proxy`, `t3.small`, the slice's default since 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.128`, read 2026-11-22 (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
@@ -123,7 +123,7 @@ module's arithmetic:
                          │  ONE internet-gateway route in the whole estate
                          ▼
         ┌──────────── VPC-Networking · 10.31.0.0/16 ─────────────┐
-        │  public az1:  WireGuard 10.31.160.131  Squid 10.31.160.128
+        │  public az1:  WireGuard 10.31.160.195  Squid 10.31.160.128
         │               wg0 10.90.0.1/24, fd90::1/64
         │  the ONLY route for 10.90.0.0/24, in this VPC's public table
         └───┬──────────────┬───────────────┬──────────────┬──────┘
