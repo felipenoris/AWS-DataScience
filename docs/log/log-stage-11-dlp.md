@@ -443,3 +443,38 @@ are UTC.*
 - **[Claude] Records**: `TM-01`'s row reads written and not applied, its revision trigger read in the
   FLAGS column of `./aws/proxy.py --on-host`; the Stage 11 `Status` row; `NETWORK.md` §5's paragraph
   says the flag is written, and it leaves with the apply.
+
+## 2026-11-22 — `TM-01` controlled: `-n` applied with the proxy's replacement, and the re-probe
+
+*Claude, in the same session and branch, at the request of the session coordinating the hub sitting,
+from about 00:30 UTC. The apply and `./aws/proxy.py --on-host` are that session's, relayed, `--on-host` on
+the user's word; the re-probe is the user's, from a space, relayed with its log lines. AWS calls by this
+session: EC2, Route 53 and CloudWatch reads in Production as the infrastructure user (`awsds-infra-prod`,
+`InfrastructureAccess`), no write. Times are UTC.*
+
+- **[The coordinating session, relayed] The apply**: `production/proxy/` from `main` at `65254241`,
+  which carries #351's `-n` and #354's `t3.small`, 2026-11-21 23:51:42 to 23:53:26, `1 added, 2 changed,
+  1 destroyed`, re-plan `No changes`. The new host `i-071bcc561f75b51d7`, `10.31.160.128`, printed the
+  render's steps (2) to (4) with no `FAILED` line, started Squid and printed `done - the proxy is up`
+  (Stage 12's log of 2026-11-22).
+- **[The coordinating session, on the user's word, relayed] `./aws/proxy.py --on-host`**, about 00:20:
+  exit 0, `PX-1`, `PX-2` and `PX-3` pass, FLAGS reading `sandbox_foundation allowlist -n 42`.
+- **[Relayed by the coordinating session]** The reverse record of `54.213.164.60` at 23:58:19:
+  `ec2-54-213-164-60.us-west-2.compute.amazonaws.com.`, the record that passed on 2026-11-21.
+- **[The user, relayed] The re-probe** at 00:20:41 from `jup` (`10.20.54.175`; `10.20.38.182` on
+  2026-11-21): the two `curl`s of 2026-11-21 and Stage 12 2.2 step 5's positive control.
+  `54.213.164.60` printed `CONNECT=403` and exit 56, `108.158.137.46` `CONNECT=403` and exit 56, and
+  `pypi.org` `CONNECT=200 HTTP=200` and exit 0. The new instance's stream in `/awsds/prod/proxy`:
+  - `00:20:41 ... CONNECT 54.213.164.60:443 403 3404 117 TCP_DENIED`
+  - `00:20:41 ... CONNECT 108.158.137.46:443 403 3406 119 TCP_DENIED`
+  - `00:20:42 ... CONNECT pypi.org:443 200 49005475 1208 TCP_TUNNEL`
+- **[Claude] What the reading says**: the address that passed by its reverse record on 2026-11-21 is
+  refused with the record unchanged, while one of the 42 names tunnels from the same space a second
+  later, so the list is loaded and the address falls to `deny all`. `108.158.137.46` reads `403` as it
+  did, its record being under `cloudfront.net`. `TM-01` is controlled. What reopens it is an allow-list
+  plane read without `-n` under FLAGS, or a raw public address read `200` in the access log.
+- **[Claude] Read back** from 00:39:49 to 00:40:14: `proxy.awsds.internal` an `A` record at
+  `10.31.160.128`, TTL 60, and `awsds-prod-proxy` a running `t3.small` at that address, launched 23:52:54.
+- **[Claude] Records**: `threat-model.md`'s `TM-01` row and its channel row read controlled, and the
+  paragraph naming the plane edits no longer lists it; `NETWORK.md` §5's paragraph says the flag is
+  applied; the Stage 11 `Status` row.

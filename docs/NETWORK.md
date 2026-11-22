@@ -179,12 +179,13 @@ directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** 
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
 
-**A raw public address passes by its reverse record** (measured 2026-11-21, `TM-01`). The plane's
-`dstdomain` carries no `-n`, so Squid matches a request naming an address by the name a reverse lookup
-of it returns. From a space, `CONNECT 54.213.164.60:443`, an address of
+**A raw public address matches no name** (`TM-01`, controlled since 2026-11-22). The plane's
+`dstdomain` carries `-n` since the proxy's replacement of 2026-11-21, so Squid no longer matches a request
+naming an address by the name a reverse lookup of it returns, and the address falls to `deny all`. Without
+the flag it did: on 2026-11-21, from a space, `CONNECT 54.213.164.60:443`, an address of
 `airflow-serverless.us-west-2.api.aws` whose record is `ec2-54-213-164-60.us-west-2.compute.amazonaws.com`,
-read `200 TCP_TUNNEL` while that name is refused, and a CloudFront address read `403 TCP_DENIED`. The
-flag is written in `render-squid.sh.tftpl` and rides the hub sitting's `production/proxy/` apply.
+read `200 TCP_TUNNEL` while that name is refused. On 2026-11-22 the same request read `403 TCP_DENIED`
+with the record unchanged, beside `pypi.org`'s `200` from the same space.
 
 **The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
