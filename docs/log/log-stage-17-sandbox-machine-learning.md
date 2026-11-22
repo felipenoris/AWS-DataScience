@@ -5558,3 +5558,19 @@ answering a question that named the three. Times UTC.*
 - Through `awscc` 1.106.0 the configuration cannot name Nova Lite alone (`SUP-466`). The account holds the
   guardrail and its version 1, with no configuration (`ListEnforcedGuardrailsConfiguration` empty), and the
   deny stands.
+
+## 2026-11-22 — Day 3's sitting C: reading 6 deferred and both switches back to `false`
+
+*Claude writes this entry; the apply is Claude's, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1`, the third of *"Autorizo os três applies."*. Times UTC.*
+
+- **About 21:26, the user's decision**: *"Adie a leitura 6"*. Reading 6 rides with 6e 6.4's later sitting,
+  and the account guardrail's configuration is redesigned with nothing up (`SUP-466`).
+- **21:27:37, the third apply**: a plan saved at 21:27:14 from a tree identical to `origin/main`, both
+  switches `false`, *"Plan: 0 to add, 1 to change, 2 to destroy."*. The account guardrail's version and the
+  guardrail were destroyed in 1 s each, and `awsds-sandbox-bedrock-application` lost the deny's statement:
+  *"Apply complete! Resources: 0 added, 1 changed, 2 destroyed."*. The re-plan reads *"No changes."*
+  (exit 0), `ListEnforcedGuardrailsConfiguration` reads none, and the account's guardrails are
+  `mn3wavwk9jx7` (`app-genai-dev`'s) and `razikgicppzy`.
+- **Left for later**: the probe run once with `EXPECT_UNGUARDED` back on `answered` (line 55 of
+  `app-genai-dev`'s working copy), and `MODEL_SOURCE` back on `prefix` (line 80 of `app-ml-dev`'s).
