@@ -231,9 +231,9 @@ variable "blueprint_names" {
     # The knowledge base, out of category 2 at Stage 17 step 7.0a (decision 1, taken 2026-10-12):
     # the portal opens its Generative AI menu only when the profile carries all seven Bedrock
     # blueprints (read from the portal's code 2026-10-19). Its vector store is the one Bedrock
-    # shape that can bill while it exists, chosen per knowledge base (Stage 17 decision 12). No
-    # kms.tf statement comes with it: AWS's key-permissions page names none for a knowledge base
-    # (read 2026-10-19).
+    # shape that can bill while it exists, chosen per knowledge base (Stage 17 decision 12). AWS's
+    # key-permissions page names no statement for a knowledge base (read 2026-10-19 and 2026-11-22);
+    # kms.tf's S3 Vectors indexing statement comes with it, measured at Stage 17 7.4a (SUP-409).
     "AmazonBedrockKnowledgeBase",
     # The SageMakerAIDomain blueprint, released 2026-10-20 and out of `undefined` at 6d decision due
     # 15 (taken 2026-10-30 by the user as (b): the pilot on `experimentation`, RStudio on). A

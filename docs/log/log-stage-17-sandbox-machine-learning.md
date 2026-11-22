@@ -4312,3 +4312,51 @@ UTC.
   *Flow*, *Prompt*, *Model evaluations*); *Asset gallery* (*My apps*, *My prompts*, *My components*). The
   interface endpoints `bedrock`, `bedrock-runtime`, `bedrock-agent` and `bedrock-agent-runtime` read
   `available` in Sandbox.
+
+## 2026-11-22 — Day 2's sitting B: 7.4a's knowledge base refused at its index
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should create the knowledge base
+  `ml-demo-runbooks` and run a sync.
+- **[Claude] The create**, through Chrome, with the form as 7.4a sets it: the name `ml-demo-runbooks`, the
+  description *"Stage 17 7.4a: the project's runbooks"*, *Project data sources* → S3 (`default.s3_shared`)
+  with the URI `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/bedrock/kb/`,
+  Titan Text Embeddings V2, floating-point, 1024 dimensions, Amazon S3 Vectors, default chunking and the
+  Bedrock default parser. The form opened on OpenSearch Serverless and 256 dimensions. *Foundation model as a
+  parser* was disabled under the alert *"Access to model required"*. *Create* was clicked at 01:02 UTC, and
+  the component list then held `ml-demo-runbooks`, *Knowledge base*, under the portal's banner:
+
+  ```
+  Amazon Bedrock couldn't deploy the Knowledge Base. Delete this component, and then create a new one. [Failed to create environment cie8747bea6mxc: KB vector store creation failed due to: S3Vectors vector store creation failed due to: S3Vectors index creation failed: Insufficient access to perform asynchronous indexing. Ensure that the key used to encrypt the index still exists, is active, and has a resource policy granting access to the S3 service principal 'indexing.s3vectors.amazonaws.com'. (kms_request_id=5c1cca55-9ee1-4126-a995-7503c2b11654) (Service: S3Vectors, Status Code: 403, Request ID: 1b9a477c-ea82-86c8-9942-261750d8d87f) (SDK Attempt Count: 1), Cloudformation stack DataZone-Env-cie8747bea6mxc failed in account <Sandbox Account 1> and us-west-2 for environment cie8747bea6mxc]
+  ```
+
+- **[Claude] The trail and the objects**, read as the infrastructure user:
+  - 01:02:39 `CreateInferenceProfile` by `AmazonSageMakerBedrockModelManagementRole-<Sandbox Account 1>`,
+    session `AWSDataZone-Subscriptions`, from `datazone.amazonaws.com`: the name
+    `dzd-d8yrvx1ko7im6o avhvbqn37ty7m8`, copied from `amazon.titan-embed-text-v2:0`, answered
+    `application-inference-profile/p391nstyc81c`, `ACTIVE`. The profile stays.
+  - The stack `DataZone-Env-cie8747bea6mxc`: `CREATE_IN_PROGRESS` at 01:02:58, its wait handle and two wait
+    conditions (`KnowledgeBaseServiceRolePolicyWaitCondition…`, `CustomResourceRolePolicyWaitCondition…`),
+    `CREATE_COMPLETE` at 01:03:04, `DELETE_IN_PROGRESS` *"User Initiated"* at 01:03:30, `DELETE_COMPLETE` at
+    01:03:33. With S3 Vectors the stack holds its wait handles alone, as `SUP-169` read from the template.
+  - 01:03:10 `CreateVectorBucket` by `awsds-sandbox-smus-provisioning`, session
+    `AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>`, from `datazone.amazonaws.com`:
+    `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, `sseType` `aws:kms` under the key of
+    `alias/awsds-sandbox-project`, admitted, with that role's `GenerateDataKey` and `Decrypt` on the key at
+    the same second.
+  - 01:03:10 `CreateIndex` by the same role: `amazon-bedrock-ide`, dimension 1024, `float32`, `euclidean`,
+    `AMAZON_BEDROCK_TEXT` non-filterable. It was refused with `AccessDenied` and the banner's wording.
+  - No IAM event in us-east-1 from 01:01 to 01:06, and no `CreateKnowledgeBase`; `list-knowledge-bases`
+    answered none at 01:05:40.
+  - The vector bucket stays, `defaultIndexMode` `ENHANCED`, with no index and no tag, so the store carries
+    no project tag (verification xxiii). Empty, it bills nothing.
+- **[Claude] The cause, read 2026-11-22.** The S3 Vectors encryption page's key-policy example grants
+  `indexing.s3vectors.amazonaws.com` `kms:Decrypt` under `aws:SourceArn` (`bucket/*`), `aws:SourceAccount`
+  and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`). SMUS's key-permissions
+  page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch Serverless. Bedrock's
+  knowledge-base setup page names no key policy. The project key's policy at `sagemaker-prereqs-v0.12.0`
+  follows SMUS's page (`SUP-409`).
+- **[Claude] The fix, planned.** `sagemaker-prereqs`' `kms.tf` gains the S3 Vectors page's statement, the
+  bucket narrowed to `amazon-bedrock-ide-*`, behind the knowledge-base blueprint's switch. A plan of
+  `sandbox/sagemaker` against the local module read `0 to add, 1 to change, 0 to destroy`: the project
+  key's policy gains that one statement. The caller went back to its pinned tag. The module's tag and the
+  apply wait on the user.

@@ -3486,6 +3486,29 @@ entry is still true is the reading.
   is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-11-21 (two entries); `threat-model.md`, `TM-34`.
 
+- `SUP-409` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
+  configuration carries, and the index is refused unless that key grants `indexing.s3vectors.amazonaws.com`
+  `kms:Decrypt`, a statement SMUS's key-permissions page does not name** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The knowledge base was created from the portal's *My components* with Titan Text Embeddings
+  V2 at 1024 dimensions and Amazon S3 Vectors. At 01:03:10Z the provisioning role, from
+  `datazone.amazonaws.com`, called `CreateVectorBucket` `amazon-bedrock-ide-<project id>-<environment id>`
+  with `sseType` `aws:kms` and the key the Tooling configuration alone carries as `KmsKeyArn`; the
+  knowledge-base configuration carries no key parameter. The bucket was admitted. `CreateIndex`
+  `amazon-bedrock-ide` (1024, `float32`, `euclidean`) was refused: *"AccessDeniedException: Insufficient
+  access to perform asynchronous indexing. Ensure that the key used to encrypt the index still exists, is
+  active, and has a resource policy granting access to the S3 service principal
+  'indexing.s3vectors.amazonaws.com'."* The portal showed it inside *"Amazon Bedrock couldn't deploy the
+  Knowledge Base. Delete this component, and then create a new one."* The environment's stack, holding its
+  wait handles alone (`SUP-169`), was created and deleted within 35 s. The vector bucket stayed, empty, with
+  no index and no tag. Before the stack, `AmazonSageMakerBedrockModelManagementRole` had created an
+  application inference profile copied from the embeddings model, which stayed too. The S3 Vectors encryption
+  page documents the indexing principal's statement: `kms:Decrypt` under `aws:SourceArn`,
+  `aws:SourceAccount` and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`).
+  SMUS's key-permissions page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch
+  Serverless. Bedrock's knowledge-base setup page names no key policy. All three pages were read 2026-11-22.
+  A project key written to SMUS's page therefore refuses every IDE knowledge base on S3 Vectors. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-modules/sagemaker-prereqs/kms.tf`.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions

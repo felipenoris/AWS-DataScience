@@ -220,6 +220,33 @@ locals {
       }
     },
   ] : st if var.redshift_serverless_enabled]
+
+  # The Bedrock IDE's knowledge base on S3 Vectors: the provisioning role creates the vector bucket
+  # under this key, and S3 Vectors refuses the index unless the key lets its indexing principal decrypt
+  # (SUP-409, measured 2026-11-22, Stage 17 7.4a). The statement is the S3 Vectors encryption page's
+  # (read 2026-11-22), with the bucket narrowed to the IDE's names, amazon-bedrock-ide-<project id>-
+  # <environment id>; AWS's key-permissions page for the Tooling blueprint names none. It rides the
+  # knowledge-base blueprint's switch (Lesson 14).
+  key_policy_s3vectors_indexing = [for st in [
+    {
+      Sid       = "AllowS3VectorsIndexingOfTheBedrockIdesVectorBuckets"
+      Effect    = "Allow"
+      Principal = { Service = "indexing.s3vectors.amazonaws.com" }
+      Action    = "kms:Decrypt"
+      Resource  = "*"
+      Condition = {
+        ArnLike = {
+          "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:s3vectors:${var.region}:${data.aws_caller_identity.current.account_id}:bucket/amazon-bedrock-ide-*"
+        }
+        StringEquals = {
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+        }
+        "ForAnyValue:StringEquals" = {
+          "kms:EncryptionContextKeys" = ["aws:s3vectors:arn", "aws:s3vectors:resource-id"]
+        }
+      }
+    },
+  ] : st if contains(local.configured_blueprints, "AmazonBedrockKnowledgeBase")]
 }
 
 module "project_key" {
@@ -237,6 +264,7 @@ module "project_key" {
       local.key_policy_smus_domain,
       local.key_policy_smus_project_roles,
       local.key_policy_redshift,
+      local.key_policy_s3vectors_indexing,
     )
   })
 }
