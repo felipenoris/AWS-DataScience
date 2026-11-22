@@ -502,7 +502,7 @@ aws datazone search-listings --domain-identifier $D --search-text trades_hot --p
 aws datazone search --domain-identifier $D --owning-project-identifier $P --search-scope DATA_PRODUCT \
   --profile $S
 ./aws/catalog.py
-# 2.4 ⚡ the other sessions told first, sandbox/sagemaker/ at sagemaker-prereqs-v0.12.0; this order on
+# 2.4 ⚡ the other sessions told first, sandbox/sagemaker/ at sagemaker-prereqs-v0.14.0; this order on
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker plan -input=false \
   -var redshift_serverless_enabled=true -out="$HOME/tmp/s21-sagemaker-on.tfplan"    # 3 to add, 1 to change
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/sagemaker apply -input=false \
@@ -718,7 +718,8 @@ q "select user_id, query_id, start_time, query_text from sys_query_history
 # Every plan of the slice names both switches (Lessons 51, 69). 6h decision 8 (a)'s wide tag stands since
 # 2026-11-22 (pull request #363), applied at 6h's step 7 on day 1, and false fails the `projects`
 # validation, a map of two since that pull request. A plan reading 9 to add, 2 to change, 6h's reading
-# before its apply (2026-11-22), means step 7 has not run: stop. The 2 to add below is unmeasured.
+# before its apply (2026-11-22), means step 7 has not run: stop. The 2 to add below are the role and its
+# inline policy, that plan's difference from the tag's alone (7 to add, 2 to change), read 2026-11-22.
 TAG=true
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
   -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=true \
@@ -858,7 +859,10 @@ change` with `redshift_serverless_enabled=true`; `data-governance/governance/` `
 1 to change` (the profile `experimentation`) with it; `sandbox/warehouse/` `2 to add` with
 `data_transfer_role_enabled=true` and the tag off, the counts this file's commands carry; pass 4's
 commands name the tag true since 6h's standing answer, and carry the same count for a plan after 6h's step
-7, unmeasured. These
+7, read by difference. Read again on 2026-11-22 from `main` at `82edff32` with nothing up (the log):
+`sandbox/sagemaker/` at `sagemaker-prereqs-v0.14.0` and `data-governance/governance/` with the same counts;
+`sandbox/warehouse/` 9 to add and 2 to change with both switches true, 7 and 2 with the tag alone, the
+difference `aws_iam_role.data_transfer` and its inline policy. These
 `sandbox/warehouse/` counts hold since Stage 19's access-role statement (PR #339, pass 5's before it item 3)
 was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the slice also showed
 `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place (Lesson 69). The profile

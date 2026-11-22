@@ -326,15 +326,15 @@ page (7.3, 7.4). It shares 9.1's reading of several applications in one deployme
 item 7), and pass 4 on §N.10's day 1. Stage 17's part of each day is below, and each day ends with its
 closing reads and §N.9.6's lowering. **Day 2** (§N.9.4) is `make hub-up`, then `make up ENV=sandbox
 GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`: sitting B with 2.3 to 3.2, then pass 7. **Day 3** (§N.9.5)
-is `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base`: 6e 6.4's window alone, then
-9.6, 10.4 and pass 5. **Pass 4** rides §N.10's day 1 (§N.10.3 step 7), after day 2's 3.2: its endpoint and
+is `make hub-up`, then `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`: 6e 6.4's window
+alone, then 9.6, 10.4 and pass 5, then verification xxiv's `Retrieve`, which day 2 left. **Pass 4** rides §N.10's day 1 (§N.10.3 step 7), after day 2's 3.2: its endpoint and
 transform serve the registered version and need no group, `sagemaker.runtime` being one of Sandbox's 18
 endpoints. `mlflow`
 serves 1.6 and 9.6's `track`, `mwaa` the CLI's deploys and the workflows, `bedrock-base` 10.4's model and
-`guardrail` calls, and `bedrock-agent` pass 7 alone, as 7.1 raises it beside `bedrock-base`. A group
+`guardrail` calls, and `bedrock-agent` pass 7 and day 3's `Retrieve`, as 7.1 raises it beside `bedrock-base`. A group
 lasts one apply, so each day's raise names every group its rows call. Neither day raises GitLab or
-Staging or Production egress. Day 2's groups add six endpoints to Sandbox's 18 and day 3's four, so the
-days bill about 0.27 and 0.25 USD an hour with the hub before the spaces (§N.9.7), and each running space
+Staging or Production egress. Each day's groups add six endpoints to Sandbox's 18, so day 3 bills about
+0.28 USD an hour with the hub before the spaces, as day 2 did since the VPN host's return (§N.9.7), and each running space
 on `ml.t3.medium` 0.050 more (`docs/PRICING.md`).
 
 **Before the sitting, with nothing up** (read 2026-11-19 from 15:01 to 15:16 UTC and the repository at
@@ -402,7 +402,7 @@ first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved p
 | 2 | 9 | 3.1, the second job, the compare view and the better run's artifact logged; 3.2, the group `ml-demo-xgboost`, the version approved from the portal's page, the collection, the second version through the MLflow integration; 3.3 read with nothing up after `eighth-experimentation`'s next source run, about 17:38 UTC | [user]; [Claude] reads | 1.2 |
 | 2 | 10 | Pass 7, the one user of `bedrock-agent`: 7.4's prompt, guardrail, flow and evaluation job, its dataset copied by `evaluation_dataset.py`; 7.4a's knowledge base over the runbooks, synced once; 7.4b's chat agent, or a flow app over the knowledge base if the create is refused (verification xxxiv), and one `Retrieve` from the space; 7.4c's pane read; 7.5's `ML-8`, `./aws/catalog.py` and `bedrock-usage.py`; 7.6, nothing deleted (decision 5) | [user]; [Claude] reads | 2.0 |
 | 2 | 11 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the space stopped and the portal tabs closed; §N.9.6's lowering, `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
-| 3 | 12 | The raise and 6e 6.4's window alone, §N.9.5 steps 1 and 2, its hour 6e's; then spaces on the house image in `app-ml-dev` and `app-genai-dev`, each stopped when its steps end | [user]; [Claude] reads | 0.2 |
+| 3 | 12 | The raise and 6e 6.4's window alone, §N.9.5 steps 1 and 2, its hour 6e's; then spaces on the house image in `app-ml-dev` and `app-genai-dev`, each stopped when its steps end; after the window, verification xxiv's `Retrieve` from `jup`, which day 2's pass 7 left (§N.9.5 step 4) | [user]; [Claude] reads | 0.3 |
 | 3 | 13 | 9.6: the group `app-ml-dev`, the tests, the lint, `bundle` and `deploy`; `app-ml-train`, `app-ml-register`, `app-ml-score` and `app-ml-register` again; the registry's path; `bundle` after training; verification lx | [user]; [Claude] reads | 2.0 |
 | 3 | 14 | 10.4: the tests, the lint and `deploy`, then its readings 1 to 3 | [user]; [Claude] reads | 1.0 |
 | 3 | 15 | 10.4's reading 4: `sandbox/bedrock/` with `application_guardrail_required=true`, then its runs | [Claude⚡]; [user] | 0.4 |
@@ -411,7 +411,7 @@ first, as 9.5's Sandbox applies were on 2026-11-19; the user may run the saved p
 | 3 | 18 | Pass 5 in `eighth-experimentation`'s space: 5.1's pipeline from the SDK, its definition exported to `examples/sandbox-ml/pipeline/definition.json` before `upsert`; 5.2's run, the third version in the registry, the downloaded definition compared; 5.3's visual editor; 5.4's `ML-6` | [user]; [Claude] reads | 1.5 |
 | 3 | 19 | `./aws/sandbox-ml.py` and `./aws/catalog.py`; the spaces stopped and the portal tabs closed; §N.9.6's lowering, `make down ENV=sandbox`, `make hub-down`, `make status` | [Claude]; [user]; [Claude⚡] | 0.4 |
 
-Stage 17's rows take about 6.7 hours of day 2 and 6.8 of day 3, beside 6e's hour. §N.9.7 prices each
+Stage 17's rows take about 6.7 hours of day 2 and 6.9 of day 3, beside 6e's hour. §N.9.7 prices each
 day's hub, endpoints, spaces and Config cycle; the jobs', the tokens' and the embeddings' cents are the
 Cost table's. No row needs a later day's, and day 3's 9.6 and pass 5 need the training pair of order 6, so
 day 2's pull request carries its default (Lesson 79); pass 5's registration step needs 3.2's group. Pass 7 depends on none of 1.6,
@@ -965,7 +965,7 @@ is read after day 2, once Cost Explorer shows its day (8.2).
   word, put a knowledge base node in 7.4's flow rather than a new flow app, whose stack would create a second
   role with no boundary (`SUP-447`). The flow answered from the two indexed runbooks and the guardrail blocked
   the denied topic; each test message redeploys the flow (`SUP-448`), and a flow app has no *Share*, so no
-  snapshot reaches the catalog. The `Retrieve` from the space waits on the user.
+  snapshot reaches the catalog. The `Retrieve` from the space rides `promotion.md` §N.9's day 3 (§N.9.5 step 4).
 - **7.4c — [user] The project data source, read and not created**: the *Create Knowledge Base* pane
   offers the project's Redshift (Lakehouse) tables, up to 50, with descriptions and curated queries, and
   the Lakehouse catalog, read with the project user role's permissions (AWS's page, read 2026-10-12). The
@@ -2895,7 +2895,7 @@ the criterion deciding nothing there. No decision of passes 9 and 10 is open.
 | xxi | Which quotas does a young account hold for the four instance types, and is any zero? **Answered 2026-10-17: three were zero**, `ml.m5.xlarge for training job usage` (`L-CCE2AFA6`), `ml.m5.large for endpoint usage` (`L-614B09FD`) and `ml.m5.large for transform job usage` (`L-236AE59F`); `ml.t3.medium for processing job usage` (`L-0CE343FE`) was 4. **Read again 2026-10-18 at 19:51 UTC: the three read 20, 8 and 8 and the processing quota 10**, the three requests (to 1 each, filed 2026-10-17) still `CASE_OPENED`. **What raised the values is outside the account's record** (read 2026-10-18, ~22:20 UTC): Sandbox's trail holds, from 2026-10-17 21:00Z to 2026-10-18 21:00Z, the three `RequestServiceQuotaIncrease` calls (`desiredValue` 1.0, as `InfrastructureAccess`) and reads alone, and no `support.amazonaws.com` event, so AWS applied 20, 8 and 8 on its side with the cases still open. **Read again 2026-10-20 at 22:04 UTC**: the four values unchanged, and the three requests still `CASE_OPENED`, last updated at 21:45:45 and 21:45:49 on 2026-10-17 and at 00:23:33 on 2026-10-18 (the log) | 0.2 |
 | xxii | Does the knowledge base's sync complete under decision 11's amendment, as which role, whether through an application inference profile, and with how many of the clone's runbook files indexed, 20 on 2026-11-20? **The SCP's refusal of the embeddings model was read by the battery, not by a sync** (2026-10-19): the before-half read Titan's allow row `DENY-SCP` naming `p-tgda7n58` as `InfrastructureAccess` at 21:31 UTC, and the amendment was applied at 21:58, before any knowledge base existed. **Read 2026-11-22**: the create's own sync read `COMPLETE` with 2 of the 20 runbooks indexed and 18 failed, and the *Sync* `FAILED` on the same 18, each job's failure reasons naming S3 Vectors' 2,048-byte limit on a metadata string (`SUP-411`); the embeddings ran as the project role through the project's application inference profile, 50 `InvokeModel` calls admitted | 7.4a |
 | xxiii | Which vector store does the IDE create for the knowledge base, as which identity, under which key, with the project tag or not, and what does it bill at idle? **Read 2026-11-22 (7.4a)**: an S3 Vectors bucket, `amazon-bedrock-ide-<project id>-<environment id>`, and its index, created by the provisioning role under the project key; the first attempt's bucket carries no tag. The idle bill is 8.2's | 7.4a, 8.2 |
-| xxiv | Does the project role reach the knowledge base from a space with `Retrieve` through the `bedrock-agent-runtime` endpoint, and does the shared chat agent's snapshot appear in the project's catalog? **The catalog's half has no object, read 2026-11-22**: the chat agent app is refused (`SUP-446`), and a flow app has no *Share* (`SUP-448`). The `Retrieve` waits on the user | 7.4b |
+| xxiv | Does the project role reach the knowledge base from a space with `Retrieve` through the `bedrock-agent-runtime` endpoint, and does the shared chat agent's snapshot appear in the project's catalog? **The catalog's half has no object, read 2026-11-22**: the chat agent app is refused (`SUP-446`), and a flow app has no *Share* (`SUP-448`). The `Retrieve` rides `promotion.md` §N.9's day 3 (§N.9.5 step 4) | 7.4b |
 | xxv | Does the chat agent's *Model* list offer the scoped models under a `us.` profile id or a foundation-model id, and do its answers cite the runbooks' chunks? **Read 2026-11-22**: the list offers Nova Lite and the three Claude 4.5 models, the Claude three *Cross-region*; the saved app names a catalog listing whose base is `us.anthropic.claude-haiku-4-5-20251001-v1:0`, a `us.` profile. No answer cites a chunk: the chat agent's preview is refused (`SUP-446`), and the flow's knowledge base node returns `outputText` alone | 7.4b |
 | xxvi | Does the recipe's CSV fetch leave the space through the proxy, as one access-log line on `raw.githubusercontent.com`? **Yes, read 2026-11-21 (2.1)**: one `CONNECT raw.githubusercontent.com:443 200` line of 979,031 bytes, the CSV's 970,457 and the TLS handshake | 2.1 |
 | xxvii | Which entries does the **AI/ML** group of the lab's left navigation hold: *Models* with its *Foundation Models* and *Registered Models* tabs, *Training Jobs* and *Feature Store*, which AWS documents for IAM-based domains, or *JumpStart models* and *Model registry*, which it documents for Identity Center domains? **Read 2026-11-21** (0.9): neither chapter as written. Both projects show *Models* with *Foundation models* and *My models* (the IAM-based chapter's *Registered Models*), *Training jobs*, *MLflow*, *Inference endpoints*, *ML pipelines* and *Feature Store*, and neither *JumpStart models* nor *Model registry*. | 0.9 |

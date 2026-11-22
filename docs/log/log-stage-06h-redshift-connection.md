@@ -2611,3 +2611,15 @@ UTC.*
   [pull request #367](https://github.com/felipenoris/AWS-DataScience/pull/367): the stage file's `Status`
   and the sitting's "Before it" step 2; `promotion.md` §N.10.1, §N.12.1's calendar and §N.12.4; `waiting-on-the-user.md`'s row for the
   standing change, removed, since its user part was the merge.
+
+## 2026-11-22 — step 7's plan read again after pull request #369
+
+*Claude, in the orchestrating session of `promotion.md` §N.9's day 2, with nothing up: a read-only plan
+with `-input=false`, Terraform 1.17.2, at 06:27 UTC, from a tree whose `sandbox/warehouse/` files are
+`main`'s at `82edff32`. Nothing was saved or applied.*
+
+- **[Claude] `sandbox/warehouse/`** (`awsds-infra-sandbox-1`) with its defaults, the tag true since pull
+  request #363: *"Plan: 7 to add, 2 to change, 0 to destroy."*, as step 7 expects. Created:
+  `test-experimentation`'s access role, its portal and warehouse policies, their three attachments and its
+  `5439` ingress rule. Updated in place: `eighth-experimentation`'s warehouse policy and the namespace. With
+  `data_transfer_role_enabled=true`, 9, 2 and 0 (Stage 21's log).

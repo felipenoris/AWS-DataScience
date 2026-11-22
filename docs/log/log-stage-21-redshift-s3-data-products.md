@@ -680,3 +680,26 @@ branch, [pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/
   premise row of 6h decision 8, decision 1's wording (it turns the switch on nowhere) and the 6h bullet.
   Decision 1's open case, a project that adds the existing workgroup in the portal, needs no further
   admission from day 1 and stays unmeasured.
+
+## 2026-11-22 — passes 2 and 4's plans read again after pull request #369
+
+*Claude, in the orchestrating session of `promotion.md` §N.9's day 2, with nothing up: read-only plans
+with `-input=false`, Terraform 1.17.2, from 06:26 to 06:32 UTC. Nothing was saved or applied.*
+
+- **[Claude] The trees**: `sandbox/sagemaker/` from the branch's merge of `origin/main` at `82edff32`,
+  which pins `sagemaker-prereqs-v0.14.0` since #369; `data-governance/governance/`, `sandbox/data/` and
+  `sandbox/warehouse/` from `86748b34`, whose files in those slices #369 did not change.
+- **[Claude] `sandbox/sagemaker/`** (`awsds-infra-sandbox-1`): *"No changes."*; with
+  `redshift_serverless_enabled=true`, *"Plan: 3 to add, 1 to change, 0 to destroy."*: the
+  `RedshiftServerless` blueprint configuration, its `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, the manage
+  access role's `AmazonDataZoneRedshiftManageAccessRolePolicy` attachment, and the project key updated in
+  place. 2.4's comment named `v0.12.0` and names `v0.14.0`.
+- **[Claude] `data-governance/governance/`** (`awsds-infra-data`): *"No changes."*; with
+  `redshift_serverless_enabled=true`, *"Plan: 0 to add, 1 to change, 0 to destroy."*, the profile
+  `experimentation`.
+- **[Claude] `sandbox/data/`**: *"No changes."*; with `data_transfer_key_statement_enabled=true`, *"Plan: 0
+  to add, 1 to change, 0 to destroy."*, the data key's policy (decision 4 (b)).
+- **[Claude] `sandbox/warehouse/`**: with both switches true, *"Plan: 9 to add, 2 to change, 0 to
+  destroy."*; with the tag alone, 7, 2 and 0. The difference is `aws_iam_role.data_transfer[0]` and
+  `aws_iam_role_policy.data_transfer[0]`, so 4.5's plan after 6h's step 7 reads 2 to add by difference, the
+  count the stage file called unmeasured.
