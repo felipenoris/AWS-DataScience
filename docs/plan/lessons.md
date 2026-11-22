@@ -2151,6 +2151,35 @@ tag, a pin and an apply. A failed component leaves a blueprint deployment and a 
 portal acts before the component can be created again (`SUP-410`'s later reading). Staging and Production
 pin older tags, so a statement found in Sandbox reaches them only at their next apply.
 
+## Lesson 89 — a working copy reaches a run through two commands, `run` carrying its variables and `deploy` its files, and an edit is live only once its own command has run
+
+**What happened.** On 2026-11-22, Stage 17's day 3, `app-genai`'s reading 2 changed one filter of its guardrail
+definition, deployed it and ran the triage, which published version 2. The change was then discarded in the
+space's working copy, as step 10.4 says, and not deployed. The triage under the deny, an hour later, logged
+*"unchanged, version 2, definition sha256 ed309c78…"*: the discarded definition was still the project's. In the
+same hour two edits made with no deploy reached the next run: `EXPECT_UNGUARDED` set to `refused` in the
+manifest, which the probe read, and `TRAINING_IMAGE_URI` corrected in the sourced `.env`, which the next
+training job ran on (`SUP-282`'s later reading). The day's records note the difference (Stage 17's log).
+
+**Why it is a class.** The CI/CD CLI's `run` reads the manifest when it starts a run and passes the stage's
+variables as the run's parameters. The workers run the archives and the definitions the last `deploy` wrote.
+So one working copy is two snapshots to a run: its variables are live at the next `run`, and its files only
+after a `deploy`. A discard is an edit like any other, and a file restored in the working copy stays changed in
+the project until it is deployed again. Nothing in a passing run says which snapshot it read: the repository's
+merge request carries the restored file while the project serves the discarded one.
+
+**The rule.** After an edit in a working copy, name the command that carries it to a run. A manifest variable,
+or a shell variable the manifest names, travels with `run`. A file under an item `deploy` copies (code,
+definitions, samples) travels with `deploy`, and so does its discard. A reading that depends on an edit says
+which deploy it followed, and a sitting ends with the project holding the working copy's files, or with the
+difference recorded beside what it leaves standing.
+
+**What makes it expensive.** A guardrail's versions only accumulate. The task publishes a version whenever the
+definition's hash differs from the latest's, so restoring the original publishes a third version equal to the
+first rather than returning to it. A reading run against the wrong definition is silently wrong: the
+accuracy here came out the same, but a filter that blocks would have changed the planted rows' outcomes and
+been credited to the deny.
+
 ## What AWS does that its documentation does not say
 
 The lessons above are habits. The facts about the platform that cost a measurement to learn are in

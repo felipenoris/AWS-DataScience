@@ -1228,6 +1228,7 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; Stage 17's sitting C and its pass 5 on day 3,
    from which the user took 6e 6.4's window on 2026-11-22, owed to a later sitting. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
    verification xxiv's `Retrieve` to day 3, which raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`.
+   **Day 3 runs 2026-11-22**: sitting C's 9.6 and 10.4's readings 1 to 5 done (Stage 17's log).
    Day 3 depends on no other sitting, and its prerequisites, `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova
    Lite profile and the two tars, were done 2026-11-22 (N.12.5).
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in

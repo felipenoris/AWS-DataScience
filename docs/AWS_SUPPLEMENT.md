@@ -4464,7 +4464,7 @@ entry is still true is the reading.
   with the project.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
-- `SUP-456` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
+- `SUP-458` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
   own ETag, and sets the field itself from the object the version names** (measured 2026-11-22 in
   Sandbox, Stage 17 9.6, as `app-ml-dev`'s project role from an MWAA Serverless worker, through the
   `sagemaker` API endpoint).
@@ -4487,6 +4487,25 @@ entry is still true is the reading.
     object's ETag. Whether `CreateModel` from the version compares the two is verification lix.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/app-ml/code/app_ml_tasks/registry.py`.
+
+- `SUP-460` **AWS republishes the SageMaker XGBoost algorithm image under its short tag: `sagemaker-xgboost:3.0-5`
+  named a new image from 2026-11-17, and the image it named before keeps its long tag alone** (read
+  2026-11-22 in AWS's `us-west-2` algorithm registry with `ecr describe-images`, Stage 17 9.6, as the
+  infrastructure user).
+  - The reading, at about 19:11 UTC: `3.0-5` names
+    `sha256:5a82a2d0f00fa1baa41aba8a95f8145b8214bc65c4c16ce12d723a30e8cc34dd`, with `3.0-5-1.0.67.0` and
+    `3.0-5-cpu-py3`, pushed 2026-11-17 19:42:09. The digest both targets' `training-image.tf` pin,
+    `sha256:0b5d9341baa09ab2432fc9efbc329425e69325ba33562b1e2a015fd6f16e3a78`, carries `3.0-5-1.0.64.0` alone,
+    pushed 2026-10-11 05:39:43.
+  - No page read for this project says the short tag moves. The image table of `sagemaker-core` 2.21.0, read for
+    pass 0 on 2026-10-17, names the image by `3.0-5`.
+  - A training job created with the tag at 18:59:16 ran on the republished image. `app-ml`'s `publish` then
+    refused its candidate before any write, the training image naming no digest. The job created at 19:30:09
+    with the pinned digest ran on the pin.
+  - So `3.0-5` is a release, as Lesson 68 says of what a host reads unpinned. An image named by the short tag
+    today is not the one the targets serve.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/*/ml/training-image.tf`.
 
 ## MWAA
 
@@ -4972,6 +4991,12 @@ entry is still true is the reading.
   list and the version operator publishes a version at every run, so a task that keeps one calls boto3
   (decision 24 (b)). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-16; Stage 17 step 10 and
   decisions 24 to 27; `runbooks/sagemaker-ai-ml.md` §W and §G.
+  **Measured on a worker 2026-11-22** (Stage 17 10.4 step 3): `probes/operator.yaml`, imported in the portal's
+  editor, ran as `app-genai-dev`'s project role. Its one `InvokeModel`, at 19:43:02, named the application
+  inference profile alone, with no guardrail, and its user agent `Caller/BedrockInvokeModelOperator`. The task
+  log held the prompt and the response in full: *"Bedrock <profile ARN> prompt: {…}"* and *"Bedrock model
+  response: {…}"*. With `SUP-459`'s deny applied, both later runs failed on that call's `AccessDeniedException`.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ### Provisioned MWAA
 
@@ -5017,6 +5042,12 @@ entry is still true is the reading.
   DataZone call, the service calling `kms:GenerateDataKey` and `kms:Decrypt` on the project key under the
   starter's session. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26;
   `log-stage-18-staging-deployment-project.md`, 2026-10-19.
+  **Read again 2026-11-22** (Stage 17 9.6 and 10.4): a value changed in the working copy reaches the next
+  `run` with no deploy. `TRAINING_IMAGE_URI` corrected to the pinned digest in the sourced `.env` made the next
+  `app-ml-train` job run on the digest, and `EXPECT_UNGUARDED` set to `refused` on the manifest's `dev` stage
+  made `app-genai-probe` expect the refusal. The files a deploy wrote stay as deployed: the guardrail definition
+  restored in the working copy alone left the deployed one in force. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-283` **`aws-smus-cicd-cli` 1.0.9's `bundle` reads an `include` entry as a file or folder, never a
   glob, and exits 0 when it matches nothing** (measured 2026-10-16 offline, Stage 8 2.5). With the
@@ -5216,6 +5247,9 @@ entry is still true is the reading.
     bytes), and the command exited 0.
   - `scripts/dev-cli.sh` answers `get_domain_id_by_name`, which this path does not call. The bundle role
     holds `datazone:ListDomains`.
+  - `deploy` with no archive in `./artifacts`, as the same role at about 20:41, read the project and its
+    connections, printed the storage items and stopped with *"❌ Error: No bundle file found in ./artifacts
+    directory"* and *"❌ Error: Deployment failed: 1"*, exit 1. The trail holds no management write from it.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-375` **`aws-smus-cicd-cli` 1.0.9's `deploy` adds a stage's `owners` and `contributors` to an
@@ -5539,6 +5573,32 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   `invoke-web-search` and no `invoke-web-answer`, and drops `invoke-code-interpreter`, an event stream, so
   the SCP battery cannot attempt those three. Where: `log-stage-11-dlp.md`, 2026-11-22; `scp-battery.md`,
   the `TM-28` amendment.
+
+- `SUP-459` **A guarded `Converse` through an application inference profile carries `bedrock:GuardrailIdentifier`
+  on both of its authorization passes, so an `ArnNotLike` deny over the key admits it and refuses a call that
+  names no guardrail on the profile's pass** (measured 2026-11-22 in Sandbox, Stage 17 10.4 step 4,
+  verification xxxvii, as `app-genai-dev`'s project role from MWAA Serverless workers, through the
+  `bedrock-runtime` endpoint).
+  - The documentation: Bedrock's page on enforcing a guardrail gives the condition key for `InvokeModel` and
+    `Converse`. It does not say whether a call through an inference profile carries the key on the profile's
+    pass, on the foundation model's pass, or on both (`SUP-300`'s two passes).
+  - The deny: `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount` on `bedrock:InvokeModel` and
+    `bedrock:InvokeModelWithResponseStream`, resource `*`, `ArnNotLike` `bedrock:GuardrailIdentifier`
+    `arn:aws:bedrock:us-west-2:<account>:guardrail/*:*`, in `awsds-sandbox-bedrock-application`, applied at
+    19:56:00.
+  - Admitted: the 40 `Converse` of `app-genai-triage` from 20:12:04, each with a `guardrailConfig` that names
+    the application's guardrail by its unversioned ARN with `guardrailVersion` `2`. A negated operator matches
+    an absent key and the deny's resource is `*`, so the key was present on both passes.
+  - Refused, each `AccessDenied`: a `Converse` with no `guardrailConfig` at 20:11:15, and
+    `BedrockInvokeModelOperator`'s `InvokeModel` at 20:09:14 and 20:11:41. Each reads *"… is not authorized to
+    perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-west-2:<account>:application-inference-profile/ciceumyodl7y
+    with an explicit deny in an identity-based policy: arn:aws:iam::<account>:policy/awsds-sandbox-bedrock-application"*.
+    The refusal names the profile, the first pass.
+  - A refused call's event carries `requestParameters` null, so the trail does not show what a refused request
+    named.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`;
+  Stage 17 decision 24.
 
 ## Terraform
 

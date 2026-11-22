@@ -5163,7 +5163,7 @@ UTC.*
     `ModelDataETag` `f8783f02a8dc0bb2867b2e67b030ea30`, the ETag `head-object` reads on its `ModelDataUrl`
     (10,727 bytes).
   - So the service sets the field from the object, and refuses one a caller sends, even the object's own
-    (`SUP-456`).
+    (`SUP-458`).
 - **[Claude] The correction**, in `examples/app-ml`.
   - `package_request` names no `ModelDataETag`, and the test's expected request no longer carries one.
   - The checks: *"100 passed"*, ruff clean, *"20 files already formatted"*.
@@ -5319,7 +5319,7 @@ reads alone. Times UTC.*
     the copy the task rewrote at 20:00:19. The copy is SSE-KMS under the project key with the bucket key on.
   - The copy written at 19:39 by the refused run had the ETag `b5a42cff…`, and `latest/` holds the same
     bytes under `fad76c8d…`. So an SSE-KMS object's ETag changes with each PUT of identical bytes, and
-    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-456`).
+    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-458`).
   - `text/csv` in and out, `ml.m5.large` for transform, the model quality statistics pointing at the copy's
     `evaluation.json` (378 bytes), and the metadata `sha256`, `source_prefix` `app-ml/models/latest/`,
     `training_job`, `training_source` `46bd65a0…` and `validation_auc` 0.8289499878883362.
@@ -5391,3 +5391,102 @@ operator's runs are the user's from the portal's editor. Claude's reads are as t
   `bedrock:GuardrailIdentifier` on every pass the deny reads, so the deny admits the triage's 40 calls.
 - **Verification xl's second half reads yes**: the deny refuses `BedrockInvokeModelOperator`'s `InvokeModel`,
   which names no guardrail.
+
+## 2026-11-22 — Day 3's sitting C: the approval, `deploy` without an archive, reading 5's calls and the second guardrail deleted
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-ml-dev` and
+`jup-app-genai-dev`, and the approval is the user's from the portal. Claude's reads are as the infrastructure
+user with `InfrastructureAccess` through `awsds-infra-sandbox-1`, and the deletion is Claude's on the user's
+word. Times UTC.*
+
+- **[user] The approval.** `app-ml-dev/1` was approved from the portal: `UpdateModelPackage` at 20:39:53, as
+  `app-ml-dev`'s project role in the portal's session `28f1b390-…@5ae0dd6m1suvbk`, its source identity the
+  user's. No approval description. `sagemaker.amazonaws.com` recorded `AddAssociation` and `CreateAction` at
+  20:39:54. The version's `ModelDataETag` is unchanged.
+- **[user] The registry's path, its literal.** `sed` set `MODEL_SOURCE` to `registry` on the `dev` stage's
+  line; `grep` read `registry` on lines 80, 123 and 167, the targets' two being `registry` in the repository.
+- **[user] `deploy` without the archive** (verification lxii's last reading), about 20:41: the archive moved
+  out of `./artifacts`, then
+  `scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events`.
+  - It read the project (*"✅ ✅ Project 'app-ml-dev' already exists"*), printed *"Updating project
+    configuration..."*, found no environment for the target and printed the four storage items, each on
+    `default.s3_shared`, with no `model` item.
+  - It stopped: *"❌ Error: No bundle file found in ./artifacts directory"*, *"❌ Error: Deployment failed: 1"*,
+    `exit=1`. The archive was moved back.
+  - **[Claude]** The trail, caught up to 20:52:26, holds no management write from the project role between
+    20:40 and the next deploy at 20:51:40.
+  - Verification lxii's `deploy` half reads yes: the CLI stops without an archive (`SUP-374`).
+- **[user] `deploy` with the archive and `app-ml-score` in the registry's mode**: the three workflows updated at
+  20:51:43, 20:51:55 and 20:52:08 (`CreateWorkflow` answered `ConflictException`, then `UpdateWorkflow` and
+  `TagResource`; `CreateLogGroup` answered `ResourceAlreadyExistsException`), and `StartWorkflowRun` at
+  20:52:13: the run `QCRC1Im4FuKYOMS`, `RUNNING` from 20:52:16.
+- **[Claude] Reading 6's plan**, saved at 20:44:09 from `e6a7a488` with `-var application_guardrail_required=true
+  -var account_guardrail_enabled=true`: *"Plan: 3 to add, 0 to change, 0 to destroy."* The account's guardrail
+  `awsds-sandbox-account-guardrail` with the denied topic `Legal advice`, its version, and
+  `awscc_bedrock_enforced_guardrail_configuration` with `included_models` `amazon.nova-lite-v1:0` alone and both
+  content controls `COMPREHENSIVE`. Not applied.
+- **[Claude] §N.10's day 1 ended** on its side at about 20:50: no further write from that session, and the day's
+  lowering is this sitting's. What it keeps for its day 2 is in its own log.
+- **[user] Reading 5, the variants**, `variants.py` (SHA-256 `defd1e14…`) from `jup-app-genai-dev`. **[Claude]**
+  Its calls in the trail, as the project role in the space's session `SageMaker`, through
+  `vpce-0d325931b42cbb2a4`:
+  - `0`, the application's guardrail by its ARN with version `2`: admitted at 20:51:09.
+  - `a`, the `DRAFT`: refused at 20:51:09, *"… is not authorized to perform: bedrock:InvokeModel on resource:
+    arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/ciceumyodl7y with an explicit deny in an
+    identity-based policy: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-bedrock-application"*.
+  - `b`, the guardrail by its id `mn3wavwk9jx7` with version `2`: admitted at 20:51:10. The policy matches an
+    ARN, so the key carries the versioned ARN when the request names the id.
+  - `c`, Nova Lite's system profile `us.amazon.nova-lite-v1:0` with the guardrail: refused at 20:51:10, *"… is
+    not authorized to perform: bedrock:InvokeModel on resource:
+    arn:aws:bedrock:us-west-2:<Sandbox Account 1>:inference-profile/us.amazon.nova-lite-v1:0 with an explicit deny in a
+    service control policy: …p-tgda7n58"*, `awsds-org-scp-ou-interactive`.
+  - `d0`, the denied topic inside the guard tag, and `d1`, the same topic outside it: both admitted by the API
+    at 20:51:10 and 20:51:11. What the guardrail did with each is in the script's output.
+  - The second guardrail, `app-genai-residual-1795380671` (`djlyteclzosd`): `CreateGuardrail` and
+    `CreateGuardrailVersion` at 20:51:11 through `vpce-0edda39ecbeee2be2`, with the tag `AmazonDataZoneProject`
+    `b8fz4ovppjijv4` and one word filter; its version 1 `READY` at the second poll, 20:51:17.
+  - `e`, that guardrail's version 1 named in a `Converse`: admitted at 20:51:17, 8 tokens in and 3 out.
+    Decision 24 (b)'s residual reads as the decision says: a guardrail the role published six seconds before
+    is admitted.
+  - A refused call's event carries `requestParameters` null.
+- **[Claude] The second guardrail deleted** on the user's *"Autorizo apagar"*: `delete-guardrail` at 20:54:25,
+  exit 0. `get-guardrail` then read *"This guardrail does not exist."*, and the account holds
+  `mn3wavwk9jx7` and `razikgicppzy`.
+
+## 2026-11-22 — Day 3's sitting C: reading 5's guardrail decisions and verification lx
+
+*Claude writes this entry. The outputs are the user's, pasted from `jup-app-genai-dev` and `jup-ml-dev`;
+Claude's reads are as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`.
+Times UTC.*
+
+- **[user] Reading 5's outputs** (`variants.py`, SHA-256 `defd1e14…`): what the application's guardrail
+  `mn3wavwk9jx7`, version 2, did with each call the deny admitted, from the trace.
+  - `0`, *"Reply with the single word: ready."* in a plain text block: `stop=guardrail_intervened`, the
+    guardrail's message *"This message was not triaged: the application's guardrail blocked it."*, 0 tokens.
+    `PROMPT_ATTACK`, confidence `MEDIUM`, filter strength `HIGH`, `BLOCKED`; 34 of 34 characters guarded.
+  - `b`, the guardrail named by its id: the same block and the same trace.
+  - `d0`, the denied topic inside the guard tag: blocked by the topic `Investment advice` (`DENY`), 73 of 73
+    characters guarded.
+  - `d1`, the guard tag holding the `ready` message and the topic outside it: blocked by `PROMPT_ATTACK`
+    `MEDIUM` on the tagged text; 34 of 107 characters guarded, so the topic's 73 were not assessed.
+  - `e`, the second guardrail, one word filter: `stop=end_turn`, *"Ready."*, 8 tokens in and 3 out.
+  - The message the day's probes send reads as a prompt attack to the application's guardrail when the whole
+    message is assessed. The triage assesses its guard tag alone: 40 messages, 2 blocked (reading 4).
+  - Verification xxxix reads in full. The `DRAFT` is refused by the identity deny and the id is admitted. A
+    model outside the profile is refused by the SCP `p-tgda7n58`, the wording shown; the identity deny's part
+    is not measured (Lesson 20). A message outside the guard tag is admitted by IAM and not assessed by the
+    guardrail.
+- **[user] Verification lx** (`lx.py`, SHA-256 `b355b330…`) from `jup-ml-dev`, MLflow's client 3.17.2 against
+  the app's 3.16.0:
+  - the experiment `app-ml-lx` created (id 2); the run `c058995da0d44cb086359271b2427c61` from 20:53:34; the
+    model `models:/m-c30660f6dda246dca5558e9d71f494ad`, its artifacts under the app's store,
+    `…/dev/data/ml/mlflow/workspaces/default/2/c058995da0d44cb086359271b2427c61/artifacts`;
+  - *"Successfully registered model 'app-ml-lx'."*, *"Created version '1' of model 'app-ml-lx'."*: MLflow's
+    registry holds `app-ml-lx` version 1 `READY`;
+  - the account's groups read `app-ml-dev` and `ml-demo-xgboost` before the run and at once, 30 s and 90 s
+    after it, and the same from the laptop at 21:01 (**[Claude]**);
+  - MLflow's `uv export` exported 0 dependencies and fell back to inferring them from the installed packages,
+    logging `torch 2.13.0+cpu` as `torch==2.13.0`.
+  - Verification lx reads no. With the app's `AutoModelRegistrationDisabled`, a model logged under a
+    registered name stays in MLflow's registry and creates no SageMaker group or version, as step 3.2 read in
+    `ml-demo-mlflow`. AWS's `ml/training` example asserts the version.
