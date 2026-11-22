@@ -2426,13 +2426,16 @@ after the down's hook shows there.
 #### N.9.7 The sitting's cost
 
 At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
-- the hub's two hosts and two addresses, 0.026 USD/h, and Sandbox's 18 endpoints, 0.180 USD/h, each day;
+- the hub's two hosts and two addresses, 0.026 USD/h to 23:24 UTC on 2026-11-21 and 0.0724 since, the VPN
+  host a `t3.medium` (0.0416) and the proxy a `t3.small` (0.0208) after that night's rebuilds (read
+  2026-11-22), and Sandbox's 18 endpoints, 0.180 USD/h, each day;
 - the groups' endpoints at 0.010 USD/h each: day 1's one, day 2's six and day 3's four;
 - each space's app, 0.050 USD/h on `ml.t3.medium` and 0.100 on `ml.t3.large`, 6d's remote-access spaces;
 - a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
 
-Before the spaces, the days bill about 0.22, 0.27 and 0.25 USD/h, some 1.4, 2.2 and 2.0 USD of hub and
-endpoints; with the spaces and the Config cycle, 2 to 3.5 USD a day and 8 to 10 USD for the sitting. The
+Before the spaces, day 1 bills about 0.22 USD/h, day 2 0.27 and 0.31 after the rebuilds, and day 3 0.29,
+some 1.4, 2.4 and 2.4 USD of hub and endpoints; with the spaces and the Config cycle, 2 to 4 USD a day and 9
+to 11 USD for the sitting. The
 models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's session is the largest of them;
 Stage 17's training jobs are about five minutes of `ml.m5.xlarge` each, at 0.23 USD/h.
 
@@ -2567,9 +2570,9 @@ consumer's workgroup and the managed compute, which no slice holds.
 #### N.10.6 The sitting's cost
 
 At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
-- the hub's two hosts and two addresses, 0.026 USD/h, Sandbox's 18 endpoints, 0.180, the `redshift` group's
-  one, 0.010, and `sandbox/probes/`, 0.008: about 0.22 USD/h each day before the spaces, 0.23 on day 1
-  with the `mwaa` group's endpoint;
+- the hub's two hosts and two addresses, 0.0724 USD/h (N.9.7), Sandbox's 18 endpoints, 0.180, the
+  `redshift` group's one, 0.010, and `sandbox/probes/`, 0.008: about 0.27 USD/h each day before the spaces,
+  0.28 on day 1 with the `mwaa` group's endpoint;
 - each space's app, 0.050 USD/h on `ml.t3.medium`, three of them on day 1;
 - Stage 17 4.1's endpoint, hosting `ml.m5.large` at 0.115 USD/h from its creation until the member deletes
   it (decision 6), 2.76 USD a day, which neither `make status` nor `make down` reaches;
@@ -2674,10 +2677,10 @@ before 2026-12-18 when it carries `app-dbt`, or with that archive moved to dbt 1
 #### N.11.3 The sittings' cost
 
 At the rates of [`gitlab.md`](gitlab.md) §U and [`cost-model.md`](../cost-model.md)'s "Per session": the hub,
-0.026 USD/h; GitLab's session, 0.1961 USD/h, and its three runners with `BUILD=1`, 0.2493; Staging's and
-Production's egress, 0.080 USD/h each while raised; a Config cycle of GitLab's `[E]` slices, 0.21 to 0.38
-USD per sitting. A sitting of six to eight hours bills about 0.47 USD/h before the targets' egress, some
-4 to 6 USD in all. R1 adds N.8.3's warehouse queries, at 1.44 USD per query-hour and nothing idle, against
+0.0724 USD/h (N.9.7); GitLab's session, 0.1961 USD/h, and its three runners with `BUILD=1`, 0.2493;
+Staging's and Production's egress, 0.080 USD/h each while raised; a Config cycle of GitLab's `[E]` slices,
+0.21 to 0.38 USD per sitting. A sitting of six to eight hours bills about 0.52 USD/h before the targets'
+egress, some 4.5 to 6.5 USD in all. R1 adds N.8.3's warehouse queries, at 1.44 USD per query-hour and nothing idle, against
 Production's trial. The two replace the sittings of release G, of N.8.3 and of each application's first
 release, each of which raised the same hub, GitLab and egress.
 
