@@ -136,13 +136,7 @@
               "<PROJECT_SG>"
             ]
           }
-        },
-        "Tags": [
-          {
-            "Key": "AmazonDataZoneProject",
-            "Value": "<PROJECT_ID>"
-          }
-        ]
+        }
       }
     },
     {
@@ -224,13 +218,7 @@
           ]
         },
         "EnableNetworkIsolation": true,
-        "EnableInterContainerTrafficEncryption": true,
-        "Tags": [
-          {
-            "Key": "AmazonDataZoneProject",
-            "Value": "<PROJECT_ID>"
-          }
-        ]
+        "EnableInterContainerTrafficEncryption": true
       }
     },
     {
@@ -277,13 +265,7 @@
                   "ml.m5.large"
                 ]
               },
-              "ModelApprovalStatus": "PendingManualApproval",
-              "Tags": [
-                {
-                  "Key": "AmazonDataZoneProject",
-                  "Value": "<PROJECT_ID>"
-                }
-              ]
+              "ModelApprovalStatus": "PendingManualApproval"
             }
           }
         ],
