@@ -1981,6 +1981,11 @@ The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 
 `2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
 runs as `grep -F` or in Python, with its exit code read.
 
+Both recurred on 2026-11-22, in Stage 6g's trail reads. An unquoted `$ids` reached
+`batch-get-query-execution` as one argument, refused with *"Member must satisfy regular expression pattern:
+\S+"*, a message about the parameter's shape that never names the shell. Ugrep refused
+`.{0,80}6g 2\.4.{0,90}` with *"exceeds complexity limits"* and exit 2.
+
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such
 as `:h` or `:t` yields a valid path, and a destructive command runs on it. The runbooks' fenced `bash`
