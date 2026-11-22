@@ -29,6 +29,12 @@ locals {
   # admits nobody. It is also why the apply order is lake/ first (layers.py's `lake` rank comment:
   # data -> lake -> data, three acts over two slices).
   lake_access_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-lake-access"
+
+  # The data transfer role of Stage 21 step 4.5, which sandbox/warehouse/ creates while its
+  # data_transfer_role_enabled is true, derived from the convention as above. KMS refuses a key policy
+  # naming a role that does not exist, so the statement naming it is applied after the role and removed
+  # before it: warehouse -> data -> data -> warehouse, four acts over two slices in one sitting.
+  data_transfer_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/awsds-${var.env}-warehouse-data-transfer"
 }
 
 module "consumer_data" {
@@ -67,7 +73,7 @@ module "consumer_data" {
   # session it issues is scope-reduced to one grant's prefix. It is the only statement on the key
   # that admits a call through S3 - the persona's went with the derived zone (D19 revision) - so
   # the vending door is the one path to an S3 object encrypted here.
-  additional_data_key_policy_statements = [
+  additional_data_key_policy_statements = concat([
     {
       Sid       = "AllowSandboxLakeAccessRoleViaS3"
       Effect    = "Allow"
@@ -128,5 +134,29 @@ module "consumer_data" {
         StringEquals = { "kms:ViaService" = "redshift-serverless.${var.region}.amazonaws.com" }
       }
     },
-  ]
+    ], var.data_transfer_key_statement_enabled ? [
+    # ------------------------------- the data transfer role through S3 (Stage 21 step 4.5)
+    #
+    # AWS's statement for a customer managed key that encrypts the namespace of a federated catalog
+    # with data lake access ("Prerequisites for managing Amazon Redshift namespaces in the AWS Glue
+    # Data Catalog", read 2026-11-22), in this slice's region: the managed compute moves data to and
+    # from S3 as the data transfer role, under the namespace's key, which is this key. The principal
+    # is named directly, as AWS writes it, so the role's identity policy is not consulted for these
+    # two actions.
+    #
+    # It is a widening of D31, a fourth reader, for one sitting: false between sittings, and the role
+    # exists only while sandbox/warehouse/'s data_transfer_role_enabled is true. The role is a
+    # service's, trusted by glue.amazonaws.com and redshift.amazonaws.com alone; its identity policy
+    # holds no S3 action and no bucket policy names it, so it reads no object of awsds-sandbox-lake.
+    {
+      Sid       = "GenerateDataKeyDecryptDataTransferRole"
+      Effect    = "Allow"
+      Principal = { AWS = local.data_transfer_role_arn }
+      Action    = ["kms:GenerateDataKey", "kms:Decrypt"]
+      Resource  = "*"
+      Condition = {
+        StringEquals = { "kms:ViaService" = "s3.${var.region}.amazonaws.com" }
+      }
+    },
+  ] : [])
 }

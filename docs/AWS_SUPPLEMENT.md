@@ -2338,7 +2338,13 @@ entry is still true is the reading.
   identifier read `createdAt` 2026-08-21T00:49:55Z and `updatedAt` 2026-10-22T22:46:51Z, the dates the reading
   of 2026-10-30 recorded, with the template `DataZone-SageMakerAIDomain-prod-20260905` and its 17 user
   parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
-  `upstream-releases.md`, the `SageMakerAIDomain` row.
+  `upstream-releases.md`, the `SageMakerAIDomain` row. Read again 2026-11-22 on `RedshiftServerless`
+  (Stage 21): the get reads `createdAt` and `updatedAt` both 2026-05-13T21:31:31Z, while the template object
+  behind its `templateUrl` read `LastModified` 2026-11-13T19:43:40Z on 2026-11-18 (`SUP-378`) and
+  2026-11-21T01:19:23Z on 2026-11-22, 10,532 bytes both times. The object is rewritten in place with no
+  change to the blueprint's dates, so its `LastModified` dates a rewrite, not a release; a change of content
+  under the same name is read from the object's `ETag` (`"d516acd3183d361cf3b92a12ec19dd95"` on 2026-11-22).
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 - `SUP-378` **The `RedshiftServerless` blueprint's template treats a base capacity of 128 and a maximum of 0 as
   sentinels, and the blueprint's user parameters default the maximum to 512 RPU** (read 2026-11-18, Stage 21
