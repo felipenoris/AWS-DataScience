@@ -5962,6 +5962,17 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   read with `TZ=UTC` on the command. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22;
   `runbooks/promotion.md` §N.8.3.
 
+- `SUP-465` **`aws sts get-caller-identity` answering is no proof that Terraform can sign in: the CLI answers
+  from its cached role credentials past the SSO token's expiry, and Terraform refreshes the token itself**
+  (measured 2026-11-22 on the laptop, Stage 19 step 6's plan). The `awsds` sso-session's token read
+  `expiresAt` 21:08:53Z. At 21:09:40 a `sandbox/warehouse/` plan stopped at the S3 backend with *"No valid
+  credential sources found"* and *"refresh cached SSO token failed, unable to refresh SSO token, operation
+  error SSO OIDC: CreateToken, … InvalidGrantException"*. At 21:10 `aws sts get-caller-identity` on
+  `awsds-infra-sandbox-1` and `awsds-infra-prod` exited 0, from role credentials in `~/.aws/cli/cache` that
+  live four hours from their vend (`SUP-012`). After a new `aws sso login --sso-session awsds` the token read
+  `expiresAt` 22:11:47Z and the same plan ran. So that check proves the CLI's cache, not the token a
+  Terraform run reads. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## Clients and the egress proxy
 
 - `SUP-329` **`wg-quick` with no `MTU` line takes the uplink's MTU minus 80, so a WireGuard host on a

@@ -4947,3 +4947,25 @@ From 19:11 to 20:21; times UTC. §N.9's day 3, the other sitting, told of the wr
 - **Left of pass 5**: step 6 after the access role's `redshift-data` permission, the user's decision; xiv's
   external-schema route; step 7 on §N.10's day 2, after Stage 21's passes 2 to 4: the revocation of `USAGE ON
   DATABASE awsdatacatalog` and of the two Lake Formation grants, and the drop of `lab.trades_hot`.
+
+## 2026-11-22 — Step 6's access-role statement, written and planned: the Data API's four metadata reads
+
+- **[user]** *"Sim, escreva"*, answering whether this session writes the access role's `redshift-data`
+  permission in pull request #382. Later, in the orchestrating chat, relayed at 21:12 UTC: *"Avise às
+  sessões que o infra sso está logado novamente."*
+- **[Claude] The statement**, `ImportTheWarehousesMetadataForADataSource` in `sandbox/warehouse/iam.tf`'s
+  access-portal policy: `redshift-data:ListDatabases`, `ListSchemas`, `ListTables` and `DescribeTable` on
+  this account's workgroups, with `ExecuteStatement`, `BatchExecuteStatement` and the statement reads left
+  out (commit `36808146`). The Data API's Service Authorization Reference gives the four the `cluster` or
+  the `workgroup` resource type; DataZone's page on a Redshift data source names no IAM action, and SMUS's
+  page returned no body to the fetch.
+- **[Claude] The first plan, 21:09:40 UTC**, stopped at the S3 backend before reading anything: *"No valid
+  credential sources found"*, *"refresh cached SSO token failed, unable to refresh SSO token, operation
+  error SSO OIDC: CreateToken, … InvalidGrantException"*. The `awsds` token had expired at 21:08:53Z, and
+  `aws sts get-caller-identity` on `awsds-infra-sandbox-1` and `awsds-infra-prod` exited 0 at 21:10 from the
+  CLI's cached role credentials (`SUP-465`). N.9 was told.
+- **[Claude] The plan, 21:13:11 UTC**, the token's `expiresAt` read 22:11:47Z at 21:13:03, with `-var
+  all_projects_tag_enabled=true -var data_transfer_role_enabled=false`, exit 2: *"Plan: 0 to add, 2 to
+  change, 0 to destroy."*, `aws_iam_policy.project_access_portal` for `4gqfau9xuo6e4w` and `avhvbqn37ty7m8`,
+  each gaining the statement alone. Saved at 21:14:56, the same summary. Not applied: the apply is the
+  user's to name.
