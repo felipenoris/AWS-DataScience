@@ -2108,7 +2108,10 @@ entry is still true is the reading.
   `HIDDEN_DUE_TO_SECURITY_REASONS` and `requestParameters` `null`, while the client printed IAM's full
   wording; Secrets Manager's `GetSecretValue`, refused to the same session at 19:01:21Z, carries the wording
   in full. The trail answers who was refused and when; the resource and the policy are read from the client's
-  output or the policy simulator. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+  output or the policy simulator. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22. Read again
+  2026-11-22 (6h 5.4): `GetCredentials` at 21:47:58Z, refused to `DataScientistAccess` *"with an explicit deny
+  in an identity-based policy"* as the client printed, reads the same in the trail, `requestParameters`,
+  `responseElements` and `resources` `null`; the hiding covers an explicit deny as it did the implicit ones.
 
 - `SUP-459` **Redshift refuses a materialized view that names the auto-mounted `awsdatacatalog`** (measured
   2026-11-22 in Sandbox, Stage 19's 5.2). `CREATE MATERIALIZED VIEW lab.trades_hot_mv AS SELECT desk,

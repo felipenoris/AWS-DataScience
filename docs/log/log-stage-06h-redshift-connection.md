@@ -2829,3 +2829,63 @@ Data API with the admin secret; the applies and the reads as the infrastructure 
   `d-p6gthxc82ckg`, created at 18:55:54 by a click on the portal's *JupyterLab* link under *IDEs*
   (`ml.t3.medium`, `sagemaker-distribution-cpu` 4.7), was `InService` at 19:34:29; *Code Spaces* created none
   in `test-experimentation`'s (`SUP-231`).
+
+## 2026-11-22 — Steps 5 and 10 of the warehouse sitting: 5.4 as the persona and 0.4's portal half
+
+*Claude, on the user's words in this session's chat: *"Sim, me passe as instruções."*, answering whether 5.4 and
+0.4 run before the lowering. The user ran 5.4 from the laptop as the Data Scientist User with
+`DataScientistAccess` in `Sandbox Account 1` (`awsds-scientist-sandbox`) and pasted its output; ran 0.4 in the
+portal as the Governance Manager User, `eighth-experimentation`'s contributor, in a Chrome profile of its own
+(*"Criei a conexão como Governance Manager. Agora apago a conexão?"*); and deleted the connection as the Data
+Scientist User, the project's owner (*"Removi. Pode verificar, pfv."*). The reads as the infrastructure user
+with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`). From 21:34 to 21:59.*
+
+- **[Claude] Before**: the workgroup `AVAILABLE` at base 4 RPU at 21:34:47. `eighth-experimentation`'s members,
+  read at 21:36: the Data Scientist User as owner (`28f1b390-…`), the Governance Manager User as contributor
+  (`e8a1f320-…`), the project role and a group. `WH-9` at 21:35:38: `eighth-experimentation` holds one Redshift
+  connection, `redshift-serverless.redshift` (`sandbox`, `lineageSync` off), and `test-experimentation` none.
+  N.9's session held the lowering, and 6d 7.5's monitored window on `eighth-experimentation`, until this
+  entry's reads.
+- **[user] Step 5, 5.4** (verification viii), after `aws sso login --sso-session awsds-scientist --no-browser`
+  (the profile's token read *"Token has expired and refresh failed"* at 21:36):
+
+  ```text
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the GetCredentials operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: redshift-serverless:GetCredentials on resource: arn:aws:redshift-serverless:us-west-2:<Sandbox Account 1>:workgroup/d6989b98-5023-4b04-9ea7-d01d50c86448 with an explicit deny in an identity-based policy
+  ```
+
+- **[Claude] 5.4 in the trail**: Sandbox's `GetCredentials` at 21:47:58Z, `aws-cli/2.37.12`, `AccessDenied`,
+  `errorMessage` `HIDDEN_DUE_TO_SECURITY_REASONS`, and `requestParameters`, `responseElements` and `resources`
+  `null`: `SUP-458`'s behaviour, on an explicit deny. **viii answered yes**: the wording names an explicit deny
+  in an identity-based policy, and no statement. `DenyMintingARedshiftDatabaseSession`
+  (`terraform-live/identity/sso/policies-shared.tf`) is the identity tree's only statement naming the action,
+  and the simulator matched it on 2026-10-18.
+- **[user] Step 10, 0.4's portal half** (verification xi): *Compute → Data warehouse → Add compute → Connect to
+  existing compute resources → Amazon Redshift Serverless*, `awsds-sandbox-warehouse`, *IAM credentials*, the
+  project's access role. The portal created the connection.
+- **[Claude] 0.4 read**:
+  - Data Governance's trail: `CreateConnection` at 21:53:22Z, no error code, caller
+    `assumed-role/awsds-data-studio-domain-execution/user-e8a1f320-e0b1-70fc-22c1-40cdce5152ef`, the response's
+    connection `466a5qzjj5nfrk`. Sandbox's trail holds none.
+  - Sandbox's trail: the access role's `GetCredentials` on `sandbox` at 21:51:35, 21:51:42 and 21:53:25, session
+    `e8a1f320-e0b1-70fc-22c1-40cdce5152ef@5hkjdsy3umpi1c`, `aws-sdk-java/2.59.3`, no error code: the form's
+    calls, in the contributor's session name.
+  - `get-connection` at 21:54: `awsds-sandbox-warehouse.redshift`, `REDSHIFT`, scope `PROJECT`,
+    `environmentUserRole` the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, access role
+    `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, JDBC to `sandbox` on `5439`, status `READY`, `lineageSync`
+    enabled, job `cqsmsbqin5yr2o` on `cron(53 21 * * ? *)`, the creation's minute, daily (`SUP-207`).
+    `list-job-runs` at 21:55:04: none.
+  - **xi answered: nothing stops a contributor.** The portal created a project connection for a
+    `PROJECT_CONTRIBUTOR` as it did for the owner at 3.2, with the project's role and access role, the pair
+    the owner's connection carries. It adds a lineage job on the warehouse's meter, which the form enables.
+- **[user] The delete**, as the owner, in the portal.
+- **[Claude] After**: Data Governance's trail, `DeleteConnection` at 21:57:17Z on `466a5qzjj5nfrk`, caller
+  `assumed-role/awsds-data-studio-domain-execution/user-28f1b390-0041-7068-8cc7-9ccef94277d1`, no error code;
+  Sandbox's, the access role's `GetCredentials` twice at 21:57:01 in session
+  `28f1b390-0041-7068-8cc7-9ccef94277d1@5hkjdsy3umpi1c`. At 21:57:38 `get-connection` answered
+  *"ResourceNotFoundException … Cannot find connection with id: 466a5qzjj5nfrk"* and `list-job-runs` on
+  `cqsmsbqin5yr2o` *"The given Job doesn't exist."*: the job left with its connection, without a run.
+  `list-connections --type REDSHIFT` holds `axsiuoykrswosw` `redshift-serverless.redshift` alone, `sandbox`,
+  `lineageSync` `False`, `READY`. `./aws/warehouse.py awsds-infra-sandbox-1` at 21:58:02: 11 pass, 6 note,
+  0 fail, `WH-9` as before.
+- **[Claude] Left by these steps**: nothing. N.9's session told at 22:02 that it may lower.
