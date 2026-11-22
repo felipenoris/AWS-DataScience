@@ -177,7 +177,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   every hook and `make check` on each pull request with no AWS credential. It also carries **D11's lifecycle** since Stage 2
   step 8: `make slices` prints which slice is `[P]`, `[D]` or `[E]`; `make up ENV=<account-folder>` applies
   the ephemeral ones and starts the dormant ones; `make down ENV=…` reverses it; `make status` says what is
-  up, the Studio apps included, and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
+  up, the Studio apps included, and what it burns: per hour while up, and per unit of use. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
   built, measured and torn down to USD 0.0000/h, with `foundation/` re-planning byte-identical and every
   `[E]` id new on the second `up`. The `[D]` rows — since 6c the two hub hosts, `production/vpn/` and
   `production/proxy/`, and since Stage 7 GitLab's `production/tooling/` — are stopped rather than

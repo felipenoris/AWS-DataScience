@@ -1096,3 +1096,137 @@ apply do tooling"*, as `awsds-infra-prod` (account Production, the infrastructur
   2026-09-06 20:58:53, and `awsds-prod-gitlab-status-check` since 2026-11-10 01:59:20, through GitLab's stop
   at 05:38:03.
 - **Left of 2.2**: nothing. 2.4, provoking one alarm of each class once, is next.
+
+## 2026-11-22 — `make status` splits its burn: passive per hour, active per unit of use
+
+*Claude's sitting, in a session the orchestrating session started, read-only throughout: `make status`
+and one `describe-vpc-endpoints` as the `awsds-infra-*` profiles (the infrastructure user with
+`InfrastructureAccess`). Times are UTC.*
+
+### The change
+
+- **[Claude] `scripts/tfhygiene/layers.py`**: `UNIT_CLASS` gives a rate's class by its unit, `h` and
+  `GB-month` passive, `query-hour` and `GB processed` active (`docs/PRICING.md` 3, 5, 7 and 8). A row's
+  `per_use` holds its active rates. Both `warehouse-compute` rows move from `usd_per_hour=1.44` to 1.44 USD
+  per query-hour; `sandbox/egress`, `staging/egress`, `production/egress` and
+  `production/workloads-egress` gain 0.01 USD per GB processed. `slices.py check` fails on a `per_use`
+  unit `UNIT_CLASS` does not class active.
+- **[Claude] `scripts/slices.py status`**: each line prints its rates beside their class. The footer
+  prints the passive burn in USD/h and each distinct active rate once, with the slices that bill it; the
+  monthly notes read `passive, monthly`. With nothing up both totals read USD 0.0000.
+
+### The readings
+
+- **[Claude] Before**, `make status` from 18:31:51 to 18:34:48, exit 0: *"estimated burn: USD
+  1.7594/h"*. Of it, 1.44 was `sandbox/warehouse-compute`, up and serving no query, and 0.10 two
+  JupyterLab apps in Sandbox, `jup` and `jup-ml-dev` (pending since 18:30).
+- **[Claude] After**, from 18:43:10 to 18:45:12, exit 0: *"passive burn: USD 0.3194/h"*, and *"active
+  burn:  USD 1.4400/query-hour     sandbox/warehouse-compute"* with *"USD 0.0100/GB processed
+  sandbox/egress"*. 0.3194 + 1.44 = 1.7594, the single total; the per-GB rate was printed nowhere before.
+- **[Claude] Offline**, `cmd_status` on fabricated readings in a scratch script: everything down reads
+  `passive burn: USD 0.0000/h` and `active burn:  USD 0.0000`; two warehouses and three endpoint slices
+  up print each active rate once with its slices; one unreadable account exits 1, *"neither total is a
+  measurement"*.
+- **[Claude] `describe-vpc-endpoints`** in Sandbox at 18:52:44: 26 interface endpoints, against the 18
+  that `sandbox/egress`'s static 0.180 USD/h prices, so the passive burn read 0.080 USD/h low.
+
+### Owed
+
+- **[Claude] Rates `docs/PRICING.md` does not settle**, declared nowhere until the user decides: the
+  proxy's and the WireGuard host's traffic per GB (3: no per-GB processing charge on an EC2 proxy; 3 and
+  7: internet data transfer out 0.090 USD/GB, peering 0.01 USD/GB each way across Availability Zones);
+  the unlimited burstables' CPU credits (3: 0.04 USD per vCPU-hour on `t4g`, 0.05 on `t3a`, `t3`
+  unmeasured); DNS Firewall queries (7: 0.60 USD per million inspected).
+- **[Claude] Not seen by `make status`**: Stage 17 pass 4's inference endpoint, which would be passive.
+  The Studio apps' *"at most … so far"* (`SUP-229`) is unchanged.
+
+## 2026-11-22 — `make status` prices the interface endpoints an up slice's state holds
+
+*Claude's sitting, in the same session, on the user's *"Sim, neste PR"* in chat. Read-only throughout:
+`make status`, a `terraform show -json` of `sandbox/egress`, `describe-vpc-endpoints` and
+`list-workgroups`, as the `awsds-infra-*` profiles (the infrastructure user with `InfrastructureAccess`).
+Times are UTC.*
+
+- **[Claude] The change**: `layers.Slice` gains `endpoints`, the interface endpoints a row declares. The
+  four egress rows move from `usd_per_hour` 0.180, 0.080, 0.120 and 0.080 to `endpoints` 18, 8, 12 and 8.
+  `status` prices an up slice by the interface endpoints its state holds, per AZ, at `ENDPOINT_HOUR`, 0.010
+  USD (`docs/PRICING.md` 3 and 7), and a down line by the row's count. A state holding interface endpoints
+  bills `ENDPOINT_GB` whatever its row declares. `slices.py check` fails on a row with endpoints and no
+  `ENDPOINT_GB`, or the reverse; a negative control with both mismatches exits 1.
+- **[Claude] Offline**, on fabricated states: 26 interface endpoints and two gateway endpoints in a child
+  module read 0.2600 USD/h and *"26 interface endpoint(s)"*; 12 endpoints, one of them in two subnets,
+  read 0.1300 and *"12 interface endpoint(s) in 13 AZ placement(s)"*; everything down reads both totals at
+  USD 0.0000, the down lines' rates unchanged.
+- **[Claude] `make status`** from 19:04:28 to 19:06:28, exit 0: *"terraform-live/sandbox/egress UP 34
+  resource(s) passive 0.2500 USD/h, active 0.0100 USD/GB processed 25 interface endpoint(s)"*, and
+  *"passive burn: USD 0.5894/h"* with six JupyterLab apps billing in Sandbox; the active burn as at 18:43.
+- **[Claude] The 26th endpoint**: the state of `sandbox/egress` lists 25 interface endpoints, the 18:52:44
+  account reading less one to a `vpce-svc-` service. That one is requester-managed, in two subnets, and was
+  created at 18:17:00, 18 s after the workgroup `awsds-sandbox-warehouse`, whose `endpoint.vpcEndpoints`
+  holds it: the workgroup's own endpoint (`SUP-128`). No slice's state holds it, so `status` does not price
+  it, and whether its hours bill is not in `docs/PRICING.md`.
+
+## 2026-11-22 — Cost Explorer reads the workgroup's endpoint and Production's traffic per GB
+
+*Claude's sitting, in the same session, on the user's *"Sim, meça"* in chat. Read-only throughout: three
+Cost Explorer `GetCostAndUsage` requests, two in Sandbox and one in Production, at 0.01 USD each
+(`docs/PRICING.md` 7); one `GetCostAndUsageWithResources` in Sandbox, refused; CloudTrail `LookupEvents` in
+Sandbox; as the `awsds-infra-*` profiles (the infrastructure user with `InfrastructureAccess`). A subagent
+read three AWS pages for `SUP-455` (`docs/REFERENCES.md`). Times are UTC.*
+
+### The workgroup's own endpoint
+
+- **[Claude] Resource-level data is refused** in Sandbox: *"Resource-level data granularity is an opt-in
+  only feature. You can be enable this feature from the PAYER account’s Cost Explorer Settings page."* The
+  endpoint's hours are read instead from the account's daily `USW2-VpcEndpoint-Hours`, 2026-09-19 to 11-21,
+  against each interface endpoint's lifetime from CloudTrail: 633 `CreateVpcEndpoint` and 484
+  `DeleteVpcEndpoints` events.
+- **[Claude] The managed endpoints**: 15 `CreateWorkgroup` since 2026-09-20, each followed 5 to 18 s later
+  by a `CreateVpcEndpoint` that `redshift.amazonaws.com` invokes, in two subnets. One is open, the
+  workgroup's created at 18:16:42.
+- **[Claude] The fit**, over 63 days without the window's first day and today: the user-made endpoints'
+  exact lifetimes miss Cost Explorer by 207.0 h of absolute error summed over the days, and by 314.6 h with
+  the managed endpoints' two AZs added; hours counted at the top of each clock hour, 209 and 313. On the ten
+  days with a workgroup, Cost Explorer reads a mean of 12.2 h below the user-made hours, where the managed
+  endpoints would add 12.1; on the eight other days with endpoints, 2.3 below. 2026-09-20 billed 273 h,
+  against 273.3 user-made and 305.7 with the managed endpoints. The verdict: the managed endpoint adds no
+  hours (`SUP-455`, `docs/PRICING.md` 5).
+- **[Claude] Unexplained**: 1761 billed hours over the 63 days against 1901.4 user-made; a day's residual
+  runs from 35.4 h below to 8.5 above; 2026-10-14 billed 0 h against 12.4 user-made.
+- **[Claude] Sandbox's VPC lines**, October and November 1-21: `USW2-VpcEndpoint-Hours` 984 h, 9.84 USD,
+  and 300 h, 3.00; `USW2-VpcEndpoint-Bytes` 0.0466 and 0.0410 GB, 0.00047 and 0.00041 USD. No other VPC
+  usage type, and no Redshift line (`SUP-145`).
+
+### Production's traffic per GB
+
+- **[Claude] The lines** are the account's, which the hub shares with GitLab and the runners. November is
+  Cost Explorer's estimate.
+
+  | Usage type | October | November 1-21 |
+  |---|---|---|
+  | `USW2-VpcEndpoint-Bytes` | 35.3231 GB, 0.35323 USD | 0.2809 GB, 0.00281 USD |
+  | `USW2-VpcPeering-Out-Bytes` | 0.0798 GB, 0.00080 USD | 0.2668 GB, 0.00267 USD |
+  | `USW2-VpcPeering-In-Bytes` | 0.0018 GB, 0.00002 USD | 0.0162 GB, 0.00016 USD |
+  | `USW2-DataTransfer-AZ-In-Bytes` and `-Out-Bytes` | 72.8875 and 72.9570 GB, 0 | 6.6464 and 6.7567 GB, 0 |
+  | `USW2-DataTransfer-Out-Bytes`, every service | 0.5811 GB, 0 | 0.1527 GB, 0 |
+  | `USW2-DataTransfer-Regional-Bytes` | 0.0326 GB, 0 | 0.0060 GB, 0 |
+  | `USW2-DataTransfer-xAZ-In-Bytes` and `-Out-Bytes` | 0.0008 and 0.0008 GB, 0 | 0.0007 and 0.0007 GB, 0 |
+  | `USW2-USE1-AWS-Out-Bytes` | 0.0080 GB, 0.00016 USD | 0.0261 GB, 0.00052 USD |
+  | `USW2-USE2-AWS-Out-Bytes` | 0.0410 GB, 0.00082 USD | 0.0000 GB, 0 |
+  | Every per-GB line | 0.35503 USD | 0.00616 USD |
+
+  `USW2-DataTransfer-In-Bytes` read 55.25 GB in October and 5.25 in November, free.
+- **[Claude] Read against `docs/PRICING.md` 3 and 7**: same-AZ peering billed 0, cross-AZ peering at
+  0.01/GB, internet out inside the free 100 GB a month, transfer to other Regions at 0.02/GB. Every line but
+  the endpoints' came to 0.00180 USD in October and 0.00335 in November 1-21. The hub's share is not
+  separable from GitLab's and the runners' without resource-level data. `layers.py` declares no per-GB rate
+  on the proxy or the WireGuard host until the user decides.
+
+## 2026-11-22 — The hub's per-GB rates stay undeclared
+
+*The user's choice in chat, answering whether `make status` should declare the hub's per-GB rates: *"Não,
+deixe assim"*. Recorded by Claude.*
+
+- **[Claude]** The proxy's and the WireGuard host's rows in `scripts/tfhygiene/layers.py` keep no
+  `per_use` rate: neither cross-AZ peering at 0.01 USD/GB each way nor internet out at 0.090 USD/GB past the
+  free 100 GB a month. The readings behind the question are in the previous entry.
