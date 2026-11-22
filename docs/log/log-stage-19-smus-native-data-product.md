@@ -4455,3 +4455,37 @@ down. The session the user opened in `awsds-workflows` was told before the write
   `USER_CREATED_DESIGNATION` with `userCreatedDesignationId` `ahjm1h20oujxqo`.
 - **Left of 4.12**: xxvi's portal half, read before the approval; after R1, `eighth-experimentation`'s
   request on the listing release G creates and the Governance Manager's approval in the portal.
+
+## 2026-11-22 — R1: the warehouse secret's first rotation in Production, and GitLab up for release G
+
+*Claude, in the session that drives R1 ([`runbooks/promotion.md`](../plan/runbooks/promotion.md) §N.11.1)
+on the user's word in chat, *"sim, o R1 vai ser hoje"*, reading as `awsds-infra-prod` (account
+Production, the infrastructure user with `InfrastructureAccess`) and `awsds-infra-sandbox-1`; the user's
+acts are named. Times are UTC.*
+
+- **[Claude] Step 1, the rotation with nothing up** (§N.8.3 step 1, `EXC-13`'s Production half).
+  Production's trail on `redshift!awsds-prod-warehouse-dbadmin`: `RotationStarted` at 01:11:55;
+  `PutSecretValue` into `AWSPENDING` by `AWSServiceRoleForRedshift` at 01:13:08; `UpdateSecretVersionStage`
+  to `AWSCURRENT` by the same role, `CompleteRotation` `Succeeded` with *"Rotation completed"* and
+  `RotationSucceeded` at 01:17:08; no `RotationFailed`. `describe-secret`, six reads from 02:00:15 to
+  02:05:27: `LastRotatedDate` 01:17:08.980, `NextRotationDate` 2026-12-22 01:59:59, rotation enabled.
+  Production held no workgroup: its last `DeleteWorkgroup` is of 2026-11-16 05:33, no `CreateWorkgroup`
+  follows it, and `list-workgroups` answers none. The rotation started 48 minutes before the 01:59:59 that
+  `NextRotationDate` named and succeeded with no workgroup, as Sandbox's first did on 2026-10-20; whether
+  the database took the new password is step 5's reading.
+- **[Claude] The poll that missed it**: a loop waiting for `LastRotatedDate` to contain `2026-11-22`
+  matched none of its six reads, the CLI printing `2026-11-21T22:17:08.980000-03:00` in the laptop's zone
+  (`SUP-435`). §N.8.3 step 1 now reads with `TZ=UTC`.
+- **[Claude] `make status`** at 02:07:11: `production/vpn` and `production/proxy` up, `production/tooling`
+  stopped, `sandbox/egress` up with 33 resources and `sandbox/probes` with 4, every other `[E]` slice down;
+  Sandbox's JupyterLab and Code Editor apps up since 2026-11-21 20:07 and 20:08 (N.9's day 2).
+- **[user] Step 2**: the tunnel up, the laptop's first handshake on the `t3.nano` tunnel host at 01:33:09
+  (Stage 12's log); `make gitlab-up BUILD=1`, GitLab's host started at 02:09:39 and running with both
+  status checks `ok` at 02:11:46, the deploy, test and build runners launched from 02:09:59 to 02:10:07.
+- **[Claude] `production/tooling/` applied** at 02:12:56 on the user's word, *"autorizo o apply do
+  tooling"*: Stage 12 2.2's alarm action, and `EXC-19` closed (Stage 12's log).
+- **[Claude] Production read before release G's leg**: `app_etl_deploy_production_app_etl`, `_train` and
+  `_warehouse` `READY`; `deploy-production` (`d7qcazihvr3s7k`) `ACTIVE`, a search for a data product it
+  owns answering none; `app_etl`'s newest run `wITFYNHoLyyEsev`, of 2026-11-16 03:19:11. Inside one page
+  `list-workflow-runs` orders runs by no time (`SUP-436`), and it carried `RunType` on every run in
+  Sandbox, Staging and Production (`SUP-251`, read again).

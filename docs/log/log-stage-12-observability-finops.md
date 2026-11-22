@@ -1061,3 +1061,28 @@ Read with `get-console-output --latest` every 20 s until `END`:
 - The proxy's step (0), in an apply outside the §N.9 day 2 sitting: any proxy apply replaces the estate's
   single internet exit.
 - The orchestrating session's index rows, at the end of day 2.
+
+## 2026-11-22 — R1's half of 2.2: the first handshake on the `t3.nano`, and `production/tooling/` applied
+
+*Claude, in the session that ran the hub sitting and drives R1, on the user's word in chat, *"autorizo o
+apply do tooling"*, as `awsds-infra-prod` (account Production, the infrastructure user with
+`InfrastructureAccess`). Times are UTC.*
+
+- **[user] The first handshake on the new tunnel host**: `/awsds/prod/vpn`'s first sample after the
+  `t3.nano`'s first boot that does not read `handshake=never`, at 01:33:24 in
+  `i-0e3ae32bacd61c9b2/handshakes`: `peer=mbp handshake_age_s=15`, a handshake at 01:33:09, then a sample
+  every 70 s.
+- **[Claude] `production/tooling/` planned** read-only from a worktree at `main`'s `030a3625`, GitLab
+  stopped. Without `-var-file`, at 01:37: *0 to add, 2 to change, 0 to destroy*, the alarm and
+  `aws_s3_object.gitlab_rb`, whose SAML block would leave the rendered `gitlab.rb`. With
+  `-var-file=<project folder>/secrets/saml.auto.tfvars`, at 01:39: *0 to add, 1 to change, 0 to destroy*,
+  the alarm alone, as on 2026-11-21 (Lesson 79's second instance).
+- **[Claude⚡] The apply**, from `main`'s `1980abb2` with the var-file, GitLab up since 02:11: the plan
+  saved at 02:12:36 read *0 to add, 1 to change, 0 to destroy*; `PutMetricAlarm` on
+  `awsds-prod-gitlab-status-check` at 02:12:56, *"Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed."*, `saml_enabled = true` among the outputs. The re-plan at 02:13:14 read *"No changes."*
+- **[Claude] Read back**: `describe-alarms` reads one action on `awsds-prod-gitlab-status-check`, the
+  configuration updated at 02:12:56.865, the state `OK` since 2026-11-10 01:59:20. `./aws/observability.py`
+  at 02:17: *"every alarm notifies a topic that resolves (7 alarms)"* for `OB-3` in `awsds-infra-prod`,
+  and *"all checks passed"*. `EXC-19` is closed.
+- **Left of 2.2**: step 7, `describe-alarms` with the hub stopped after R1's lowering; then 2.4.
