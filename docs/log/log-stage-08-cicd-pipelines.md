@@ -4624,3 +4624,15 @@ Times are UTC.*
   `4401f91`, *"A regra operador recusa pelo nome o SageMakerUnifiedStudioNotebookOperator"*. The
   applications' pins move to it at their next tags, `app-etl`'s after release G
   (`promotion.md` §N.11.1 step 6); no application's lint has run at `4401f91` yet.
+
+## 2026-11-22 — 5.6's rule read against the applications' trees, nothing up
+
+*Claude, offline on the laptop, from `main` at `77fc285a`.*
+
+- **[Claude] `awsds-workflows lint`** in `examples/app-etl`, `examples/app-ml` and `examples/app-genai`, each
+  with its pipeline's options (`app-etl` and `app-ml` with `--image-repository` and `--algorithm-repository
+  sagemaker-xgboost`, `app-ml` with `--model-item model`, all three with the seven `--instance-type`), at the
+  application's pin and at
+  `4401f91`: `app-etl` *"ok: 9 arquivo(s)"* at `196acee` and at `4401f91`, `app-ml` *"ok: 6 arquivo(s)"* and
+  `app-genai` *"ok: 3 arquivo(s)"* at `37cb5a6` and at `4401f91`, every run exit 0. `app-dbt` is pinned at
+  `4401f91` already, so each application's next tag moves its pin with nothing to change in its workflows.

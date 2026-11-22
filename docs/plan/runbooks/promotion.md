@@ -1216,12 +1216,15 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
    model, its archive and its tar. Since R1 carried no `app-dbt` bundle, 5.0 waits on none: its link asset
    and pass 5's table asset leave `app-dbt-dev` before R2's `app-dbt` tag (Stage 20 8.6). Both
-   subscriptions stay until N.10's day 2 ends, since both of its days read through them.
+   subscriptions stay until N.10's day 2 ends, since both of its days read through them. **The two requests
+   made 2026-11-22** with nothing up, `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC,
+   both `PENDING`: left, xxvi's portal half, then the Governance Manager's two approvals.
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
    pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
    verification xxiv's `Retrieve` to day 3, which raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`.
-   Day 3 depends on no other sitting.
+   Day 3 depends on no other sitting, and its prerequisites, `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova
+   Lite profile and the two tars, were done 2026-11-22 (N.12.5).
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
    the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
@@ -1233,7 +1236,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
    so either may come first, and R2 follows its day 1 (item 10).
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies, item 9's day 1, whose pass 5 Stage 20 orders
-    before pass 8, and #321's merge: `app-dbt`'s first release,
+    before pass 8, and #321's merge, its branch synced with `main` at `77fc285a` on 2026-11-22: `app-dbt`'s
+    first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2307,7 +2311,7 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
   - Stage 20 2.1: the database `app_dbt` in `app-dbt-dev` and the editor's probe. The database's source
     then runs daily at the minute of its creation, which the sitting's runs keep clear of.
   - Stage 17 0.9's portal reading, before day 2; `app-ml-dev`'s MLflow App by 1.5's path, before day 3. An
-    MLflow App bills nothing at rest.
+    MLflow App bills nothing at rest. Created 2026-11-22 from the project's gallery (N.12.5).
   - 6d 7.6's second identity, `eighth-experimentation`'s contributor, signed in from a browser profile of
     its own; and the window for 6d 7.5's monitored profile, which moves the laptop's network for every
     session.
@@ -2317,7 +2321,9 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
   reads its effect.
 - **`sandbox/ml/`'s statements** for endpoint configurations, endpoints and pipelines (Stage 17 decision 7)
   ran from `main` on 2026-11-20 with nothing up (N.6 item 3).
-- **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Done
+- **[Claude] With nothing up:** the archives of `app-ml` and `app-genai` from `main` on day 3's eve. Built
+  2026-11-22 from `77fc285a` under `$HOME/tmp/stage17-day3/`, with `app-ml.env` and `app-genai.env` (N.12.5);
+  built again if `main` changes `examples/app-ml/` or `examples/app-genai/` before day 3. Done
   2026-11-19: Stage 20 4.5's workflow and its second tar (pull request #335); Stage 17 7.4's evaluation
   dataset, and `examples/sandbox-ml`'s scripts read against the house image's lock (#336).
 
@@ -2434,9 +2440,10 @@ after day 1* (N.9.3).
    Claude marks its start and end in UTC as the user reports them and reads `./aws/bedrock-usage.py` after
    the channels' publication lag. The token volume goes to Stage 12 decision due 2's ceiling, where 6e
    decision 6, taken 2026-11-17, leaves it.
-3. Stage 17's sitting C: 9.6, `app-ml` trained, registered and scored in `app-ml-dev` (verification
-   lx); then 10.4's deploy and its readings 1 to 6, each `sandbox/bedrock/` apply [Claude⚡], both switches
-   back to `false` at the end; then pass 5 in `eighth-experimentation`'s space, the pipeline authored from
+3. Stage 17's sitting C: each tar and its `.env` file from `$HOME/tmp/stage17-day3/` uploaded into its
+   project's space and unpacked there, the file sourced before the deploy; 9.6, `app-ml` trained,
+   registered and scored in `app-ml-dev` (verification lx); then 10.4's deploy and its readings 1 to 6,
+   each `sandbox/bedrock/` apply [Claude⚡], both switches back to `false` at the end; then pass 5 in `eighth-experimentation`'s space, the pipeline authored from
    the SDK, run and read back, and the editor's forms (5.1 to 5.4). About 6.2 hours.
 4. [user] Verification xxiv: from `jup`, one `Retrieve` on the knowledge base `QWDNVYXADH` through
    `bedrock-agent-runtime`, its output pasted (Stage 17 7.4b), after 6e 6.4's window. Minutes.
@@ -2744,7 +2751,8 @@ release, each of which raised the same hub, GitLab and egress.
 Written with nothing up on 2026-11-20, when the user asked for the plan that takes the least time to run.
 N.6's order stands; this section dates it and puts each day's waits beside other work. What N.12.3 lists
 was read or built that day, so no sitting spends time on it. Read again on 2026-11-22 with nothing up,
-after the first three metered days.
+after the first three metered days. N.12.5 holds what a later session of that day read and built with
+nothing up.
 
 #### N.12.1 The calendar
 
@@ -2756,9 +2764,9 @@ bound it stay N.6's.
 | 2026-11-21, ran | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
-| 2026-11-22 on | N.6 item 6, with nothing up | — | R1's listing; Stage 19's xxvi portal half (N.12.4) |
-| 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | `app-ml-dev`'s MLflow App; `app-genai-dev`'s first call to Nova Lite |
-| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's subscriptions and Stage 20 5.1's tar |
+| 2026-11-22 on | N.6 item 6, with nothing up, its two requests made 2026-11-22 | — | Stage 19's xxvi portal half, then the two approvals (N.12.4) |
+| 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
+| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's two approvals and Stage 20 5.1's tar |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1; #321 merged |
 
@@ -2873,13 +2881,13 @@ The waiting list holds each as a row. In the calendar's order:
 - **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
   Stage 19 4.12's membership, which 4.12's approval needs, done 2026-11-21 (Stage 19's log).
 - **Before N.9's day 2**: Stage 17 0.9, read 2026-11-21 (Stage 17's log).
-- **Before N.9's day 3**: `app-ml-dev`'s MLflow App; and, before 10.4's deploy, `app-genai-dev`'s first
-  call to Nova Lite, which creates the project's application inference profile whose ARN 10.4's
-  `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Which portal act counts as that first use, the
-  playground's or a notebook's, is read on the day.
+- **Before N.9's day 3**: `app-ml-dev`'s MLflow App, and `app-genai-dev`'s first use of Nova Lite, whose
+  application inference profile 10.4's `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Both done
+  2026-11-22 (N.12.5): the first use is the project's subscription to the model's listing, which an unsaved
+  *Run* in the Bedrock IDE's prompt builder made and a playground call does not make (`SUP-445`).
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
-- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half, then the two requests and their
-  approvals; N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
+- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half, then the approvals of the two
+  requests made 2026-11-22; N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
@@ -2888,8 +2896,36 @@ The waiting list holds each as a row. In the calendar's order:
   The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
 - **Before R2**: Stage 17 10.5's acts (above); #321 merged, its branch having taken `origin/main` by merge
-  and its `--self-check` printing every stage `ok` (N.11.1 step 6); the answer on whether GitLab's local
+  and its `--self-check` printing every stage `ok` (N.11.1 step 6), which it did again on 2026-11-22 at
+  `77fc285a` (N.12.5), so the merge alone is left; the answer on whether GitLab's local
   user's password was rotated before R1's pushes.
+
+#### N.12.5 What was read and built with nothing up on 2026-11-22, after R1
+
+Each reading is in the log of the stage that owns it.
+
+- **The instruments**, from 08:30 to 08:53 UTC, every check as `AWS_STATE.md` expects with everything down:
+  `studio`, `remote-ide`, `warehouse`, `catalog`, `cicd`, `deploytargets`, `orchestration`, `devenv`,
+  `egress`, `vpn`, `datalake`, `sandbox-orchestration`, `sandbox-ml`, `bedrock-scope` and `bedrock-usage`.
+  `WH-7` and `WH-11` fail until 6h's step 7 (§C); `OR-2`'s fails are `EXC-25`'s; `DE-2` fails while
+  `sandbox/egress/` is down; `ML-8` fails on the flow's role (`SUP-447`); the persona profiles' calls fail
+  with no sign-in on their session. `make status` read 0.0000 USD/h at 08:20 UTC.
+- **N.9's day 3**: its prerequisites, in the portal as the Data Scientist User. `app-ml-dev`'s MLflow App
+  `app-ml-dev-mlflow` from the project's gallery, `AutoModelRegistrationDisabled`; `app-genai-dev`'s Nova
+  Lite profile `ciceumyodl7y`, created after an unsaved *Run* in the Bedrock IDE's prompt builder subscribed
+  the project to the model's listing (`SUP-445`). The tars of `app-ml` and `app-genai` and their `.env`
+  files under `$HOME/tmp/stage17-day3/`, from `77fc285a` (Stage 17's log). `./aws/bedrock-usage.py` from
+  2026-11-01 to 08:30 UTC: 0.0346 USD computed, day 2's embeddings and Haiku 4.5 most of it.
+- **N.10's day 1**: `sandbox/warehouse/` planned from `main` at `77fc285a` with both switches named, *"Plan:
+  7 to add, 2 to change, 0 to destroy."* at 08:48 UTC, as 6h's step 7 expects; nothing saved. N.6 item 6's
+  two requests made at 08:27:36 and 08:28:16 UTC, both `PENDING` (Stage 19's and Stage 20's logs). 6f's 2.3
+  to 2.5 run: `test-experimentation`'s subscription to `house-price` queried and revoked, and
+  `my-data-product` granted to it by its owner (6f's log).
+- **R2**: #321's branch took `origin/main` at `77fc285a` by merge (`e6538fb0`, 29 commits, no conflict), its
+  `--self-check` printing every stage of the four applications `ok` and `make check` passing (Stage 20's
+  log). `awsds-workflows lint` at `4401f91`, the pin each application's next tag takes, reads `ok` for
+  `app-etl` (9 files), `app-ml` (6) and `app-genai` (3) with each pipeline's options; `app-dbt` carries the
+  pin already.
 
 ## Q. After the quotas: Stage 10's pass 3
 

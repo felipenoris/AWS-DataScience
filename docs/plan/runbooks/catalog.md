@@ -582,12 +582,21 @@ the owner for the consumer project, `ACCEPTED` at creation with no reviewer and 
 a subscription's. No Share on a lake listing (6f decision 5): `CT-11` fails one, and `CT-16` notes one on a
 Sandbox project's product.
 
+On a data product's page the owner's *Actions* menu reads *Create subscription*, *Unpublish* and *Delete*
+(read 2026-11-22, 6f 2.5). *Create subscription* grants the product to up to 10 principals, projects or IAM
+roles, with no full or filtered choice, and its project selector lists every project of the domain, the
+deployment projects among them. Its request is the Share's, accepted at creation with no reviewer, and the
+fulfilment of `my-data-product`'s one item read `COMPLETED` 17.5 s after it.
+
 ### The revocation
 
 - *Manage → Catalog management → Subscription requests → Access*, *Revoke*, an optional box that keeps the
   asset in the subscriber's targets, *Revoke subscription* (the revocation page, read 2026-11-17). With the
   box ticked, the page leaves the access to be removed later in Lake Formation. A revoked subscription
   cannot be approved again: the subscriber requests anew.
+- The portal read 2026-11-22 shows a dialog *Revoke access* in its place, which asks for the word *confirm*,
+  carries no box and sends `retainPermissions` `false` (6f 2.4): the owner's role revoked the grant 39 s
+  later and the consumer's deleted the link at 49 s.
 - Measured in one account (2026-11-14, Stage 19 ix; `SUP-365`): `RevokeSubscription` at 23:00:00 UTC, the
   producer's `BatchRevokePermissions` at 23:00:52 and the consumer's `DeleteTable` on the link at 23:01:02.
   A Spark session opened before the revocation read until the link's delete, then failed

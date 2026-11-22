@@ -631,7 +631,11 @@ The project's kind sets what the gallery can hold:
 
 The gallery reopens the MLflow entries' gate (the checklist's step 7): [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md)
 9.6 creates `app-ml-dev`'s MLflow App with `datazone create-environment` because those entries grey out, and
-the gallery offers *MLflow App* in that project, a portal door for 9.6; what its *Deploy* sends is unread.
+the gallery offers *MLflow App* in that project, a portal door for 9.6. Its *Deploy* creates an environment
+with the profile's configuration: `app-ml-dev`'s `c7pal0653hk0i8` reads the profile's `MLflowApp`
+configuration `3342d20e-001b-4b95-9053-fbbc04b5c303`, and the provisioning role created the app
+`app-ml-dev-mlflow` with `AutoModelRegistrationDisabled`; the form's `mlflowAppName` opens holding
+`serverless-app` (measured 2026-11-22, [the log](log/log-stage-17-sandbox-machine-learning.md)).
 
 `S3Bucket` was measured on 2026-11-21 in `test-experimentation`: the infrastructure user, a contributor there
 through its role's group profile (`SUP-159`), deployed it through the API with the profile's configuration

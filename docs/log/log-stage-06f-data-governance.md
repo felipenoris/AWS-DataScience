@@ -1534,3 +1534,76 @@ Governance Manager user, in a separate profile; Claude read AWS as the infrastru
   02:32:51Z, *"0 check(s) FAILED"*, `DL-7` eleven shares out and two resource links on the consumer side; it
   exits 1 because section 14 lists `get-caller-identity` for the profiles of the other sign-in sessions,
   none signed in.
+
+## 2026-11-22 — 2.3 to 2.5: `house-price` queried and its subscription revoked, and `my-data-product` shared by its owner
+
+*Claude, on the user's request of the session to run every step that needs nothing up, made the portal acts
+as the Data Scientist User in the user's own Chrome session, which the user offered for SMUS acts; AWS read
+as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and
+`Data Governance Account` (`awsds-infra-data`), reads and simulations alone. Times UTC.*
+
+- **[Claude] 2.3, the query**, in `test-experimentation`'s query editor, a new tab: `SELECT * FROM
+  "glue_db_4zojr4rr6bmnww"."house-price" LIMIT 10;` on *Athena (SQL)*, started about 08:29:35Z, 10 rows in
+  1221 ms. The editor's *"Try the new Query Editor"* dialog was closed with *Later*.
+- **[Claude] 2.3, the principal on `GetDataAccess`**, Sandbox's trail: two events at 08:29:37Z, one query id,
+  as `test-experimentation`'s project role in a session created at 08:29:06Z whose source identity is the
+  Data Scientist User's identity-store id, invoked by `athena.amazonaws.com`, with `requesterService`
+  `ATHENA`, `LakeFormationTrustedCallerInvocation` `true` and `cellLevelSecurityEnforced` `true`, `SELECT` on
+  the link `glue_db_4zojr4rr6bmnww/house-price`. The credential went to Athena, the trusted caller.
+- **[Claude] 2.3, the other door**, by principal simulation as `test-experimentation`'s role, the bucket
+  policy of `awsds-sandbox-smus-projects` (one statement, `DenyInsecureTransport`) as the resource policy, the
+  Region and the role's tags in the context: `s3:GetObject` on `eighth-experimentation`'s upload,
+  `dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/local-uploads/<folder>/house-price.parquet` (9249 bytes), reads
+  `implicitDeny` with no statement matching, the boundary and the organization allowing; on the role's own
+  path, `dzd-d8yrvx1ko7im6o/4gqfau9xuo6e4w/dev/local-uploads/`, the same call reads `allowed` by
+  `SageMakerStudioProjectUserRolePolicy` and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy`, the
+  positive control. Without the Region key every call read `explicitDeny` (`SUP-008`). The managed policy's
+  per-project path refuses the direct door at the identity layer.
+- **[Claude] 2.3, Lake Formation's door**: Sandbox's settings read `AllowFullTableExternalDataAccess` `true`,
+  `AllowExternalDataFiltering` `false`, `CROSS_ACCOUNT_VERSION` `4` and `SET_CONTEXT` `TRUE`, and
+  `lakeformation:GetDataAccess` simulates `allowed` for the role by `SageMakerStudioProjectUserRolePolicy`.
+  A session of the project role holding the full-table `SELECT` could ask for the table's S3 credentials
+  outside Athena; only a space or the portal mints that session, so the door stays unexercised.
+- **[Claude] 2.4, the revocation**, from `eighth-experimentation`'s *Manage → Catalog management →
+  Subscription requests*, tab *Access*, the row `house-price` granted to `test-experimentation`, *Revoke*.
+  The dialog *Revoke access* asks for the word *confirm* and carries no box keeping the asset in the
+  subscriber's targets. `RevokeSubscription` at 08:42:33Z in Data Governance's trail, as
+  `awsds-data-studio-domain-execution`, `retainPermissions` `false`; the subscription `6exx6qof1bqads`
+  `REVOKED` at 08:42:33Z by the Data Scientist User; the grant `c63tep9telqz68` `REVOKE_IN_PROGRESS` at
+  08:42:45Z.
+- **[Claude] 2.4, the removal**, each call in an `AWSDataZone-Subscriptions` session: at 08:43:12Z
+  `eighth-experimentation`'s role revoked the `IAMPrincipals` `SELECT` under `test-experimentation`'s
+  condition (`BatchRevokePermissions`), 39 s after the revocation; at 08:43:22Z `test-experimentation`'s role
+  deleted the link (`DeleteTable`), 49 s after. Lake Formation listed the owner's rows alone on
+  `mydatabase.house-price` at 08:43:14Z, and at 08:43:36Z the subscription listed no grant and the link was
+  gone.
+- **[Claude] 2.4, a vended credential**: 2.3's query run again at about 08:44Z failed, *"TABLE_NOT_FOUND:
+  line 1:15: Table 'awsdatacatalog.glue_db_4zojr4rr6bmnww."house-price"' does not exist"*. 2.3's
+  `GetDataAccess` vended its credential to Athena for one query, so no session of the project held one past
+  the revocation; one from Lake Formation's full-table door would, and that door is unexercised.
+- **[Claude] 2.5, the Share**: as the owner, `my-data-product`'s *Actions* menu holds *Create subscription*,
+  *Unpublish* and *Delete*, and no *Share*. *Create subscription* opens *"Create subscription for
+  my-data-product"*, *"Grant access to a published data product by selecting projects or IAM roles"*: a
+  principal type, *Project* by default; a project selector listing every project of the domain,
+  `deploy-production`, `deploy-staging` and `governed-lake` among them; up to 10 principals; no full or
+  filtered choice. `test-experimentation` selected, *Create* at 08:45:57Z: *"Subscription created
+  successfully."*
+- **[Claude] 2.5, the request**: `CreateSubscriptionRequest` at 08:45:57Z in Data Governance's trail as the
+  domain execution role, for the project `4gqfau9xuo6e4w` on `czt1j8ttwsl8r4`. The request `bz5sykge8aqbyo`
+  `ACCEPTED` at creation, 08:45:57.689Z, by the Data Scientist User, with no reviewer, no comment and an
+  empty reason; the subscription `bgma38ycnwdvkg` `APPROVED`. No approver appears, as `SUP-362` measured on
+  an asset.
+- **[Claude] 2.5, the fulfilment**, in `AWSDataZone-Subscriptions` sessions: at 08:46:04Z
+  `eighth-experimentation`'s role granted `SELECT` on `mydatabase.house-price` to `IAMPrincipals` under
+  `context.datazone.projectId=="4gqfau9xuo6e4w"`; at 08:46:14Z `test-experimentation`'s role created the link
+  and granted `DESCRIBE` on it to `IAMPrincipals` and to `arn:aws:identitystore:::user/*` under the same
+  condition. The grant `4bd6l8194vby1c` read `COMPLETED`, the asset `GRANTED`, at 08:46:15Z, 17.5 s after
+  the request against 2.2's 54 s, and the link was back at 08:46:25Z: 2.2's writes, the product's one item
+  fulfilled by one grant.
+- **[Claude] 2.6 not run**: `my-data-product` holds one asset, `house-price`, which 2.5's subscription
+  fulfilled, so a request from `test-experimentation` would ask for what it holds. Whether one approval
+  fulfils every item needs a product of several items, which no project holds (`catalog.md` §P).
+- **[Claude] The instruments**: `./aws/catalog.py` at 08:53:35Z, *"all checks passed"*: `CT-16` notes
+  `bgma38ycnwdvkg` as *"the owner's Share, a request made by a member of the owning project"*, `CT-17` one
+  fulfilment on `mydatabase.house-price`, `CT-8` 57 project-conditioned `IAMPrincipals` grants, `CT-11` no
+  direct Share on the lake. 2.7's deletion of `4lrapnc3syxd74` waits on the user's word (decision due 6).

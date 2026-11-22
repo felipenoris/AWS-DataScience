@@ -2162,3 +2162,20 @@ Governance, the domain's account). Times are UTC.*
   answered, four `ListConnections`, nine `GetConnection`, `ListEnvironments`, four `Search`, two
   `SearchTypes`, two `GetAsset` and `GetCallerIdentity`, each a read. A read at 20:45:39 had found the
   window empty.
+
+## 2026-11-22 — 5.0's request pending, and #321 synced with `main` after release G
+
+*Claude, on the user's request of the session to run every step that needs nothing up: the request made as
+the Data Scientist User, `app-dbt-dev`'s owner, in the user's own Chrome session, which the user offered
+for SMUS acts; AWS read as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`). Times UTC.*
+
+- **[Claude] 5.0's request**, from `app-dbt-dev`'s page of `trades-notional` (`dr8t27tte8ezdc`) at 08:28:16Z:
+  `CreateSubscriptionRequest` as `awsds-data-studio-domain-execution` for `dnl3l158mbhrio`; the request
+  `6oy7kvmszacaa8` reads `PENDING`. Its approval follows Stage 19's xxvi portal half, as 4.12's
+  (`6gtjmvdzma9n9s`, 08:27:36Z) does, and 5.1's model, archive and tar follow the link.
+- **[Claude] #321's branch** took `origin/main` at `77fc285a` by merge in a scratch worktree, 29 commits of
+  `main` since `00113780`, no conflict: `./scripts/deploy-application.py --self-check` printed every stage of
+  `app-etl`, `app-ml`, `app-genai` and `app-dbt` `ok`, `make check` OK, and pre-commit's hooks passed on the
+  merge commit `e6538fb0`, pushed to `claude/plano-estagios-execucao-5f64d8-n6-item10`
+  (`00113780..e6538fb0`). The pull request reads `MERGEABLE`; its merge is the user's, before R2.
