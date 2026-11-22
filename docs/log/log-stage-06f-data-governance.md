@@ -1662,3 +1662,14 @@ and the memberships from `Sandbox Account 1` (`awsds-infra-sandbox-1`), as the i
   is at version 13 since 2026-11-19 (Stage 19 4.12).
 - **[Claude] Written**: 0.6's note, `institutional-delta.md`'s row, and the waiting list's Decisions row
   removed. 6h's `EXC-17` and `INT-25` hold no session of their own; their files are unchanged.
+
+## 2026-11-22 — 0.6's record: `institutional-delta.md`'s row left to pull request #374
+
+*Claude, with no AWS call. Amends the entry before this one, whose last bullet names a row this branch no
+longer carries.*
+
+- **[Claude] The row**: the session "Decisões pendentes, uma de cada vez" opened
+  [pull request #374](https://github.com/felipenoris/AWS-DataScience/pull/374) with the decision's 6h half
+  (6h's log and `EXC-17`'s disposition) and a row of its own in `institutional-delta.md`, *"The platform
+  identity inside the data scientists' projects"*. This branch's row, *"An operator's reach into a
+  project"*, was removed, so the file carries the decision once.
