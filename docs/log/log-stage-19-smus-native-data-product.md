@@ -4482,6 +4482,14 @@ acts are named. Times are UTC.*
 - **[user] Step 2**: the tunnel up, the laptop's first handshake on the `t3.nano` tunnel host at 01:33:09
   (Stage 12's log); `make gitlab-up BUILD=1`, GitLab's host started at 02:09:39 and running with both
   status checks `ok` at 02:11:46, the deploy, test and build runners launched from 02:09:59 to 02:10:07.
+  **The build runner did not last**: at 02:41:40 an apply of `production/runners/` with `build_runner`
+  false, Terraform from the laptop as the infrastructure user, terminated it. The trail's calls from 02:41:20
+  to 02:42:41 are `make gitlab-up` without `BUILD=1`'s shape: the three runners refreshed, the build
+  runner's `TerminateInstances`, then the egress slice's endpoints read. 6e's session applied only
+  `identity/org-policies` that night, and the run is otherwise unidentified. Nothing read the runner
+  again before release G's tag: pipeline #138, created 03:56:35, held `build-image` with no runner until
+  `make gitlab-up BUILD=1` raised it again at 04:01:22 (`runners/` 7 added, 0 changed, 0 destroyed), and
+  it took `build-image` at 04:03:15.
 - **[Claude] `production/tooling/` applied** at 02:12:56 on the user's word, *"autorizo o apply do
   tooling"*: Stage 12 2.2's alarm action, and `EXC-19` closed (Stage 12's log).
 - **[Claude] Production read before release G's leg**: `app_etl_deploy_production_app_etl`, `_train` and
