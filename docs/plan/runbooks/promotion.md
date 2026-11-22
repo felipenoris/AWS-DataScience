@@ -1210,7 +1210,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    `EXC-13`'s Production half; the backup, which leaves the bucket on 2026-12-23; 6d 2.7's step 7; the
    three projects. Its steps 6 and 7 did not run, the user's choice, so R2 carries `app-dbt`'s first
    release, #321 merged before it and the mirror pushed at its opening (item 10). Its merge requests and
-   tags reached GitLab with the local user's password rotation unconfirmed, which R2 settles first.
+   tags reached GitLab with the local user's password rotation unconfirmed; the user answered on
+   2026-11-22 that the admin user's password was changed in that sitting (Stage 19's log).
 6. **With nothing up, now**: [user] Stage 19's xxvi portal half, then 4.12's request by
    `eighth-experimentation` and Stage 20 5.0's by `app-dbt-dev`, both on release G's listing, each
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
@@ -2662,8 +2663,9 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 
 **Run 2026-11-22**, from 02:00 to 06:14 UTC (Stage 19's log; Stage 12's for 2.2, 6d's for the image pin):
 steps 1 to 5 and 8. Steps 6 and 7 moved to R2's opening, the user's choice (N.11.2). Step 3's merge
-request and release G's reached GitLab with step 2's password rotation unconfirmed, so it is confirmed, or
-done, before R2's first push. N.6 item 6, Stage 19 4.12's and Stage 20 5.0's requests, is left for after
+request and release G's reached GitLab with step 2's password rotation unconfirmed; the user answered on
+2026-11-22 that the admin user's password was changed in this sitting, its order against the pushes unstated
+(Stage 19's log). N.6 item 6, Stage 19 4.12's and Stage 20 5.0's requests, is left for after
 the sitting, with nothing up: pass 8 being R2's, 5.0 waits on no `bundle` job, and R2's tag first deletes
 its link's asset (Stage 20 8.6, N.11.2 step 2). The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
 so step 4 now reads it before the tag.
@@ -2721,8 +2723,8 @@ whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 20
 `app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
-   tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] GitLab's local user's password confirmed
-   rotated, or rotated (N.8.2 step 3), before the first push; #321 merged at `81d70158` (N.11.1 step 6),
+   tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] the keychain's `gitlab.awsds.internal` entry
+   erased (N.8.2 step 3) if it still holds the password from before R1's rotation, which the first push shows; #321 merged at `81d70158` (N.11.1 step 6),
    `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; `awsds/dev-env`'s README row for
    `default-v0.10.1` by a merge request, then [Claude] its mirror (`./scripts/gitlab-mirror.py awsds/dev-env`,
    `gitlab/README.md`, *Changing a recipe*), which moves `gitlab/mirror.json` past `7f2623b6`. [Claude]
@@ -2904,8 +2906,8 @@ The waiting list holds each as a row. In the calendar's order:
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
   The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
-- **Before R2**: Stage 17 10.5's acts (above); the answer on whether GitLab's local user's password was
-  rotated before R1's pushes. #321 was merged by the user on 2026-11-22 at 13:28:54 UTC as `81d70158`
+- **Before R2**: Stage 17 10.5's acts (above); the answer on GitLab's local user's password came on
+  2026-11-22 (Stage 19's log). #321 was merged by the user on 2026-11-22 at 13:28:54 UTC as `81d70158`
   (N.11.1 step 6), `make check` and `--self-check` passing on that commit.
 
 #### N.12.5 What was read and built with nothing up on 2026-11-22, after R1

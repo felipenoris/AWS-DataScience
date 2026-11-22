@@ -4836,3 +4836,18 @@ reads alone, at 15:09 to 15:13. Times UTC.*
   restoring Staging's table, which the asset had not carried from 04:12:01 to 15:37:24. A listing made
   between an import and the source's next run would publish Sandbox's location and table ARN; Production's
   `publish` runs the source first. Written as `SUP-454`.
+
+## 2026-11-22 — GitLab's local user's password: the user's answer
+
+*The user's words in the orchestrating session's chat at about 17:37 UTC, relayed to this session; no AWS
+call.*
+
+- **[user] The answer**, verbatim: *"Sobre a senha do usuário admin, ela foi trocada na sessão de ontem."*
+  The orchestrating session reads that session as R1's sitting (2026-11-22, 02:00 to 06:14 UTC).
+- **[Claude] What it answers**: the rotation recommended by the 2026-11-08 entry "A credential exposed",
+  which `promotion.md` §N.11.2 step 1 and §N.12.4's "Before R2" asked to have confirmed before R2's first
+  push. The answer names the sitting, not the order against R1's pushes. The user names the admin user, the
+  2026-11-08 entry the GitLab user of the keychain's `gitlab.awsds.internal` entry; `gitlab.md` §I step 4
+  keeps one local account, the first admin, renamed on 2026-10-12. The waiting-list row goes.
+- **[Claude] What R2's opening keeps**: N.8.2 step 3's erase of the keychain's `gitlab.awsds.internal`
+  entry if it still holds the password from before the rotation, which the first push shows.
