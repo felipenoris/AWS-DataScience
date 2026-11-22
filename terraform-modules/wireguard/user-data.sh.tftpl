@@ -25,6 +25,52 @@ say () { echo "=== AWSDS-VPN $(date -u +%H:%M:%SZ) $* ==="; }
 
 say "BEGIN - $(uname -srm)"
 
+# ------------------------------------------------------------ (0) room for step (1)'s dnf
+#
+# Added in wireguard-v0.8.0, after the first boot of 2026-11-21 on a t3.nano. Step (1)'s dnf
+# downloaded the AL2023 repository's 91 MB of metadata and was OOM-killed at 25 s, 162 MiB
+# resident and 348 MiB swapped, with the nano's 415 MiB of RAM spent and its 415 MiB of zram swap
+# full. dnf ran inside cloud-final.service, and cloud-init received SIGTERM at once - systemd
+# stops a unit whose process the kernel OOM-killed, its documented OOMPolicy=stop default - so the
+# script never reached step (2) and the host came up with no tunnel. A cold dnf needs about 620 MiB
+# on that image (617 MiB peak for a download-only install of three packages and 623 MiB for `dnf
+# check-update`, measured on a t3.medium the same night), and the metadata grows with every
+# release: the size that builds today is not the size that builds next year.
+#
+# Two changes, both before the first dnf:
+#
+#   A 1 GiB swap file on the root volume, which is what lets a nano finish the install - slower,
+#   but finished. zram keeps its priority (100, against the file's default negative one), so the
+#   file only takes what the compressed swap cannot. dd writes it rather than fallocate: dd writes
+#   every block, so the file has no holes for swapon to refuse, whatever the filesystem. It stays
+#   in /etc/fstab, so a later dnf on the host - an operator's, through SSM - has the same room.
+#   AL2023's zram-generator creates no zram at all above 800 MB of RAM ("system has too much
+#   memory (3835MB), limit is 800MB, ignoring", the t3.medium's console), so on a t3.micro this
+#   file is the only swap there is.
+#
+#   update-motd masked. Its 70-available-updates runs a cold `dnf check-update` at every boot, and
+#   on the nano it was the second process OOM-killed (at 48 s, 185 MiB resident and 370 MiB
+#   swapped). What it feeds is the login banner's count of available updates, and nobody logs in
+#   here: the shell is an SSM session (vpn.md K0a). `mask --now` also stops a run already going and
+#   cancels one already queued. A [D] host boots at every session start, so the mask is permanent
+#   rather than a first-boot measure.
+#
+# Neither is fatal. A host large enough not to need them builds without them, and step (1) is
+# where a host too small for its dnf says so.
+say "(0) a 1 GiB swap file, and update-motd's dnf off this host"
+if dd if=/dev/zero of=/swapfile bs=1M count=1024 status=none && chmod 0600 /swapfile \
+     && mkswap /swapfile > /dev/null && swapon /swapfile ; then
+  echo '/swapfile none swap defaults 0 0' >> /etc/fstab
+  say "(0) swap: $(swapon --show=NAME,SIZE --noheadings | tr -s ' ' | paste -sd ';')"
+else
+  say "(0) FAILED - no swap file. On a host under about 1 GiB, step (1)'s dnf will be OOM-killed"
+fi
+if systemctl mask --now update-motd.service ; then
+  say "(0) update-motd masked"
+else
+  say "(0) update-motd NOT masked - its dnf check-update may run beside step (1)"
+fi
+
 # ------------------------------------------------------------------------- (1) packages
 #
 # The three names were measured present in the AL2023 core repository for this region on
