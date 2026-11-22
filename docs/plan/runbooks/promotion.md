@@ -2426,9 +2426,9 @@ after the down's hook shows there.
 #### N.9.7 The sitting's cost
 
 At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
-- the hub's two hosts and two addresses, 0.026 USD/h to 23:24 UTC on 2026-11-21 and 0.0724 since, the VPN
-  host a `t3.medium` (0.0416) and the proxy a `t3.small` (0.0208) after that night's rebuilds (read
-  2026-11-22), and Sandbox's 18 endpoints, 0.180 USD/h, each day;
+- the hub's two hosts and two addresses, 0.026 USD/h to 2026-11-21 23:23 UTC, when the VPN host relaunched
+  as a `t3.medium` (0.0416), and 0.0724 since 23:53, when the proxy relaunched as a `t3.small` (0.0208)
+  (launch times read 2026-11-22), and Sandbox's 18 endpoints, 0.180 USD/h, each day;
 - the groups' endpoints at 0.010 USD/h each: day 1's one, day 2's six and day 3's four;
 - each space's app, 0.050 USD/h on `ml.t3.medium` and 0.100 on `ml.t3.large`, 6d's remote-access spaces;
 - a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
