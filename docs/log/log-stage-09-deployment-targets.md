@@ -3170,3 +3170,23 @@ R1); Claude read AWS as the infrastructure user with `InfrastructureAccess` in `
 - **[Claude] The reading**: 0.32 USD of credit since 299.50 on 2026-10-30, with that sitting the only
   workgroup in between, against 0.16 for xxiv's. Read five days after the sitting, no late part is left.
   299.18 is R1's reading before; the one after and the next day's are R1's (`promotion.md` §N.8.3).
+
+## 2026-11-22 — the free trial's Production balance after R1
+
+*The user's hand in the Redshift Serverless console, pasted in the orchestrating session's chat at 17:41 UTC
+and relayed to this session verbatim (`promotion.md` §N.8.3); Claude read AWS as the infrastructure user with
+`InfrastructureAccess` in `Production Account` (`awsds-infra-prod`) at about 17:55, reads alone.*
+
+- **[user]** *"Production Account"*, *"Free trial credits remaining"*, *"$299.16 out of $300.00"*, *"Free
+  trial expiration"*, *"January 21, 2027"*.
+- **[Claude] The compute since 2026-11-21**: `list-workgroups` empty. The trail holds one `CreateWorkgroup`
+  since, at 2026-11-22 05:39:48 UTC, and five `DeleteWorkgroup` from 05:47:52 to 05:48:01, each by the
+  infrastructure user: R1's N.8.3 reading (Stage 19's log). `awsds-prod-warehouse` published one half-hour
+  interval, 05:30: `ComputeSeconds` 0 and `ChargedSeconds` 240 RPU-seconds, 0.024 USD at the rate.
+- **[Claude] The reading**: 0.02 USD of credit since 299.18 on 2026-11-21, with R1's the only workgroup in
+  between: one 60-second minimum at 4 RPU, which `ChargedSeconds` shows and `ComputeSeconds` does not
+  (`SUP-142`). Read 12 hours after the delete; the next day's reading is owed.
+- **[Claude] `ChargedSeconds` over the earlier sittings**, read the same minute: release F's of 2026-11-16,
+  3,120 RPU-seconds (0.312 USD) against the balance's 0.32; xxiv's of 2026-10-26, 1,680 (0.168) against
+  0.16; the early 2026-10-26 sitting, 720 (0.072) against 0.05. `ComputeSeconds` read 139, 78 and 79.
+  Appended to `SUP-143`.

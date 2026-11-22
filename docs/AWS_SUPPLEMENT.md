@@ -2020,6 +2020,12 @@ entry is still true is the reading.
   console's 12.10 USD consumed between them; which meter the free trial draws on is not settled. Where:
   `log-stage-05b-redshift-serverless.md`, 2026-10-18; `log-stage-06h-redshift-connection.md`, 2026-10-10
   (3.3 attempted); `runbooks/redshift-connection.md` §J.
+  Read again 2026-11-22 in Production against the console's free-trial balance (Stage 9's log, the balance
+  after R1): `ChargedSeconds` follows the balance within its cent in three sittings, release F's of
+  2026-11-16 (3,120 RPU-seconds, 0.312 USD, against 0.32), xxiv's of 2026-10-26 (1,680, 0.168, against 0.16)
+  and R1's of 2026-11-22 (240, 0.024, against 0.02), and over-reads the early 2026-10-26 sitting (720, 0.072,
+  against 0.05). `ComputeSeconds` read 139, 78, 0 and 79. `ChargedSeconds` is the closer meter, and which one
+  the trial draws on is still not settled.
 
 - `SUP-144` **Sandbox's Redshift Serverless audit export carried nothing while a workgroup existed, and
   Production's carried its first session** (measured 2026-10-17 over the groups' 30-day retention).

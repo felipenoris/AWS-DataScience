@@ -2027,7 +2027,8 @@ carries every step below on its own raises, after the rotation and before 2026-1
 Production raise after release G's leg, step 4's backup with GitLab already up. **Run 2026-11-22 in R1**
 (Stage 19's log): the rotation with no workgroup, 01:11:55 to 01:17:08 UTC; `--sql` through the rotated secret
 at 05:42, 13 pass and 4 notes, so `EXC-13`'s Production half is read and the database follows; the backup by
-hand at 02:48:08 and the timer's at 03:00:50, both expiring 2026-12-23. The free trial's readings around it are the user's.
+hand at 02:48:08 and the timer's at 03:00:50, both expiring 2026-12-23. The free trial's readings around it are the user's:
+299.18 before, 299.16 after, read 2026-11-22 at 17:41 UTC (Stage 9's log), and the next day's.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22 UTC. `TZ=UTC` keeps
    the CLI from printing the dates in the laptop's zone (`SUP-435`):
