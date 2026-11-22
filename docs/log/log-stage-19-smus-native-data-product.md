@@ -4744,3 +4744,110 @@ in Data Governance (`awsds-infra-data`), no AWS write. Times UTC.*
 - **[Claude] The objects**, read at 14:30: the subscriptions `3x9t8oblwdwwpc` and `c8euiy78k0c368` on
   `6wxl6t4zdypvkg`, `APPROVED`, unchanged since 13:44:38 and 13:44:39 (`SUP-452`). Nothing changes in AWS,
   and the waiting list's row goes.
+
+## 2026-11-22 — 4.12's consumer read from the query editor, and xxiv in Production's trail
+
+*The user's query as `eighth-experimentation`'s owner, the Data Scientist User, reported in the orchestrating
+session's chat and relayed to this session; Claude's reads as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and Production (`awsds-infra-prod`),
+reads alone, at 15:09 to 15:13. Times UTC.*
+
+- **[user] The read**, reported at 14:56:55, verbatim: *"A consulta pelo query editor funcionou: `SELECT *
+  FROM "glue_db_blerpkhn9nj7o0"."trades_notional" LIMIT 10;`. Rodei agora."* From `eighth-experimentation`'s
+  query editor on *Athena (SQL)*, with no space, as the orchestrating session relayed it.
+- **[Claude] The query** in the workgroup `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`:
+  `cb03150a-1538-4817-a29a-395ab7f86b68`, `SUCCEEDED`, submitted 14:56:17.674 and completed 14:56:19.531,
+  Athena engine version 3, 623 bytes scanned, 10 rows read and 10 returned (`get-query-runtime-statistics`;
+  the result itself not read). Sandbox's trail: `StartQueryExecution` at 14:56:17Z as
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` in the session `28f1b390-…@5hkjdsy3umpi1c`, source
+  identity `28f1b390-…`, the Data Scientist User's profile, invoked by `sqlworkbench.amazonaws.com`.
+- **[Claude] Sandbox's two `GetDataAccess`**, both at 14:56:18Z in that session, `SELECT`, `requesterService`
+  `ATHENA`, one `lakeFormationRoleSessionName`, `AWSLF-00-AT-<Sandbox account>-QK7JdtCMvN`. The one invoked
+  by `athena.amazonaws.com` is on the link `glue_db_blerpkhn9nj7o0/trades_notional`, with
+  `cellLevelSecurityEnforced` `true`, the project role as `lakeFormationPrincipal` and the audit context
+  `{queryId: cb03150a-1538-4817-a29a-395ab7f86b68}`. The one invoked by `glue.amazonaws.com` is on
+  Production's `app_etl/trades_notional`, `callType` `EXTERNAL`, shared event
+  `0289e0f4-4ddb-441f-869f-609879c22458`.
+- **[Claude] xxiv, Production's trail**: the shared `GetDataAccess` at 14:56:18Z on `app_etl/trades_notional`,
+  its `userIdentity` of type `AWSAccount` with Sandbox's account id and the `principalId`
+  `AROA47P7U4BDOUDA4B63F:28f1b390-…@5hkjdsy3umpi1c`, the project role's unique id and its session, invoked by
+  `glue.amazonaws.com`, with no ARN, no source identity and no audit context. The same identity is on the
+  consumer's `glue:GetTable` at 14:56:08Z and on a `GetTable` and a `BatchGetTable` at 14:56:18Z, the last
+  two carrying the audit context with the query's id. The vend: `sts:AssumeRole` at 14:56:18Z by
+  `glue.amazonaws.com` of `deploy-production`'s project role
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow` into the session `AWSLF-00-AT-<Sandbox
+  account>-QK7JdtCMvN`, under a session policy of `s3:GetObject` on
+  `awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/data/catalogs/trades_notional` and below,
+  `s3:ListBucket` on that prefix and `kms:Decrypt` through S3; then three `kms:Decrypt` in that session, at
+  14:56:18Z and 14:56:19Z, on `alias/awsds-prod-project`'s key, the encryption context the bucket. Lake
+  Formation registered `awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev` with that role,
+  hybrid access off, modified 2026-11-11 15:30:23. No error on any of these events.
+- **[Claude] The grant that admits it**, `list-permissions` at 15:12. On Production's table: two
+  `IAMPrincipals` `SELECT` rows for Sandbox, under `context.datazone.projectId=="avhvbqn37ty7m8"` and under
+  `dnl3l158mbhrio`'s (Stage 20 5.0's), beside the deployment project role's own rows; no other row admits a
+  Sandbox principal, and the read's role is `eighth-experimentation`'s, whose id the first condition names.
+  On the link: `IAMPrincipals` `DESCRIBE` under `avhvbqn37ty7m8`'s condition, and the consumer role's `ALL`,
+  `DESCRIBE`, `DROP`.
+- **xxiv answered**: Production's trail names the consumer's account, the project role's unique id and the
+  session `<user id>@<environment id>`, never an ARN, a source identity or a name, and the query's id only in
+  Glue's audit context. The read is admitted by the fulfilment's `SELECT`, and the data is vended through
+  `deploy-production`'s project role, Production's own role, under a session policy scoped to the table's
+  prefix. The S3 reads are data events, which the trail's lookup does not return. Appended to `SUP-416`.
+- **Left of 4.12**: the revocation, by 2.5's path, after `promotion.md` §N.10's day 2.
+
+## 2026-11-22 — Step 8 of the order: the scheduled source runs after R1's imports, and the import's technical forms
+
+*Claude, reads alone, as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`), Staging (`awsds-infra-staging`) and Production (`awsds-infra-prod`), from 15:46 to
+15:52. Times UTC.*
+
+- **[Claude] Staging's source** `52f18khk7kdi4w` (`cron(28 15 * * ? *)`, `publishOnImport` false): the
+  scheduled run `d91kg8n15fx95c`, 15:37:23 to 15:37:24, `SUCCESS`, `added: 0`, `updated: 1`; its activity
+  `SUCCEEDED_UPDATED` on `trades_notional`, the asset `as6m73yp8shr80`. The scheduled runs of 2026-11-19 to
+  2026-11-21 read `unchanged: 1`. The asset at revision 5 (15:37:24, `SYSTEM`), with no listing.
+- **[Claude] Production's source** `5zggi2lr2ezy4w` (`cron(32 15 * * ? *)`, `publishOnImport` false): the
+  scheduled run `3jckn2l353hvgw`, 15:44:02 to 15:44:03, `SUCCESS`, `unchanged: 1`, its activity `UNCHANGED`
+  on `da1fycta6l71n4`; before it, R1's prioritized run `co4ptp86eqz1qo` at 05:03:19, `updated: 1`. The asset
+  stays at revision 6 (05:03:20, `SYSTEM`); its listing `5hpftif3nnoj2o` `ACTIVE` at listing revision 8
+  (05:03:24) carrying asset revision 6, and the product listing `dr8t27tte8ezdc` `ACTIVE` at revision 1
+  (05:03:33), product `anph2bq7uigqa8` revision 1, its one item `5hpftif3nnoj2o` at revision 8. Neither run
+  touched a listing.
+- **[Claude] What the imports wrote**, each revision read with `get-asset` and compared form by form (the
+  bodies saved outside the repository). The CLI's import revisions, by the deploy roles' IAM user profiles,
+  carry `app-etl-dev`'s table in `GlueTableForm` and in `AssetCommonDetailsForm`'s `sourceIdentifier`:
+  Sandbox's catalog id and table ARN, the location under `awsds-sandbox-smus-projects/…/ceweti7jbiu1hs/dev/`
+  and the table's `updateTime` of 2026-11-15 22:28:31Z, while the asset's `externalIdentifier` stays the
+  target's table. They are Staging's revision 2 (2026-11-16 02:09:30, `awsds-deploy-staging`) and 4
+  (2026-11-22 04:12:01, the same role), and Production's 2 (2026-11-16 02:50:37, `awsds-deploy-prod`) and 5
+  (2026-11-22 04:47:12, the same role). The target's source wrote its own table back at its next run:
+  Staging's revision 3 (the scheduled run of 2026-11-16 15:37:24) and 5 (today's), Production's 3 (the
+  `publish` task's run of 2026-11-16 03:05:17) and 6 (R1's, 05:03:20, four seconds before the listing at
+  05:03:24). Every revision since the first import keeps the description, `classification` `internal` and
+  `SubscriptionTermsForm` as the import wrote them; the source rewrites the technical forms alone. No
+  revision followed `staging-catalog` (04:37:48 to 04:37:57) or `production-catalog` (05:04:14 to
+  05:04:22).
+- **[Claude] `./aws/catalog.py`**, 15:49 to 15:53: *"all checks passed"*, `CT-15` reading *"12 listings: 2 of
+  deploy-production, none of deploy-staging or of a chain application's dev project (app-etl-dev,
+  app-dbt-dev)"*.
+- **[Claude] Read against the stage**: xvii's Staging half after release G, the source updates the imported
+  asset and creates none, and the update keeps `dev`'s business metadata (the open part of 2026-11-17).
+  Production's scheduled run reads `unchanged` because the `publish` task's run had already restored the
+  table before listing. xxv after release G: Staging's daily source revises the unlisted asset in place,
+  restoring Staging's table, which the asset had not carried from 04:12:01 to 15:37:24. A listing made
+  between an import and the source's next run would publish Sandbox's location and table ARN; Production's
+  `publish` runs the source first. Written as `SUP-454`.
+
+## 2026-11-22 — GitLab's local user's password: the user's answer
+
+*The user's words in the orchestrating session's chat at about 17:37 UTC, relayed to this session; no AWS
+call.*
+
+- **[user] The answer**, verbatim: *"Sobre a senha do usuário admin, ela foi trocada na sessão de ontem."*
+  The orchestrating session reads that session as R1's sitting (2026-11-22, 02:00 to 06:14 UTC).
+- **[Claude] What it answers**: the rotation recommended by the 2026-11-08 entry "A credential exposed",
+  which `promotion.md` §N.11.2 step 1 and §N.12.4's "Before R2" asked to have confirmed before R2's first
+  push. The answer names the sitting, not the order against R1's pushes. The user names the admin user, the
+  2026-11-08 entry the GitLab user of the keychain's `gitlab.awsds.internal` entry; `gitlab.md` §I step 4
+  keeps one local account, the first admin, renamed on 2026-10-12. The waiting-list row goes.
+- **[Claude] What R2's opening keeps**: N.8.2 step 3's erase of the keychain's `gitlab.awsds.internal`
+  entry if it still holds the password from before the rotation, which the first push shows.

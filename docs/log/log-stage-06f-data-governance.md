@@ -1673,3 +1673,39 @@ longer carries.*
   (6h's log and `EXC-17`'s disposition) and a row of its own in `institutional-delta.md`, *"The platform
   identity inside the data scientists' projects"*. This branch's row, *"An operator's reach into a
   project"*, was removed, so the file carries the decision once.
+
+## 2026-11-22 — 2.7: the failed record deleted by the API, `mydatabase` and `house-price` read back unchanged
+
+*Claude's write on the user's word in this session's chat, as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`), a contributor of
+`eighth-experimentation`; the domain's trail read from `Data Governance Account` (`awsds-infra-data`). The
+sessions "Preparação de infraestrutura SSO", "Stage 20 5.1: o modelo sobre a tabela assinada" and "Guia do
+Governance Manager no portal (item 6)" were told from 14:53:07 to 14:53:11, before the write. Times UTC.*
+
+- **[user] The word**, at 14:51, verbatim: *"Autorizo executar estes itens"*, the first of them *"6f 2.7:
+  apagar o registro 4lrapnc3syxd74."*
+- **[Claude] Before**, 14:52:40 to 14:52:47: the record `CREATE_FAILED`, `provisionedResources` null, its
+  last deployment `FAILED` on the manage-access role's `lakeformation:CreateLakeFormationOptIn`, as read at
+  13:22; `get-database` on `mydatabase` and `get-table` on `house-price` saved outside the repository, with
+  their Lake Formation rows: three on the database and three on the table, `test-experimentation`'s
+  `SELECT` under its condition among them; the source `6kk4bknmo46o0g` `READY`, no environment, the
+  connection `5pf7uc0ugllsb4`, never run, no schedule.
+- **[Claude] The deletion**: `datazone delete-environment --domain-identifier dzd-d8yrvx1ko7im6o
+  --identifier 4lrapnc3syxd74` at 14:53:23, exit 0, the record `DELETING` with a `DELETE` deployment
+  `PENDING_DEPLOYMENT` at 14:53:25.545; `IN_PROGRESS` at 14:53:45, and `get-environment` answering
+  *"Environment not found"* at 14:53:56.
+- **[Claude] After**, 14:53:56 to 14:54:04: the `get-database` and `get-table` bodies identical to the
+  saved ones, and the Lake Formation rows on both identical; the source `READY`, no environment, the same
+  connection, never run. `describe-stacks` on `DataZone-Env-4lrapnc3syxd74` answers *"Stack with id
+  DataZone-Env-4lrapnc3syxd74 does not exist"*, and the stack list holds it `DELETE_COMPLETE`, created
+  2026-09-13 01:45:32 and deleted 01:46:04.
+- **[Claude] The trails**, read at 15:02 for 14:45 to 15:10: in Sandbox's, `datazone:DeleteEnvironment` on
+  `4lrapnc3syxd74` at 14:53:25Z in the infrastructure user's `InfrastructureAccess` session, and
+  `cloudformation:DeleteStack` of `DataZone-Env-4lrapnc3syxd74` at 14:53:37Z by
+  `awsds-sandbox-smus-provisioning`'s session `AmazonDataZoneEnvironmentDeployer-<account>`, invoked by
+  `datazone.amazonaws.com`; no `DeleteDatabase`, `DeleteTable`, `RevokePermissions`,
+  `BatchRevokePermissions` or `DeleteDataSource`. In Data Governance's, the same `DeleteEnvironment` at
+  14:53:25Z, its caller in another account recorded with no ARN. No error on any of them. The window's other
+  `DeleteEnvironment` and `DeleteStack`, at 14:59, are 7.6's (Stage 17's log).
+- **2.7 done**: the record is gone, and the database, the table, their grants and the source stand as
+  before. The portal's client-side cleanup (`SUP-172`) was not on the path.

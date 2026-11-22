@@ -4910,3 +4910,131 @@ were told before the writes. Times UTC.*
   No error on any of them.
 - **[Claude] Data Governance's trail**: the same `DeleteEnvironment` at 13:40:50Z, its caller in another
   account recorded with no ARN.
+
+## 2026-11-22 — `EXC-27`: `SUP-447`'s exception written, and `ML-8` and `US-8` judging the role's shape
+
+*Claude's repository edits on the user's word in this session's chat; the two instruments run as the
+infrastructure user with `InfrastructureAccess`, reads alone. Times UTC.*
+
+- **[user] The word**, at 14:51, verbatim: *"SUP-447: escrever o EXC-nn e a mudança no ML-8/US-8 (só no
+  repositório)."*
+- **[Claude] The record**: `docs/AWS_STATE.md` `EXC-27`, accepted by the user's decision of 13:30 (this log,
+  the entry on it), and section C's reading of the role removed. `EXC-27` was free on `origin/main`
+  (`6c30f9be`) when it was written.
+- **[Claude] The checks**: `aws/awslib/flowrole.py` holds the shape: the name
+  `AmazonBedrockFlowServiceRole-*`; every trust statement an `Allow` of `sts:AssumeRole` to
+  `bedrock.amazonaws.com` alone, under `aws:SourceAccount` the account's own and an `aws:SourceArn` within
+  this account's `flow/*`; `SageMakerStudioBedrockFlowServiceRolePolicy` the only attached policy; no inline
+  policy. `aws/sandbox-ml.py` `ML-8` and `aws/studio.py` `US-8` note an unbounded role of that shape with
+  `EXC-27`'s text and fail on any other unbounded role, naming what keeps a flow role out of the shape; both
+  read `iam:ListRolePolicies` for it now. Run offline on the role's documents, the shape function returned
+  no problem, and one or two on each altered copy: another account, no condition, any account's flows, a
+  second policy with an inline one, another name, an `AWS` principal.
+- **[Claude] The readings**, 15:00:01 to 15:04:01: `./aws/sandbox-ml.py` notes `ML-8` on
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` with `EXC-27`'s text, *"all checks passed"*, exit 0.
+  `./aws/studio.py` notes `US-8` on the role in `awsds-infra-sandbox-1` and passes *"all 18
+  blueprint-provisioned role(s) bounded, besides 1 under EXC-27 (19 found by tag)"*, with Production,
+  Staging and Data Governance three each, *"0 check(s) FAILED"*; its exit 1 is the persona profiles, whose
+  sessions held no token (section 10 lists their `sts get-caller-identity` alone).
+
+## 2026-11-22 — 7.6's portal half: the owner's deletions, read
+
+*The user's acts in the portal as `eighth-experimentation`'s owner, the Data Scientist User, as the user's
+word in this session's chat placed them; Claude's reads as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account` (`awsds-infra-data`). Times
+UTC.*
+
+- **[user] The word**, at 14:51, verbatim: *"7.6: as duas deleções que faço pela CLI. As duas definições e o
+  registro falho ficam para My apps, no portal, pelo owner."* The two CLI deletions had run at 13:40 and
+  13:41 on the user's earlier word (this log, the entry on them), and read again at 14:53:50:
+  `get-environment` on `6fl52xzq3yt768` answering *"Environment not found"*, `list-vector-buckets` listing the
+  knowledge base's store `…-46cr0woe7670gg` alone.
+- **[Claude] The failed environment**: Data Governance's trail holds `datazone:DeleteEnvironment` on
+  `b343orq3qka5n4` at 14:59:05Z, no error, as `awsds-data-studio-domain-execution` in the session
+  `user-28f1b390-…`, the Data Scientist User's profile; Sandbox's holds `cloudformation:DeleteStack` of
+  `DataZone-Env-b343orq3qka5n4` at 14:59:17Z by the provisioning role's session from
+  `datazone.amazonaws.com`, on the stack deleted since 03:08:08. The profile's other 380 calls from 14:40:24
+  to 15:01:39 are reads. `get-environment` answers *"Environment not found"* at 15:05:29.
+- **[Claude] The two definitions**: `head-object` on
+  `…/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json` and
+  `…/chatApp/043850fa-6a37-44ad-9ade-89e7e3af8fc5-definition.json` in `awsds-sandbox-smus-projects` answers
+  `404` for both at 15:05:30, where the same call read 1423 and 1129 bytes at 13:37 to 13:40; under
+  `amazon-bedrock/builder/apps/` the project holds `ml-demo-flow`'s
+  `flowApp/d6d9be18-d2cd-4249-bf55-4bd97abc9a33-definition.json` alone. An object's deletion is an S3 data
+  event, which the trail's lookup does not return, so the time the definitions went is not read.
+- **7.6 done**: the four objects of its list are gone. The Nova Lite evaluation's input and output, the
+  project's Bedrock service role, and `ml-demo-flow` with its role (`EXC-27`) stay.
+
+## 2026-11-22 — 7.6's portal half: the user's report, and Sandbox's trail
+
+*The user's words in the orchestrating session's chat, relayed to this session; Claude's reads as the
+infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`), at 15:13.
+Times UTC.*
+
+- **[user] The report**, at about 15:00, verbatim: *"Apaguei o deployment do blueprint e os dois apps."* The
+  deployment is `502a9c64-…-shared` under *Resource blueprints*, and the apps are *My apps*' rows *"Untitled
+  App - cer31"* and *"Untitled App - towev"*, as the orchestrating session named them.
+- **[Claude] Sandbox's trail**, read at 15:13 for 14:55 to 15:10, 14 minutes after the portal's call: no
+  `DeleteEnvironment` and no event naming `b343orq3qka5n4`. The call is in Data Governance's trail, made
+  there as the domain execution role in the owner's session (the entry above), while Claude's own
+  `DeleteEnvironment` from Sandbox at 14:53:25 is in both trails (6f's log). The definitions' deletions are S3
+  data events, which the lookup does not return.
+- **[Claude] The project's environments**, at 15:13: ten, every one `ACTIVE`, none named `…-shared`.
+
+## 2026-11-22 — 10.5's boundary plan and `TM-28`'s unapplied fence
+
+*The overlap reported by the orchestrating session on main at `f37ff75c` and re-read here; Claude's reads
+as the infrastructure user with `InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`) and
+`Production Account` (`awsds-infra-prod`), at about 17:05, no write. Times UTC.*
+
+- **[Claude] The overlap.** #372 (`77fc285a`) adds `agent-registry` to `fenced_services` in
+  `staging/studio/` and `production/studio/`, each planned *"0 to add, 2 to change"* (`SUP-356`), and the
+  waiting list holds those applies on the user's word. `sagemaker-prereqs` renders the list as the
+  boundary's `DenyServicesNoProjectUsesHere`, in the boundary 10.5 moves to its next version in the same
+  slices, its plan read for the Bedrock statements and nothing else (Lesson 69).
+- **[Claude] The boundaries**: `awsds-staging-project-boundary` and `awsds-prod-project-boundary` at
+  version 4, last updated 2026-11-17 at 16:08:08 and 16:09:01. Neither `DenyServicesNoProjectUsesHere`
+  names `agent-registry:*`: Staging's denies `sqlworkbench`, `redshift`, `redshift-serverless`,
+  `redshift-data`, `q`, `codewhisperer`, `bedrock` and `bedrock-agentcore`, Production's `sqlworkbench`,
+  `redshift-data`, `q`, `codewhisperer`, `bedrock` and `bedrock-agentcore`.
+- **[Claude] Recorded**: 10.5's plan reading names `TM-28`'s fence unless that apply ran first, the
+  `TM-28` waiting row names 10.5's applies, and `promotion.md` §N.6 item 8 carries the clause.
+
+## 2026-11-22 — Day 3's prerequisites re-read on main at `f37ff75c`: the Sandbox slices and the tars
+
+*The plans are the orchestrating session's, relayed to this session and not re-run here; the tars read by
+Claude on the laptop, no AWS call. Times UTC.*
+
+- **[Claude, the orchestrating session] `sandbox/bedrock/` and `sandbox/ml/`**, planned at about 16:55 as
+  `awsds-infra-sandbox-1` with `-input=false`, from a worktree whose slices equal `origin/main` at
+  `f37ff75c`: each read *"No changes. Your infrastructure matches the configuration."*
+- **[Claude] The tars** under `$HOME/tmp/stage17-day3/`, built from `77fc285a`: `git diff --stat 77fc285a
+  origin/main -- examples/app-ml examples/app-genai` is empty. Outside the documents, the commits since
+  change only #321's `.pre-commit-config.yaml`, `Makefile`, `aws/cicd.py`, `scripts/deploy-application.py`
+  and `scripts/model-chain.py`, and every entry of `app-ml.tar`, `app-genai.tar`, `app-ml-source.tar` and
+  `app-genai-source.tar` lies under `app-ml/`, `app-genai/`, `examples/app-ml/` or `examples/app-genai/`.
+  The tars still match main.
+
+## 2026-11-22 — 3.3: `eighth-experimentation`'s source run after the group, and verification v
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`), at about 16:55 and from 17:41 to
+17:50; no write. Times UTC.*
+
+- **[Claude] Before the run**, at about 16:55: `Tooling-default-sagemaker-modelpackagegroup-datasource`
+  (`4tb4qnmgi0iej4`, `cron(32 17 * * ? *)`) `READY`, `ENABLED`, `publishOnImport` `false`, tracking
+  `SageMakerModelPackageGroupAssetType` over an empty list; its last run, 2026-11-21 from 17:38:11 to
+  17:38:20, `SUCCESS` with 0 assets. Sandbox holds one model package group, `ml-demo-xgboost`, `Completed`
+  since 00:18:45. The infrastructure user's `Search` in the project is refused, *"User is not permitted to
+  perform operation: Search"*, being no member of it, so the run's activities are the instrument.
+- **[Claude] The run** `ahyxtok17bxok0`, `SCHEDULED`, 17:38:11 to 17:38:24: `SUCCESS`, `added` 0,
+  `updated` 0, `unchanged` 0, `failed` 0, no error; `list-data-source-run-activities` returns no item. The
+  source reads `lastRunAssetCount` 0 and the same empty list.
+- **[Claude] `ML-4`**, `./aws/sandbox-ml.py` at 17:47:08, all checks passed: `ml-demo-xgboost` *"tagged
+  avhvbqn37ty7m8; 1 version(s): v1 Approved"*, and its `model.tar.gz` *"the model data under the project
+  key"*.
+- **[Claude] `CT-6`**, `./aws/catalog.py` at 17:50:08, all checks passed: a note listing the source among
+  the schedules nobody wrote, *"in eighth-experimentation on cron(32 17 * * ? *) (87 FAILED, 4 SUCCESS)"*.
+- **[Claude] Verification v: neither.** The source neither fails on the share nor ingests the group, which
+  had existed for 17 hours with the project's tag: it tracks an empty list, and nothing adds to it. 3.3 is
+  done.
