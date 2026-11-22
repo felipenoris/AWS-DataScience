@@ -5163,7 +5163,7 @@ UTC.*
     `ModelDataETag` `f8783f02a8dc0bb2867b2e67b030ea30`, the ETag `head-object` reads on its `ModelDataUrl`
     (10,727 bytes).
   - So the service sets the field from the object, and refuses one a caller sends, even the object's own
-    (`SUP-458`).
+    (`SUP-462`).
 - **[Claude] The correction**, in `examples/app-ml`.
   - `package_request` names no `ModelDataETag`, and the test's expected request no longer carries one.
   - The checks: *"100 passed"*, ruff clean, *"20 files already formatted"*.
@@ -5319,7 +5319,7 @@ reads alone. Times UTC.*
     the copy the task rewrote at 20:00:19. The copy is SSE-KMS under the project key with the bucket key on.
   - The copy written at 19:39 by the refused run had the ETag `b5a42cff…`, and `latest/` holds the same
     bytes under `fad76c8d…`. So an SSE-KMS object's ETag changes with each PUT of identical bytes, and
-    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-458`).
+    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-462`).
   - `text/csv` in and out, `ml.m5.large` for transform, the model quality statistics pointing at the copy's
     `evaluation.json` (378 bytes), and the metadata `sha256`, `source_prefix` `app-ml/models/latest/`,
     `training_job`, `training_source` `46bd65a0…` and `validation_auc` 0.8289499878883362.
@@ -5518,7 +5518,7 @@ user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The run is the
     `dev`; `vpcConfig` `sg-028f033a218b701b2` with the two subnets; `enableNetworkIsolation` true.
   - The model read back with the container's `ModelPackageName` and `Mode` `SingleModel`.
   - The version, `Approved`, holds the image by its digest `0b5d9341…`, `ModelDataUrl` under
-    `app-ml/models/sha256/852032c5…/`, and `ModelDataETag` `1792fa29…`, the field the service set (`SUP-458`).
+    `app-ml/models/sha256/852032c5…/`, and `ModelDataETag` `1792fa29…`, the field the service set (`SUP-462`).
 - **`score`**: the transform `app-ml-score-20261122T210440`, created at 21:04:42, ran on one `ml.m5.large`
   from 21:08:05 to 21:09:36, its volume under the project's key `a81b1ef3-…`; the output under
   `app-ml/predictions/20261122/`.
@@ -5535,3 +5535,26 @@ user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The run is the
   leaves `app-ml-dev/1` unusable if the service compares.
 - The working copy's `MODEL_SOURCE` returns to `prefix` on the `dev` stage, the user's edit, before the day
   ends.
+
+## 2026-11-22 — Day 3's sitting C: reading 6's first apply, the account's guardrail created and its enforcement refused
+
+*Claude writes this entry; the applies are Claude's, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1`, on the user's *"Autorizo a leitura 6"* and *"Autorizo os três applies."*,
+answering a question that named the three. Times UTC.*
+
+- **21:11:25, the saved plan's apply**: refused before it began, *"No valid credential sources found"*. The
+  `awsds` session's token had expired at 21:08:53 and its refresh failed (*"InvalidGrantException"*), while
+  `aws sts get-caller-identity` still answered from cached role credentials. The user signed in again at
+  about 21:11:47; the orchestrating session relayed it at 21:12. Claude's `./aws/login.py --help`, run to read
+  the script's options, started `aws sso login --no-browser`, since the script passes no argument through; it
+  was stopped with no approval.
+- **21:17:21, the saved plan's apply again**: `aws_bedrock_guardrail.account[0]` created in 2 s
+  (`awsds-sandbox-account-guardrail`, `k1w4bpgvtnt4`) and its version in 1 s. The configuration was refused by
+  Cloud Control: *"Model validation failed (#/ModelEnforcement: required key [ExcludedModels] not found)"*. The
+  plan had shown `excluded_models = []`.
+- **21:20:42, a plan with `excluded_models` naming `amazon.titan-embed-text-v2:0`**: `1 to add`. Its apply at
+  21:21:10 was refused by Bedrock: *"If modelEnforcement is present, excludedModels can only be nonempty if
+  includedModels is ['ALL']."* (`InvalidRequest`). The code change was reverted.
+- Through `awscc` 1.106.0 the configuration cannot name Nova Lite alone (`SUP-466`). The account holds the
+  guardrail and its version 1, with no configuration (`ListEnforcedGuardrailsConfiguration` empty), and the
+  deny stands.

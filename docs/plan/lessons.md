@@ -2151,7 +2151,7 @@ tag, a pin and an apply. A failed component leaves a blueprint deployment and a 
 portal acts before the component can be created again (`SUP-410`'s later reading). Staging and Production
 pin older tags, so a statement found in Sandbox reaches them only at their next apply.
 
-## Lesson 89 — a working copy reaches a run through two commands, `run` carrying its variables and `deploy` its files, and an edit is live only once its own command has run
+## Lesson 90 — a working copy reaches a run through two commands, `run` carrying its variables and `deploy` its files, and an edit is live only once its own command has run
 
 **What happened.** On 2026-11-22, Stage 17's day 3, `app-genai`'s reading 2 changed one filter of its guardrail
 definition, deployed it and ran the triage, which published version 2. The change was then discarded in the

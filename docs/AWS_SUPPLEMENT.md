@@ -4464,7 +4464,7 @@ entry is still true is the reading.
   with the project.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
-- `SUP-458` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
+- `SUP-462` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
   own ETag, and sets the field itself from the object the version names** (measured 2026-11-22 in
   Sandbox, Stage 17 9.6, as `app-ml-dev`'s project role from an MWAA Serverless worker, through the
   `sagemaker` API endpoint).
@@ -4488,7 +4488,7 @@ entry is still true is the reading.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/app-ml/code/app_ml_tasks/registry.py`.
 
-- `SUP-460` **AWS republishes the SageMaker XGBoost algorithm image under its short tag: `sagemaker-xgboost:3.0-5`
+- `SUP-464` **AWS republishes the SageMaker XGBoost algorithm image under its short tag: `sagemaker-xgboost:3.0-5`
   named a new image from 2026-11-17, and the image it named before keeps its long tag alone** (read
   2026-11-22 in AWS's `us-west-2` algorithm registry with `ecr describe-images`, Stage 17 9.6, as the
   infrastructure user).
@@ -4995,7 +4995,7 @@ entry is still true is the reading.
   editor, ran as `app-genai-dev`'s project role. Its one `InvokeModel`, at 19:43:02, named the application
   inference profile alone, with no guardrail, and its user agent `Caller/BedrockInvokeModelOperator`. The task
   log held the prompt and the response in full: *"Bedrock <profile ARN> prompt: {…}"* and *"Bedrock model
-  response: {…}"*. With `SUP-459`'s deny applied, both later runs failed on that call's `AccessDeniedException`.
+  response: {…}"*. With `SUP-463`'s deny applied, both later runs failed on that call's `AccessDeniedException`.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ### Provisioned MWAA
@@ -5579,7 +5579,7 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   the SCP battery cannot attempt those three. Where: `log-stage-11-dlp.md`, 2026-11-22; `scp-battery.md`,
   the `TM-28` amendment.
 
-- `SUP-459` **A guarded `Converse` through an application inference profile carries `bedrock:GuardrailIdentifier`
+- `SUP-463` **A guarded `Converse` through an application inference profile carries `bedrock:GuardrailIdentifier`
   on both of its authorization passes, so an `ArnNotLike` deny over the key admits it and refuses a call that
   names no guardrail on the profile's pass** (measured 2026-11-22 in Sandbox, Stage 17 10.4 step 4,
   verification xxxvii, as `app-genai-dev`'s project role from MWAA Serverless workers, through the
@@ -5601,9 +5601,33 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
     The refusal names the profile, the first pass.
   - A refused call's event carries `requestParameters` null, so the trail does not show what a refused request
     named.
+  - Read again 2026-11-22 (10.4 step 5, from `app-genai-dev`'s space). The guardrail named by its id
+    `mn3wavwk9jx7` with version `2` was admitted, so the key carries the versioned ARN when a request names the
+    id. Its `DRAFT` was refused with the wording above. A second guardrail, created and published by the role
+    six seconds earlier, was admitted.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`;
   Stage 17 decision 24.
+
+- `SUP-466` **An account-level guardrail configuration on named models cannot be created through `awscc`
+  1.106.0: the provider drops an empty `excluded_models`, Cloud Control then requires the key, and Bedrock
+  refuses a non-empty one unless `includedModels` is `ALL`** (measured 2026-11-22 in Sandbox, Stage 17 10.4
+  step 6, as the infrastructure user).
+  - The documentation: Cloud Control's schema for `AWS::Bedrock::EnforcedGuardrailConfiguration`, read with
+    `describe-type` the same day, gives `ModelEnforcement` the arrays `IncludedModels` (`minItems` 1, `ALL` or
+    model ids) and `ExcludedModels` (`minItems` 0), the latter *"If a model is in both lists, it is
+    excluded"*. It does not say that Bedrock refuses a non-empty `ExcludedModels` beside named models.
+  - The first apply, 21:17: the plan showed `excluded_models = []` beside `included_models`
+    `amazon.nova-lite-v1:0`. Cloud Control refused: *"Model validation failed (#/ModelEnforcement: required key
+    [ExcludedModels] not found)"*.
+  - The second, 21:21: `excluded_models` naming `amazon.titan-embed-text-v2:0`, a model outside
+    `included_models`. Bedrock refused the create: *"If modelEnforcement is present, excludedModels can only be
+    nonempty if includedModels is ['ALL']."* (`InvalidRequest`, 400).
+  - Through `awscc` 1.106.0 the configuration therefore enforces on every model, with no `model_enforcement`,
+    or on `ALL` less a non-empty list, never on named models alone. The guardrail and its version, which the
+    first apply created, stayed; `ListEnforcedGuardrailsConfiguration` read empty.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`.
 
 ## Terraform
 
