@@ -59,7 +59,7 @@ entry is still true is the reading.
 | [CloudTrail](#cloudtrail) | What an event names and omits; `lookup-events`' blind spots; the door a call took; cross-account and global-endpoint records; network activity events; CloudTrail Lake |
 | [CloudWatch and Service Quotas](#cloudwatch-and-service-quotas) | Aggregates and their windows; `AWS/Usage`; log groups under a customer key; log groups the services create; quotas applied, raised and refused |
 | [EventBridge](#eventbridge) | EventBridge Scheduler's context attributes under `jsonencode` |
-| [EC2](#ec2) | Elastic IP transfers; descriptions EC2 refuses; instance type changes and first boot; an instance profile at boot |
+| [EC2](#ec2) | Elastic IP transfers; descriptions EC2 refuses; instance type changes and first boot; an instance profile at boot; AL2023's zram and a first boot's dnf memory |
 | [Systems Manager](#systems-manager) | State Manager associations; the agent's registration; Parameter Store's reserved and public names |
 | [VPC and Route 53 Resolver](#vpc-and-route-53-resolver) | Interface endpoints' DNS names, private zones and readiness; gateway endpoints and S3's names; DNS Firewall's CNAME chains; the Resolver query log |
 | [ECR](#ecr) | A pull through endpoints; the pull-through cache; ECR Public's redirect |
@@ -916,6 +916,42 @@ entry is still true is the reading.
   with a deadline: this one doubles the wait up to 32 s for five minutes. Seen once; the propagation delay
   itself was not timed. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-16;
   `terraform-live/production/runners/test-user-data.sh.tftpl`; Lesson 68.
+
+- `SUP-405` **AL2023 makes its zram swap only on a host with less than 800 MB of memory, so every EC2 size
+  above a nano boots with no swap at all** (read 2026-11-21 on three hosts of
+  `al2023-ami-2023.12.20261120.0-kernel-6.18-x86_64`, in the console and through SSM). The t3.nano's OOM
+  report counted 415 MiB of memory and 415 MiB of zram swap, both spent when its `dnf` was killed
+  (`SUP-406`). The t3.small's boot logged `zram_generator::config: zram0: system has too much memory
+  (1909MB), limit is 800MB, ignoring.`, and the t3.medium read `MemTotal` 3835 MiB and no swap. A t3.micro
+  read 913 MiB total on 2026-09-06 (Stage 6c's log), above the limit too. AWS gives the limit on the AL2023
+  user guide's system-requirements page, where zram is on by default since AL2023.3 for instance types
+  under 800 MB, the nano sizes named as examples. The page does not say that the step up loses the swap,
+  and on the host the generator's console line is the only sign. The consequence: above a nano a size is
+  chosen against `MemTotal` alone, with nothing to absorb a peak past it, so a t3.micro adds less headroom
+  over a t3.nano than its memory suggests (inferred). Where: `log-stage-12-observability-finops.md`,
+  2026-11-22; `terraform-live/production/proxy/variables.tf`.
+
+- `SUP-406` **On AL2023 2023.12.20261120 a dnf with a cold cache peaks at about 620 MiB of resident
+  memory, and update-motd runs a dnf of its own in the first minute of a boot** (measured 2026-11-21). The
+  repository's metadata is 91 MB, downloaded at 74 MB/s in the t3.nano's console. On a t3.medium of the
+  same image (`MemTotal` 3835 MiB, no swap, 257 MiB used at rest), through SSM with throwaway cache
+  directories under `/var/tmp` and nothing installed, `dnf install --downloadonly squid jq
+  amazon-cloudwatch-agent` exited 0 after 26 s at a `VmHWM` of 617 MiB, and `dnf check-update` exited 0
+  after 25 s at 623 MiB. On the t3.nano, 415 MiB with 415 MiB of zram (`SUP-405`), the first boot's
+  `dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent` was killed 25 s into the user
+  data, `Out of memory: Killed process 1962 (dnf)`, its `anon-rss` 165,736 kB with about 348 MB swapped and
+  no other dnf running. systemd then stopped `cloud-final.service` (`Cloud-init 22.2.2 received SIGTERM,
+  exiting`), and at 48 s update-motd's `70-available-updates` lost its own dnf to the same killer. The host
+  came up with no WireGuard, no `wg0` and no CloudWatch agent while every describe-level check passed.
+  AWS's system-requirements page says that a `dnf upgrade` between some releases can need more than
+  512 MB, and nothing about an install or a check on a cold cache. Its page on package updates does not
+  name update-motd; an issue on AWS's AL2023 tracker (441, opened 2023-09-09) has `update-motd.service`
+  run at a reboot or once a day. The consequence: a first boot that installs packages needs about 620 MiB
+  for its dnf above the system's own use, which a t3.micro's 913 MiB hold with little to spare, and about
+  twice that if update-motd's dnf parses the cold cache at the same time (inferred: on the nano the two
+  were killed 23 s apart). A host that lost its first boot is repaired by a replacement, not a resize
+  (`SUP-061`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
+  `terraform-live/production/proxy/variables.tf`; `terraform-live/production/vpn/instance_type.auto.tfvars`.
 
 ## Systems Manager
 

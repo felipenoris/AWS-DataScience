@@ -563,6 +563,16 @@
   <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261112.html>,
   <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261120.html>.
 
+- Amazon Linux 2023's memory floor, zram and update-motd, read 2026-11-22 for the hub hosts' sizes
+  (`SUP-405`, `SUP-406`): the system-requirements page gives 512 MB as the minimum, says a `dnf upgrade`
+  between some releases can need more, and turns zram swap on by default since AL2023.3 for instance types
+  under 800 MB, naming the nano sizes; the page on package updates names no update-motd; issue 441 on
+  AWS's AL2023 tracker (opened 2023-09-09, open) has `update-motd.service` refresh the message at a reboot
+  or once a day:
+  <https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html>,
+  <https://docs.aws.amazon.com/linux/al2023/ug/managing-repos-os-updates.html>,
+  <https://github.com/amazonlinux/amazon-linux-2023/issues/441>.
+
 - ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
 
 - VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.
