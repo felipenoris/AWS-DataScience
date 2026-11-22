@@ -2612,10 +2612,11 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 `app-dbt`'s release joins it only after N.9's day 1.
 
 **Run 2026-11-22**, from 02:00 to 06:14 UTC (Stage 19's log; Stage 12's for 2.2, 6d's for the image pin):
-steps 1 to 5 and 8. Steps 6 and 7 moved to R2's opening, the user's choice (N.11.2 step 1), so no push
-reached GitLab and the local user's password waits for R2's first push. N.6 item 6 is left for after the
-sitting: Stage 19 4.12's request needs nothing up, and Stage 20 5.0's waits for `app-dbt`'s `bundle` job in
-R2. The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
+steps 1 to 5 and 8. Steps 6 and 7 moved to R2's opening, the user's choice (N.11.2). Step 3's merge
+request and release G's reached GitLab with step 2's password rotation unconfirmed, so it is confirmed, or
+done, before R2's first push. N.6 item 6, Stage 19 4.12's and Stage 20 5.0's requests, is left for after
+the sitting, with nothing up: pass 8 being R2's, 5.0 waits on no `bundle` job, and R2's tag first deletes
+its link's asset (Stage 20 8.6). The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
 so step 4 now reads it before the tag.
 
 1. [Claude] With nothing up: N.8.3 step 1, `LastRotatedDate` on 2026-11-22; the other sessions told;
@@ -2668,15 +2669,9 @@ After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's 
 before 2026-12-18 when it carries `app-dbt`, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
-   tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] GitLab's local user's password confirmed
-   rotated (N.8.2 step 3) before the first push; [Claude] pull request #321's branch takes `origin/main` by
-   merge, `--self-check` and `make check` read again, then `gh pr ready 321`; [user] #321 merged, then
-   `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; [user] `awsds/dev-env`'s
-   README row for `default-v0.10.1` by a merge request, then [Claude] its mirror
-   (`./scripts/gitlab-mirror.py awsds/dev-env`, `gitlab/README.md`, *Changing a recipe*).
-2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order,
-   the build runner read running before each tag ([`gitlab.md`](gitlab.md) §U step 3):
-   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), R1 having left it; `app-ml`'s (Stage 17 9.7), whose bundle
+   tunnel.
+2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
+   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8) unless R1 carried it; `app-ml`'s (Stage 17 9.7), whose bundle
    carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
    `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
    ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
@@ -2715,7 +2710,7 @@ bound it stay N.6's.
 | Date | Sitting | Raise | Waits on |
 |---|---|---|---|
 | 2026-11-21 | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
-| 2026-11-22, after 01:59:59 UTC | R1 (N.11.1), **run 2026-11-22**; N.6 item 6 after it, 5.0's after R2's `app-dbt` bundle | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation; N.9's day 1, for `app-dbt`'s release |
+| 2026-11-22, after 01:59:59 UTC | R1 (N.11.1), N.6 item 6 inside it | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation; N.9's day 1, for `app-dbt`'s release |
 | 2026-11-23 | N.9's day 2, 6d's remainder at its end | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-24 | N.9's day 3, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | `app-ml-dev`'s MLflow App |
 | 2026-11-25 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | R1's subscriptions and Stage 20 5.1's tar; day 2's registered version; 6h decision 8 (a)'s merge, done 2026-11-22 (N.12.4) |

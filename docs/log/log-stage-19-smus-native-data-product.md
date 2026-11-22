@@ -4604,8 +4604,8 @@ apply, on the user's word naming it. The user's acts are named. Times are UTC.*
   for `default-v0.10.1` with its mirror, and `app-dbt`'s `v0.1.0`; GitLab's local user's password is to be
   confirmed rotated before R2's first push. N.6 item 6, which needs nothing up, is open for Stage 19 4.12's
   request from `eighth-experimentation` on the listing `dr8t27tte8ezdc`, the Governance Manager in
-  `deploy-production` since 2026-11-21; Stage 20 5.0's from `app-dbt-dev` waits for `v0.1.0`'s `bundle` job in
-  R2, its link being an asset that bundle would carry (`SUP-197`, Stage 20 8.6). **[user]** Production's
+  `deploy-production` since 2026-11-21, and for Stage 20 5.0's from `app-dbt-dev`: pass 8 being R2's, the
+  link's asset waits on no `bundle` job, and R2's tag deletes it first (`SUP-197`, Stage 20 8.6). **[user]** Production's
   free-trial balance after the last half-hour interval and again the next day. `production-register`,
   `-approve`, `-transform` and `-warehouse-ddl` stay `manual` in #138, the model half being R2's (§N.11.2
   step 3). Who ran the 02:41:40 apply stays unread.
