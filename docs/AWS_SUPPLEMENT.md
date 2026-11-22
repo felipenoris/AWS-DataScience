@@ -5287,6 +5287,25 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   only record of the gate's refusal, so an absence of refusals in the trail or the metric does not show
   that nobody tried a gated model. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
+- `SUP-451` **AWS's service reference and the project role's managed policy disagree on the resources of
+  two AgentCore tool actions, and the AWS CLI 2.37.12 carries no web search call** (read 2026-11-22,
+  `TM-28`). The service reference (`bedrock-agentcore.json`, version `v1.5`) writes the web search's
+  resource as `arn:${Partition}:bedrock-agentcore:${Region}:${Account}:tool/web-search.v1`, the caller's
+  account, where `SageMakerStudioProjectRoleMachineLearningPolicy` v48 grants `InvokeWebSearch` on
+  `arn:*:bedrock-agentcore:*:aws:tool/web-search.v1` and the Web Search API's guide gives the `aws`
+  spelling too ([`REFERENCES.md`](REFERENCES.md), 2026-11-22). It lists `ConnectBrowserAutomationStream` with no
+  resource type, which IAM authorizes on `*`, where the policy grants it on `arn:*:bedrock-agentcore:*:aws:browser/*`.
+  Simulated as `eighth-experimentation`'s project role, with the Region and the project tag in the context
+  (`SUP-008`): `InvokeWebSearch` `allowed` on the `aws` spelling and `implicitDeny` on the account's;
+  `ConnectBrowserAutomationStream` `implicitDeny` on `*`, and on the browser's ARN the simulator returns no
+  organizations or boundary verdict at all. Which ARN the service builds is unmeasured: the CLI has no call,
+  and a call would run a search. So whether a project role can search today turns on an ARN no page
+  settles, and a deny written on the grant's ARNs could match nothing; `DenyAgentCoreBuiltInTools` is on
+  `*` for that reason. The CLI 2.37.12 (botocore model `2024-02-28`, 67 operations) has no
+  `invoke-web-search` and no `invoke-web-answer`, and drops `invoke-code-interpreter`, an event stream, so
+  the SCP battery cannot attempt those three. Where: `log-stage-11-dlp.md`, 2026-11-22; `scp-battery.md`,
+  the `TM-28` amendment.
+
 ## Terraform
 
 A Terraform behaviour that is one service's quirk is recorded under that service: `SUP-124` (a Redshift

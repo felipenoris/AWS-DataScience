@@ -2030,6 +2030,18 @@
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>,
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/region_index.json>,
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/us-west-2/index.json>.
+- **AgentCore's built-in tools and the AWS Agent Registry in AWS's service reference (read 2026-11-22, for
+  `TM-28`'s controls and `SUP-451`).** The JSON form, read with no credential, both files at version `v1.5`.
+  AgentCore's 269 actions: `Start`, `Get` and `Stop` of `CodeInterpreterSession` and `BrowserSession`, and
+  `InvokeCodeInterpreter`, on AWS's tool and the account's own (`code-interpreter` and
+  `code-interpreter-custom`, `browser` and `browser-custom`); `ConnectBrowserAutomationStream` and
+  `ConnectBrowserLiveViewStream` with no resource type; `InvokeWebSearch` on
+  `arn:${Partition}:bedrock-agentcore:${Region}:${Account}:tool/web-search.v1`, and `InvokeWebAnswer` on
+  `…:aws:tool/web-answer.v1`; `CreateAgentRuntime` keyed on `bedrock-agentcore:subnets` and
+  `bedrock-agentcore:securityGroups`. The Agent Registry's 32 actions on three resource types, `publisher`
+  with no Region:
+  <https://servicereference.us-east-1.amazonaws.com/v1/bedrock-agentcore/bedrock-agentcore.json>,
+  <https://servicereference.us-east-1.amazonaws.com/v1/agent-registry/agent-registry.json>.
 - SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
   decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
   and as a workflow's *Notebook Operator* and *Notebook Sensor*:

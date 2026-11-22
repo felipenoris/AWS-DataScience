@@ -30,8 +30,10 @@ variable "fenced_repository_names" {
 # The warehouse workflow's job opens its session on the governed workgroup with
 # redshift-serverless:GetCredentials, over JDBC (decision 16 (b), warehouse.tf), so that service is
 # not on the list: the Data API and the query editor, the other doors to a database session, are.
+# The Agent Registry is a service prefix of its own, outside bedrock-agentcore, granted by AWS's ML
+# policy since v48 (TM-28).
 variable "fenced_services" {
-  description = "The services the deployment project's role never calls in this account: the generative ones, and the warehouse's doors but the one the load takes."
+  description = "The services the deployment project's role never calls in this account: the generative ones, the Agent Registry, and the warehouse's doors but the one the load takes."
   type        = list(string)
-  default     = ["bedrock", "bedrock-agentcore", "q", "codewhisperer", "redshift-data", "sqlworkbench"]
+  default     = ["bedrock", "bedrock-agentcore", "agent-registry", "q", "codewhisperer", "redshift-data", "sqlworkbench"]
 }
