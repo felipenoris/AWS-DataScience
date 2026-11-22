@@ -82,6 +82,11 @@ locals {
     render_script = local.render_script
     agent_config  = local.agent_config
   })
+
+  # EC2 accepts at most 16 KB of user data before base64, 16,384 bytes, and length() counts
+  # characters, so the bytes are read from the base64 form: three per four characters, less one per
+  # `=` of padding. The precondition on aws_instance.this holds the count to the limit.
+  user_data_bytes = length(base64encode(local.user_data)) / 4 * 3 - length(regexall("=", base64encode(local.user_data)))
 }
 
 # ------------------------------------------------------------------------------- the role
@@ -217,6 +222,16 @@ resource "aws_instance" "this" {
     Name = "awsds-${var.env}-proxy"
   }
 
+  lifecycle {
+    # A replacement destroys this host before it creates the next one, so a user data EC2 would
+    # refuse has to fail the plan. The provider refuses it at plan as well, with the whole script in
+    # its message (`expected length of user_data to be in the range (0 - 16384)`); this condition
+    # is evaluated first and names the size.
+    precondition {
+      condition     = local.user_data_bytes <= 16384
+      error_message = "The rendered user data is ${local.user_data_bytes} bytes, and EC2 accepts at most 16,384 before base64. Shorten user-data.sh.tftpl, render-squid.sh.tftpl or squid.conf.tftpl, comments included."
+    }
+  }
 }
 
 # ------------------------------------------------------- the reload path (step 4.10)
