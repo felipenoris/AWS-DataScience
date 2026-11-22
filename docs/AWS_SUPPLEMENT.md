@@ -949,7 +949,8 @@ entry is still true is the reading.
   run at a reboot or once a day. The consequence: a first boot that installs packages needs about 620 MiB
   for its dnf above the system's own use, which a t3.micro's 913 MiB hold with little to spare, and about
   twice that if update-motd's dnf parses the cold cache at the same time (inferred: on the nano the two
-  were killed 23 s apart). A host that lost its first boot is repaired by a replacement, not a resize
+  were killed 23 s apart, and did not run together - the first kill's task table lists one `dnf` and no
+  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host that lost its first boot is repaired by a replacement, not a resize
   (`SUP-061`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
   `terraform-live/production/proxy/variables.tf`; `terraform-live/production/vpn/instance_type.auto.tfvars`.
 

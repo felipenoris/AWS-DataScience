@@ -435,7 +435,9 @@ SLICES = [
     # build and not the steady state: the first boot's `dnf install squid jq
     # amazon-cloudwatch-agent` was OOM-killed on a nano (415 MiB usable) on 2026-09-06, and a cold
     # dnf with update-motd's beside it needs more than a t3.micro holds (617 and 623 MiB RSS,
-    # measured 2026-11-21; var.instance_type in production/proxy/variables.tf).
+    # measured 2026-11-21; var.instance_type in production/proxy/variables.tf). Since 2026-11-22
+    # the slice's user data has a step (0), a 1 GiB swap file and update-motd masked, and the
+    # build fits a t3.micro again; the rate stays t3.small's until the size is chosen.
     Slice(
         "production",
         "proxy",
