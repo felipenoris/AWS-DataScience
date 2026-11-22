@@ -1214,7 +1214,9 @@
   content: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>. The
   model-access form's fields (`companyName`, `companyWebsite`, `intendedUsers`, `industryOption`,
   `otherIndustryOption`, `useCases`) are in the API reference:
-  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>. The
+  CloudTrail page, read again 2026-11-22, says CloudTrail *"captures all API calls for Amazon Bedrock as
+  events"* and says nothing of a call Bedrock refuses (`SUP-427`).
 
 - **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
   `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one

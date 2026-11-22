@@ -4754,7 +4754,13 @@ entry is still true is the reading.
   reading `AVAILABLE` before the creating Region left `PENDING` (not repeated on 2026-11-22, `SUP-293`),
   while Sonnet 4.5's took minutes;
   `amazon.nova-lite-v1:0` needed none. The grant, the endpoint policy, the SCP and the use-case form were
-  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12.
+  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12. Read again
+  2026-11-22 (Stage 6e decision 17): Opus, Sonnet and Haiku 5.5, ids without a date, were refused to the
+  infrastructure user at 02:37:50 to 02:37:52 and again at 02:44:04 to 02:44:06 with the same
+  `AccessDeniedException`, *"anthropic.claude-opus-5-5 is not available for this account …"*, the
+  agreements `AVAILABLE` in all three routed Regions since 02:14 and the SCP naming the ids since 02:37:30.
+  Haiku 4.5 answered the same night. The shape rule holds for a third generation. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-295` **A streaming Bedrock invocation writes two CloudTrail events; a non-streaming one writes one**
   (measured 2026-09-12). `InvokeModelWithResponseStream` records one event carrying
@@ -4773,7 +4779,9 @@ entry is still true is the reading.
   `foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0` and host
   `bedrock-runtime.us-west-2.amazonaws.com`; the service event named the same model. A count keyed on
   `modelId` sees a profile ARN there, not a model id. Where: `log-stage-17-sandbox-machine-learning.md`,
-  2026-10-19.
+  2026-10-19. Read again 2026-11-22 (Stage 6e decision 17): `InvocationClientErrors` carries a `ModelId`
+  series for an application inference profile, `ljl42zoh6e4v`, beside the dimensionless one, with one error
+  at 02:07 in both; a refusal by the commercial gate writes neither an event nor a datapoint (`SUP-427`).
 
 - `SUP-296` **CloudWatch carries a cross-region profile's tokens in the source Region, with invocation
   logging off** (measured 2026-09-12). `AWS/Bedrock` publishes `Invocations` and four token counts per
@@ -4865,6 +4873,24 @@ entry is still true is the reading.
   browser (`SUP-300`) and the blueprint's creates from `datazone.amazonaws.com`, no Unified Studio Bedrock
   feature reached Bedrock through this account's endpoints in those ten weeks, and an endpoint policy binds
   none of them. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22; Stage 6e decision 13.
+
+- `SUP-427` **A Bedrock invocation refused by the commercial gate writes no CloudTrail event and no
+  CloudWatch datapoint** (read 2026-11-22 in Sandbox, Stage 6e decision 17). The infrastructure user's six
+  `InvokeModel` calls on `us.anthropic.claude-opus-5-5`, `-sonnet-5-5` and `-haiku-5-5`, at 02:37:50 to
+  02:37:52 and 02:44:04 to 02:44:06, each answered `AccessDeniedException`, *"… is not available for this
+  account …"* (`SUP-294`). Read at 03:25, event history held no `InvokeModel` between 02:30 and 03:00 in
+  `us-west-2`, `us-east-1` or `us-east-2`, while it held Bedrock's `ListIngestionJobs` and `GetIngestionJob`
+  of 02:42:07 and 02:42:08.
+  `AWS/Bedrock` `InvocationClientErrors` in `us-west-2` held one datapoint from 2026-11-08 to 04:00, one
+  error at 02:07 on the application inference profile `ljl42zoh6e4v`, and no series names a 5.5 id. The
+  trail of 2026-09-12 agrees: the infrastructure user's Nova Lite at 06:32:23 and Sonnet 4.5 at 06:35:57
+  are recorded, and the gate's refusal of `us.anthropic.claude-sonnet-5` in the same sitting is not. That
+  day's 42 `AccessDenied` events on the two invocation APIs are 18 IAM refusals (*"no identity-based policy
+  allows"*) and 24 SCP refusals (*"explicit deny in a service control policy"*), none of them the gate's,
+  which the project role met twice from a space. Bedrock's CloudTrail page says CloudTrail *"captures all
+  API calls for Amazon Bedrock as events"* and says nothing of a refused call. The client's error is the
+  only record of the gate's refusal, so an absence of refusals in the trail or the metric does not show
+  that nobody tried a gated model. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 ## Terraform
 

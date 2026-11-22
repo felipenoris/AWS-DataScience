@@ -1390,6 +1390,14 @@ control was one word away, the same grep for a name known to be in the file. The
 false absence motivated stood on another ground found afterwards, a CLI-created workflow's injection
 being unmeasured and the CLI's code passing no variable, and the claim was corrected the same day.
 
+**A fourth instance, 2026-11-22** (Stage 6e decision 17). The commercial gate refused six invocations of
+the 5.5 models, and CloudTrail lookups at 02:42, 02:45 and 02:47 found no event for any of them; the empty
+answers were read as delivery lag. At 03:25 the same history held Bedrock's `ListIngestionJobs` and
+`GetIngestionJob` of 02:42, so the instrument was seeing the account in that window: the gate's refusal
+writes no event and no CloudWatch datapoint (`SUP-427`). The trail of 2026-09-12 had held the same absence
+beside the recorded successes of the same sitting, and no reading had asked whether the refusal was there.
+A count of gated attempts built on the trail would read zero while sessions were being refused.
+
 ## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
 
 **What happened.** The `default-v0.3.0` → `v0.4.0` bump followed [`dev-env.md`](runbooks/dev-env.md) §B

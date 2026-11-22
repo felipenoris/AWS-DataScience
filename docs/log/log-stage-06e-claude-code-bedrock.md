@@ -1875,3 +1875,61 @@ id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
   through a service's VPC, `vpcEndpointId` is usually `AWS Internal` or the service name, and
   `vpcEndpointAccountId`, the owner's account, exists since 1.09. Written: `SUP-426`; readings appended to
   `SUP-293`, `SUP-294` and `SUP-300`; instances appended to Lessons 34, 57 and 84.
+
+### Decision 17's step 3: the SCP applied, and the gate refuses the 5.5 three
+
+- **[user] *"Autorizo os três"*, about 02:36**, answering a question that named the three acts: the
+  `identity/org-policies` apply from the saved plan, one invocation per 5.5 model, and the `sandbox/bedrock`
+  apply only if all three answered.
+- **[Claude] The running sessions told before the write**: `n9-dia2`, the hub coordinator, and the sessions
+  on 6h, 6f, 6g, Stage 21 and the MLflow analysis, each message queued behind a turn in progress.
+- **[Claude] `identity/org-policies` applied from the saved plan at 02:37:30**, from PR #108's branch:
+  `awsds-org-scp-ou-interactive` (`p-tgda7n58`) and `awsds-org-scp-baseline` (`p-1fp032g8`) modified in 3 s
+  each, `0 added, 2 changed, 0 destroyed`, 1956 and 3460 bytes. The re-plan read `No changes`.
+- **[Claude] One `InvokeModel` per model** as the infrastructure user through `awsds-infra-sandbox-1`, on
+  `us.anthropic.claude-opus-5-5`, `-sonnet-5-5` and `-haiku-5-5`, `max_tokens` 16, at 02:37:50, 02:37:51
+  and 02:37:52. Each was refused with the same `AccessDeniedException`, naming its model: *"anthropic.claude-opus-5-5
+  is not available for this account. You can explore other available models on Amazon Bedrock. For
+  additional access options, contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/"*. The
+  refusal is the commercial gate's: before the apply the SCP refused these ids with an explicit deny, and the
+  wording here names no policy. The negative control is the night's own trail: Haiku 4.5 answered the project
+  role's `ConverseStream` at 01:48:24 through the application inference profile `ljl42zoh6e4v`.
+- **[Claude] The three again at 02:44:04, 02:44:05 and 02:44:06**, six minutes after the apply and thirty
+  after the agreements read `AVAILABLE`: the same refusal, word for word.
+- **[Claude] The `sandbox/bedrock` apply did not run**, its condition unmet. With the 5.5 three taken out of
+  the `models` map, the plan reads `No changes`: the grant in AWS never named them.
+- **[Claude] Step 1's revert planned**, decision 17's rule when the gate refuses: `awsds-org-scp-ou-interactive`
+  loses the six 5.5 ARNs, 1956 → 1551 bytes, `0 to add, 1 to change, 0 to destroy`, the plan saved outside
+  the repository. `awsds-org-scp-baseline` keeps Fable 5.2's three ARNs.
+
+### Decision 17's step 1 reverted, and the gate's refusal read in the trail
+
+- **[user] *"Autorizo a reversão"*, 03:22:52**, answering a question that named the revert apply of
+  `identity/org-policies` and the six 5.5 ARNs it removes.
+- **[Claude] The hub coordinator and `n9-dia2` told before the write**, at 03:23:25 and 03:23:28, the
+  coordinator asked to hold the production gate until the end notice.
+- **[Claude] `identity/org-policies` applied from the saved plan at 03:23:52**:
+  `awsds-org-scp-ou-interactive` (`p-tgda7n58`) modified in 2 s, `0 added, 1 changed, 0 destroyed`, 1551
+  bytes; `awsds-org-scp-baseline` stays at 3460 with Fable 5.2's deny. The re-plan read `No changes`.
+- **[Claude] `./aws/bedrock-scope.py` after the apply**: `BS-1` to `BS-7` pass, `BS-1` three models in three
+  Regions with Nova Lite, Titan Embed v2 and the application inference profiles admitted beside them, `BS-5`
+  three models `AVAILABLE`, `BS-7` *"SCP, sandbox/bedrock and the image pins"* agreeing; `BS-8` notes Sonnet
+  4.5 `LEGACY` (extended access 2027-01-08, end of life 2027-04-08). The two sessions were told the revert
+  had ended.
+- **[Claude] The six refusals looked for in the trail and the metric, at 03:25.** Event history held no
+  `InvokeModel` between 02:30 and 03:00 in `us-west-2`, `us-east-1` or `us-east-2`. The lookups at 02:42,
+  02:45 and 02:47 had been read as delivery lag, but Bedrock's `ListIngestionJobs` and `GetIngestionJob` of
+  02:42:07 and 02:42:08 were there. `InvocationClientErrors` in `us-west-2`, 2026-11-08 to 04:00: one
+  datapoint, one error at 02:07 on the application inference profile `ljl42zoh6e4v`, in the dimensionless
+  series and that profile's `ModelId` series, the only two `ListMetrics` returns. `Invocations`, dimensionless:
+  1, 8 and 12 at 02:52, 02:54 and 02:55.
+- **[Claude] 2026-09-12's trail re-read in `us-west-2` for the same question.** `InvokeModel`: 6 answered, all
+  the infrastructure user's (Nova Lite at 06:32:23, Sonnet 4.5 at 06:35:57, Opus 4.5 at 06:38:53, Haiku 4.5
+  three times), and 20 `AccessDenied`: the infrastructure user's one SCP refusal, the project role's 18 IAM
+  refusals and one SCP refusal. `InvokeModelWithResponseStream`: 108 answered and 22 `AccessDenied`, all the
+  project role's SCP refusals. None of the 42 is the gate's, met that day twice by the project role from a
+  space and once by the infrastructure user beside its recorded Nova Lite.
+- **[Claude] Bedrock's CloudTrail page read through a fetching agent**: CloudTrail *"captures all API calls"*,
+  and the page says nothing of a refused call. Written: `SUP-427`; a reading appended to `SUP-295`, whose
+  `InvocationClientErrors` is no longer dimensionless only; Lesson 62's fourth instance; the Bedrock entry in
+  `REFERENCES.md`; a sentence in the runbook's M6.

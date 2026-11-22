@@ -712,8 +712,8 @@ it runs on Sonnet rather than on the primary.
 
 **The 5.5 generation**, read 2026-10-11 from each model's agreement rate card and confirmed against
 the Pricing API (`AmazonBedrockFoundationModels`, `us-west-2`, the `us.` standard dimensions). Stage
-6e decision 17 moves the scoped set here; none of the three is proven by invocation yet
-(`AWS_STATE.md` `EXC-08`):
+6e decision 17 moves the scoped set here only once an invocation answers, and on 2026-11-22 AWS
+refused all three to this account (`AWS_STATE.md` `EXC-08`):
 
 | Model | Input | Output | Cache read | Cache write, 5 min |
 |---|---|---|---|---|
