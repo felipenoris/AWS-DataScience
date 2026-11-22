@@ -4833,3 +4833,40 @@ in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. Times UTC.*
   `AmazonBedrockFlowServiceRole-*` role in the account.
 - **Left**: the `EXC-nn` row and the two checks' change, written on the user's word in this session's chat;
   until then `ML-8` and `US-8` fail on the role, `AWS_STATE.md`'s expected reading.
+
+## 2026-11-22 — 7.6's leftovers: the user's decision to delete the four objects
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read the objects as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account` (`awsds-infra-data`), reads
+alone. Times UTC.*
+
+- **[user] The decision**, at 13:34, verbatim: *"Apagar os quatro (Recomendado)"*. The card's other options,
+  not taken: *"Apagar só os três listados"* and *"Manter tudo"*. Each deletion waits on the user's word in
+  the chat of the session that runs it, and is read back after it (Lesson 86).
+- **[Claude] The four objects**, read at 13:37 to 13:40, every one in `eighth-experimentation`
+  (`avhvbqn37ty7m8`):
+  1. the chat agent's environment `b343orq3qka5n4`, `502a9c64-70fd-4dab-afea-a1a5a98146d4-shared`,
+     `CREATE_FAILED` with no provisioned resource, its stack `DataZone-Env-b343orq3qka5n4` `DELETE_COMPLETE`
+     since 03:08:08; its definition `…/avhvbqn37ty7m8/amazon-bedrock/builder/apps/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json`
+     in `awsds-sandbox-smus-projects`, 1423 bytes, 03:01:39;
+  2. the Haiku 4.5 evaluation's environment `6fl52xzq3yt768`, `avhvbqn37ty7m8ml-demo-eval-haiku45`, `ACTIVE`,
+     its stack `CREATE_COMPLETE` with no resource and one output, the project's Bedrock service role
+     `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, which the environment lists as its provisioned
+     resource `systemRole-AmazonBedrockEvaluationRole-avhvbqn37ty7m8` and did not create; no job of its name
+     (`list-evaluation-jobs` lists `avhvbqn37ty7m8ml-demo-eval-nova-lite` alone, `Completed`), and under its
+     output prefix the 0-byte `amazon-bedrock-evaluations-permission-check` of 02:07:54 alone;
+  3. the vector bucket `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, created 01:03:10, no index, its
+     stack `DataZone-Env-cie8747bea6mxc` `DELETE_COMPLETE` since 01:03:30; the knowledge base's store is the
+     other, `…-46cr0woe7670gg`, created 01:33:17;
+  4. a chat app definition no log records, `…/chatApp/043850fa-6a37-44ad-9ade-89e7e3af8fc5-definition.json`,
+     1129 bytes, 2026-10-30 06:25:43, with no environment; the project's Claude Opus 4.5 application
+     inference profile was created 17 s after it, at 06:26:00, the project's first use of that model.
+- **[Claude] What stays**: the Nova Lite evaluation's input `…/genAI/assets/evaluations/input/evaluation-dataset.jsonl`
+  (2951 bytes, 02:50:45) and its output, and the project's Bedrock service role the second environment
+  names.
+- **Left**: the deletions, each on the user's word: the two definitions from the Bedrock IDE's *My apps* by
+  the project's owner, and the failed environment from the project's blueprint deployments if the app's
+  deletion leaves it; the evaluation's environment from the portal or by `datazone delete-environment`; the
+  vector bucket by `s3vectors delete-vector-bucket` alone. The second environment's deletion must leave
+  the project's Bedrock service role, which its stack did not create.

@@ -986,7 +986,10 @@ is read after day 2, once Cost Explorer shows its day (8.2).
   for the runbooks, and 7.4a reads its idle bill. **Read 2026-11-22**: no agent exists to keep. The flow, the
   prompt, the guardrail, the evaluation's outputs and the knowledge base stay, and so do the refused chat
   agent's environment and definition, the Haiku 4.5 evaluation's environment and the first knowledge base's
-  empty vector bucket, until the user decides them (`waiting-on-the-user.md`).
+  empty vector bucket. **Decided 2026-11-22 by the user** (the log): those four deleted, with a chat app
+  definition of 2026-10-30 no log recorded, each on the user's word in the session that runs it and read
+  back after (`waiting-on-the-user.md`); the evaluation's environment leaves the project's Bedrock service
+  role, which its stack names and did not create.
 
 ### 8. Close
 
