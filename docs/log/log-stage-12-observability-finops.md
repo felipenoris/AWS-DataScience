@@ -913,7 +913,8 @@ Production (`awsds-infra-prod`, `us-west-2`), and nothing was applied. Times are
   - The texts that state the sizes now say the first boot no longer decides them: `runbooks/vpn.md` §S6,
     the comment in the tracked `instance_type.auto.tfvars`, the proxy's `instance_type` description, and
     the proxy layer's comment in `scripts/tfhygiene/layers.py`.
-  - No size changed. Decision due 4's option (d) now names this PR.
+  - These commits change no size. Decision due 4's option (d) names this PR, and the user took it
+    (below).
 
 ### The plans, read-only
 
@@ -945,11 +946,32 @@ Production (`awsds-infra-prod`, `us-west-2`), and nothing was applied. Times are
     cloud-init's SIGTERM.
   - Whether update-motd waits for `cloud-final.service` was not read. `SUP-406` now carries the sentence.
 
+### Decision due 4 taken, and the nano selected (`90ce7675`)
+
+- **[user]** *"sim, põe o nano no #356"*, shortly after 01:00 UTC. It answers the session's recommendation
+  to put the VPN back on `t3.nano` inside this PR, and takes decision due 4 as (d), with `t3.nano`.
+- **[Claude] The selection.** The tracked `instance_type.auto.tfvars` comments out its `t3.medium`
+  assignment, so the variable's default, D4's `t3.nano`, governs.
+- **[Claude] The re-plan**, read-only at 01:09: `Plan: 2 to add, 3 to change, 2 to destroy.` The instance
+  is replaced: `instance_type` goes `"t3.medium" -> "t3.nano"`, and `user_data` forces the replacement.
+- **[Claude] The records.**
+  - The cost lines return to 0.0310/h, with the `t3.medium` figure kept as history where a comparison
+    needs it: `PRICING.md`'s typical hour, hub bullet and unit line; `runbooks/vpn.md`'s burn cell and
+    `make hub-up`; Stage 12's 5.2 row; Stage 20's pass 8.
+  - Decision due 4 reads taken.
+  - `waiting-on-the-user.md` drops its row, and the Hub row gains the VPN's apply.
+
 ### Owed
 
-- **The user's: decision due 4**, now with (d) written. The proof is the first apply at the small size.
-  Its console should then show:
+- **The user's word for `production/vpn/`'s apply** once this PR merges, from `main` (Lesson 79). Its first
+  boot is the proof, and its console should show:
   - a `(0) swap:` line that names `/swapfile`;
   - `(0) update-motd masked`;
   - `(1) done`;
   - `END - the tunnel endpoint is up`.
+- **After the apply:**
+  - `docs/NETWORK.md`'s and `docs/AWS_STATE.md`'s VPN rows take the new host's address and size;
+  - the §N.9 day 2 session takes the hub's rate;
+  - the orchestrating session takes the index rows.
+- **The proxy keeps `t3.small`.** Its user data's step (0) waits for an apply outside the §N.9 day 2
+  sitting, since any proxy apply replaces the estate's single internet exit.
