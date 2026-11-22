@@ -260,10 +260,20 @@ variable "projects" {
   # The group and the workgroup share `vpc-00dca74a35159b11c`, which is what makes the `5439` rule
   # below reachable at all: AWS serves JupyterLab's query path only when the Redshift resource and
   # the project sit in one VPC. The project's Data page needs no such thing.
+  #
+  # The second entry is `test-experimentation`, admitted by 6h decision 8 (a)'s standing answer, and
+  # read the same way on 2026-11-22: `datazone list-projects` for the key, `iam get-role` for the
+  # role, under awsds-sandbox-project-boundary, and `describe-security-groups` for the group, in the
+  # same VPC. The key begins with a digit, so HCL takes it quoted. Two entries need the wide tag
+  # (`all_projects_tag_enabled` below).
   default = {
     avhvbqn37ty7m8 = {
       role_name           = "datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"
       security_group_name = "datazone-avhvbqn37ty7m8-dev"
+    }
+    "4gqfau9xuo6e4w" = {
+      role_name           = "datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw"
+      security_group_name = "datazone-4gqfau9xuo6e4w-dev"
     }
   }
 
@@ -281,9 +291,10 @@ variable "projects" {
   #
   # A second entry therefore needs the wide tag (6h decision 8 (a), taken 2026-11-17). Under it every
   # project role in the account reaches the compute through AWS's SageMakerStudioProjectUserRolePolicy
-  # (`ExistingRedshiftCompute`, simulated 2026-10-18), each entry's access role is the per-project
-  # gate on the Data page, and the schema GRANT of layer 3 is the only per-project gate on the
-  # notebook and Data API doors. Without the wide tag, a second entry would leave both objects with no
+  # (`ExistingRedshiftCompute`, simulated 2026-10-18). Each entry's access role is then the
+  # per-project gate on the Data page and its 5439 rule the one on the notebook. The Data API reaches
+  # the workgroup from AWS's side and needs neither, so on it the schema GRANT of layer 3 is the only
+  # per-project gate. Without the wide tag, a second entry would leave both objects with no
   # admission tag and every admitted project's connection would stop with nothing in the plan to say
   # why, which is the failure this validation turns into a plan error.
   validation {
@@ -314,10 +325,13 @@ variable "projects" {
 # `projects` hold more than one entry. ./aws/warehouse.py WH-7 then expects it on both objects and
 # neither tag on the admin secret: the same AWS policy grants GetSecretValue on any secret wearing
 # it (`DataConnectionAllProjectResources`, AWS_STATE.md INV-20).
+#
+# True by default, and standing (6h decision 8 (a)'s window, answered 2026-11-22): `projects` holds
+# two entries, so false fails that variable's validation.
 variable "all_projects_tag_enabled" {
   description = "6h decision 8 (a): true writes `for-use-with-all-datazone-projects=true` on the namespace and, through this slice's state, on the workgroup, admitting every SMUS project in the account to the compute, and lets `projects` hold more than one entry. false admits the map's one project by `AmazonDataZoneProject` alone."
   type        = bool
-  default     = false
+  default     = true
   nullable    = false
 }
 

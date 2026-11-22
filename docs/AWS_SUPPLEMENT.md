@@ -4983,6 +4983,13 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   The complement, 2026-11-12, release F's applies in the same two slices: the same policy planned the
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
+  Read again 2026-11-22 in `sandbox/warehouse/` (Stage 6h decision 8 (a)'s standing change, Terraform
+  1.17.2), with no `depends_on`: `data.aws_iam_policy_document.project_warehouse["avhvbqn37ty7m8"]`
+  references `aws_iam_role.project_access[each.key]`, its own instance unchanged, and was planned *"will be
+  read during apply"*, *"(depends on a resource or a module with changes pending)"*, because the resource
+  gains the instance `4gqfau9xuo6e4w`. The plan read *"7 to add, 2 to change"*, the existing project's
+  policy the second change: the deferral follows the resource, not the instance. The apply half is read at
+  the Sandbox warehouse sitting. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
   2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on

@@ -13,7 +13,7 @@ warehouse is [`D40`](../../../docs/plan/decisions/D40-redshift-warehouse.md); th
 | `aws_redshiftserverless_namespace.this` | the namespace `awsds-sandbox-warehouse`, under the account data CMK, with a Redshift-managed admin secret and the three audit log exports on from birth. Its name is a **contract**: the three log-group paths below are derived from it by the service, so a rename moves them |
 | `aws_cloudwatch_log_group.audit["userlog"\|"connectionlog"\|"useractivitylog"]` | `/aws/redshift/awsds-sandbox-warehouse/<type>`, retention **30 days**. Created **before** the namespace (`depends_on`): a group the service creates itself arrives `Never Expire`, and this estate keeps exactly one such group as a dated exception (`AWS_STATE.md` `EXC-10`) |
 | `aws_iam_role.namespace_exec` | `awsds-sandbox-warehouse-exec`, trusted by `redshift.amazonaws.com` and `redshift-serverless.amazonaws.com` with the confused-deputy pair. **It holds no policy** (5b decision 5): `COPY`, `UNLOAD` and `awsdatacatalog` run as it, which is exactly the principal D13 is about |
-| `aws_security_group.warehouse` | the workgroup's group. Ingress `5439/tcp` from an admitted project's own security group only; **no egress rule at all** |
+| `aws_security_group.warehouse` | the workgroup's group. Ingress `5439/tcp` from an admitted project's own security group only; **no egress rule at all**. A project outside `projects` has no rule, so its notebook reaches no workgroup even under the wide tag |
 | `aws_vpc_security_group_ingress_rule.project_5439[<projectId>]` | one per entry in `projects`. Group-to-group, never a CIDR: a CIDR would admit every ENI in two /18s |
 | `aws_iam_policy.project_warehouse[<projectId>]` + its attachment | layer 2 of the Redshift connection — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` scoped to this account's workgroups, plus the two listings that take no resource, and `sts:AssumeRole` on this project's access role. The attachment's precondition refuses a role that does not carry the D13 boundary |
 | `aws_iam_role.project_access[<projectId>]` | `awsds-sandbox-warehouse-access-<projectId>`, the access role the portal's Redshift connection demands even in this account (6h 3.1). Trusted by the project role alone, with the project id as external id; the session may carry the user's `datazone:userId` as source identity and only this project's and domain's session tags. Its tag `RedshiftDbUser` is the project role's name, which decides the database user. It carries no AWS policy |
@@ -47,9 +47,15 @@ workgroup tagged with its project, the same to every project role under the wide
 A second project is admitted by the wide tag, taken 2026-11-17
 ([6h](../../../docs/plan/stages/stage-06h-redshift-connection.md) decision 8 (a)): `all_projects_tag_enabled`
 true writes it on both objects, and only then does `projects` take a second entry. The map is then the
-register of the access roles, and the schema `GRANT` the per-project gate on the notebook and Data API
-doors; `./aws/warehouse.py` `WH-7` then reads the wide tag on both objects and neither tag on the
-admin secret (`AWS_STATE.md` `INV-20`).
+register of the access roles and of the `5439` rules, and the Data API, which needs neither, has the
+schema `GRANT` as its only per-project gate; `./aws/warehouse.py` `WH-7` then reads the wide tag on
+both objects and neither tag on the admin secret (`AWS_STATE.md` `INV-20`).
+
+The wide tag stands: decision 8 (a)'s window was answered standing on 2026-11-22, so
+`all_projects_tag_enabled` is true by default and `projects` holds `test-experimentation`
+(`4gqfau9xuo6e4w`) beside `eighth-experimentation`. Planned that night, `7 to add, 2 to change, 0 to
+destroy`; the apply is the Sandbox warehouse sitting's (6h, after 5.1). A plan naming
+`all_projects_tag_enabled=false` now fails the `projects` validation.
 
 ## The `REVOKE` this slice cannot express
 

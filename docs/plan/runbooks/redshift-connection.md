@@ -17,7 +17,7 @@ the S3 connection.*
 
 | # | Layer | Lives in | Grain | What its absence looks like |
 |---|---|---|---|---|
-| 1 | the tag `AmazonDataZoneProject=<projectId>` on the workgroup **and** the namespace | Terraform, `sandbox/warehouse/`'s `projects` map | per **workgroup** | the compute does not appear in the project's dropdown at all |
+| 1 | the tag `AmazonDataZoneProject=<projectId>` on the workgroup **and** the namespace while the map holds one project; the wide tag `for-use-with-all-datazone-projects=true` beside two, which stands since 6h decision 8 (a)'s window (2026-11-22) | Terraform, `sandbox/warehouse/`'s `projects` map and `all_projects_tag_enabled` | per **workgroup**; per **account** under the wide tag | the compute does not appear in the project's dropdown at all |
 | 2 | the IAM reach — `GetCredentials`, `GetWorkgroup`, `ListTagsForResource` — in one policy on the project role and on its access role. The project role also carries AWS's `SageMakerStudioProjectUserRolePolicy` v75, which grants it `GetCredentials` and the Data API on a workgroup tagged with its project, the same to every project role under the wide tag, and `GetCredentials` on any workgroup through `sqlworkbench` (simulated 2026-10-18, 6h 5.1 and decision 8) | Terraform, the same map | per **project** on the access role alone | the connection is created and every query fails at authentication; §F says which role to read |
 | 3 | a database role per schema, granted to each admitted project's database user | **SQL**, nowhere else | per **schema × project** | the project connects, sees the cluster, and the schema is invisible or read-only |
 | — | the door on `5439/tcp` | Terraform, the warehouse's security group | per **project's security group** | JupyterLab hangs; the Data page still works |
@@ -35,7 +35,10 @@ first project's connection would stop working with nothing in the plan to say wh
 A second project is admitted by the wide tag (6h decision 8 (a), taken 2026-11-17): the slice's
 `all_projects_tag_enabled` writes it on the namespace and, at the compute slice's next apply, on the
 workgroup, and only then does the map take a second entry. Every project role then reaches the compute
-under AWS's `ExistingRedshiftCompute`, and layer 3's `GRANT` is the per-project gate.
+under AWS's `ExistingRedshiftCompute`. The map's access roles gate the Data page and its `5439` rules the
+notebook, so on the Data API, which needs neither, layer 3's `GRANT` is the only per-project gate. The wide
+tag stands since decision 8 (a)'s window was answered on 2026-11-22: the map holds `eighth-experimentation`
+and `test-experimentation`, and a third project is one entry (§P step 3).
 
 ---
 
@@ -281,8 +284,8 @@ a sharing semantic nobody has asked for; read-across is what a shared base means
 
 **Read what the projects actually need before writing any of it.** If *"creates freely"* means
 *creates and reads its own*, none of the above is needed. It is also where layer 1's one-project limit
-bites: admitting a second project to the **warehouse** needs the wide tag (6h decision 8 (a)), switched
-on in `sandbox/warehouse/` before the map takes the second entry (§O).
+bites: admitting a second project to the **warehouse** needs the wide tag (6h decision 8 (a)), which
+stands in `sandbox/warehouse/` beside the map's two projects (§O).
 
 ---
 
