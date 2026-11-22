@@ -167,3 +167,107 @@ approval of 2026-10-18, with the environment down. Every call is a read, as the 
   `AssumeRole` events, none on that role, and no `StartJobRun`, `CreateJob`, `CreateProcessingJob` or
   `CreateTrainingJob`. `glue get-jobs` in Production returns none. Stage 9's pickup (its step 2.5) is a
   Glue job under that role, so the SageMaker processing-job quotas of 0 are not on its path.
+
+## 2026-11-22 — decision 1's replacement, made by the hub sitting's proxy apply
+
+*Written by Claude in the session holding Stage 6g, on branch `claude/modest-robinson-66556d`, from about
+01:50 UTC. The apply is the coordinating session's: it is relayed from Stage 12's log of 2026-11-22 (PR #352),
+and that session confirmed the facts below in a message. This session wrote nothing to AWS. Its reads ran
+as the infrastructure user with `InfrastructureAccess` in Production (`awsds-infra-prod`, `us-west-2`).
+Times are UTC.*
+
+- **[The coordinating session, relayed]** `production/proxy/` from `main` at `65254241`, which carries
+  #354's `t3.small`, applied from a saved plan 2026-11-21 23:51:42 to 23:53:26: `1 added, 2 changed,
+  1 destroyed`. The instance was replaced on `ami` and `user_data` (this decision's corrected comment and
+  `TM-01`'s `-n`, #351), with `instance_type` `t3.micro -> t3.small`; re-plan `No changes`. The proxy served
+  nothing from 23:51:43 to the new host's first request at 23:54:00.
+- **[Claude] The trail**, `lookup-events` by resource name: `TerminateInstances` on `i-0d42d0393c39eefdb`
+  at 23:51:52, `running` to `shutting-down`; `RunInstances` at 23:52:55 for `i-071bcc561f75b51d7`,
+  `t3.small` on `ami-09f6e62a9fe578f92`, private `10.31.160.128`. Both calls were made by
+  `AWSReservedSSO_InfrastructureAccess_*` with Terraform 1.17.2's user agent, from the laptop's own uplink.
+- **[Claude] The host**, `describe-instances` at 01:51: `i-071bcc561f75b51d7` running, launched 23:52:54,
+  public `184.36.57.235`. `describe-addresses` reads one Elastic IP in Production, `52.89.212.1`, on the
+  tunnel host `i-0e3ae32bacd61c9b2`.
+- **[Claude] Its user data**, `describe-instance-attribute --attribute userData`: 15,148 bytes of plain
+  script. It carries the corrected comment (*"here, the proxy still comes up with an empty allow-list"*) and
+  not *"while the Elastic IP is still being associated"*. It renders `dstdomain -n` and has no step (0).
+- **Verdict**: the replacement decision 1 left owed on 2026-09-17 is made, and decision 1 is closed. The
+  host runs `65254241`'s template. `main` has since gained #356's step (0) in the proxy's user data (15,685
+  bytes) and #359's size check. The step (0) makes a plan from `main` read `1 to add, 2 to change, 1 to
+  destroy` until its apply, which waits until after §N.9's day 2 (Stage 12's log).
+
+## 2026-11-22 — 2.4's Athena read, as the project role through 6f's subscription
+
+*The choice of principal and the query are the user's: the query ran in the portal as the Data Scientist
+User, in a new tab of that user's browser profile, in `eighth-experimentation`'s query editor with *Athena
+(SQL)* as the compute and no space. 6f's session confirmed beforehand that 11.12 would not revoke the
+subscription that night. The §N.9 day 2 session and the coordinating session were told before the query.
+Claude's reads ran as the infrastructure user with `InfrastructureAccess` in `us-west-2`, read-only:
+`awsds-infra-sandbox-1` (`<Sandbox Account 1>`), `awsds-infra-data` (`<Data Governance Account>`) and
+`awsds-infra-identity` (`<Identity Account>`). Times are UTC.*
+
+- **[user] The choice**, between the two options of the waiting list with Claude's recommendation: the
+  project role through 6f step 11's subscription, read from the portal's query editor. The other option was
+  the persona from a laptop, and `DataScientistAccess` carries no `athena:` action since 2026-08-26 (D19),
+  so its `StartQueryExecution` would have stopped at the identity policy.
+- **[Claude] Before the query, the fulfilment is live.** In Data Governance, `lakeformation list-permissions`
+  on `curated.trades` reads `SELECT` for Sandbox's `IAMPrincipals` under
+  `context.datazone.projectId=="avhvbqn37ty7m8"`, updated 2026-10-26. In Sandbox, `glue get-table` reads the
+  resource link `glue_db_blerpkhn9nj7o0.trades` targeting `curated.trades`.
+- **[user]** *"A consulta `SELECT * FROM "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10;` retornou dataframe com
+  10 linhas de dados, com as colunas `trade_date`, `desk` , `instrument`, `quantity`, `price`."*
+- **[Claude] The execution**, in `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`:
+  `c9f604ea-50f8-47b3-b171-caf3985b6692`, `SELECT * FROM "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10`,
+  `SUCCEEDED`, submitted 02:15:33 and completed 02:15:35, 1,178 bytes scanned, 1,847 ms in the engine (Athena
+  engine version 3). Its result is `…/avhvbqn37ty7m8/dev/sys/athena/c9f604ea-50f8-47b3-b171-caf3985b6692.csv`
+  in the project path. `curated.trades`' current metadata is still `00003-c291e115-…metadata.json`, the table
+  last updated on 2026-10-24 at 22:26:46.
+- **[Claude] Sandbox's trail.** `StartQueryExecution` at 02:15:33 as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, invoked by `sqlworkbench.amazonaws.com`. Its source
+  identity resolves in Identity Center to the Data Scientist User. At 02:15:34, two `GetDataAccess` for
+  `SELECT` by the same role: one invoked by `athena.amazonaws.com` on the resource link
+  `glue_db_blerpkhn9nj7o0/trades`, its audit context naming the query, and one invoked by
+  `glue.amazonaws.com` on the lake's `curated/trades`. No error.
+- **[Claude] Data Governance's trail.** The same vend in the cross-account form at 02:15:34 (`AWSAccount`,
+  invoked by `glue.amazonaws.com`, `SELECT` on `curated/trades`). Then nine `Decrypt` at 02:15:35 by
+  `awsds-data-lf-registration` under `alias/awsds-data-data`, encryption context `aws:s3:arn` =
+  `arn:aws:s3:::awsds-data-curated`, invoked by `glue.amazonaws.com`, none refused.
+- **Verdict**: verification iv is answered yes, and 2.4 is done.
+  - The objects were read with the registration role's vended credentials. That role is a Data Governance
+    principal, which `DenyOutsideTrustedNetworks` exempts through `aws:PrincipalAccount`, a test 2.3 left
+    unchanged. This comes from reading `buckets.tf`; no S3 data event was read to attribute it.
+  - A space would add only the Athena API call through Sandbox's `athena` interface endpoint.
+  - Stage 9 8.1 measured the same path on 2026-10-30 (its log).
+  - With decision 1's replacement (the entry above), nothing in this stage is owed.
+
+## 2026-11-22 — the vend's attribution in both trails, read for the supplement
+
+*Claude's reading, with no AWS call, of the events the entry above looked up, as saved from that night's
+`cloudtrail lookup-events`: Sandbox's `StartQueryExecution` and `GetDataAccess`, Data Governance's
+`GetDataAccess` and `Decrypt`. AWS's Lake Formation pages on CloudTrail were read the same night. Times are
+UTC.*
+
+- **[Claude] Sandbox.** The `GetDataAccess` invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` = `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string, and `cellLevelSecurityEnforced` `true`. Its `additionalEventData` reads `requesterService`
+  `ATHENA`, `lakeFormationPrincipal` the project role's ARN and `lakeFormationRoleSessionName`
+  `AWSLF-00-AT-<Sandbox Account 1>-CRWz3tDXZ4`. The one invoked by `glue.amazonaws.com` on `curated/trades`
+  reads `callType` `EXTERNAL`, `requesterService` `ATHENA` and the same session name, with no audit context.
+  `StartQueryExecution` shows `queryString` as `***OMITTED***`, so the statement above is
+  `get-query-execution`'s. The project role's session is `<Identity Center user id>@5hkjdsy3umpi1c`, the
+  user id being the source identity.
+- **[Claude] Data Governance.** The shared copy is of the glue-invoked event alone: `userIdentity` of type
+  `AWSAccount`, `accountId` Sandbox's, `principalId` the project role's unique id and that session, and
+  `additionalEventData` as in Sandbox, the session name included. The nine `Decrypt` name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox Account 1>-CRWz3tDXZ4`, a session created at
+  02:15:34, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, no source identity and
+  no `vpcEndpointId`.
+- **[Claude] AWS's pages.** *Cross-account CloudTrail logging* gives the session name as
+  `AWSLF-<version>-<engine code>-<account id>-<suffix>`, `AT` for Athena and the account id of the account
+  that requested the credentials, with a Glue job's S3 event as its example, and names the consumer's opt-in,
+  *Resource owners* under *Default permissions for AWS CloudTrail*. Neither it, the service's CloudTrail page
+  nor the underlying-data page mentions KMS events, the audit context or an Athena read's `invokedBy`.
+- **Verdict**: in Data Governance the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names
+  Athena, Sandbox and the role's session, never the query, which only Sandbox's trail joins through the
+  session name. Written as `SUP-416`; `SUP-116` gains that a statement with its own `LIMIT` gets none
+  appended.
