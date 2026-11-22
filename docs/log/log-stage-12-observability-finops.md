@@ -1230,3 +1230,54 @@ deixe assim"*. Recorded by Claude.*
 - **[Claude]** The proxy's and the WireGuard host's rows in `scripts/tfhygiene/layers.py` keep no
   `per_use` rate: neither cross-AZ peering at 0.01 USD/GB each way nor internet out at 0.090 USD/GB past the
   free 100 GB a month. The readings behind the question are in the previous entry.
+
+## 2026-11-22 — `make status` reads its sources at once, each state from its object
+
+*Claude's sitting, in a session the orchestrating session started, read-only throughout: `make status`,
+state objects by `aws s3 cp`, `terraform init` and `show -json` of the nine metered slices and eight `[P]`
+ones, and a scratch `init` against a key holding no object, as the `awsds-infra-*` profiles (the
+infrastructure user with `InfrastructureAccess`). A subagent read three Terraform pages for `SUP-457`
+(`docs/REFERENCES.md`). Times are UTC.*
+
+### The measurement
+
+- **[Claude] Before**, `make status` under a timing harness from 19:58:38 to 20:00:37, exit 0: 118.0 s in
+  55 subprocesses. `terraform init` took 51.5 s (nine slices, 5.4 to 6.3 s each), `terraform show -json`
+  45.2 s (4.6 to 5.5 s each), the 19 `aws` reads 20.7 s (1.0 to 1.4 s each), the two generators 0.7 s.
+- **[Claude] One `aws` read**, `sagemaker list-apps --debug`: 1.0 to 1.2 s, of which 0.17 to 0.29 s the
+  CLI's start, 0.06 s the SSO credentials from the CLI's cache, 0.65 s from the request to the response.
+- **[Claude] The reads alone**, with the nine state objects read by `aws s3 cp`, 27 reads: 32.1 s one at a
+  time, 8.3 s on 4 threads, 5.2 s on 8, 3.9 s on 12 and on 16, 3.0 s on 32. Through `boto3` 1.44.9, in a
+  throwaway environment with one session per profile: 21.6 to 24.8 s one at a time, 4.5 s on 12 threads,
+  2.8 to 3.2 s on 32.
+
+### The change
+
+- **[Claude] `scripts/slices.py status`** reads an `[E]` slice's state object from its S3 backend, at the
+  bucket and key `backend.backend_values` gives, with no generated file, no `init` and no `show`. Every
+  read starts at once on 16 threads and is printed beside its result, in the order of the sequential run;
+  a read still running after 120 s is killed and reported UNREADABLE. `list-spaces` still runs only where
+  an app bills. The `aws` CLI stays, since `boto3` was no faster in parallel.
+- **[Claude] A key holding no object** reads UNREADABLE, where `show` read it as an empty state and the
+  line read `down` (`SUP-457`).
+
+### The readings
+
+- **[Claude] After**, `make status` from 20:12:10 to 20:12:14, exit 0: 4.2 s; at 20:27:50, 20:27:54
+  and 20:27:57, 3.8, 3.2 and 3.1 s, each exit 0 at *"passive burn: USD 0.5894/h"*.
+- **[Claude] Side by side**, the old script started at 20:22:33 and the new one at 20:24:13, so both read
+  the Studio apps within seconds: 117.5 s and 3.7 s, both exit 0. The 30 report lines are identical,
+  *"passive burn: USD 0.5894/h"* in both. The `$` lines differ only where each slice's `gen-tfvars.py`,
+  `gen-backend-hcl.py`, `init` and `show` became one `aws s3 cp`.
+- **[Claude] The counts against `show -json`**, on the nine metered slices and on `identity/org-policies`,
+  `production/networking`, `sandbox/data`, `sandbox/foundation`, `production/chains`, `sandbox/ml`,
+  `data-governance/data` and `sandbox/observability`: the managed resources, the interface endpoints with
+  their AZs, the root's managed addresses and every address with its module and index are equal in all
+  seventeen. The largest held 81 managed resources, 8 module instances and 66 indexed instances; none held
+  a deposed object.
+- **[Claude] The negative cases**, each exit 1, its broken readings UNREADABLE under *"neither total is a
+  measurement"*: `AWS_CONFIG_FILE=/dev/null`, all 22 readings in 2.5 s; Staging's profile renamed to one
+  that does not exist, its three; `production/egress`'s key renamed, its line, on *"An error occurred (404)
+  when calling the HeadObject operation: Not Found"*; `READ_TIMEOUT` at 0.05 s, all 22 in 0.20 s.
+  `state_tree()` returns nothing for a read that is not JSON, `null`, a list, format 3, no version, exit 1
+  and a silent exit 255; format 4 with no resource reads `down`.
