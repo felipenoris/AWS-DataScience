@@ -2607,6 +2607,7 @@ UTC.*
 - **[Claude] Read on `main`**: `terraform-live/sandbox/warehouse/variables.tf` holds `"4gqfau9xuo6e4w"` in
   `projects` and `default = true` for `all_projects_tag_enabled`. The change is not applied: the warehouse
   sitting's step 7 applies it, and until then `WH-7` and `WH-11` fail, as `AWS_STATE.md` §C records.
-- **[Claude] The records the merge left stale**: the stage file's `Status` and the sitting's "Before it"
-  step 2; `promotion.md` §N.10.1, §N.12.1's calendar and §N.12.4; `waiting-on-the-user.md`'s row for the
+- **[Claude] The records the merge left stale**, in
+  [pull request #367](https://github.com/felipenoris/AWS-DataScience/pull/367): the stage file's `Status`
+  and the sitting's "Before it" step 2; `promotion.md` §N.10.1, §N.12.1's calendar and §N.12.4; `waiting-on-the-user.md`'s row for the
   standing change, removed, since its user part was the merge.
