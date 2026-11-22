@@ -5762,3 +5762,13 @@ one-step pipeline. Claude reads the SageMaker API and the trail as the infrastru
   through the portal at the time (its 2.3).
 - **Standing from day 3**: `ml-demo-pipeline` and its runs, the registry's versions, `sandbox/bedrock/`'s
   switches `false` since 21:27:37, and the editor's pipeline until the user's word.
+
+## 2026-11-22 — Day 3's sitting C: the editor's pipeline kept, `EXC-28`
+
+*Claude's hand, recording the user's answers in chat at about 23:37 UTC; no AWS call.*
+
+- **[user] The editor's pipeline**: *"Pode manter o pipeline do editor"*. `Pipeline-1795387181754` stays in
+  `eighth-experimentation` as `SUP-468`'s record, and `ML-6` fails on it while it stands: `AWS_STATE.md`
+  `EXC-28`, the id told to §N.10's day 2.
+- **[user] The downloaded file** `execution-1795385756381_definition.json`, from 5.2's portal reading at about
+  22:31: *"O arquivo em downloads eu msm apago depois"*. It is the user's to delete.
