@@ -2623,3 +2623,28 @@ with `-input=false`, Terraform 1.17.2, at 06:27 UTC, from a tree whose `sandbox/
   `test-experimentation`'s access role, its portal and warehouse policies, their three attachments and its
   `5439` ingress rule. Updated in place: `eighth-experimentation`'s warehouse policy and the namespace. With
   `data_transfer_role_enabled=true`, 9, 2 and 0 (Stage 21's log).
+
+## 2026-11-22 — Sandbox's `InfrastructureAccess` kept as a contributor of the Sandbox projects
+
+*Claude, in a session the orchestrating session started to put the waiting list's decisions to the user one
+at a time, with nothing up: `aws` reads as the infrastructure user (`InfrastructureAccess`,
+`awsds-infra-sandbox-1`) and reads of the repository. Times are UTC.*
+
+- **[Claude] The memberships, read at about 13:39** by `datazone list-project-memberships`: one
+  `PROJECT_CONTRIBUTOR` group member in `test-experimentation` and in `eighth-experimentation`, two in each of
+  `app-etl-dev`, `app-dbt-dev`, `app-ml-dev` and `app-genai-dev`, the second by inference `INT-25`'s bundle
+  role. `get-group-profile` returns no `groupName` for these members, so which role each names was not read.
+- **[Claude] What the card said**: the membership lets `WH-9` and the other instruments read the projects'
+  connections and assets, and the procedures write through it: `runbooks/redshift-connection.md` §P step 4a's
+  `UpdateConnection` (`EXC-17`), 6f 2.7's `delete-environment`, and the `create-environment` of 6f decision
+  due 6 and Stage 17 1.5. Data Governance's `InfrastructureAccess` is a Lake Formation administrator
+  (`data-governance/data/lakeformation.tf`), so the membership widens no reach of the infrastructure user over
+  governed data. The domain's RAM share carries its permission at version 13 since 2026-11-19 (Stage 19 4.12),
+  not the version 10 `waiting-on-the-user.md` names, so a custom designation is assignable from Sandbox;
+  whether its categories cover those writes is unmeasured.
+- **[user] The decision**, on a card at 13:40: *"Manter, aceito por escrito (Recomendado)"*, against
+  "Trocar por designation customizada", "Remover a membership" and "Adiar este e os demais". The membership
+  stays, with its revision trigger: a second operator who is not the lake's administrator, or a custom
+  designation measured to cover the procedures' writes. `AWS_STATE.md`'s `EXC-17` names the acceptance and
+  `institutional-delta.md` the read-only designation an institution would assign. 6f's half and the waiting
+  list's row are written by the session that holds those files.
