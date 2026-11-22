@@ -2426,15 +2426,16 @@ after the down's hook shows there.
 #### N.9.7 The sitting's cost
 
 At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
-- the hub's two hosts and two addresses, 0.026 USD/h to 2026-11-21 23:23 UTC, when the VPN host relaunched
-  as a `t3.medium` (0.0416), and 0.0724 since 23:53, when the proxy relaunched as a `t3.small` (0.0208)
-  (launch times read 2026-11-22), and Sandbox's 18 endpoints, 0.180 USD/h, each day;
+- the hub's two hosts and two addresses, 0.026 USD/h to 2026-11-21 23:23 UTC, 0.062 from 23:23, when the VPN
+  host relaunched as a `t3.medium` (0.0416), 0.0724 from 23:53, when the proxy relaunched as a `t3.small`
+  (0.0208), and 0.036 since 2026-11-22 01:16, when the VPN host returned to a `t3.nano` (0.0052) (launch
+  times read 2026-11-22); and Sandbox's 18 endpoints, 0.180 USD/h, each day;
 - the groups' endpoints at 0.010 USD/h each: day 1's one, day 2's six and day 3's four;
 - each space's app, 0.050 USD/h on `ml.t3.medium` and 0.100 on `ml.t3.large`, 6d's remote-access spaces;
 - a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
 
-Before the spaces, day 1 bills about 0.22 USD/h, day 2 0.27 and 0.31 after the rebuilds, and day 3 0.29,
-some 1.4, 2.4 and 2.4 USD of hub and endpoints; with the spaces and the Config cycle, 2 to 4 USD a day and 9
+Before the spaces, day 1 bills about 0.22 USD/h, day 2 0.27, 0.31 after the rebuilds and 0.28 since the VPN
+host's return, and day 3 0.26, some 1.4, 2.4 and 2.2 USD of hub and endpoints; with the spaces and the Config cycle, 2 to 4 USD a day and 9
 to 11 USD for the sitting. The
 models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's session is the largest of them;
 Stage 17's training jobs are about five minutes of `ml.m5.xlarge` each, at 0.23 USD/h.
