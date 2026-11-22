@@ -4333,7 +4333,11 @@
   - *Idle shutdown mechanics* — per-app idle settings with `MaxIdleTimeoutInMinutes` as the admin
     ceiling, requiring SageMaker Distribution v2+ (Stage 6 step 8.1):
     <https://docs.aws.amazon.com/sagemaker/latest/dg/studio-updated-idle-shutdown.html> and
-    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_IdleSettings.html>.
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_IdleSettings.html>. Read again
+    2026-11-22, when the range opened to the whole of it: `IdleTimeoutInMinutes`,
+    `MinIdleTimeoutInMinutes` and `MaxIdleTimeoutInMinutes` each take 60 to 525600 minutes, and a
+    space's `SpaceIdleSettings` carries `IdleTimeoutInMinutes` alone, in the same range:
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_SpaceIdleSettings.html>.
   - *`sagemaker:InstanceTypes` condition key* — listed for `CreateApp`, `CreateSpace`, `UpdateSpace`
     and `CreateTrainingJob`, which is what makes Stage 6 step 3's instance ceiling reach spaces as well
     as jobs: <https://docs.aws.amazon.com/service-authorization/latest/reference/list_sagemaker.html>.

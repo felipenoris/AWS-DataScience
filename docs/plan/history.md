@@ -851,6 +851,16 @@ one module tag.
   Staging holds a registry group for such an application. Stage 17 pass 9 plans it for a new application,
   `app-ml`; `app-etl`'s model chain, built on the earlier decision, retires after `app-ml`'s first
   release (Stage 17 decision 28 (a), taken the same day). Nothing in AWS changed.
+- **2026-11-22 — A member picks a space's idle timeout from the platform's whole range.** The portal's
+  *Create space* read *"Your administrator allows an idle timeout between 1 hour and 2 hours"*, and the
+  user asked that a member choose any interval. The range was Stage 6a step 8.1's 120-minute ceiling,
+  locked in the `Tooling` parameters, which [Stage 6d](stages/stage-06d-unified-studio-remainder.md)
+  decision 15 (b) carried into the `SageMakerAIDomain` rows with a 60-minute floor. `data-governance/governance/`'s
+  `max_idle_timeout_minutes` went to 525600 minutes (365 days), the SageMaker API's ceiling and both
+  templates' default; the floor stays 60 and idle shutdown stays on, with a 60-minute default, the user
+  declining to turn it off after reading a forgotten space's cost. The four profiles were applied at
+  19:00 UTC, and each project's domains take the range at its owner's *Update project*. A forgotten app
+  now bills until its member's timeout or `make down ENV=sandbox`'s app sweep.
 
 ---
 

@@ -247,8 +247,8 @@ capability-enable time: `UpdateProjectProfile` demands them declared even though
 |---|---|---|
 | `sagemakerDomainNetworkType` | `VpcOnly` | no |
 | `lifecycleManagement` | `ENABLED` | no — the template's AllowedValues are the enum `ENABLED`/`DISABLED`; the boolean `"true"` was rejected by CloudFormation at the first deploy on 2026-08-22, `CreateProjectProfile` having validated nothing (Lesson 39) |
-| `idleTimeoutInMinutes` | `60` | **yes** — the per-project default a member may tune, under the ceiling |
-| `maxIdleTimeoutInMinutes` | `120` | no — the admin ceiling (step 8.1) |
+| `idleTimeoutInMinutes` | `60` | **yes** — the timeout a new space starts with; a member changes it per space within the range |
+| `maxIdleTimeoutInMinutes` | `525600` | no — 365 days, the SageMaker API's ceiling and the template's default, so a member picks any timeout from 60 minutes to 365 days (the user's decision of 2026-11-22). `minIdleTimeoutInMinutes` is not overridden: its template default, 60, is the API's floor. The `SageMakerAIDomain` element locks the same range per app type, `minIdleTimeoutInMinutes*` 60 and `maxIdleTimeoutInMinutes*` 525600 |
 | `maxEbsVolumeSize` | `100` (GB) | no |
 | `enableTrustedIdentityPropagationPermissions` | `false` | no — decision 2, delivered |
 | `enableSpaces` | `false` | no — in every profile since 2026-11-18 (6d decision 16 (a), 2.7 step 3): a `Tooling` with spaces off creates no SageMaker AI domain (Stage 18 decision 1), so a project created since holds the `SageMakerAIDomain` environment's domain alone (read 2026-11-18 on 6d 2.7 step 5's project); a living project keeps its `Tooling` domain, *Update project* re-deploying the environment's own `true` (`SUP-380`) |

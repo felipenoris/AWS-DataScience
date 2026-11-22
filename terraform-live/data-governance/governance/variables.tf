@@ -67,15 +67,35 @@ variable "domain_name" {
 }
 
 variable "idle_timeout_minutes" {
-  description = "Stage 6 step 8.1 - how long a space may sit idle before SMUS shuts the app down. D11 is a property of the design, not of the user's habits: an open JupyterLab bills at ~USD 0.050/h whether anyone is typing in it (docs/PRICING.md 8)."
+  description = "Stage 6 step 8.1 - the idle timeout a new space starts with, which a member changes per space within min_idle_timeout_minutes and max_idle_timeout_minutes. An open JupyterLab bills at ~USD 0.050/h whether anyone is typing in it (docs/PRICING.md 8), so the default is the platform's floor."
   type        = number
   default     = 60
 }
 
-variable "max_idle_timeout_minutes" {
-  description = "The admin ceiling a project member cannot raise (Stage 6 step 8.1). The pair matters: idle_timeout_minutes is the default, this is the most a user may set it to, and without the second the first is a suggestion (Lesson 5)."
+# The SageMaker API takes IdleSettings' three timeouts from 60 to 525600 minutes, and the
+# SageMakerAIDomain template declares the same MinValue and MaxValue. CreateProjectProfile and
+# UpdateProjectProfile validate no parameter against the template (Lesson 39), so the range is
+# checked here, before a value reaches a project's stack.
+variable "min_idle_timeout_minutes" {
+  description = "The shortest idle timeout a member may give a space: 60, the SageMaker API's floor and both blueprints' default. Locked in the profile, so every project offers the same range."
   type        = number
-  default     = 120
+  default     = 60
+
+  validation {
+    condition     = var.min_idle_timeout_minutes >= 60 && var.min_idle_timeout_minutes <= 525600
+    error_message = "min_idle_timeout_minutes must be within the SageMaker API's 60 to 525600 minutes."
+  }
+}
+
+variable "max_idle_timeout_minutes" {
+  description = "The longest idle timeout a member may give a space: 525600 minutes (365 days), the SageMaker API's ceiling and both blueprints' default, so a member picks any interval the platform accepts (the user's decision of 2026-11-22). Locked in the profile, so no project narrows it. A space idle that long bills its instance until make down ENV=sandbox's app sweep deletes it (D11)."
+  type        = number
+  default     = 525600
+
+  validation {
+    condition     = var.max_idle_timeout_minutes >= 60 && var.max_idle_timeout_minutes <= 525600
+    error_message = "max_idle_timeout_minutes must be within the SageMaker API's 60 to 525600 minutes."
+  }
 }
 
 variable "max_ebs_volume_size_gb" {
