@@ -975,3 +975,89 @@ Production (`awsds-infra-prod`, `us-west-2`), and nothing was applied. Times are
   - the orchestrating session takes the index rows.
 - **The proxy keeps `t3.small`.** Its user data's step (0) waits for an apply outside the §N.9 day 2
   sitting, since any proxy apply replaces the estate's single internet exit.
+
+## 2026-11-22 — `production/vpn/` applied: the tunnel host back on `t3.nano`, and step (0)'s first boot
+
+*Claude, in the session coordinating the hub sitting, on the user's word once #356 merged at 01:11:32
+("fiz o merge. autorizo o apply."). The apply ran from the coordinating worktree fast-forwarded to `main`
+at `13e277b4` (Lesson 79), as the infrastructure user with `InfrastructureAccess` in Production
+(`awsds-infra-prod`, `us-west-2`). The §N.9 day 2 session and the orchestrating session were told before
+the write. Times are UTC.*
+
+### The apply
+
+- **[Claude] The saved plan**, at 01:13: `Plan: 2 to add, 3 to change, 2 to destroy.`, as the read-only
+  re-plan of 01:09 in the entry above.
+  - The instance is replaced: `instance_type` goes `"t3.medium" -> "t3.nano"`, and `user_data` forces
+    the replacement.
+  - The Elastic IP's association is replaced.
+  - The route, the record and the alarm are updated in place.
+- **[Claude] The apply**, 01:14:51 to 01:16:26: `Apply complete! Resources: 2 added, 3 changed, 2
+  destroyed.`
+  - `i-03ae94285145bff76`, the `t3.medium` launched at 23:23:14, was terminated at 01:15:01.
+  - `i-0e3ae32bacd61c9b2` launched at 01:15:54: `t3.nano` on 8 GiB gp3, `10.31.160.195`, ENI
+    `eni-0d65d885376e9f668`, the Elastic IP `52.89.212.1` associated as `eipassoc-0deee4fd8a9a482a8`.
+  - The tunnel was down from about 01:15 to `wg0`'s start at 01:17:21. No client held it: the
+    `t3.medium`'s handshake stream reads `handshake=never` for both peers in all 190 of its lines, from
+    23:24:25 to 01:13:55.
+- **[Claude] The re-plan** at 01:17:24: `No changes.`, `-detailed-exitcode` 0.
+- **[Claude] `main` moved during the apply.** #357 (`adfd1019`) merged at 01:16:23 and changed `CLAUDE.md`
+  and `docs/SMUS-GRAPH-TOOLS.md` alone, so the applied configuration is `main`'s.
+
+### The first boot: step (0)'s proof
+
+Read with `get-console-output --latest` every 20 s until `END`:
+
+- `BEGIN` at 01:16:05, on the kernel `6.18.62-127.179.amzn2023.x86_64`, the same image as the
+  `t3.medium`'s.
+- The kernel added `/dev/zram0` at 3.0 s of uptime, 424,956 KiB at priority 100, and `/swapfile` at
+  14.2 s, 1,048,572 KiB at priority -2. Step (0) logged `(0) swap: /dev/zram0 415M;/swapfile 1024M` at
+  01:16:13 and `(0) update-motd masked` at 01:16:14.
+- Step (1)'s `dnf` ran from 01:16:14 to `(1) done` at 01:17:19, 65 s. The `t3.medium`'s took 37 s on
+  2026-11-21.
+  - The AL2023 repository's metadata, 91 MB at 68 MB/s, was in by 17.1 s of uptime.
+  - The next repository's line came at 68.4 s. A cold parse peaks at about 620 MiB (`SUP-406`) on a
+    host of 415 MiB, so the swap carried those 51 s (inferred: the host's memory was not read).
+  - `Install  7 Packages`, 72 M to download and 249 M installed; `Complete!` at 80.1 s.
+- `wg-quick@wg0` started at 01:17:21 for 2 peers. The CloudWatch agent accepted its configuration at
+  01:17:25, and `END - the tunnel endpoint is up` came at 01:17:25.
+- cloud-init: `finished at Sun, 22 Nov 2026 01:17:25 +0000`, `Up 86.16 seconds`.
+- The console holds no `Out of memory`, `oom-kill` or `Killed process` line.
+
+### The reads after it
+
+- **[Claude] `./aws/vpn.py`** at 01:18:58: `0 check(s) FAILED`.
+  - `VP-1` reads `t3.nano on 8 GiB gp3, state running`.
+  - `VP-2` reads `52.89.212.1 -> i-0e3ae32bacd61c9b2`.
+  - `VP-4` reads `HttpTokens=required`, and `VP-6` reads `awsds-prod-vpn-health (OK)`.
+- **[Claude] The route and the record**, at 01:19:20: `10.90.0.0/24` to `eni-0d65d885376e9f668`,
+  `active`; `vpn.awsds.internal` `A` `10.31.160.195`, TTL 60.
+- **[Claude] The new handshake stream**, `i-0e3ae32bacd61c9b2/handshakes`: at 01:17:22 and at 01:18:24,
+  `peer=mbp handshake=never` and `peer=raspi handshake=never`.
+
+### The rate
+
+- **[Claude]** The VPN bills `t3.nano`, 0.0052/h, from 01:15:54. The `t3.medium`'s 0.0416 stopped at
+  01:15:01. The hub runs at 0.0310/h, or 0.0360 with the VPN's Elastic IP, against 0.0674 (0.0724). The
+  §N.9 day 2 session has the times.
+
+### What was not measured
+
+- **[Claude] The host's memory**, so how far into the swap file the `dnf` went. Reading it needs SSM on
+  the host, which the word for this apply does not cover. The console proves only that the install
+  finished.
+- **[Claude] A client's handshake** with the new host. That is the user's.
+
+### Records
+
+- **[Claude]** This stage: the `Status` row, 2.2's owed items and decision due 4. `docs/NETWORK.md`'s
+  WireGuard row and diagram: `10.31.160.195` on `t3.nano`. `docs/AWS_STATE.md`'s VPN row.
+  `runbooks/vpn.md` §S6. `SUP-406` takes the swap file as the measured remedy. `waiting-on-the-user.md`'s
+  Hub row: the apply out, the client's handshake in.
+
+### Owed
+
+- A client's first handshake on the nano, the user's.
+- The proxy's step (0), in an apply outside the §N.9 day 2 sitting: any proxy apply replaces the estate's
+  single internet exit.
+- The orchestrating session's index rows, at the end of day 2.

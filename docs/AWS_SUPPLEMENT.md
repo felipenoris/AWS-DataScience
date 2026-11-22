@@ -950,9 +950,13 @@ entry is still true is the reading.
   for its dnf above the system's own use, which a t3.micro's 913 MiB hold with little to spare, and about
   twice that if update-motd's dnf parses the cold cache at the same time (inferred: on the nano the two
   were killed 23 s apart, and did not run together - the first kill's task table lists one `dnf` and no
-  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host that lost its first boot is repaired by a replacement, not a resize
-  (`SUP-061`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
-  `terraform-live/production/proxy/variables.tf`; `terraform-live/production/vpn/instance_type.auto.tfvars`.
+  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host
+  that lost its first boot is repaired by a replacement, not a resize (`SUP-061`). A 1 GiB swap file
+  written before the first dnf, with update-motd masked, carries the install on a nano: on 2026-11-22 a
+  t3.nano of the same image finished it in 65 s, `/swapfile` at priority -2 beside the zram at 100, and
+  logged no OOM line (`wireguard-v0.8.1`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
+  `terraform-modules/wireguard/main.tf`; `terraform-live/production/proxy/variables.tf`;
+  `terraform-live/production/vpn/instance_type.auto.tfvars`.
 
 ## Systems Manager
 
