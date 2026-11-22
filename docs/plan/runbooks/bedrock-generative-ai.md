@@ -163,11 +163,11 @@ environment. The split button's *Create version*, chosen from its dropdown, only
 action; the button's next click creates the version. The editor drops Top P: a form at Temperature 1 and
 Top P 0 stored `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no `topP` (`SUP-418`).
 
-**The guardrail.** *Build* → *Guardrail*. The form offers two policies, *Content filters*, shown only as
-enabled, and *Denied topics*, as SMUS's guardrail page lists: no PII, word or grounding filter can be set. The
-blocked message applies to the input and to the responses. The lab's guardrail stores its content filters
-at `HIGH` both ways for violence, hate, sexual and insults, and `NONE` for prompt attack and misconduct. Its
-create needs §K's second statement.
+**The guardrail.** *AI apps* → *Asset gallery* → *My components* → *Create component* → *Guardrail*. The
+form offers two policies, *Content filters*, shown only as enabled, and *Denied topics*, as SMUS's guardrail
+page lists: no PII, word or grounding filter can be set. The blocked message applies to the input and to the
+responses. The lab's guardrail stores its content filters at `HIGH` both ways for violence, hate, sexual and
+insults, and `NONE` for prompt attack and misconduct. Its create needs §K's second statement.
 
 **The flow app.** *Build* → *Flow*: a canvas and a palette. The builder has no model node: a prompt node
 carries the model and points at a prompt version, `prompt/<id>:<version>`. The lab's flow is
