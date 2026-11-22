@@ -173,7 +173,12 @@
     # old one, named after the `;`. The fsspec, sqlparse and first setuptools entries were read 2026-10-14
     # from the lock a targeted `uv lock --upgrade-package` leaves, and accepted by name the same day by the
     # user, as the Dev Env Steward; the pillow entries and setuptools' second were read 2026-10-25 the same
-    # way, for `gates-v0.5.0`, when the lock of 2026-10-16 met 73 blocking findings at the gate.
+    # way, for `gates-v0.5.0`, when the lock of 2026-10-16 met 73 blocking findings at the gate. The pillow
+    # pair CVE-2026-128066 and CVE-2026-128067 was read 2026-11-22 the same way, from the lock that moves
+    # langgraph, langgraph-sdk, msgpack, nltk, oauthlib, opentelemetry-api, pyasn1, soupsieve and tornado
+    # past their findings; autogluon-multimodal 1.6.3, the latest on PyPI that day, still requires
+    # Pillow<13. The pair was accepted by name by the user as the Dev Env Steward on 2026-11-22, for
+    # gates-v0.7.0.
     GATES_PIP_AUDIT_ACCEPTED_DEV_ENV: |
       CVE-2026-104851|fsspec         # 2025.3.0, fixed in 2026.6.0; autogluon-multimodal 1.6.1 requires fsspec[http]<=2025.3
       CVE-2026-96636|pillow          # 12.3.0, fixed in 13.0.0; autogluon-multimodal 1.6.1 requires Pillow<13
@@ -217,6 +222,8 @@
       CVE-2026-112902|pillow         # 12.3.0, fixed in 13.0.0; the same requirement
       CVE-2026-114501|pillow         # 12.3.0, fixed in 13.0.0; the same requirement
       GHSA-78g4-xqwv-q3g8|pillow     # 12.3.0, fixed in 13.0.0; the same requirement
+      CVE-2026-128066|pillow         # 12.3.0, fixed in 13.0.0; the same requirement
+      CVE-2026-128067|pillow         # 12.3.0, fixed in 13.0.0; the same requirement
       PYSEC-2026-3447|setuptools     # 81.0.0, fixed in 83.0.0; autogluon-core 1.6.1 requires setuptools<82
       GHSA-xmj3-9gf7-h52w|setuptools  # 81.0.0, fixed in 84.1.0; the same requirement
       GHSA-27jp-wm6q-gp25|sqlparse   # 0.5.0, fixed in 0.5.4; amazon-sagemaker-sql-magic 0.1.3 requires sqlparse==0.5.0
