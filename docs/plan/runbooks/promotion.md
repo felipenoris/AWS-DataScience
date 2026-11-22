@@ -1195,7 +1195,7 @@ closes, and its Dates bound items 4, 5, 9 and 10.
      release G; the request and the approval do (item 6).
    - [user] Stage 20 2.1 before N.9's day 1; Stage 17 0.9 before day 2 and `app-ml-dev`'s MLflow App
      before day 3; 6d 1.1 and 1.2, and 7.6's second identity in a browser profile of its own; N.10.1's
-     acts; 6g 2.4 re-specified, which the portal's query editor reads with no space (Stage 18 7.2).
+     acts; 6g 2.4, read from the query editor with no space on 2026-11-22 (6g's log).
 4. **N.9's day 1** (N.9.3), `make hub-up` and `make up ENV=sandbox GROUPS=mwaa`, no GitLab: 6d's block
    and Stage 20's sitting A, passes 2 and 3 and 4.5, after Stage 20 2.1 and before 2026-12-18, when dbt
    Core 1.11's critical support ends.
@@ -2479,9 +2479,6 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 - **[user] With nothing up:**
   - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #363 merged before day 1,
     which also gives 5.2b's network door (N.12.4).
-  - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
-  - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
-    reads alone.
   - Sandbox's free-trial balance, before the sitting, after each day and the next day.
 - **[user] The identities**: `eighth-experimentation`'s contributor in a browser profile of its own (6h
   0.4); the Data Scientist User signed in (6h 5.4).
@@ -2540,7 +2537,8 @@ passes 2 to 4 in order" and its §5.
 1. [Claude] The other sessions told; [user] `make hub-up`, `make up ENV=sandbox GROUPS=redshift`; the
    spaces in both projects.
 2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, the consumer's workgroup by 1.5's applies in 2.4's order
-   and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role applied and 4.8 at once, then the
+   and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role and then its key statement in
+   `sandbox/data/` applied (decision 4 (b)) and 4.8 at once, then the
    closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
    21's pass 5: the prefix published from the `eighth-experimentation` space, the product requested from a
    `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
