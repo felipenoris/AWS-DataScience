@@ -11,12 +11,12 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-11-20**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
-release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15 and release F's (N.8.4, `v0.5.2`,
-pipeline #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17. What is left is §N.6's
-order: five Sandbox days (N.9's three and N.10's two) and two release sittings (N.11), R1 carrying release
-G (N.8.5, `v0.6.0`) and N.8.3, R2 the first releases of `app-ml`, `app-genai` and, unless R1 took it,
-`app-dbt`; the steps that need nothing up run first.
+**Where it stands, 2026-11-22**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
+release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15, release F's (N.8.4, `v0.5.2`, pipeline
+#129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17, N.9's days 1 and 2 on 2026-11-21
+and 22, and R1 (N.11.1) on 2026-11-22: release G (N.8.5, `v0.6.0`, pipeline #138) and N.8.3. What is left is
+§N.6's order: the subscriptions with nothing up, N.9's day 3, N.10's two days, and R2 (N.11.2), the first
+releases of `app-dbt`, `app-ml` and `app-genai`; the steps that need nothing up run first.
 
 | § | Holds |
 |---|---|
@@ -1116,6 +1116,8 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   project's, a version per release.
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
   `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
+- **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22, read at the
+  first warehouse sitting after it (the waiting list's Dates).
 - **No step provokes them yet**: Stage 8 xxvii's retry (an apply that creates a role and its host
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
