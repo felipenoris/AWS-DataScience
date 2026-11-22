@@ -2648,3 +2648,244 @@ at a time, with nothing up: `aws` reads as the infrastructure user (`Infrastruct
   designation measured to cover the procedures' writes. `AWS_STATE.md`'s `EXC-17` names the acceptance and
   `institutional-delta.md` the read-only designation an institution would assign. 6f's half and the waiting
   list's row are written by the session that holds those files.
+
+## 2026-11-22 — The Sandbox warehouse sitting's day 1: steps 1 to 4 and 6 to 9, the standing apply among them
+
+*Claude, on the user's words in this session's chat: *"sobre o query editor, peço realizar a leitura pela
+sessão no google chrome"* at 18:33:02 UTC and *"Sim, rode pelo Chrome"* at 18:36:26; *"Autorizo tudo"* at
+18:48:12, naming 5.2, 5.2a, 5.3, 5.1's before half and the two spaces; at 19:16:35 *"Apply warehouse e
+compute"*, *"GRANT/REVOKE do 5.2b"*, *"DROP USER do passo 9"* and *"Eu rodo o 5.4"*. The editor, the spaces'
+terminals and the portal driven in the Data Scientist User's Chrome session; the SQL as `dbadmin` through the
+Data API with the admin secret; the applies and the reads as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`). From 18:29 to 19:38; times UTC. The step numbers are the sitting's, in the stage file's
+"The Sandbox warehouse sitting".*
+
+- **[Claude] Step 1, the Query editor's first session** (decision 3): `eighth-experimentation`'s *Query
+  Editor* opened at 18:34:35, the new-editor prompt answered *Later*. Before a choice the toolbar read *Select
+  connection* and *Database*, the list offering `Athena (SQL)` and `redshift-serverless.redshift`; the second
+  was chosen at 18:35:17 and the database selector then read `sandbox`, *Isolated* on. The connection log at
+  18:35:33: 13 rows since 18:35:00, all `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` on `sandbox`
+  with `IAM AssumeUser`, the first *initiating session* at 18:35:21.656 (session 1073946722), the application
+  *Amazon Redshift Query Editor V2 - <access role's unique id>:28f1b390-…@5hkjdsy3umpi1c*, then two sessions
+  of the editor's pool on the connection `axsiuoykrswosw`. The first editor session on `warehouse` was step
+  2's switch, at 18:51:29. The step's command names `username`, which the view lacks: its columns are
+  `user_name` and `auth_method` (refused at 18:29:44 and 18:29:56, then `svv_columns` read), corrected in
+  place. **Decision 3's effect read: the editor opens on `sandbox`.**
+- **[Claude] Step 2, 5.2** (verification vii): as the admin at 18:48:34 to 18:48:49, `CREATE SCHEMA neg52
+  QUOTA 2 GB` and `CREATE TABLE neg52.t AS SELECT 1 AS x`, both `FINISHED`; the step's `QUOTA 1 GB` is under
+  Redshift's 2048 MB floor (5b's log of the same day), corrected in place. In the editor as the project's
+  user, read back from `sys_query_history`:
+
+  | Statement | Query, start | Outcome |
+  |---|---|---|
+  | `CREATE TABLE lab.neg52_ctl AS SELECT 1 AS x;` in `sandbox` | 14512617, 18:49:06 | `success`, 252 ms |
+  | `SELECT * FROM neg52.t;` | 14512622, 18:49:11 | *"ERROR: permission denied for schema neg52"* |
+  | `CREATE TABLE public.neg52 (x INT);` in `warehouse`, schema `public` | 14512666, 18:51:53 | *"ERROR: permission denied for schema public"* |
+  | `DROP TABLE lab.neg52_ctl;` back in `sandbox` | 14512676, 18:52:23 | `success`, 162 ms |
+
+  The switch to `warehouse` ran the editor's own three statements at 18:51:29 (14512649 to 14512652,
+  `success`). The database list at 18:51:20 offered `warehouse`, `dev`, `governed_trades`, `sandbox` and
+  `awsdatacatalog`, and under `sandbox` the schemas `public` and `lab`; `neg52`, existing then, was not
+  listed. `DROP SCHEMA neg52 CASCADE` at 18:52:38; `pg_namespace` then holds `lab` alone of the two.
+  **vii answered: the admitted project reaches `lab` and nothing else**, and its create in `warehouse` is
+  refused, so 1.2's `REVOKE` left no default grant.
+- **[Claude] Step 3, 5.2a's owed half** (verification xiv): `ALTER SCHEMA lab QUOTA 1 TB;` in the editor at
+  18:53:20 on `sandbox`: *"ERROR: Only superuser can alter schema quota."* The query id was not read. **xiv's
+  owed half answered.**
+- **[Claude] Step 4, 5.3 from `jup`'s terminal**, opened through *Code Spaces* → *Open in* → browser at 18:58;
+  the identity at 18:59:05 `assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker`. Each
+  refusal, `rc=254`:
+  - `update-workgroup --max-capacity 8` at 18:59:05: *"…is not authorized to perform:
+    redshift-serverless:UpdateWorkgroup on resource: arn:aws:redshift-serverless:us-west-2:<Sandbox
+    account>:workgroup/d6989b98-5023-4b04-9ea7-d01d50c86448 because no identity-based policy allows the
+    redshift-serverless:UpdateWorkgroup action"*;
+  - `delete-usage-limit` with the all-zeros id at 19:00:32: the same form for `DeleteUsageLimit` on
+    `usagelimit/00000000-0000-0000-0000-000000000000`, no `ResourceNotFoundException`;
+  - `get-secret-value` on the admin secret at 19:01:20: *"…not authorized to perform:
+    secretsmanager:GetSecretValue … because no identity-based policy allows the secretsmanager:GetSecretValue
+    action"*.
+
+  The plan expected the first two to name the SCP statement `DenyRedshiftCostGuardTamperingExceptInfrastructure`
+  (read at 18:59:33: `Deny` of `DeleteUsageLimit`, `UpdateUsageLimit` and `UpdateWorkgroup` on `*` for every
+  principal not matching `*AWSReservedSSO_InfrastructureAccess_*`). The trail at 19:01:48: `UpdateWorkgroup`
+  at 18:59:07Z and `DeleteUsageLimit` at 19:00:33Z, `AccessDenied`, `requestParameters` `null`, `errorMessage`
+  `HIDDEN_DUE_TO_SECURITY_REASONS` (`SUP-458`); `GetSecretValue` at 19:01:21Z, `AccessDenied`, the client's
+  wording in full. `simulate-principal-policy` on the project role at 19:02:48 and 19:03:07:
+
+  | Action | Resource | Decision | `AllowedByOrganizations` |
+  |---|---|---|---|
+  | `UpdateWorkgroup` | the workgroup's ARN | `explicitDeny` | `false` |
+  | `UpdateWorkgroup` | `*` | `explicitDeny` | `false` |
+  | `DeleteUsageLimit` | the all-zeros usage limit's ARN | `implicitDeny` | `null` |
+  | `DeleteUsageLimit` | the workgroup's ARN | `implicitDeny` | `null` |
+  | `DeleteUsageLimit` | `*` | `explicitDeny` | `false` |
+
+  **5.3 answered**: the project role cannot raise the workgroup, delete its usage limit or read the admin
+  secret. The SCP denies the first two, and the wording names the missing identity allow (`SUP-020`).
+- **Step 5, 5.4 as the persona, not run**: the profile `awsds-scientist-sandbox` answered *"Error when
+  retrieving token from sso: Token has expired and refresh failed"* at 19:01:48, and the user took the step
+  (*"Eu rodo o 5.4"*). Owed, with verification viii.
+- **[Claude] Step 6, 5.1's before half** (verification vi), `test-experimentation`'s portal from 19:03:55,
+  before step 7:
+  - *Compute* listed *SQL analytics (2)*, `project.athena` and `serverless.spark`, under the banner *"The
+    Compute page is migrating to Resource blueprints."*
+  - *Add compute* → existing Amazon Redshift Serverless offered one workgroup, `awsds-sandbox-warehouse`,
+    where the plan expected none. With *IAM credentials* the form filled
+    `jdbc:redshift://awsds-sandbox-warehouse.<Sandbox account>.us-west-2.redshift-serverless.amazonaws.com:5439/dev`
+    and demanded *Name* and *Access role ARN*; *IAM Identity Center* was greyed, *"Trusted identity propagation
+    is not enabled for this domain."* The access-role selector offered one role, the project's own
+    `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`.
+  - With the name `neg51-before`, *Add compute* at 19:05:58 answered *"Unable to assume AccessRole. User:
+    arn:aws:sts::<Sandbox account>:assumed-role/datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/28f1b390-…@bi356s1sacz0cw
+    is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::<Sandbox
+    account>:role/datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw (Service: Sts, Status Code: 403, …)"*; the
+    form was cancelled at 19:06:26.
+  - The trail: the portal's reads from 19:04:01Z, `ListWorkgroups` at 19:04:31Z and `ListSecrets` at
+    19:05:04Z, `ok`; the refused `AssumeRole` at 19:06:01Z by the project role's portal session on the role
+    itself; Data Governance's `CreateConnection` at 19:06:01Z by `awsds-data-studio-domain-execution` in the
+    session `user-28f1b390-…`, `ValidationException`, no message. From 19:05 the session holds `ListSecrets`
+    and the refused `AssumeRole` alone, no `GetCredentials`. `WH-9` at 19:09:58 and 19:19:57: no Redshift connection in `test-experimentation`.
+  - **vi's before half answered**: the portal lists the workgroup to a project outside the map, since
+    `ListWorkgroups` has no resource scope, and the connection fails at its access role: the only role offered
+    is the project role, which cannot assume itself. Nothing was created.
+- **[Claude] Step 7, the standing apply** (decision 8 (a)), from a tree whose slices equal `origin/main`
+  `7fb3724a`, the other sessions told at 19:17:
+  - `sandbox/warehouse/` planned at 19:17:29 with `-var all_projects_tag_enabled=true -var
+    data_transfer_role_enabled=false`: *"Plan: 7 to add, 2 to change, 0 to destroy."*, as the step expects:
+    `test-experimentation`'s portal and warehouse policies, access role, three attachments and `5439` rule;
+    `eighth-experimentation`'s warehouse policy and the namespace's tags
+    (`AmazonDataZoneProject` → `for-use-with-all-datazone-projects`) in place.
+  - Applied 19:18:08 to 19:18:21, exit 0: *"Apply complete! Resources: 7 added, 1 changed, 0 destroyed."*,
+    `eighth-experimentation`'s policy counted unchanged (`SUP-356`); the role
+    `awsds-sandbox-warehouse-access-4gqfau9xuo6e4w`, the rule `sgr-0a6a5eee6dd9bb596`. Re-planned *"No
+    changes."*
+  - `sandbox/warehouse-compute/` planned at 19:18:44: *"Plan: 0 to add, 1 to change, 0 to destroy."*, the
+    workgroup's tags alone; applied 19:19:08 to 19:19:17, exit 0, *"Modifications complete after 2s
+    [id=awsds-sandbox-warehouse]"*; re-planned *"No changes."*
+  - `./aws/warehouse.py awsds-infra-sandbox-1`, without `--sql`: at 19:09 `exit=2`, `WH-7` and `WH-11` fail;
+    at 19:19 `exit=0`, `WH-7` passing (*"for-use-with-all-datazone-projects=true on both objects, admitting
+    every project in the account (6h decision 8 (a))"*) and `WH-11` passing for both projects. Counted from
+    its lines, the script printing no totals: 9 pass, 2 fail, 6 note before; 11, 0, 6 after.
+- **[Claude] Step 8, 5.2b, two projects on `lab`**: `jup-test-experimentation` opened at 19:21; `~/n10_direct.py`
+  connects with `redshift_connector` (`iam=True`, `is_serverless=True`, database `sandbox`) on the space's
+  own credentials, §J's direct door, as
+  `assumed-role/datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`.
+  - The first attempt at 19:21:48 printed nothing by 19:22:39 and was interrupted at 19:22:52; the
+    connection log holds its session 1073815652 *initiating* and *authenticated* at 19:21:49 with no
+    *disconnecting* row. The layers read at 19:22:55 to 19:23:25: the endpoint resolved, `5439` open,
+    `get-workgroup` `AVAILABLE` and `get-credentials --db-name sandbox` answered, with the space's proxy
+    variables set. The retry
+    at 19:24:01 answered in 2 s: `IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@4gqfau9xuo6e4w`, `sandbox`.
+    `SVV_USER_INFO`: user 107, created by that session, not a superuser.
+  - `GRANT ROLE sbx_lab_rw` to that user at 19:25:55 (`f8787de7-35a6-4d24-b009-1002629d7542`, `FINISHED`).
+    `lab.b52_eighth` from the editor (14915279, 19:26:27, `success`) and `lab.b52_test` from the terminal
+    (14915284, 19:26:31, `success`); `pg_tables`: `b52_eighth` owned by
+    `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, `b52_test` by user 107.
+    `svv_relation_privileges`: `sbx_lab_rw` `SELECT` on `b52_eighth` alone.
+  - The crossed verbs:
+
+    | Who → table | Query, start | Outcome |
+    |---|---|---|
+    | eighth `SELECT lab.b52_test` | 14915302, 19:27:20 | `permission denied for relation b52_test` |
+    | eighth `INSERT INTO lab.b52_test VALUES (2)` | 14915313, 19:28:00 | `permission denied for relation b52_test` |
+    | test `SELECT lab.b52_eighth` | 14915316, 19:28:19 | `success`, one row |
+    | test `INSERT INTO lab.b52_eighth VALUES (2)` | 14915319, 19:28:20 | `42501`, `permission denied for relation b52_eighth` |
+    | test `DROP TABLE lab.b52_eighth` | 14915324, 19:28:47 | `42501`, the same wording |
+    | eighth `DROP TABLE lab.b52_test` | 14915327, 19:28:55 | `permission denied for relation b52_test` |
+
+    The editor ran one statement behind once: at 19:27:14 it re-ran the previous `CREATE` (14915300,
+    *relation "b52_eighth" already exists*) under the cell holding the `SELECT`.
+  - Each owner dropped its table at 19:29:35, the query ids not read; `pg_tables` `b52%` empty at 19:32:15.
+    `REVOKE ROLE sbx_lab_rw` from user 107 at 19:32:34 (`9758e3fe-e174-4d98-8497-2e7b2fde6f4c`, `FINISHED`);
+    the role's grantees then the per-project user alone. User 107 stays, holding nothing.
+  - **1.5's callout answered**: a creator's tables are read by `sbx_lab_rw` only where a default privilege
+    covers that creator. The `SELECT` on `b52_eighth` is attributed to the pair `--sql`'s `WH-14` counted at
+    18:25 (*"1 default-privilege pair(s) cover future tables"*), no default-privilege view read; `b52_test`
+    got none. A second project writing in `lab` owes runbook §T's pair for its creator before the other
+    reads its tables, and owners alone `INSERT` or `DROP`.
+- **[Claude] Step 9, 5.1's after half** (verification vi), `jup-app-dbt-dev`'s terminal from 19:36:02 as
+  `assumed-role/datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g/SageMaker`:
+  - `redshift-data execute-statement` on `sandbox`, `select count(*) from lab.hello`: the statement
+    `944e1e80-e4f5-4ce3-929e-c204e7d5c24b`, `FAILED`, *"ERROR: permission denied for schema lab"*, created
+    19:36:04.930 and updated 19:36:05.692. As the admin: query 14915417 at 19:36:05, user 108
+    `IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@dnl3l158mbhrio`, created by that call
+    (`last_ddl_timestamp` 19:36:05.326), holding no role; its session 1073938558 *initiating* at 19:36:05.322
+    with `IAM AssumeUser`, the application *Amazon Redshift Data API - 944e1e80-… - DataAPISingle*.
+  - The socket to the workgroup's `5439` at 19:36:25: the name resolved, then *"TimeoutError: timed out"*,
+    `exit=1` at 19:36:45.
+  - `DROP USER "IAMR:user-28f1b390-0041-7068-8cc7-9ccef94277d1@dnl3l158mbhrio"` at 19:38:11
+    (`254fe035-b082-406e-abf1-c91482826663`, `FINISHED`); `SVV_USER_INFO` then lists users 100 to 103, 106 and
+    107.
+  - **vi's after half answered**: under the standing tag a project outside the map passes IAM, the Data API
+    through `ExistingRedshiftCompute`, and stops at the schema `GRANT`; its notebook stops at the security
+    group. The Data API lands on the per-person user, as the direct door does (`SUP-205`).
+- **Step 10, 0.4's portal half, not run**: it needs `eighth-experimentation`'s contributor signed in from a
+  browser profile of its own, and only the Data Scientist User's Chrome was connected. Owed, with
+  verification xi.
+- **[Claude] What the sitting left in Sandbox for this stage**: the standing tag and `test-experimentation`'s
+  seven objects, applied; user 107 in the database, holding nothing. The default space
+  `default-28f1b390-0041-7068-8cc7-9ccef94277d1` in `eighth-experimentation`'s second domain
+  `d-p6gthxc82ckg`, created at 18:55:54 by a click on the portal's *JupyterLab* link under *IDEs*
+  (`ml.t3.medium`, `sagemaker-distribution-cpu` 4.7), was `InService` at 19:34:29; *Code Spaces* created none
+  in `test-experimentation`'s (`SUP-231`).
+
+## 2026-11-22 — Steps 5 and 10 of the warehouse sitting: 5.4 as the persona and 0.4's portal half
+
+*Claude, on the user's words in this session's chat: *"Sim, me passe as instruções."*, answering whether 5.4 and
+0.4 run before the lowering. The user ran 5.4 from the laptop as the Data Scientist User with
+`DataScientistAccess` in `Sandbox Account 1` (`awsds-scientist-sandbox`) and pasted its output; ran 0.4 in the
+portal as the Governance Manager User, `eighth-experimentation`'s contributor, in a Chrome profile of its own
+(*"Criei a conexão como Governance Manager. Agora apago a conexão?"*); and deleted the connection as the Data
+Scientist User, the project's owner (*"Removi. Pode verificar, pfv."*). The reads as the infrastructure user
+with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account`
+(`awsds-infra-data`). From 21:34 to 21:59.*
+
+- **[Claude] Before**: the workgroup `AVAILABLE` at base 4 RPU at 21:34:47. `eighth-experimentation`'s members,
+  read at 21:36: the Data Scientist User as owner (`28f1b390-…`), the Governance Manager User as contributor
+  (`e8a1f320-…`), the project role and a group. `WH-9` at 21:35:38: `eighth-experimentation` holds one Redshift
+  connection, `redshift-serverless.redshift` (`sandbox`, `lineageSync` off), and `test-experimentation` none.
+  N.9's session held the lowering, and 6d 7.5's monitored window on `eighth-experimentation`, until this
+  entry's reads.
+- **[user] Step 5, 5.4** (verification viii), after `aws sso login --sso-session awsds-scientist --no-browser`
+  (the profile's token read *"Token has expired and refresh failed"* at 21:36):
+
+  ```text
+  aws: [ERROR]: An error occurred (AccessDeniedException) when calling the GetCredentials operation: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/AWSReservedSSO_DataScientistAccess_37932702010107f8/<data scientist user> is not authorized to perform: redshift-serverless:GetCredentials on resource: arn:aws:redshift-serverless:us-west-2:<Sandbox Account 1>:workgroup/d6989b98-5023-4b04-9ea7-d01d50c86448 with an explicit deny in an identity-based policy
+  ```
+
+- **[Claude] 5.4 in the trail**: Sandbox's `GetCredentials` at 21:47:58Z, `aws-cli/2.37.12`, `AccessDenied`,
+  `errorMessage` `HIDDEN_DUE_TO_SECURITY_REASONS`, and `requestParameters`, `responseElements` and `resources`
+  `null`: `SUP-458`'s behaviour, on an explicit deny. **viii answered yes**: the wording names an explicit deny
+  in an identity-based policy, and no statement. `DenyMintingARedshiftDatabaseSession`
+  (`terraform-live/identity/sso/policies-shared.tf`) is the identity tree's only statement naming the action,
+  and the simulator matched it on 2026-10-18.
+- **[user] Step 10, 0.4's portal half** (verification xi): *Compute → Data warehouse → Add compute → Connect to
+  existing compute resources → Amazon Redshift Serverless*, `awsds-sandbox-warehouse`, *IAM credentials*, the
+  project's access role. The portal created the connection.
+- **[Claude] 0.4 read**:
+  - Data Governance's trail: `CreateConnection` at 21:53:22Z, no error code, caller
+    `assumed-role/awsds-data-studio-domain-execution/user-e8a1f320-e0b1-70fc-22c1-40cdce5152ef`, the response's
+    connection `466a5qzjj5nfrk`. Sandbox's trail holds none.
+  - Sandbox's trail: the access role's `GetCredentials` on `sandbox` at 21:51:35, 21:51:42 and 21:53:25, session
+    `e8a1f320-e0b1-70fc-22c1-40cdce5152ef@5hkjdsy3umpi1c`, `aws-sdk-java/2.59.3`, no error code: the form's
+    calls, in the contributor's session name.
+  - `get-connection` at 21:54: `awsds-sandbox-warehouse.redshift`, `REDSHIFT`, scope `PROJECT`,
+    `environmentUserRole` the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, access role
+    `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, JDBC to `sandbox` on `5439`, status `READY`, `lineageSync`
+    enabled, job `cqsmsbqin5yr2o` on `cron(53 21 * * ? *)`, the creation's minute, daily (`SUP-207`).
+    `list-job-runs` at 21:55:04: none.
+  - **xi answered: nothing stops a contributor.** The portal created a project connection for a
+    `PROJECT_CONTRIBUTOR` as it did for the owner at 3.2, with the project's role and access role, the pair
+    the owner's connection carries. It adds a lineage job on the warehouse's meter, which the form enables.
+- **[user] The delete**, as the owner, in the portal.
+- **[Claude] After**: Data Governance's trail, `DeleteConnection` at 21:57:17Z on `466a5qzjj5nfrk`, caller
+  `assumed-role/awsds-data-studio-domain-execution/user-28f1b390-0041-7068-8cc7-9ccef94277d1`, no error code;
+  Sandbox's, the access role's `GetCredentials` twice at 21:57:01 in session
+  `28f1b390-0041-7068-8cc7-9ccef94277d1@5hkjdsy3umpi1c`. At 21:57:38 `get-connection` answered
+  *"ResourceNotFoundException … Cannot find connection with id: 466a5qzjj5nfrk"* and `list-job-runs` on
+  `cqsmsbqin5yr2o` *"The given Job doesn't exist."*: the job left with its connection, without a run.
+  `list-connections --type REDSHIFT` holds `axsiuoykrswosw` `redshift-serverless.redshift` alone, `sandbox`,
+  `lineageSync` `False`, `READY`. `./aws/warehouse.py awsds-infra-sandbox-1` at 21:58:02: 11 pass, 6 note,
+  0 fail, `WH-9` as before.
+- **[Claude] Left by these steps**: nothing. N.9's session told at 22:02 that it may lower.

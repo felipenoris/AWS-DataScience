@@ -2151,6 +2151,36 @@ tag, a pin and an apply. A failed component leaves a blueprint deployment and a 
 portal acts before the component can be created again (`SUP-410`'s later reading). Staging and Production
 pin older tags, so a statement found in Sandbox reaches them only at their next apply.
 
+## Lesson 89 — a grant conditioned on a session's context reaches only the engines that pass the context, and a refused read through another engine leaves a success in the trail
+
+**What happened.** On 2026-11-22 (Stage 19's pass 5) the warehouse read Production's
+`app_etl.trades_notional` through `eighth-experimentation`'s subscription. The subscription's grant is
+DataZone's: `SELECT` to Sandbox's `IAMPrincipals` under `context.datazone.projectId`, and the project's
+Athena read through the same link was vended the same day (`SUP-416`). Redshift read `awsdatacatalog` as the
+project's access role with no DataZone context (`querySessionContext.additionalContext` `{}`), and query
+14915487 was refused in 340 ms: *"Insufficient Lake Formation permission(s) on trades_notional"*. The trails
+held three `BatchGetTable` with no `errorCode` and no `GetDataAccess`. `DESCRIBE` and `SELECT` named to the
+access role admitted the next read, query 14915502 (`SUP-461`).
+
+**Why it is a class.** To Lake Formation a principal is a role plus the context its session carries, and
+each engine builds the session its own way: the portal's Athena passes DataZone's project context, and
+Redshift's mounted catalog passes a role alone. A grant written under a context is a grant to the engines
+that pass it, whatever role they run as. Lesson 28 makes reach an intersection of grants, and the engine is
+one more term of it. The refusal does not read as one in the trail either: the catalog calls answer and the
+vend never happens, so the only refusal is the engine's error text, and Lesson 62's absence takes the shape
+of a success.
+
+**The rule.** Before an engine reads a governed table, name the principal and the context that engine
+presents, and read the first read's `GetDataAccess` in the trail, or its absence. A read that works in one
+engine and is refused in another, for the same project, is a context difference before it is a missing
+grant. A grant named to the principal a context-less engine presents is scoped to the table and recorded
+with its revocation.
+
+**What makes it expensive.** The subscription reads `COMPLETED` and the project's Athena reads work, so the
+refusal is taken for a Redshift permission, and an instrument that counts error codes reports a clean read.
+A named grant lives outside DataZone's lifecycle: revoking the subscription leaves it standing until it is
+revoked by hand (Stage 19's step 7).
+
 ## Lesson 90 — a working copy reaches a run through two commands, `run` carrying its variables and `deploy` its files, and an edit is live only once its own command has run
 
 **What happened.** On 2026-11-22, Stage 17's day 3, `app-genai`'s reading 2 changed one filter of its guardrail

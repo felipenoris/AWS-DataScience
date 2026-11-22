@@ -720,9 +720,9 @@ SLICES = [
     #                      through them (log-stage-05b, 2026-10-18). The user lowered the limit from
     #                      40 to 10 RPU-hours the same day - 3.60 USD/month.
     #   max_query_execution_time  DID NOT STOP IT. It was 1800 s, read back as 1800, and the query
-    #                      ran 23,601 s. Three candidates stand: a superuser exempt from the
-    #                      query-monitoring rules, a ceiling that binds nobody, or a leader-node
-    #                      statement no WLM limit reaches (log-stage-05b, owed item 3).
+    #                      ran 23,601 s. The rule binds compute-node queries, a superuser's
+    #                      too, about ten seconds past its value; that statement ran on the
+    #                      leader node, outside it (log-stage-05b, 2026-11-22; SUP-137).
     #   `make down`        WORKED, and is the only guarantee that is not a setting: no pause exists,
     #                      so destroying the workgroup is what stops the meter.
     #

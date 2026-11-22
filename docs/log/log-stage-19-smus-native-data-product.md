@@ -4851,3 +4851,135 @@ call.*
   keeps one local account, the first admin, renamed on 2026-10-12. The waiting-list row goes.
 - **[Claude] What R2's opening keeps**: N.8.2 step 3's erase of the keychain's `gitlab.awsds.internal`
   entry if it still holds the password from before the rotation, which the first push shows.
+
+## 2026-11-22 — Pass 5 on §N.10's day 1: the read in place, the copy, the refused view and a data source that failed creation
+
+*Claude, on the user's words in this session's chat: *"Sim, rode pelo Chrome"* at 18:36:26 UTC, and at 19:16:35
+*"GRANT USAGE awsdatacatalog"*, *"Grants do LF se recusar"*, *"Cópia, view e Publish"*. The space's statements
+typed in `jup`'s terminal and the portal's wizard filled in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner; the SQL as `dbadmin` through the Data API with the admin secret; the Lake
+Formation grants and the reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), Production (`awsds-infra-prod`) and `Data Governance Account` (`awsds-infra-data`).
+From 19:11 to 20:21; times UTC. §N.9's day 3, the other sitting, told of the writes at 19:38:57.*
+
+- **[Claude] Step 1, the session**: `~/n10_rs.py` in `jup`'s terminal assumes
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` with the external id `avhvbqn37ty7m8` and the session name
+  `notebook`, then connects with `redshift_connector` 2.1.10 (`boto3` 1.43.75) to the database `sandbox` on
+  those credentials, §J's chain. At 19:11:30 it printed `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`,
+  `sandbox`. As the admin at 19:11:51: `SVV_USER_INFO` user 103, not a superuser, `external_user_id` `NULL`;
+  `svv_database_privileges` `USAGE` on `governed_trades` and `TEMP` on `sandbox`, nothing on `awsdatacatalog`.
+- **[Claude] Step 2, 5.1's SQL half**: the subscription's database read first, at 19:39:00:
+  `glue_db_blerpkhn9nj7o0` holds `trades` → `curated.trades` (`EXTERNAL_TABLE`) and `trades_notional` →
+  Production's `app_etl.trades_notional`, its `TableType` empty, neither registered with Lake Formation.
+  `GRANT USAGE ON DATABASE awsdatacatalog TO "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 19:39:18
+  (`5a8a4565-e60b-40a0-a0e6-ae99af6675ac`, `FINISHED`); the user then holds `USAGE` on `awsdatacatalog` and on
+  `governed_trades` and `TEMP` on `sandbox`.
+- **[Claude] Step 3, the read with DataZone's grant alone** (xiii): `SELECT * FROM
+  awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional LIMIT 10` at 19:39:43, query 14915487, refused in
+  340 ms: *"AwsClientException: AccessDeniedException from glue - Insufficient Lake Formation permission(s) on
+  trades_notional"*, step 4's case. The trail, read at 20:00 and at 20:21, holds three `BatchGetTable` at
+  19:39:44Z and no `GetDataAccess` in either account; none of the three carries an `errorCode`:
+  - Sandbox's on the link, as the access role's session `notebook`, invoked by
+    `redshift-serverless.amazonaws.com`, with `lakeFormationPrincipal` the access role, a `contextMap` of the
+    consumer namespace and Region, and `querySessionContext.additionalContext` `{}`: no DataZone context;
+  - Sandbox's on Production's `app_etl.trades_notional`, the same session, invoked by `glue.amazonaws.com`,
+    `requesterService` `REDSHIFT`, `callType` `EXTERNAL`;
+  - Production's on its table, `userIdentity` of type `AWSAccount` with the `principalId` `<access role's
+    unique id>:notebook`, invoked by `glue.amazonaws.com`, `LakeFormationTrustedCallerInvocation` `true`.
+  Each carries the database user in Glue's audit context.
+- **[Claude] Step 4, 5.1's Lake Formation half**: `DESCRIBE` and `SELECT` on Production's
+  `app_etl.trades_notional` to the access role's ARN as `awsds-infra-prod` at 19:40:45, exit 0; `DESCRIBE` on the
+  link to the same ARN as `awsds-infra-sandbox-1` at 19:40:46, exit 0. Sandbox's trail logged a `GetTable`
+  refusal of the infrastructure user on the link's target at 19:40:47Z, invoked by Glue, *"Insufficient Lake
+  Formation permission(s): Required Describe on trades_notional"*; the grant stands. `list-permissions` at
+  19:41:04 on Production's table: the access role's `DESCRIBE` and its `SELECT`, the two `IAMPrincipals`
+  `SELECT` rows under `avhvbqn37ty7m8`'s and `dnl3l158mbhrio`'s contexts, and `deploy-production`'s project
+  role's own; on the link: the access role's `DESCRIBE`, the `IAMPrincipals` `DESCRIBE` under
+  `avhvbqn37ty7m8`'s context and the project role's `ALL`, `DESCRIBE`, `DROP`. Step 3 again at 19:41:17, query
+  14915502, `success` in 2.7 s, 10 rows. Sandbox's trail: `GetTable` on Production's table from 19:41:18Z to
+  19:41:20Z as the access role's `notebook` session, invoked by Glue, `requesterService` `REDSHIFT`, `callType`
+  `EXTERNAL`. Production's: `GetDataAccess` at 19:41:20Z on `app_etl/trades_notional`, `AWSAccount` with the
+  access role's unique id and `:notebook`, invoked by Glue, `permissions` `[]`, `durationSeconds` 3600,
+  `requesterService` `REDSHIFT`, `LakeFormationTrustedCallerInvocation` `true`.
+- **xiii answered**: the warehouse reads `awsdatacatalog` as the access role in the session the chain named,
+  never the project role, and carries no DataZone context, so the subscription's `IAMPrincipals` grant under
+  the project's context does not admit it; 5.1's named grants to the access role do. A refused read leaves
+  `BatchGetTable` with no `errorCode` and no `GetDataAccess`; Redshift's vend asks for `permissions` `[]`
+  where Athena's asks for `SELECT` (4.12's read of the same day). Written as `SUP-461`.
+- **[Claude] Step 5, 5.2's copy and view**, one line in the terminal at 19:42:13:
+  - `CREATE TABLE lab.trades_hot AS SELECT * FROM awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional`,
+    14915514 at 19:42:15, `success` in 1.5 s;
+  - `CREATE MATERIALIZED VIEW lab.trades_hot_mv AS SELECT desk, count(*) AS trades, sum(notional) AS notional
+    FROM awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional GROUP BY desk`, 14915518 at 19:42:18, refused:
+    *"The MV references an unsupported database: awsdatacatalog"* (SQLSTATE `0A000`);
+  - the `REFRESH` (14915520, *"Materialized view trades_hot_mv not found."*) and a `SELECT` from the view
+    (14915521, *relation "lab.trades_hot_mv" does not exist*) failed on the view's absence;
+  - `SELECT count(*) FROM lab.trades_hot`, 14915522, `success`.
+
+  As the admin at 19:43: `SVV_TABLE_INFO` `lab.trades_hot` size 9 (MB), 10 rows, `AUTO(EVEN)`, encoded;
+  `sys_serverless_usage` 11 compute-seconds at 4 RPU in each of the minutes 19:41 and 19:42, `charged_seconds`
+  240 each. The Glue Data Catalog shows nothing new: `glue_db_blerpkhn9nj7o0` still holds its two tables and
+  `search-tables trades_hot` answers empty. Production's table read the same minute: `EXTERNAL_TABLE`,
+  `table_type` `ICEBERG`, under `awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/`.
+- **xiv stays open**: a materialized view naming the auto-mounted `awsdatacatalog` is refused, so nothing
+  registered and no refresh was costed (`SUP-459`). A view over an external schema mapped to the Glue
+  database is the route not tried.
+- **[Claude] Step 6, 5.3, which is Stage 21's 2.2**: in `eighth-experimentation`'s portal, *Data sources* →
+  *Create*, from 19:45 to 19:47. The review page read: name `sandbox-lab-trades-hot`, type Amazon Redshift,
+  connection `redshift-serverless.redshift`, workgroup `awsds-sandbox-warehouse`, *Import data lineage* not
+  enabled, database `sandbox`, schema `lab`, *Include: trades_hot\**, *Publish assets to the Catalog* No,
+  *Automated business name generation* Enabled, no metadata forms. *Create data source* at 19:47:19.
+  - The source `c4n05wth04ll3k`, created 19:47:23, type `REDSHIFT`, connection `axsiuoykrswosw`, no
+    environment, `dataAccessRole` the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`: status
+    `FAILED_CREATION`, `VALIDATION_EXCEPTION`, *"User: arn:aws:sts::<Sandbox
+    account>:assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c is not authorized
+    to perform: redshift-data:ListDatabases on resource: arn:aws:redshift-serverless:us-west-2:<Sandbox
+    account>:workgroup/d6989b98-5023-4b04-9ea7-d01d50c86448 because no identity-based policy allows the
+    redshift-data:ListDatabases action (Service: RedshiftData, Status Code: 400, …)"*.
+  - The trail, read at 20:20: Data Governance's `CreateDataSource` at 19:47:23Z by
+    `awsds-data-studio-domain-execution` in the session `user-28f1b390-…`; Sandbox's `AssumeRole` of the access
+    role at 19:47:25Z by the project role's session `SYSTEM@5hkjdsy3umpi1c`, into a session of the same name,
+    `ok`; then `redshift-data:ListDatabases` at 19:47:25Z as that session, `AccessDenied`, `requestParameters`
+    `{}`. `SYSTEM@5hkjdsy3umpi1c` names the project's `Tooling` environment (`SUP-460`).
+  - `sandbox/warehouse/iam.tf` gives the access role no `redshift-data:` action; its comment keeps the Data API
+    out until 6h's credential answer needs it. The fix is a change to that file and its apply, which is the
+    user's decision. The source is kept, and *Publish* and xv were not reached.
+- **Left of pass 5**: step 6 after the access role's `redshift-data` permission, the user's decision; xiv's
+  external-schema route; step 7 on §N.10's day 2, after Stage 21's passes 2 to 4: the revocation of `USAGE ON
+  DATABASE awsdatacatalog` and of the two Lake Formation grants, and the drop of `lab.trades_hot`.
+
+## 2026-11-22 — Step 6's access-role statement, written and planned: the Data API's four metadata reads
+
+- **[user]** *"Sim, escreva"*, answering whether this session writes the access role's `redshift-data`
+  permission in pull request #382. Later, in the orchestrating chat, relayed at 21:12 UTC: *"Avise às
+  sessões que o infra sso está logado novamente."*
+- **[Claude] The statement**, `ImportTheWarehousesMetadataForADataSource` in `sandbox/warehouse/iam.tf`'s
+  access-portal policy: `redshift-data:ListDatabases`, `ListSchemas`, `ListTables` and `DescribeTable` on
+  this account's workgroups, with `ExecuteStatement`, `BatchExecuteStatement` and the statement reads left
+  out (commit `36808146`). The Data API's Service Authorization Reference gives the four the `cluster` or
+  the `workgroup` resource type; DataZone's page on a Redshift data source names no IAM action, and SMUS's
+  page returned no body to the fetch.
+- **[Claude] The first plan, 21:09:40 UTC**, stopped at the S3 backend before reading anything: *"No valid
+  credential sources found"*, *"refresh cached SSO token failed, unable to refresh SSO token, operation
+  error SSO OIDC: CreateToken, … InvalidGrantException"*. The `awsds` token had expired at 21:08:53Z, and
+  `aws sts get-caller-identity` on `awsds-infra-sandbox-1` and `awsds-infra-prod` exited 0 at 21:10 from the
+  CLI's cached role credentials (`SUP-465`). N.9 was told.
+- **[Claude] The plan, 21:13:11 UTC**, the token's `expiresAt` read 22:11:47Z at 21:13:03, with `-var
+  all_projects_tag_enabled=true -var data_transfer_role_enabled=false`, exit 2: *"Plan: 0 to add, 2 to
+  change, 0 to destroy."*, `aws_iam_policy.project_access_portal` for `4gqfau9xuo6e4w` and `avhvbqn37ty7m8`,
+  each gaining the statement alone. Saved at 21:14:56, the same summary. Not applied: the apply is the
+  user's to name.
+
+## 2026-11-22 — Step 6's access-role statement applied
+
+- **[user]** *"Sim, aplique"*, answering whether this session applies the saved plan of `sandbox/warehouse/`
+  (0 to add, 2 to change). N.9 and the orchestrating session were told before it.
+- **[Claude] The apply**, of the plan saved at 21:14:56, from 21:22:50 to 21:23:01 UTC, exit 0: *"Apply
+  complete! Resources: 0 added, 2 changed, 0 destroyed."*, each access-portal policy *"Modifications
+  complete after 1s"*. Re-planned at 21:23:16: *"No changes. Your infrastructure matches the
+  configuration."* Read back at 21:23:30: `ImportTheWarehousesMetadataForADataSource`, the four actions on
+  this account's workgroups, in the default version of `eighth-experimentation`'s policy, `v5`, and of
+  `test-experimentation`'s, `v2`. `./aws/warehouse.py awsds-infra-sandbox-1` at 21:23:43, exit 0: 11 pass,
+  0 fail, 6 note, as at 19:19.
+- **Left of step 6**: the data source `c4n05wth04ll3k` stands `FAILED_CREATION`; deleting it and creating
+  it again is §N.10's day 2's, with the compute up.

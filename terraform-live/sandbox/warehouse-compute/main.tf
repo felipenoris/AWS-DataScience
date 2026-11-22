@@ -117,10 +117,11 @@ resource "aws_redshiftserverless_workgroup" "this" {
     parameter_value = "true"
   }
 
-  # The per-query ceiling - AND IT DID NOT HOLD (2026-09-20). It was 1800 s at creation, read back as
-  # 1800 by WH-2, and a `count(*)` over a triple cross join ran 23,601 seconds - thirteen times the
-  # limit - at base capacity, costing 9.44 USD. The client had stopped polling after 242 s; the Data
-  # API does not cancel a statement when its client goes away, and nothing else stopped it either.
+  # The per-query ceiling, which binds queries on the compute nodes and no statement on the leader
+  # node. It was 1800 s at creation, read back as 1800 by WH-2, and on 2026-09-20 a `count(*)` over a
+  # triple cross join ran 23,601 seconds - thirteen times the limit - at base capacity, costing
+  # 9.44 USD. The client had stopped polling after 242 s; the Data API does not cancel a statement when
+  # its client goes away, and nothing else stopped it either.
   #
   # THE UNIT IS SECONDS, settled from three readings (2026-09-20): the quotas page gives the service
   # maximum as "86,399 seconds (24 hours)", which is also this value's validation ceiling; the
@@ -131,34 +132,14 @@ resource "aws_redshiftserverless_workgroup" "this" {
   # one query at 0.048 USD. sandbox/warehouse/variables.tf carries what a 2-minute ceiling can abort -
   # VACUUM above all - and why nothing needs more than that yet.
   #
-  # WHY IT DID NOT BITE IS STILL OPEN, and the first hypothesis lost its support the same day. It was
-  # "the superuser queue is exempt from WLM and QMR, and the statement ran as `dbadmin`, which pg_user
-  # reports as a superuser". Then AWS's query-queues page turned out to say the opposite: "Query
-  # monitoring rules (QMR) apply only at the Redshift Serverless workgroup level, AFFECTING ALL QUERIES
-  # RUN IN THIS WORKGROUP UNIFORMLY" - and its example exempts an admin by giving them a QUEUE with no
-  # rules, which implies that without queues (this workgroup has none, and enabling them is a permanent
-  # change) the workgroup-level rule reaches everyone. Three candidates remain:
-  #
-  #   (a) the superuser exemption after all - weakened, not excluded: the sentence above describes the
-  #       behaviour queues were introduced to improve on, and does not say superusers are included.
-  #   (b) `max_query_execution_time` as a standalone config_parameter is simply NOT ENFORCED, and a
-  #       per-query ceiling only exists through `wlm_json_configuration`. That is Lesson 56 in its
-  #       purest form: a vendor-documented line that reads back with the right value and does nothing.
-  #   (c) the runaway never entered WLM: it read only catalog tables (`pg_attribute`), and AWS runs such
-  #       a query "exclusively on the leader node". The same statement kept running through the two
-  #       minutes 5.1 held the usage limit breached, while that breach refused every query needing the
-  #       compute (Stage 5b log, 2026-10-18).
-  #
-  # THE TEST: a long query over a USER table, as a non-superuser and as the admin. Aborting for both
-  # means (c); aborting for the non-superuser alone means (a); aborting for neither means (b). The
-  # project's database users exist since Stage 6h, so it needs only the compute up.
-  #
-  # IT IS LEFT SET, and the reason is not optimism. It costs nothing, under (a) it binds a project's
-  # database user (which is not a superuser), and removing it would leave nothing at all on this axis.
-  # What changed is what is RELIED ON: the usage limit (breach_action = deactivate, 10 RPU-hours since
-  # 2026-09-20), which refuses compute queries and did not stop that catalog-only statement, and
-  # `make down`, which is the only guard that is not a setting. Read this comment before treating this
-  # line as a control.
+  # It is enforced as a Query Monitoring Rule named `max_query_execution_time`, about ten seconds past
+  # its value, and a superuser is not exempt (5b step 3, 2026-11-22): a query over a user table was
+  # "cancelled by WLM abort action" of that rule at 130 s as a project's database user and at 129 s as
+  # `dbadmin`. The 2026-09-20 statement read only catalog tables (`pg_attribute`), which AWS runs
+  # "exclusively on the leader node", outside the rule (SUP-137); the usage limit (breach_action =
+  # deactivate, 10 RPU-hours since 2026-09-20) refuses compute queries and did not stop it either
+  # (Stage 5b log, 2026-10-18). For a leader-node statement the bounds are `pg_terminate_backend` and
+  # `make down`, the only guard that is not a setting.
   config_parameter {
     parameter_key   = "max_query_execution_time"
     parameter_value = tostring(local.capacity.max_query_execution_time)

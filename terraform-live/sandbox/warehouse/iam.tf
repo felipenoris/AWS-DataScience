@@ -73,13 +73,13 @@ data "aws_iam_policy_document" "namespace_trust" {
 #                            namespace admin's credential has the admin's rights, and layer 3 stops
 #                            meaning anything. A purpose-made secret for the project's own database
 #                            user is a different object and is 6h decision 2's fallback.
-#   redshift-data:*          absent until 6h's credential answer needs it. A plain JDBC/psycopg
-#                            connection over 5439 does not touch the Data API at all, so this is
-#                            decided by a measurement rather than added on spec (Lesson 41).
-#                            AWS's SageMakerStudioProjectUserRolePolicy grants the family to the project
+#   redshift-data:*          absent from this document. A plain JDBC/psycopg connection over 5439
+#                            does not touch the Data API at all. AWS's
+#                            SageMakerStudioProjectUserRolePolicy grants the family to the project
 #                            role on a workgroup tagged with its project (simulated 2026-10-18, 6h 5.3),
-#                            so the omission here closes nothing for that role; the access role, which
-#                            carries no AWS policy, has no Data API path.
+#                            so the omission here closes nothing for that role. The access role, which
+#                            carries no AWS policy, holds only the four metadata reads a data source
+#                            calls, in its portal policy below (SUP-460).
 resource "aws_iam_policy" "project_warehouse" {
   for_each = var.projects
 
@@ -451,6 +451,27 @@ data "aws_iam_policy_document" "project_access_portal" {
       actions   = ["lakeformation:GetDataAccess"]
       resources = ["*"]
     }
+  }
+
+  # A Redshift data source on the project's connection (Stage 19 step 6, Stage 21 2.2). DataZone
+  # validates it at creation as this role, in a session the project role opens, and calls
+  # `redshift-data:ListDatabases` first (SUP-460). The four actions are the Data API's metadata reads,
+  # which a source importing tables and views calls; each takes the workgroup as its resource (the
+  # Service Authorization Reference), so the scope is the layer-2 pattern above. `ExecuteStatement`
+  # and the statement reads stay out: they are a query path from anywhere, added only when a source's
+  # run is read asking for them.
+  statement {
+    sid    = "ImportTheWarehousesMetadataForADataSource"
+    effect = "Allow"
+    actions = [
+      "redshift-data:ListDatabases",
+      "redshift-data:ListSchemas",
+      "redshift-data:ListTables",
+      "redshift-data:DescribeTable",
+    ]
+    resources = [
+      "arn:aws:redshift-serverless:${var.region}:${data.aws_caller_identity.current.account_id}:workgroup/*",
+    ]
   }
 
   # The tag reads AWS names for "signing in using IAM credentials", where the database user comes
