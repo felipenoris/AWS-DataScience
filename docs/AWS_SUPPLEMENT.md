@@ -382,6 +382,12 @@ entry is still true is the reading.
   `airflow:` allow was told *"no identity-based policy allows the airflow:CreateEnvironment action"* under a
   root SCP denying it. Where: `log-stage-01c-preventive-policies.md`, 2026-08-13 (7.6, 7.7);
   `log-stage-10-orchestration-promotion.md`, 2026-10-23; `runbooks/scp-battery.md`.
+  On 2026-11-22 in Sandbox (Stage 6h's 5.3) a SageMaker project role was told *"no identity-based policy
+  allows the redshift-serverless:UpdateWorkgroup action"* and the same for `DeleteUsageLimit` under
+  `DenyRedshiftCostGuardTamperingExceptInfrastructure`; `simulate-principal-policy` read `explicitDeny`,
+  `AllowedByOrganizations` `false`, for `UpdateWorkgroup` on the workgroup's ARN and on `*` and for
+  `DeleteUsageLimit` on `*`, and `implicitDeny`, `AllowedByOrganizations` `null`, for `DeleteUsageLimit` on a
+  usage limit's ARN and on the workgroup's. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-021` **Control Tower packs a control enablement into its `aws-guardrails-*` SCPs inconsistently
   across OUs, so a document's id does not say what it holds** (read 2026-08-13 and 2026-08-14 with
@@ -1620,6 +1626,20 @@ entry is still true is the reading.
   through S3; three `Decrypt` follow in that session. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-22 (4.12's consumer read).
 
+- `SUP-461` **Redshift reads a subscribed table as the session's IAM principal with no DataZone context, and a
+  refused read leaves no error in the trail** (measured 2026-11-22 in Sandbox and Production, Stage 19's 5.2).
+  The access role's session, chained from a space, ran `SELECT ... FROM awsdatacatalog.<subscription
+  database>.<link>` on a DataZone subscription whose grant is Production's `SELECT` to Sandbox's
+  `IAMPrincipals` under `context.datazone.projectId`. Redshift answered *"AwsClientException:
+  AccessDeniedException from glue - Insufficient Lake Formation permission(s) on trades_notional"*. The trail
+  holds three `BatchGetTable`, none with an `errorCode`, and no `GetDataAccess`: Sandbox's on the link,
+  invoked by `redshift-serverless.amazonaws.com`, with the access role as `lakeFormationPrincipal` and
+  `querySessionContext.additionalContext` `{}`; Sandbox's and Production's on the target, invoked by Glue.
+  `DESCRIBE` and `SELECT` on the table and `DESCRIBE` on the link, named to the access role, admitted the next
+  read; its `GetDataAccess` in Production carries `permissions` `[]` and `requesterService` `REDSHIFT`, where
+  Athena's for the same table the same day carried `["SELECT"]` (`SUP-416`). Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## Athena
 
 - `SUP-117` **Athena Spark's PrivateLink release moves only the client's path to a session, and the session
@@ -1925,7 +1945,13 @@ entry is still true is the reading.
   did not: the statement kept running through the two minutes 5.1 held it breached, while that breach
   refused every query needing the compute. Where: `log-stage-05b` the third amendment and the entry of
   2026-10-18, and the comments on `sandbox/warehouse-compute/main.tf`'s `max_query_execution_time` and
-  `layers.py`'s `sandbox/warehouse-compute` row.
+  `layers.py`'s `sandbox/warehouse-compute` row. Read again 2026-11-22 (5b step 3), and the test settles it
+  on the third candidate. A query over a user table, under a limit of 120, was *"cancelled by WLM abort
+  action of Query Monitoring Rule "max_query_execution_time""* (code 1078) at 130 s as a project's database
+  user and at 129 s as `dbadmin`, `usesuper` true. The parameter is enforced as a rule of that name, about
+  ten seconds past its value, and a superuser is not exempt. A statement that reads only catalog tables runs
+  on the leader node, outside the rule, and `pg_terminate_backend` stays its bound. Where: `log-stage-05b`,
+  2026-11-22.
 
 - `SUP-138` **The Data API authorizes following, reading and cancelling a statement on no resource**
   (measured 2026-10-25, `production-warehouse-ddl`). `DescribeStatement`, `GetStatementResult` and
@@ -2075,6 +2101,26 @@ entry is still true is the reading.
   connection and pricing pages say nothing of the workgroup's own endpoint. Over the 63 days the bill
   reads 1761 h against 1901 user-made, and a day's residual reaches 35 h, both unexplained. Where:
   `log-stage-12-observability-finops.md`, 2026-11-22; `docs/PRICING.md` §5; `SUP-128`.
+
+- `SUP-458` **Redshift Serverless writes a refused call to CloudTrail with its message hidden** (measured
+  2026-11-22 in Sandbox, Stage 6h's 5.3). `UpdateWorkgroup` at 18:59:07Z and `DeleteUsageLimit` at 19:00:33Z,
+  refused to a SageMaker project role, carry `errorCode` `AccessDenied`, `errorMessage`
+  `HIDDEN_DUE_TO_SECURITY_REASONS` and `requestParameters` `null`, while the client printed IAM's full
+  wording; Secrets Manager's `GetSecretValue`, refused to the same session at 19:01:21Z, carries the wording
+  in full. The trail answers who was refused and when; the resource and the policy are read from the client's
+  output or the policy simulator. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22. Read again
+  2026-11-22 (6h 5.4): `GetCredentials` at 21:47:58Z, refused to `DataScientistAccess` *"with an explicit deny
+  in an identity-based policy"* as the client printed, reads the same in the trail, `requestParameters`,
+  `responseElements` and `resources` `null`; the hiding covers an explicit deny as it did the implicit ones.
+
+- `SUP-459` **Redshift refuses a materialized view that names the auto-mounted `awsdatacatalog`** (measured
+  2026-11-22 in Sandbox, Stage 19's 5.2). `CREATE MATERIALIZED VIEW lab.trades_hot_mv AS SELECT desk,
+  count(*), sum(notional) FROM awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional GROUP BY desk` answered
+  *"The MV references an unsupported database: awsdatacatalog"* (SQLSTATE `0A000`) to a database user holding
+  `USAGE ON DATABASE awsdatacatalog`, whose `SELECT` and `CREATE TABLE ... AS SELECT` over the same table
+  succeeded within the minute. The table is a DataZone subscription's resource link to an Iceberg table in
+  another account. Nothing reached the Glue Data Catalog. A view over an external schema mapped to the Glue
+  database is unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -2277,7 +2323,14 @@ entry is still true is the reading.
   cannot tell a deleted environment from one it may not read; `./aws/studio.py` `US-15` reads the
   environment's stack in the resource's account instead. Version 14 of the share's permission names
   `GetProjectProfile`, which answers from the three member accounts since the share's move to it that day
-  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21. Read again 2026-11-22 (Stage 6h 0.4's
+  portal half): a contributor creates a connection too. The Governance Manager User, a `PROJECT_CONTRIBUTOR`
+  of `eighth-experimentation`, made a Redshift connection through the portal's *Add compute*: Data
+  Governance's trail reads `CreateConnection` at 21:53:22Z under
+  `awsds-data-studio-domain-execution/user-<Identity Center user id>` with no `errorCode`, and Sandbox's
+  trail holds none. The owner's `DeleteConnection` at 21:57:17Z took the same path. A connection's create and
+  update are a contributor's as well as its owner's; a contributor's delete was not attempted. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -3670,6 +3723,10 @@ entry is still true is the reading.
   auto-created user the next run deleted 30 rows and inserted 10. That name is per project and known
   before the first connection, so it can be created ahead. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-16.
+  A fourth door, read 2026-11-22 in Sandbox (Stage 6h's 5.1 after half): the Data API from a space,
+  `redshift-data execute-statement` as a project role's `SageMaker` session, connected as `IAMR:user-<Identity
+  Center user id>@<project id>`, which the call created holding nothing, and failed *"ERROR: permission denied
+  for schema lab"*, as the direct door does. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-206` **`RedshiftDbUser` decides the database user, and Redshift prefixes its value with `IAMR:`**
   (measured 2026-10-10). The tag on the access role carried the project role's *name*, and the session ran
@@ -3698,7 +3755,11 @@ entry is still true is the reading.
   `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-19 at 03:50 UTC: the job created
   no run at the schedule's time, where it had created one at 03:44:44 on each of the 39 days before, so
   `enabled: false` stops the runs while the schedule stays on the object. Where:
-  `log-stage-06h-redshift-connection.md`, 2026-11-19.
+  `log-stage-06h-redshift-connection.md`, 2026-11-19. Read again 2026-11-22 (6h 0.4's portal half): a
+  connection a contributor made at 21:53:22Z carried `lineageSync` enabled on `cron(53 21 * * ? *)`, the
+  minute of its creation, daily, and a job of its own, `cqsmsbqin5yr2o`, with no run at 21:55:04.
+  `DeleteConnection` took the job with it: `list-job-runs` on its id answered *"The given Job doesn't
+  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -3969,6 +4030,17 @@ entry is still true is the reading.
   AWS's pages were not read for this behaviour. Where: `log-stage-19-smus-native-data-product.md`,
   2026-11-22.
 
+- `SUP-460` **A Redshift data source is validated at creation by the connection's access role, which needs
+  `redshift-data:ListDatabases`** (measured 2026-11-22 in Sandbox and Data Governance, Stage 19's 5.3). The
+  portal's *Create data source* on a project's Redshift connection wrote `CreateDataSource` by the domain
+  execution role in Data Governance at 19:47:23Z, with the project role as `dataAccessRole`. In Sandbox at
+  19:47:25Z the project role's session `SYSTEM@<Tooling environment id>` assumed the connection's access role
+  into a session of the same name, which called `redshift-data:ListDatabases` on the workgroup with
+  `requestParameters` `{}` and was refused. The source stands `FAILED_CREATION`, `errorType`
+  `VALIDATION_EXCEPTION`, IAM's wording in `errorDetail`, with no run. The access role's policy, written for
+  the Data page and the query editor, holds no `redshift-data:` action. Where:
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
@@ -4173,6 +4245,12 @@ entry is still true is the reading.
   *"You cannot delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated
   the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its
   app. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+  The portal's *JupyterLab* link under *IDEs* creates the space where none exists (measured 2026-11-22 in
+  Sandbox, the warehouse sitting): a click at 18:55:52 UTC in `eighth-experimentation` created `default-<user
+  id>` in its `Tooling` domain at 18:55:54 and its app at 18:55:59, `ml.t3.medium` on
+  `sagemaker-distribution-cpu` 4.7, not the house image, while opening a named space through *Code Spaces*
+  left `test-experimentation`'s `Tooling` domain empty (read 19:20:52). Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-450` **A SageMaker Unified Studio JupyterLab app calls `cognito-identity.us-east-1.amazonaws.com`
   and `client-telemetry.us-east-1.amazonaws.com` every few seconds while it runs, and the idle shutdown does
@@ -5897,6 +5975,17 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   read `2026-12-21T22:59:59-03:00`, a date one day before UTC's. A date that is compared or written down is
   read with `TZ=UTC` on the command. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22;
   `runbooks/promotion.md` §N.8.3.
+
+- `SUP-465` **`aws sts get-caller-identity` answering is no proof that Terraform can sign in: the CLI answers
+  from its cached role credentials past the SSO token's expiry, and Terraform refreshes the token itself**
+  (measured 2026-11-22 on the laptop, Stage 19 step 6's plan). The `awsds` sso-session's token read
+  `expiresAt` 21:08:53Z. At 21:09:40 a `sandbox/warehouse/` plan stopped at the S3 backend with *"No valid
+  credential sources found"* and *"refresh cached SSO token failed, unable to refresh SSO token, operation
+  error SSO OIDC: CreateToken, … InvalidGrantException"*. At 21:10 `aws sts get-caller-identity` on
+  `awsds-infra-sandbox-1` and `awsds-infra-prod` exited 0, from role credentials in `~/.aws/cli/cache` that
+  live four hours from their vend (`SUP-012`). After a new `aws sso login --sso-session awsds` the token read
+  `expiresAt` 22:11:47Z and the same plan ran. So that check proves the CLI's cache, not the token a
+  Terraform run reads. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 ## Clients and the egress proxy
 

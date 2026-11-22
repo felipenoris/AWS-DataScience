@@ -1240,7 +1240,12 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
    `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
    it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
-   so either may come first, and R2 follows its day 1 (item 10).
+   so either may come first, and R2 follows its day 1 (item 10). **Day 1's warehouse blocks ran
+   2026-11-22** beside N.9's day 3, on one raise for both (the 5b, 6h, Stage 19 and Stage 20 logs): 5b's
+   items, 6h's steps 1 to 10 (5.4 and 0.4's portal half by the user's hand, last), Stage 19's steps 1 to 5
+   and Stage 20's pass 5. Stage 17's pass 4 is not among them. Stage 19's step 6, whose data source failed
+   creation for want of the access role's `redshift-data:ListDatabases` (`SUP-460`), runs again on day 2;
+   the four metadata reads were applied the same evening.
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
     orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
     mirror: `app-dbt`'s first release,
@@ -2593,7 +2598,8 @@ passes 2 to 4 in order" and its §5.
 
 1. [Claude] The other sessions told; [user] `make hub-up`, `make up ENV=sandbox GROUPS=redshift`; the
    spaces in both projects.
-2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, the consumer's workgroup by 1.5's applies in 2.4's order
+2. Stage 21's block, steps 1 to 7: pass 2 from 2.1, its 2.2 run again as Stage 19's step 6 (the source of
+   day 1 deleted first, `SUP-460`), the consumer's workgroup by 1.5's applies in 2.4's order
    and its removal by 2.9's, pass 3, pass 4 with 4.5's transfer role and then its key statement in
    `sandbox/data/` applied (decision 4 (b)) and 4.8 at once, then the
    closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
@@ -2778,7 +2784,7 @@ bound it stay N.6's.
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
 | 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
-| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
+| 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
 

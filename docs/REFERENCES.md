@@ -2370,6 +2370,17 @@
   type, so a policy names them on `*`:
   <https://docs.aws.amazon.com/service-authorization/latest/reference/list_redshift-serverless.html>.
 
+- **Redshift Data API — the actions, resources and condition keys (read 2026-11-22, for
+  [Stage 19](plan/stages/stage-19-smus-native-data-product.md)'s step 6, `SUP-460`).** `ListDatabases`,
+  `ListSchemas`, `ListTables` and `DescribeTable` require the `cluster` or the `workgroup` resource type,
+  whose ARN carries the workgroup id; `ExecuteStatement` and `BatchExecuteStatement` take either, with
+  `redshift-data:glue-catalog-arn` and `redshift-data:session-owner-iam-userid` among their condition keys;
+  `DescribeStatement` and `GetStatementResult` take none, under `redshift-data:statement-owner-iam-userid`:
+  <https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonredshiftdataapi.html>.
+  DataZone's page on creating a Redshift data source names no IAM action, only the secret user's `SELECT`
+  on the tables, the datashare grants for managed subscriptions and the secret's two tags:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/create-redshift-data-source.html>.
+
 - **SageMaker Unified Studio — connecting to an existing Redshift resource (read 2026-09-19, for
   [Stage 6h](plan/stages/stage-06h-redshift-connection.md)).** The same-account path is three steps and the
   tags are the first layer: the admin *"adds 1 of the following tags to the Amazon Redshift cluster or workgroup
