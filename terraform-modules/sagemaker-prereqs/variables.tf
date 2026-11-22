@@ -220,7 +220,7 @@ variable "blueprint_names" {
     "AmazonBedrockEvaluation",
     "AmazonBedrockFlow",
     "AmazonBedrockFunction",
-    # kms.tf's guardrail-creation statement comes with it, measured at Stage 17 7.4 (SUP-411).
+    # kms.tf's guardrail-creation statement comes with it, measured at Stage 17 7.4 (SUP-417).
     "AmazonBedrockGuardrail",
     "AmazonBedrockPrompt",
     # Experiment tracking, out of category 2 at Stage 17 pass 1 (decision 2, taken 2026-10-12): a
@@ -234,7 +234,7 @@ variable "blueprint_names" {
     # blueprints (read from the portal's code 2026-10-19). Its vector store is the one Bedrock
     # shape that can bill while it exists, chosen per knowledge base (Stage 17 decision 12). AWS's
     # key-permissions page names no statement for a knowledge base (read 2026-10-19 and 2026-11-22);
-    # kms.tf's S3 Vectors indexing statement comes with it, measured at Stage 17 7.4a (SUP-409).
+    # kms.tf's S3 Vectors indexing statement comes with it, measured at Stage 17 7.4a (SUP-410).
     "AmazonBedrockKnowledgeBase",
     # The SageMakerAIDomain blueprint, released 2026-10-20 and out of `undefined` at 6d decision due
     # 15 (taken 2026-10-30 by the user as (b): the pilot on `experimentation`, RStudio on). A

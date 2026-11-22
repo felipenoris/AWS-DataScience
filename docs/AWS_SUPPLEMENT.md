@@ -3487,7 +3487,7 @@ entry is still true is the reading.
   is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-11-21 (two entries); `threat-model.md`, `TM-34`.
 
-- `SUP-409` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
+- `SUP-410` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
   configuration carries, and the index is refused unless that key grants `indexing.s3vectors.amazonaws.com`
   `kms:Decrypt`, a statement SMUS's key-permissions page does not name** (measured 2026-11-22 in Sandbox,
   Stage 17 7.4a). The knowledge base was created from the portal's *My components* with Titan Text Embeddings
@@ -3514,7 +3514,7 @@ entry is still true is the reading.
   error icon and no menu; once its blueprint deployment was deleted from *Resource blueprints*, the row
   offered *Delete*. The first vector bucket survived both deletes, empty.
 
-- `SUP-410` **The Bedrock IDE's S3 Vectors index declares `AMAZON_BEDROCK_TEXT` alone non-filterable, where
+- `SUP-411` **The Bedrock IDE's S3 Vectors index declares `AMAZON_BEDROCK_TEXT` alone non-filterable, where
   Bedrock's pages add `AMAZON_BEDROCK_METADATA`, and ingestion then fails on S3 Vectors' 2 KB cap on a
   filterable string with a per-document reason that names no metadata** (measured 2026-11-22 in Sandbox,
   Stage 17 7.4a). The index `amazon-bedrock-ide` the provisioning role created at 01:33:17Z read
@@ -3533,7 +3533,7 @@ entry is still true is the reading.
   creates on S3 Vectors keeps this index for its life. Where: `log-stage-17-sandbox-machine-learning.md`,
   2026-11-22.
 
-- `SUP-411` **The Bedrock IDE's guardrail is created by DataZone as the provisioning role under the project
+- `SUP-417` **The Bedrock IDE's guardrail is created by DataZone as the provisioning role under the project
   key, and Bedrock refuses it unless that role may `kms:CreateGrant` on the key, which SMUS's key-permissions
   page does not name** (measured 2026-11-22 in Sandbox, Stage 17 7.4). The guardrail was created from the
   portal's *Build* → *Guardrail* with one denied topic. At 01:56:24Z `CreateGuardrail`, called from
@@ -3553,7 +3553,7 @@ entry is still true is the reading.
   therefore refuses every IDE guardrail. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
   `terraform-modules/sagemaker-prereqs/kms.tf`.
 
-- `SUP-412` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, and every Claude model
+- `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, and every Claude model
   it offers refuses both, so the IDE evaluates no Claude model; the portal reports an unknown error** (measured
   2026-11-22 in Sandbox, Stage 17 7.4). The form's *Inference configurations* panel holds Max tokens 500,
   Temperature 0.5, Top P 0.5 and Top K 50 by default, and a cleared Top P returns to 0.5. Its model list
@@ -4009,7 +4009,7 @@ entry is still true is the reading.
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
 
-- `SUP-407` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
+- `SUP-408` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
   is recorded with seven and admitted without the caller's `sagemaker:AddTags`, while the same request
   naming `AmazonDataZoneProject` is refused as `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
   17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
@@ -4028,9 +4028,9 @@ entry is still true is the reading.
   naming `AmazonDataZoneProject` alone, was recorded at 00:18:45 with the same seven keys and admitted
   through `sandbox/ml/`'s statement, whose `aws:TagKeys` condition admits that key alone, so the six others
   were not in the authorization. A versioned `CreateModelPackage` with no tag argument was recorded at
-  00:34:10 with no `tags` key (`SUP-408`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  00:34:10 with no `tags` key (`SUP-409`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
-- `SUP-408` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
+- `SUP-409` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
   refused as `sagemaker:AddTags` on `model-package/<group>/new`, and the same request with no tag argument
   is authorized against the group's tags** (measured 2026-11-22 in Sandbox, Stage 17 3.2, as
   `eighth-experimentation`'s role from a space). CreateModelPackage's API reference says a package created

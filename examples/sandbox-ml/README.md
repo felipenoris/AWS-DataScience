@@ -43,7 +43,7 @@ lab".
 
 Every object has a name starting with `ml-demo-` and carries the tag `AmazonDataZoneProject` with the
 project's id, but a model package version, which takes no tag and is authorized against its group's
-(`SUP-408`). `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live pipeline's steps with
+(`SUP-409`). `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live pipeline's steps with
 `pipeline/definition.json`.
 
 ## The values

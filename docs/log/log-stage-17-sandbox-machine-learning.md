@@ -4096,7 +4096,7 @@ words in this session's chat, *"Autorizo o apply do par"*. Times UTC.
   `AmazonDataZoneDomainRegion`. The job: `Stopped` at 23:19:39, no `TrainingStartTime`, no billable time;
   isolation and inter-container encryption on, `ml.m5.xlarge`, the project key on the volume, two subnets.
   The step's expectation for (a) was wrong for a notebook in a space: there the request that names no tag
-  is admitted. `SUP-407`.
+  is admitted. `SUP-408`.
 - **[Claude] (b), refused as expected.** CloudTrail's event at 23:19:44, `errorCode` `AccessDenied`, the
   message above, the same endpoint and source; `DescribeTrainingJob` of the name reads *"Requested resource
   not found"*: nothing was created. It is `SUP-267`'s exclusion of the `AmazonDataZone*` keys, met by a key
@@ -4235,7 +4235,7 @@ UTC.
 - **[Claude] 3.2's first attempt.** CloudTrail, every call from 10.20.54.175 through
   `vpce-02feedaa4ad58acf4`:
   - `CreateModelPackageGroup` at 00:18:45 admitted, the group `Completed`. Its recorded request carries seven
-    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-407`): the two
+    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-408`): the two
     `sagemaker:` ARNs of the profile and the domain, `sagemaker:space-arn` naming `jup`, and
     `AmazonDataZoneProject`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` and
     `AmazonDataZoneDomain`. The group's `AddTags` statement admits the key `AmazonDataZoneProject` alone, so
@@ -4269,7 +4269,7 @@ UTC.
   v48), conditioned on `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag and on
   `aws:PrincipalTag/EnableSageMakerMLWorkloadsPermissions`; `awsds-sandbox-workflows` v7's
   `RegisterAPendingVersionForAppMl` names `app-ml-dev`'s project and group alone. The version's resource tag
-  at the create is therefore its group's (`SUP-408`), the half of verification lviii the simulation of
+  at the create is therefore its group's (`SUP-409`), the half of verification lviii the simulation of
   2026-11-17 left open, read here from a space. The refusal of 00:18:46 was of a request the API reference
   excludes, so decision 7 (a) writes no `sandbox/ml/` statement for a version, and `register.py package`
   sends no tag on the version (this sitting's commit).
@@ -4354,7 +4354,7 @@ UTC.
   and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`). SMUS's key-permissions
   page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch Serverless. Bedrock's
   knowledge-base setup page names no key policy. The project key's policy at `sagemaker-prereqs-v0.12.0`
-  follows SMUS's page (`SUP-409`).
+  follows SMUS's page (`SUP-410`).
 - **[Claude] The fix, planned.** `sagemaker-prereqs`' `kms.tf` gains the S3 Vectors page's statement, the
   bucket narrowed to `amazon-bedrock-ide-*`, behind the knowledge-base blueprint's switch. A plan of
   `sandbox/sagemaker` against the local module read `0 to add, 1 to change, 0 to destroy`: the project
@@ -4411,7 +4411,7 @@ UTC.
   chunking page ask that the index declare `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA`
   non-filterable. S3 Vectors' limits page caps a filterable string value at 2 KB. Its metadata-filtering
   page says a key declared non-filterable cannot become filterable later. The IDE's index leaves
-  `AMAZON_BEDROCK_METADATA` filterable, and the form exposes no index setting (`SUP-410`).
+  `AMAZON_BEDROCK_METADATA` filterable, and the form exposes no index setting (`SUP-411`).
 - **[Claude] The documents against their status**, counted in the repository's copies at 01:45: the two
   indexed runbooks hold one Markdown table each (`buildbox.md` 1,187 bytes, `break-glass.md` 19,464), and
   each of the 18 that failed holds two or more, `security-hub.md` (10,432 bytes) among them. Neither the
