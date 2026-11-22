@@ -1541,7 +1541,12 @@ entry is still true is the reading.
   the same shape the next day. A classifier that files a policy-less refusal as an IAM deny misfiles these,
   so attribution needs a contrast call from an account the statement does not reach. Where:
   `log-stage-05a-data-foundation.md`, 2026-08-20 (4e); `log-stage-06a-unified-studio.md`, 2026-08-21;
-  `aws/probes/probes.py`.
+  `aws/probes/probes.py`. The portal's query editor shows the same text (read 2026-11-22, Stage 6f 4.3):
+  `governed-lake`'s editor in Data Governance, as the project role in the Governance Manager's session,
+  answered *"…on the resource. After your AWS administrator or you have updated your permissions, please
+  try again. (Service: Athena, Status Code: 400, …)"*, CloudTrail's `errorCode` `AccessDenied`, the
+  workgroup existing and its `GetWorkGroup` answered 3 s earlier (`log-stage-06f-data-governance.md`,
+  2026-11-22).
 
 - `SUP-119` **`athena:UpdateSession`, which AWS's sample statement for disabling Athena Spark denies, is in
   no Athena API model** (read 2026-08-21 in the CLI's service model, Stage 6 step 1.6). AWS's SageMaker
@@ -2874,7 +2879,12 @@ entry is still true is the reading.
   nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
   2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
-  *Create database* item.
+  *Create database* item. A name the account's catalog already holds is refused before any stack: the
+  portal's `mydatabase` in `test-experimentation` (`60j5234reuos9c`, created 2026-11-09 19:53:53Z by the
+  Data Scientist User, `eighth-experimentation`'s `mydatabase` existing) read `VALIDATION_FAILED` 11 s
+  later, `failureReason` *"Failed to validate environment 60j5234reuos9c: Glue database with name
+  mydatabase already exists"*, `provisionedResources` null, and the record stays in the project (read
+  2026-11-22, `log-stage-06f-data-governance.md`).
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -3060,7 +3070,15 @@ entry is still true is the reading.
   session, at 01:07:09Z, 39 s after `revoke-subscription`. The *"Policy not found"* Stage 18 read after the
   revocation came from `glue get-resource-policy`, which lists none of these (`SUP-099`): the trail's three
   deletes are what show them gone, and `glue get-resource-policies` read an empty list on 2026-11-17
-  (`log-stage-18-staging-deployment-project.md`, 2026-11-17).
+  (`log-stage-18-staging-deployment-project.md`, 2026-11-17). A second subscriber project in an account
+  the producer already shares to (measured 2026-11-22, Stage 6f 4.3, `test-experimentation` on
+  `curated.trades` beside `eighth-experimentation`) costs one grant: the producer's role made one
+  `BatchGrantPermissions` (`SELECT` to Sandbox's `IAMPrincipals` under the new project's condition,
+  `CROSS_ACCOUNT_VERSION` 5) 5 s after the approval and no RAM or Glue policy call, the share
+  `LakeFormation-V5-ZKUYXYESG4` and the five per-resource policies keeping their update times and hashes, and
+  the grant read `COMPLETED` 16 s after the approval, against 63 s for the first. The same night inside one
+  account (`house-price` into `test-experimentation`): the owner's grant 32 s after the request, the link 11 s
+  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3307,6 +3325,21 @@ entry is still true is the reading.
   this project say posting needs `datazone:PostLineageEvent` and name no check against the dataset's
   owning project. A role holding `PostLineageEvent` writes into every project's graph, and a node's history
   is the instrument that shows who did. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (2.6, 3.4).
+
+- `SUP-415` **A subscription's fulfilment writes a lineage node for the subscriber's resource link, keyed by
+  the link's Glue ARN, and a later link of the same name inherits that node with every upstream it had**
+  (measured 2026-11-22, Stage 6f 2.2 and 4.3). After each grant read `COMPLETED`, Data Governance's trail
+  holds `datazone.amazonaws.com` writing a `DatasetLineageNodeType` node whose `sourceIdentifier` is the
+  link's ARN (`arn:aws:glue:us-west-2:<Sandbox>:table/glue_db_4zojr4rr6bmnww/<table>`), named after the
+  subscription target and carrying `SubscriptionTargetLineageForm`, `DatasetSchemaForm`, `DatasetForm` and
+  `ColumnLineageForm`, with the listing's node as its upstream and both versions dated at the grant's
+  completion: `house-price`'s link a new node 6 s after its grant completed, `trades`' link a new version
+  14 s after. That `trades` node, `3juvtmem73n1g0`, dates from 2026-10-22, when Stage 18 7.2's subscription
+  to Staging's `trades` created a link of the same name; its revocation added a version and kept the edge.
+  The node now lists two upstreams, the lake listing's node and that of Staging's listing
+  `bx8v3rafykv3ww`, which `get-listing` answers `ResourceNotFoundException`. A subscriber's graph keeps a
+  revoked producer as an input of every link that reuses the name. Where:
+  `log-stage-06f-data-governance.md`, 2026-11-22.
 
 ### Connections
 

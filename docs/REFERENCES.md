@@ -2393,6 +2393,12 @@
 
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
 
+- The actions, resources and condition keys of AWS Lake Formation, the machine-readable copy (read
+  2026-11-22, for [Stage 6f](plan/stages/stage-06f-data-governance.md) 11.12's residue): no resource type,
+  one condition key (`lakeformation:EnabledOnlyForMetaDataAccess`), and `DeregisterResource`,
+  `RegisterResource` and `UpdateResource` with neither, so an SCP carve-out on deregistration can name a
+  principal and never a location: <https://servicereference.us-east-1.amazonaws.com/v1/lakeformation/lakeformation.json>.
+
 - Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
 
 - LF-Tag permissions — the grants that let a persona tag rather than read (Stage 5a pass 2, the
