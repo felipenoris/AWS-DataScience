@@ -203,7 +203,8 @@ def _invoke(model_id, body):
 
 
 for _profile in ("us.anthropic.claude-fable-5", "us.anthropic.claude-fable-5-1",
-                 "global.anthropic.claude-fable-5", "global.anthropic.claude-fable-5-1"):
+                 "us.anthropic.claude-fable-5-2", "global.anthropic.claude-fable-5",
+                 "global.anthropic.claude-fable-5-1", "global.anthropic.claude-fable-5-2"):
     probe("root", "canary", "deny", _AFTER_AUTHORIZATION, "ro",
           f"bedrock:InvokeModel on {_profile} (7.5 retaining model)",
           _invoke(_profile, _ANTHROPIC_BODY))

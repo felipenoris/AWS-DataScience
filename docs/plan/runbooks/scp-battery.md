@@ -346,13 +346,13 @@ detached.
 and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
 ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M3). These rows are that measurement in
 `probes.py`, run with `--phase root`; the battery ran them on 2026-10-17, every row as expected
-([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)).
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)). The two Fable 5.2 rows have not run.
 
 | Probe (from `awsds-policy-canary`, `--region us-west-2`) | Expected | Statement it answers |
 |---|---|---|
 | `aws bedrock put-account-data-retention --mode inherit` | `AccessDenied` naming the baseline | `DenyBedrockRetentionModeOtherThanNone`. **`creates`**: with the deny lifted it sets the canary's mode, and the next row writes `none` back |
 | `aws bedrock put-account-data-retention --mode none` | succeeds, writing the value set on 2026-09-12 | none: the contrast, and the reading that the condition key is still published, since a `StringNotEquals` over an absent key would refuse this call too |
-| `aws bedrock-runtime invoke-model --model-id <profile> --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}' /dev/null`, once for each of `us.` and `global.` `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1` | `AccessDenied` naming the baseline | `DenyInvokingModelsThatRetain`. With the deny lifted the canary still cannot answer, having no use-case form and no agreement, so a gate refusal reads `ALLOWED`. A profile routes to other Regions, where the canary's own Region control may refuse a destination first: read the policy id |
+| `aws bedrock-runtime invoke-model --model-id <profile> --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}' /dev/null`, once for each of `us.` and `global.` `anthropic.claude-fable-5`, `anthropic.claude-fable-5-1` and `anthropic.claude-fable-5-2` | `AccessDenied` naming the baseline | `DenyInvokingModelsThatRetain`. With the deny lifted the canary still cannot answer, having no use-case form and no agreement, so a gate refusal reads `ALLOWED`. A profile routes to other Regions, where the canary's own Region control may refuse a destination first: read the policy id |
 
 If the `inherit` row reads `ALLOWED` and the run stopped before the next row, put the mode back by hand:
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.

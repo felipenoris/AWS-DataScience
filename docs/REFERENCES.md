@@ -1186,7 +1186,20 @@
   <https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html>. *Data protection* carries
   the deployment-account argument — *"Because the model providers don't have access to those accounts,
   they don't have access to Amazon Bedrock logs or to customer prompts and completions"*:
-  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>. **Abuse detection
+  re-read 2026-10-11** for Stage 6e decision 17: the Claude models it names as retaining are still
+  Fable 5 and Fable 5.1 alone, so Opus, Sonnet and Haiku 5.5 are outside 7.5's deny.
+
+- **Amazon Bedrock model lifecycle**, the pages Stage 6e decision 17 is written from (read
+  2026-10-11). The page for models launched before 2026-09-07 carries the table with Claude Sonnet 4.5's
+  dates (legacy 2026-10-08, public extended access 2027-01-08, end of life 2027-04-08), the higher price
+  the provider sets during public extended access, and the rule that existing customers may lose
+  access to a Legacy model after 15 days of inactivity:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html>. The page for
+  later models replaces the extended-access phase with a per-model EOL floor on the model card:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html>. `GetFoundationModel`
+  returns the same dates in `modelLifecycle` (`legacyTime`, `publicExtendedAccessTime`,
+  `endOfLifeTime`), which is what `./aws/bedrock-scope.py` `BS-8` reads.
 
 - **Amazon Bedrock: the endpoints, the logging and the CloudTrail shape** (read 2026-09-11). The
   PrivateLink page gives the interface endpoint service names — `com.amazonaws.<region>.bedrock` and
@@ -1201,7 +1214,9 @@
   content: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>. The
   model-access form's fields (`companyName`, `companyWebsite`, `intendedUsers`, `industryOption`,
   `otherIndustryOption`, `useCases`) are in the API reference:
-  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>. The
+  CloudTrail page, read again 2026-11-22, says CloudTrail *"captures all API calls for Amazon Bedrock as
+  events"* and says nothing of a call Bedrock refuses (`SUP-427`).
 
 - **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
   `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one
@@ -3740,6 +3755,12 @@
   CloudTrail):
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-cli.html>,
   <https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_LookupAttribute.html>.
+
+- CloudTrail record contents (read 2026-11-22, Stage 6e decision 13): `vpcEndpointId` since 1.04 and
+  `vpcEndpointAccountId`, the endpoint owner's account, since 1.09, both optional; for events AWS originates
+  through a service's VPC the page gives `AWS Internal` or the service name, and the current version is
+  1.11 (`AWS_SUPPLEMENT.md` `SUP-426`):
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>.
 
 - A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
   `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works
