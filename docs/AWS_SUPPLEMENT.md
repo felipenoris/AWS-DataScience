@@ -2641,7 +2641,8 @@ entry is still true is the reading.
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
 - `SUP-380` **An *Update project* did not carry a profile's new override of `enableSpaces` into an environment
-  created before the override, and carried a changed override of the image pin into one created with it**
+  created before the override, and carried a changed override of the image pin into every environment created
+  with it**
   (measured 2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
   `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
   `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
@@ -2655,16 +2656,18 @@ entry is still true is the reading.
   keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
   `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
-  **Read again 2026-11-22** (Stage 6d 2.7 step 8, read by the coordinating session): the image pin moved.
-  `app-genai-dev`'s environments were created 2026-11-19 with `experimentation` already overriding the pin at
-  version 11, and the profile's pin went to 12 at 05:07Z. The owner's *Update project* sent `UpdateProject` at
-  05:14:42Z with `projectProfileVersion` `latest` and the editable parameters of both environments, 10 and 5.
-  The provisioning role's `UpdateStack` on `Tooling` at 05:15:08Z, 57 parameters, read `UPDATE_COMPLETE` at
-  05:15:19Z with no resource event. On `SageMakerAIDomain` at 05:16:08Z, 29 parameters, it updated the
-  `SageMakerDomain` resource from 05:16:13Z to 05:16:20Z, and `UpdateDomain` on `d-q1bianbhckrd` at 05:16:14Z
-  rewrote the whole `DefaultUserSettings`. The domain then read JupyterLab and Code Editor at version 12, and
-  the environment's stored value ended in `/12`. The two readings differ in the parameter and in whether the
-  override existed when the environment was created, so they do not say which of the two decides. Where:
+  **Read again 2026-11-22** (Stage 6d 2.7 step 8, read by the coordinating session): the image pin moved in
+  every environment. `experimentation` has overridden the pin since 2026-10-30 (#277), and Sandbox's six
+  `SageMakerAIDomain` environments were created after it, from 2026-11-18 18:16:05Z to 2026-11-19 00:19:40Z, each
+  storing `/11` in its `userParameters`, `isEditable` false. The profile's pin went to 12 at 05:07Z. The owner's
+  *Update project* on the six projects, `UpdateProject` from 05:14:42Z to 05:21:06Z with `projectProfileVersion`
+  `latest`, re-deployed each through the provisioning role: `Tooling`'s `UpdateStack`, 57 parameters, with no
+  resource event, and `SageMakerAIDomain`'s, 29 parameters, passing `SageMakerDomain` through an update whose
+  `UpdateDomain` (05:16:14Z to 05:28:53Z) rewrote the whole `DefaultUserSettings`. Each environment then stored
+  `/12`, and each domain read JupyterLab and Code Editor at version 12, custom images and default alike: the
+  parameters the profile overrode at creation were re-resolved from its latest version. The readings differ in
+  the parameter as well as in the creation condition, and no living environment holds the image pin from the
+  blueprint's default, so which of the two decides is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has

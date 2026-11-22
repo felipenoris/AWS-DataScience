@@ -4718,7 +4718,8 @@ sessão"* at 04:59 closed the sitting without 6d's remainder (6d's log). Times a
 - **[Claude] A space no entry named**: CloudTrail records `CreateSpace` `new-jup-xlarge` at 00:12:15 and
   `DeleteSpace` at 00:39:54 in `eighth-experimentation`'s blueprint domain, both from the browser as the
   project role in the user's session; its JupyterLab app read `Deleted` at 05:36.
-- **[user] The lowering**: `make down ENV=sandbox`, after the reads.
+- **[user] The lowering**: `make down ENV=sandbox`, after the reads, from 05:08:50 (`TerminateInstances`) to
+  05:15:28 (`DeleteFirewallRuleGroup`), read in the Sandbox trail by the coordinating session (6d's log).
 - **[Claude] `make status`** at 05:24:24: `sandbox/egress`, `sandbox/warehouse-compute`, `sandbox/probes` and
   `staging/egress` down, no Studio app billing in the five environments; Production's `vpn`, `proxy`,
   `egress`, `workloads-egress`, `tooling` and `runners` up for the coordinating session, *"estimated burn: USD
