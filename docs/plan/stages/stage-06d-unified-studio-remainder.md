@@ -1719,8 +1719,8 @@ workflow. Its values, read that day (the log): the domain `dzd-d8yrvx1ko7im6o`;
 `test-experimentation` `4gqfau9xuo6e4w`, owned by the same user; the association
 `awsds-prod-proxy-reconfigure`, `b9c438be-8de2-430a-9ed9-fb2cea9ff136`. Every space runs the house image,
 version 11, in the blueprint's domain by choice in *Create space* (`EXC-26`); a remote-access space is
-`ml.t3.large` or larger (`RI-2`), and a native run bills 0.050 USD/h on `sc.t3.medium`. 2.7 step 7 needed
-GitLab and ran in R1 on 2026-11-22 ([`promotion.md`](../runbooks/promotion.md) §N.11.1 step 3).
+`ml.t3.large` or larger (`RI-2`), and a native run bills 0.050 USD/h on `sc.t3.medium`. 2.7 step 7 needs
+GitLab and rides R1 ([`promotion.md`](../runbooks/promotion.md) §N.11.1).
 
 **Before it, with nothing up**:
 

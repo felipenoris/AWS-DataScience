@@ -1558,8 +1558,8 @@ rides [`promotion.md`](../runbooks/promotion.md) §N.10's day 1 (§N.10.3 step 8
   `DataLake` environment, which carries the target (`SUP-184`); the project held the `Tooling` and
   `SageMakerAIDomain` environments alone on 2026-11-20. The project's source over `app_dbt` imports the
   link as an inventory asset at its next run (`SUP-197`), which a bundle carries: R1 of 2026-11-22 left pass
-  8 to R2, so the request waits on no `bundle` job, and the asset leaves the project before each tag,
-  R2's the first (8.6).
+  8 to R2, so the request waits on no `bundle` job, and the asset leaves the project with pass 5's table
+  asset before R2's tag, as before each later one (8.6, `promotion.md` §N.11.2 step 2).
 
 - **5.1 [Claude] A model over the subscribed table**: a second source, `trades_notional` through the
   resource link 5.0 read, and a model `notional_by_desk_prod` in `app_dbt`. The link and its target are
@@ -1741,8 +1741,8 @@ manager's, the user's hands.
   with 8.1's names. Pass 5's model is on no branch, and 5.1 writes it on one no tag carries. 5.0's
   subscription writes a resource link in `app_dbt`, which the project's source imports as an inventory
   asset at its next run, `cron(43 2 * * ? *)` or a member's (`SUP-197`); the bundle would export it and
-  the guard fail. R1 of 2026-11-22 left pass 8 to R2, so 5.0 waits on no bundle job, and R2's tag, like each
-  later one, first deletes that asset with pass 5's table asset (`promotion.md` §N.11.2). **Rehearsed before the curation** at
+  the guard fail. R1 of 2026-11-22 left pass 8 to R2, so 5.0's request waits on no `bundle` job, and R2's tag,
+  like each later one, first deletes that asset with pass 5's table asset (`promotion.md` §N.11.2 step 2). **Rehearsed before the curation** at
   20:27 UTC, nothing curated yet: `build-task-code`'s script and then `bundle`'s, by `bash` in the tag's
   tree extracted from `git archive`, exit 0; the export the two assets with no description, README or
   form, the guard *"OK"*, and the session's 32 calls in Sandbox's trail every one a read.
