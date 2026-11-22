@@ -166,6 +166,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   registers, approves and serves `app-etl`'s model (Stage 10 steps 5.2 and 5.4) and approves another
   application's version by the release's model hash (Stage 17 pass 9); each has an offline self-check in
   `make check`.
+- `schedule/` — the schedule of what is left in the plan, an A4 report in Portuguese for the user. Its
+  content is data inside `build.py`; `make schedule` renders `schedule/out/schedule.pdf`.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
