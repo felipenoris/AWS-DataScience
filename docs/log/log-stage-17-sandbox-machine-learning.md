@@ -4482,3 +4482,46 @@ UTC.
   tag and the apply wait on the user.
 - **[Claude] `app-ml-dev`'s MLflow App** is not there yet: `list-mlflow-apps` listed `ml-demo-mlflow` alone at
   about 02:25.
+
+## 2026-11-22 — Day 2's sitting B: 7.4's guardrail created after the key's second apply, and the evaluation submitted with Nova Lite
+
+- **[user] The authorization.** *"Autorizo os quatro"*, answering whether Claude should publish
+  `sagemaker-prereqs-v0.14.0`, apply `sandbox/sagemaker`, create the guardrail anew and redo the evaluation
+  with Nova Lite.
+- **[Claude] The tag and the apply.** `sagemaker-prereqs-v0.14.0` was pushed and read back from origin at
+  `b71f4d02`, and `sandbox/sagemaker` was pinned to it in `6f3a0fc5`. The saved plan read
+  `0 to add, 1 to change, 0 to destroy`, the key's policy gaining the guardrail statement alone. The other
+  sessions were told, then the plan was applied as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`): `PutKeyPolicy` at 02:39:01, `Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed`. The re-plan read `No changes`. `staging/studio/` and `production/studio/` stay on `v0.11.0`.
+- **[Claude] The failed guardrail deleted** in the portal's two acts: its deployment in *Resource blueprints*
+  at 02:41:22, then its row in *My components* at 02:42:55. `get-environment` on `ajfy8315ryk3kg` reads
+  `ResourceNotFoundException`.
+- **[Claude] The guardrail.** *Create component* → *Guardrail*, `ml-demo-guardrail`, its description now
+  *"Stage 17 7.4: one denied topic, for the runbooks chat agent."*, with the denied topic *Investment advice*
+  and its two sample phrases. The environment `1c6faa73-f751-408c-890b-35fe5ada49cb-dev` (`6udalb5fp1qv0w`)
+  was created at 02:44:56. At 02:45:13 `CreateGuardrail` was admitted as the provisioning role, and in the
+  same second three `kms:CreateGrant` on the project key, each naming `bedrock.us-west-2.amazonaws.com` as
+  grantee and retiring principal: two bound to the encryption context `aws:bedrock:guardrail-id`
+  `razikgicppzy` (`Decrypt`, `Encrypt`, `GenerateDataKey`; `Decrypt`, `Encrypt`), one with no constraint
+  (`Decrypt`, `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant`, `DescribeKey`) (`SUP-417`). The
+  guardrail is `razikgicppzy`, `READY`, version `DRAFT`, under the project key, and is named after its
+  environment (`SUP-445`). Its content filters read `HIGH` both ways for violence, hate, sexual and insults,
+  and `NONE` for prompt attack and misconduct; it holds no word, PII or grounding policy.
+- **[Claude] The evaluation, submitted.** *Build* → *Model evaluations*, `ml-demo-eval-nova-lite`: Nova Lite,
+  *Question and answer*, Toxicity over `evaluation-dataset.jsonl`, Accuracy and Robustness removed. Nova
+  Lite's *Inference configurations* panel held Max tokens 500, Temperature 0.5 and Top P 0.5, with no Top K,
+  and was closed with no change. The upload dialog read *"The file name exists in S3. Uploading will replace
+  the existing file."*, and the same file was uploaded again. The model's application inference profile,
+  `w9u1ufr8ji2z`, was created at 02:51:21 by the IDE's model-management role, the environment
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite` (`dkkpe3opbn4m8g`) at 02:51:25, and at 02:52:08
+  `CreateEvaluationJob`, as the project role, was admitted: `evaluation-job/31epl34t77s3`, `InProgress`, run
+  as the project's service role with no customer key, its output under `…/genAI/assets/evaluations/output/`.
+  `get-evaluation-job` reads `inferenceParams`
+  `{"inferenceConfig":{"maxTokens":2048,"temperature":0,"topP":0,"stopSequences":[]},"additionalModelRequestFields":{}}`,
+  not the panel's values (`SUP-418`). The portal's list heads *Date created* with *(UTC-07:00)* and shows
+  21/11/2026 23:52:08, the laptop's UTC−3 time.
+- **[Claude] The project's application inference profiles**, all named `dzd-d8yrvx1ko7im6o avhvbqn37ty7m8`,
+  one per model: Claude Opus 4.5 (2026-10-30), Titan Text Embeddings V2 (01:02:39), Claude Haiku 4.5
+  (01:48:19) and Nova Lite (02:51:21). The domain's two, named `dzd-d8yrvx1ko7im6o`, hold Haiku 4.5 and Nova
+  Lite (2026-10-19, `SUP-187`).

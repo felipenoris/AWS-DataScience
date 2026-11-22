@@ -3556,6 +3556,12 @@ entry is still true is the reading.
   2026-11-22); SMUS's key-permissions page names no guardrail statement. A project key written to SMUS's page
   therefore refuses every IDE guardrail. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
   `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 02:45Z): with the statement in the key's policy (`sagemaker-prereqs-v0.14.0`),
+  `CreateGuardrail` was admitted as the same role, and in the same second three `kms:CreateGrant` on the key,
+  each naming `bedrock.us-west-2.amazonaws.com` as grantee and retiring principal. Two are bound to the
+  encryption context `aws:bedrock:guardrail-id`; the third carries no constraint and allows `Decrypt`,
+  `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant` and `DescribeKey`. The guardrail therefore left on
+  the project key a grant to Bedrock that no guardrail id bounds.
 
 - `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, and every Claude model
   it offers refuses both, so the IDE evaluates no Claude model; the portal reports an unknown error** (measured
@@ -3578,6 +3584,11 @@ entry is still true is the reading.
   shows `maxTokens` alone for every call, so the stored prompt is what tells the two forms apart. SMUS's
   job-creation page says *"You can change Max tokens, temperature, and Top P inference parameters"* and names
   no model they exclude (read 2026-11-22). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  A later reading (2026-11-22, 02:52Z): with Nova Lite and the same task, metric and dataset,
+  `CreateEvaluationJob` was admitted. Nova Lite's panel held Max tokens 500, Temperature 0.5 and Top P 0.5,
+  with no Top K, and was closed with no change. `GetEvaluationJob` reads the job's `inferenceParams` as
+  `maxTokens` 2048, `temperature` 0, `topP` 0 and no stop sequence: the form's *Default* sends values its panel
+  does not show, both sampling parameters among them, and `GetEvaluationJob` shows what the trail hides.
 
 - `SUP-419` **The Bedrock IDE's evaluation form refuses a custom dataset for Accuracy and Robustness under
   Question and answer, where SMUS's pages say every metric takes one** (measured 2026-11-22 in Sandbox, Stage 17
@@ -3602,6 +3613,13 @@ entry is still true is the reading.
   with no separator and no description. No SMUS page describes the mapping, so a reader that lists Bedrock's
   objects finds none under the name the portal shows. Where: `log-stage-17-sandbox-machine-learning.md`,
   2026-11-22.
+  A later reading (2026-11-22, 02:45Z to 02:52Z): the guardrail is named after its environment,
+  `<component uuid>-dev`, and carries the flow's five tags, `AmazonDataZoneBlueprint` reading
+  `AmazonBedrockGuardrail`. The project holds one application inference profile per model its components
+  used, each created by `AmazonSageMakerBedrockModelManagementRole-<account>` at the model's first use and
+  named `<domain id> <project id>`: its four, for an embeddings model, Claude Opus 4.5, Claude Haiku 4.5 and
+  Nova Lite, share that name, and the domain's two from the playground share `<domain id>` (`SUP-187`). Nova
+  Lite's was created at the evaluation's submit, 4 s before its environment.
 
 ## SageMaker AI spaces and images
 
