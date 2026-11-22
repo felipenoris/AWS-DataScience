@@ -68,7 +68,7 @@ entry is still true is the reading.
 | [Lake Formation](#lake-formation) | Data lake settings and who writes them; listings that omit grants; cross-account shares, vends and their flags; the creator's permissions; Athena writes through vended sessions; RAM |
 | [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network; an Iceberg table's rename |
 | [Redshift Serverless](#redshift-serverless) | Namespace, workgroup and usage limits; SQL, users and privileges; the Data API; datashares through Lake Formation; billing, metrics, the free trial and the audit export |
-| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections |
+| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections; the Bedrock IDE's knowledge bases, guardrails, evaluations, chat agents and flows |
 | [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE, its clients and Amazon Q |
 | [SageMaker AI jobs and models](#sagemaker-ai-jobs-and-models) | Processing jobs: status, mounts, keys and image pulls; condition keys on the job creates; models and model packages |
 | [MWAA](#mwaa) | MWAA Serverless workflows, their API and KMS use; workers, templates, tasks and the Airflow operators; provisioned MWAA |
@@ -3607,6 +3607,8 @@ entry is still true is the reading.
   is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-11-21 (two entries); `threat-model.md`, `TM-34`.
 
+### The Bedrock IDE
+
 - `SUP-410` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
   configuration carries, and the index is refused unless that key grants `indexing.s3vectors.amazonaws.com`
   `kms:Decrypt`, a statement SMUS's key-permissions page does not name** (measured 2026-11-22 in Sandbox,
@@ -5035,6 +5037,14 @@ entry is still true is the reading.
   `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ## Bedrock
+
+The Bedrock IDE, SageMaker Unified Studio's builder of Bedrock components, is recorded under
+[DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio), *The Bedrock IDE*: `SUP-410`
+and `SUP-411` (a knowledge base on S3 Vectors: the key statement its index needs, and the index's filterable
+metadata), `SUP-417` (a guardrail: `kms:CreateGrant` on the project key), `SUP-418` and `SUP-419` (an
+evaluation: the sampling parameters every Claude model refuses, and its datasets), `SUP-445` (the names),
+`SUP-446` (the chat agent on Agents Classic), `SUP-447` (a flow's role with no boundary) and `SUP-448` (a
+flow deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base's calls carry.
 
 - `SUP-288` **The Bedrock use-case form is stored as double base64 over a flat JSON object, and one
   submission covers every model** (measured 2026-09-11, Stage 6e M2). `PutUseCaseForModelAccess` and
