@@ -1085,4 +1085,14 @@ apply do tooling"*, as `awsds-infra-prod` (account Production, the infrastructur
   configuration updated at 02:12:56.865, the state `OK` since 2026-11-10 01:59:20. `./aws/observability.py`
   at 02:17: *"every alarm notifies a topic that resolves (7 alarms)"* for `OB-3` in `awsds-infra-prod`,
   and *"all checks passed"*. `EXC-19` is closed.
-- **Left of 2.2**: step 7, `describe-alarms` with the hub stopped after R1's lowering; then 2.4.
+- **[user] R1's lowering** (Stage 19's log, 2026-11-22, for each call): `make gitlab-down`, GitLab's host
+  stopped at 05:38:03 and the runners terminated at 05:37:27; the tunnel down; `make hub-down`, the proxy
+  stopped at 05:55:23 and the tunnel host at 05:55:26. `make status` from 06:01:50 reads every `[D]` host
+  stopped and every `[E]` slice down, an estimated burn of USD 0.0000/h, and `./aws/egress.py` at 06:08:04 no
+  interface endpoint and no NAT gateway in Production, Staging or Sandbox.
+- **[Claude] Step 7**, `describe-alarms` in Production at 06:09:53, the hub stopped for 14 minutes: the seven
+  alarms `OK`, each `notBreaching` with one action. `awsds-prod-proxy-status-check` has read `OK` since
+  2026-11-21 19:53:53 through the stop, so decision due 1 (b)'s setting landed; `awsds-prod-vpn-health` since
+  2026-09-06 20:58:53, and `awsds-prod-gitlab-status-check` since 2026-11-10 01:59:20, through GitLab's stop
+  at 05:38:03.
+- **Left of 2.2**: nothing. 2.4, provoking one alarm of each class once, is next.
