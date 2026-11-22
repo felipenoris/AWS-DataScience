@@ -886,3 +886,92 @@ session's own AWS calls ran as the infrastructure user with `InfrastructureAcces
   `10.31.160.128`, with the sizes. `docs/AWS_STATE.md`: `EXC-19` narrowed to GitLab's alarm, the proxy
   alarm's `breaching` row and the `PX-3` row closed, the tunnel host's size. `waiting-on-the-user.md`: the
   Hub row and the size decision. `TM-01`'s records are in Stage 11's log.
+
+## 2026-11-22 — step (0): a swap file and update-motd masked before the first boot's `dnf` (#356)
+
+*Claude, in the session coordinating the hub sitting, at the user's request ("Faça esta tarefa aqui"), on
+branch `claude/dnf-first-boot` from `main` at `65254241`, merged with `main` at `0e95f2f0` once #352 was
+in. No AWS write: the plans below ran read-only as the infrastructure user with `InfrastructureAccess` in
+Production (`awsds-infra-prod`, `us-west-2`), and nothing was applied. Times are UTC.*
+
+### The change
+
+- **[Claude] `wireguard-v0.8.1`.** The user data's new step (0) runs before step (1)'s `dnf`. It writes a
+  1 GiB swap file with `dd`, adds it to `/etc/fstab`, and runs `systemctl mask --now update-motd.service`.
+  Neither command is fatal: a host large enough builds without them, and step (1) is where a host too
+  small says so. The argument sits in `main.tf` beside the `templatefile()` call: the nano's OOM of
+  2026-11-21, a cold dnf's 617 and 623 MiB, and the 800 MB zram limit (`SUP-405`, `SUP-406`).
+- **[Claude] `wireguard-v0.8.0` is abandoned** (Lesson 46). Tagged at 00:45:19 on `09548e07`, it carried
+  the argument as comments inside the script. Rendered with production's peers, that came to about 16,432
+  bytes, and the plan refused it: `expected length of user_data to be in the range (0 - 16384)`. EC2's
+  16 KB counts comments. The tag stays on origin, never pinned. v0.8.1 (`9c1eeec6`, 00:51:44) moved the
+  comments out. `CLAUDE.md`'s list of abandoned tags takes it in the orchestrating session's batch at the
+  end of day 2.
+- **[Claude] The callers** (`f763349d`, 00:53:15):
+  - `production/vpn/` pins `wireguard-v0.8.1`.
+  - `production/proxy/`'s user data gets the same commands, with the argument in the slice's `main.tf`.
+  - The texts that state the sizes now say the first boot no longer decides them: `runbooks/vpn.md` §S6,
+    the comment in the tracked `instance_type.auto.tfvars`, the proxy's `instance_type` description, and
+    the proxy layer's comment in `scripts/tfhygiene/layers.py`.
+  - These commits change no size. Decision due 4's option (d) names this PR, and the user took it
+    (below).
+
+### The plans, read-only
+
+- **[Claude] `production/vpn/`**, planned after `git ls-remote` read `wireguard-v0.8.1` on origin at
+  `9c1eeec6` and `init` fetched it: `Plan: 2 to add, 3 to change, 2 to destroy.`
+  - The instance is replaced on `user_data` alone. Step (0) is the only change in it; the size stays
+    `t3.medium` and the AMI stays the same.
+  - The Elastic IP's association is replaced.
+  - The route, the record and the alarm are updated in place.
+- **[Claude] `production/proxy/`**: `Plan: 1 to add, 2 to change, 1 to destroy.`
+  - The instance is replaced on `user_data`; the size stays `t3.small` and the AMI stays the same.
+  - The record and the alarm are updated in place.
+- **[Claude] The user data's size**, read from each plan's JSON:
+  - the VPN's grows from 13,435 to 14,456 bytes, 1,928 under the cap;
+  - the proxy's grows from 15,148 to 15,685, 699 under it.
+
+  The proxy's margin is thin, because `squid.conf` and the render script ride inside its user data.
+
+### What was not measured
+
+- **[Claude] No first boot with step (0) has run, at any size.** The laptop has no Docker for a local
+  AL2023 run.
+- **[Claude] update-motd was read only by its service and its script.** The service is the cgroup in the
+  nano's OOM line, and the script is `70-available-updates`. Whether a timer also starts it was not read;
+  `mask` covers the service either way.
+- **[Claude] On the nano the two `dnf` runs did not overlap.**
+  - The first kill's task table, at 25.4 s, lists one `dnf` (pid 1962) and no update-motd.
+  - update-motd (pid 1994) and its `dnf` (pid 2003) appear only in the second table, at 47.9 s, after
+    cloud-init's SIGTERM.
+  - Whether update-motd waits for `cloud-final.service` was not read. `SUP-406` now carries the sentence.
+
+### Decision due 4 taken, and the nano selected (`90ce7675`)
+
+- **[user]** *"sim, põe o nano no #356"*, shortly after 01:00 UTC. It answers the session's recommendation
+  to put the VPN back on `t3.nano` inside this PR, and takes decision due 4 as (d), with `t3.nano`.
+- **[Claude] The selection.** The tracked `instance_type.auto.tfvars` comments out its `t3.medium`
+  assignment, so the variable's default, D4's `t3.nano`, governs.
+- **[Claude] The re-plan**, read-only at 01:09: `Plan: 2 to add, 3 to change, 2 to destroy.` The instance
+  is replaced: `instance_type` goes `"t3.medium" -> "t3.nano"`, and `user_data` forces the replacement.
+- **[Claude] The records.**
+  - The cost lines return to 0.0310/h, with the `t3.medium` figure kept as history where a comparison
+    needs it: `PRICING.md`'s typical hour, hub bullet and unit line; `runbooks/vpn.md`'s burn cell and
+    `make hub-up`; Stage 12's 5.2 row; Stage 20's pass 8.
+  - Decision due 4 reads taken.
+  - `waiting-on-the-user.md` drops its row, and the Hub row gains the VPN's apply.
+
+### Owed
+
+- **The user's word for `production/vpn/`'s apply** once this PR merges, from `main` (Lesson 79). Its first
+  boot is the proof, and its console should show:
+  - a `(0) swap:` line that names `/swapfile`;
+  - `(0) update-motd masked`;
+  - `(1) done`;
+  - `END - the tunnel endpoint is up`.
+- **After the apply:**
+  - `docs/NETWORK.md`'s and `docs/AWS_STATE.md`'s VPN rows take the new host's address and size;
+  - the §N.9 day 2 session takes the hub's rate;
+  - the orchestrating session takes the index rows.
+- **The proxy keeps `t3.small`.** Its user data's step (0) waits for an apply outside the §N.9 day 2
+  sitting, since any proxy apply replaces the estate's single internet exit.
