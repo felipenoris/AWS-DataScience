@@ -622,3 +622,39 @@ the user's answer is quoted as given. Account ids are replaced by `<Sandbox Acco
   access point alias reads `LastModified` 2026-11-21T01:19:23Z, `ContentLength` 10532 and `ETag`
   `"d516acd3183d361cf3b92a12ec19dd95"`, where 1.3 read `LastModified` 2026-11-13T19:43:40Z and 10,532 bytes on
   2026-11-18; the blueprint's `updatedAt` stays 2026-05-13T21:31:31Z (`SUP-361`).
+- **[user] The wizard**, opened in the DataZone console as the infrastructure user with `InfrastructureAccess`
+  in Sandbox Account 1, in a browser profile of its own, by the route this session gave (*Associated
+  domains*, `awsds-studio`, *Blueprints*, `RedshiftServerless`, *Enable*), and left by **Cancel**. Reported in
+  Portuguese and translated here; every label is as posted. The screen *Enable RedshiftServerless* offers
+  **Provisioning role**, *Create and use a new service* or *Use an existing service role*, and **Manage Access
+  role**, *Create and use a new service role* or *Use an existing service role*. *Create* shows no name for
+  the role it would create, and *Use an existing* lists many names.
+- **[Claude] The console's calls**, read in Sandbox's trail (DataZone in `us-west-2`, IAM in `us-east-1`), the
+  browser's user agent apart from the CLI's and Terraform's: the domain's page from 02:28:29 (`ListDomains`,
+  `GetDomain`, `ListEnvironmentBlueprints`, `ListEnvironmentBlueprintConfigurations`, `ListPolicyGrants` on
+  `Tooling`'s configuration, `GetDomainUnit` on the root unit); the blueprint's page at 02:29:07
+  (`GetEnvironmentBlueprint` on `dlyaabb17hano0`); the wizard at 02:29:14, with `GetEnvironmentBlueprint`,
+  `iam:ListRoles` carrying `maxItems` 1000 and no `pathPrefix`, `GetDomainUnit` on the root unit and
+  `ListDesignations`; the blueprint's page again at 02:32:12, the last console call at 02:32:13. No write:
+  `PutEnvironmentBlueprintConfiguration`, `DeleteEnvironmentBlueprintConfiguration`, `CreatePolicyGrant` and
+  `DeletePolicyGrant` return no event since 01:50 in Sandbox Account 1 or in Data Governance, and IAM's
+  `CreatePolicy`, `PutRolePolicy` and `CreateServiceLinkedRole` none. The one `CreateRole` and
+  `AttachRolePolicy`, at 02:02:39, are DataZone's environment deployer's (below).
+- **[Claude] The blueprint after**, 02:33:12: `get-environment-blueprint` unchanged (`updatedAt` and the ten
+  user parameters); `get-environment-blueprint-configuration` answers the same *"is not present"*; 14
+  configurations with the same identifiers and `updatedAt`s; 10 customer managed policies. IAM lists 58 roles,
+  the one more `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, created 2026-11-22T02:02:39Z by
+  `awsds-sandbox-smus-provisioning` in an `AmazonDataZoneEnvironmentDeployer-…` session that
+  `datazone.amazonaws.com` invoked: an environment's deployment before the wizard opened.
+- **[Claude] The form against `sagemaker-prereqs-v0.12.0`: the checklist's step 4 closes with no change.**
+  `blueprints.tf` names `provisioning_role_arn` (`awsds-sandbox-smus-provisioning`) and
+  `manage_access_role_arn` (`awsds-sandbox-smus-manage-access`) on every configured blueprint,
+  `RedshiftServerless` included while `redshift_serverless_enabled` is true, and 1.5 attaches
+  `AmazonDataZoneRedshiftManageAccessRolePolicy` to that manage-access role. The form shows no regional
+  parameter, so nothing joins the `VpcId`, `Subnets` and `AZs` every configuration sends. Unlike `MLflowApp`'s
+  form of 2026-10-18, it asks for a manage-access role and names no role it would create. The report holds no
+  authorized-domain-units section; the console read the root unit and its designations as the wizard opened,
+  the section `MLflowApp`'s form showed, which `grants.tf`'s grant on the root unit answers (inferred).
+- **[Claude] The text that follows**: the stage file's `Status`, step 1.3 and the sitting's block;
+  `docs/SMUS.md`'s `RedshiftServerless` row; `promotion.md` §N.10.1; the 1.3 row in `waiting-on-the-user.md`
+  removed, with its mention in the Warehouse row.

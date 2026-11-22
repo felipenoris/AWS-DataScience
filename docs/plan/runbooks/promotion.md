@@ -2480,7 +2480,6 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
   - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
   - 6h 5.2b's network door (N.12.4): `test-experimentation` in `projects` within the wide tag's applies, or
     5.2b re-specified.
-  - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
   - Sandbox's free-trial balance, before the sitting, after each day and the next day.
 - **[user] The identities**: `eighth-experimentation`'s contributor in a browser profile of its own (6h
   0.4); the Data Scientist User signed in (6h 5.4).
