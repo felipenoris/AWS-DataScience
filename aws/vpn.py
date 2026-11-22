@@ -591,7 +591,7 @@ def main(argv: list) -> int:
             if itype != BASELINE_INSTANCE_TYPE:
                 drift.append(
                     f"the type is not the {BASELINE_INSTANCE_TYPE} baseline, so every HOURLY "
-                    "figure here and in `make status` understates the burn while it runs"
+                    "figure here and in `make status` understates the passive burn while it runs"
                 )
             if vsize.isdigit() and int(vsize) != BASELINE_ROOT_VOLUME_SIZE_GIB:
                 drift.append(
