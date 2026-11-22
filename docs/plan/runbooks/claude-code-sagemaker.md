@@ -263,10 +263,13 @@ and decision 2 keeps the model-access form out of it for the same reason.
   "Resource": [
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5",
     "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*::foundation-model/anthropic.claude-fable-5-2",
     "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5",
     "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-fable-5-2",
     "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5",
-    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1"
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-1",
+    "arn:aws:bedrock:*:*:inference-profile/global.anthropic.claude-fable-5-2"
   ]
 }
 ```
