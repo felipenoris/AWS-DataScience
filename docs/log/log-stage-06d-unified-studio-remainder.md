@@ -4772,3 +4772,113 @@ remainder goes on, day 2 or day 3 of `promotion.md` §N.9 (§N.9.3); no AWS call
   the remainder calls none.
 - **[Claude] Step 12's text** in the stage file no longer lists 4.7's schedule and the contributor's `code`
   space, both deleted earlier the same day (the two entries above).
+
+## 2026-11-22 — Day 2: the remainder not run, and 2.7 step 8 read in `app-genai-dev`
+
+*Claude's hand, recording the user's answer in chat and the readings the coordinating session (*"Ambiente no
+ar: coordenação e applies do hub (Stage 12 2.2 [D])"*) relayed to this session at 05:17 and 05:19; Claude's
+reads through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure user with
+`InfrastructureAccess`). Times are UTC.*
+
+- **[user] The remainder**: *"Não, fechar a sessão"* at 04:59, answering *"Fazemos agora o restante da
+  6d?"*. Steps 9 to 12 of the combined sitting (7.5's monitored half, 7.7, 6.1 (viii)'s Code Editor half) did
+  not run on day 2 and wait for a later Sandbox sitting with the hub and `sandbox/egress/` up.
+- **[Claude] The owner's remote-access space**: `code`, Code Editor on `ml.t3.large` with remote access
+  `ENABLED`, made by the user at 20:08 on 2026-11-21 in `eighth-experimentation`'s blueprint domain
+  `d-m8m0uefej9kb` for 7.5 and 7.7 (Stage 17's log), read `InService` at 05:36 by `list-spaces`, every app of
+  the domain `Deleted` by `list-apps`.
+- **[The coordinating session, relayed at 05:17] The version a new space starts on**: in a blueprint domain,
+  the version the domain pins; `studio.py` at 05:02 (`US-13`) read version 11 in all six Sandbox blueprint
+  domains, `d-m8m0uefej9kb` among them. In the three `Tooling` domains (`EXC-26`), whose entry carries no
+  number, the newest `CREATED` version, 12 (`default-v0.10.1`), registered by the dev-env release's
+  `register` job (pipeline #139). A blueprint domain moves to 12 only on the owner's *Update project* after
+  the pin's apply, which the coordinating session ran on `data-governance/governance` at 05:07
+  (`experimentation`'s `ImageVersionNumber` 11 to 12, PR #366).
+- **[The coordinating session, relayed at 05:19] 2.7 step 8 in `app-genai-dev`**: the owner pressed *Update
+  project* about 05:14, and the locked pin moved. `UpdateProject` at 05:14:42 by
+  `awsds-data-studio-domain-execution` in the owner's session, `projectProfileVersion` `latest`, with the
+  editable parameters of both environments (10 and 5). Through the provisioning role: `Tooling`'s
+  `UpdateStack` at 05:15:08 with 57 parameters, `UPDATE_COMPLETE` at 05:15:19 with no resource event, as on
+  2026-11-18; `SageMakerAIDomain`'s `UpdateStack` at 05:16:08 with 29 parameters, the `SageMakerDomain`
+  resource `UPDATE_IN_PROGRESS` at 05:16:13 and `UPDATE_COMPLETE` at 05:16:20, the stack at 05:16:22; and
+  `UpdateDomain` on `d-q1bianbhckrd` at 05:16:14, rewriting the whole `DefaultUserSettings` (`codeEditor`,
+  `jupyterLab`, `customFileSystemConfigs`, `executionRole`, `securityGroups`, `spaceStorageSettings`,
+  `studioWebPortal`). After: the domain on JupyterLab and Code Editor version 12, in the custom images and
+  the default, and the environment's stored value ending in `/12`. `Tooling`'s `enableSpaces` (`SUP-380`)
+  did not move; its value came from the blueprint's default at creation, where the pin was already the
+  profile's override when `app-genai-dev`'s environments were created on 2026-11-19.
+- **[Claude] What follows**: `SUP-380` carries the reading above. The coordinating session reads 2.4's after
+  half (`studio.py`), `US-13` and the other projects' presses, `eighth-experimentation` and
+  `test-experimentation` among them, after this sitting's lowering.
+
+## 2026-11-22 — 2.7 step 8 and 2.4's after half: the image pin through every Sandbox project
+
+*The coordinating session's readings (*"Ambiente no ar: coordenação e applies do hub (Stage 12 2.2 [D])"*),
+relayed to this session after the presses and written here by Claude. That session read through
+`awsds-infra-data` (Data Governance) and `awsds-infra-sandbox-1` (Sandbox Account 1), the infrastructure user
+with `InfrastructureAccess`, and ran the pin's apply on the user's word naming it. Claude read the six
+environments' `createdAt` with `get-environment` and the spaces' image versions with `describe-space`, through
+the same profiles. Times are UTC.*
+
+- **[The coordinating session] The pin** (`dev-env.md` §B step 5): pull request #366's
+  `var.sandbox_dev_env_version` 12, applied on `data-governance/governance/` from 05:07:29 to 05:07:48 from a
+  plan of `main` `1ba78c45` (`main` had moved to `af7bf7bc`, #367, docs only), `0 added, 1 changed, 0
+  destroyed`: the profile's two image lists and two default ARNs, 11 to 12. Re-planned `No changes` at
+  05:08:28. `get-project-profile` on `experimentation` (`dh60xbal05q64w`, updated 05:07:41) reads `/12` in
+  `parameterOverrides` and `resolvedParameters`, `isEditable` false.
+- **[The coordinating session] 2.4's before half**: `./aws/studio.py` at 05:02, before the apply, and at
+  05:14, after it. The six blueprint domains at JupyterLab and Code Editor 11; at 05:14 `US-13`'s pin passes
+  and each domain fails *"v11 against v12"*. The six `SageMakerAIDomain` stacks `CREATE_COMPLETE`, never
+  updated, parameters `/11`; each environment stores `/11` in its `userParameters`, `isEditable` false. The
+  six environments were created from 2026-11-18 18:16:05 to 2026-11-19 00:19:40, after the image override
+  entered the profile (#277, 2026-10-30); Claude read the same six `createdAt`, each `ACTIVE`.
+- **[The coordinating session] The presses** (`dev-env.md` §B step 6), by the owner, the data scientist
+  profile `28f1b390-…`, through `awsds-data-studio-domain-execution`, `projectProfileVersion` `latest`. Then,
+  as the provisioning role's `AmazonDataZoneEnvironmentDeployer` session (`invokedBy`
+  `datazone.amazonaws.com`), the `Tooling` stack's `UpdateStack` (57 parameters) with no resource event, and
+  the `SageMakerAIDomain` stack's (29 parameters), passing its one resource `SageMakerDomain` through
+  `UPDATE_IN_PROGRESS` to `UPDATE_COMPLETE` with an `UpdateDomain` in between. No call answered an error.
+
+  | Project | `UpdateProject` | `Tooling` stack | `SageMakerAIDomain` environment | its stack | `UpdateDomain` | Domain |
+  |---|---|---|---|---|---|---|
+  | `app-genai-dev` | 05:14:42 | 05:15:08 to 05:15:19 | `5dg9rc3o9t070w` | 05:16:08 to 05:16:22 | 05:16:14 | `d-q1bianbhckrd` |
+  | `eighth-experimentation` | 05:20:08 | 05:20:40 to 05:20:52 | `51kcahjgij7ua8` | 05:28:47 to 05:29:01 | 05:28:53 | `d-m8m0uefej9kb` |
+  | `test-experimentation` | 05:20:19 | 05:20:45 to 05:20:57 | `61sozk11eycnm8` | 05:22:47 to 05:23:00 | 05:22:52 | `d-jaid1tvg20jv` |
+  | `app-dbt-dev` | 05:20:31 | 05:20:58 to 05:21:08 | `4mxdm39fu4j05s` | 05:22:59 to 05:23:13 | 05:23:04 | `d-nt4ujzbdpeqm` |
+  | `app-etl-dev` | 05:20:57 | 05:21:23 to 05:21:34 | `3oog3xvtbf43dc` | 05:23:24 to 05:23:38 | 05:23:29 | `d-kr8cbbohordz` |
+  | `app-ml-dev` | 05:21:06 | 05:21:33 to 05:21:44 | `dpelnav9n8wyds` | 05:22:33 to 05:22:46 | 05:22:38 | `d-hxxfi3od0xhm` |
+
+  After each: the environment's deployment `UPDATE` `SUCCESSFUL`, its `userParameters` storing `/12` (both
+  default ARNs, `ImageVersionNumber` 12 in both image lists), the stack's parameters `/12`, and the domain
+  `InService` at JupyterLab and Code Editor 12, custom images and default alike. Every project read `ACTIVE`
+  by 05:29:51.
+- **[The coordinating session] 2.4's after half**: `studio.py` at 05:20:40, after `app-genai-dev`'s press, and
+  at 05:32:20, after the six. `US-5` (`VpcOnly`) and `US-7` (`ENABLED`, 60 minutes, ceiling 120) pass on all
+  nine domains; `US-13` passes on the pin and the six blueprint domains; one check fails, `US-8` on
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, created at 02:02:39 through DataZone's environment deployer
+  (Stage 17's log, `SUP-447`). Each `UpdateDomain` rewrote the domain's whole `DefaultUserSettings`
+  (`codeEditorAppSettings`, `customFileSystemConfigs`, `executionRole`, `jupyterLabAppSettings`,
+  `securityGroups`, `spaceStorageSettings`, `studioWebPortalSettings`), and every setting `studio.py` judges
+  read the same after it: the first reconciliation seen to rewrite a domain.
+- **[The coordinating session] The other environments**: `eighth-experimentation`'s `UpdateProject` carried
+  eleven environments' editable parameters. Its `ACTIVE` ones (the lakehouse, two database environments,
+  `ml-demo-mlflow`, the Bedrock IDE's and the two evaluation environments) read `UPDATE` `SUCCESSFUL` from
+  05:21:51 to 05:27:58. The `CREATE_FAILED` `4lrapnc3syxd74` (2026-09-13) and `b343orq3qka5n4` (03:08 the same
+  day) and `test-experimentation`'s `VALIDATION_FAILED` `60j5234reuos9c` were left as they were.
+  `./aws/sandbox-ml.py` at 05:34:11: one failure, `ML-8`, as at 05:03:58.
+- **[The coordinating session] The lowering overlapped the first press**: `make down ENV=sandbox` ran from
+  05:08:50 (`TerminateInstances`, two instances) to 05:15:28 (`DeleteFirewallRuleGroup`), with
+  `DeleteSecurityGroup` at 05:09:10 and 05:09:21, `DisassociateFirewallRuleGroup` at 05:10:01, and 27
+  `DeleteVpcEndpoints` from 05:10:49 to 05:15:18, three of them answered `Client.RequestLimitExceeded` and
+  retried by Terraform. `app-genai-dev`'s stacks updated from 05:15:08 to 05:16:22 while the endpoints went,
+  so a press needs nothing of `sandbox/egress/`. The other five began at 05:20:08, after the lowering.
+- **[The coordinating session] What it settles**: *Update project* moves a living blueprint environment's
+  locked image pin when the profile already overrode it at the environment's creation. DataZone re-resolved
+  the override from the profile's latest version, stored it in the environment's `userParameters`, and the
+  stack's `UpdateDomain` wrote it. `SUP-380`'s case, a value resolved from the blueprint's default at creation
+  and locked by the profile afterwards, stays measured on `Tooling`'s `enableSpaces` alone, and no living
+  blueprint environment holds the image pin that way.
+- **[Claude] The records**: `SUP-380`'s later reading covers the six projects, the parameter and the creation
+  condition left unseparated. `dev-env.md` §B step 6, 2.4 and 2.7 step 8 carry the reading. No domain names
+  version 11 any more; `jup` and `code` in `d-m8m0uefej9kb` still do (`describe-space`, after the presses), so
+  `retire` keeps it (`dev-env.md` §B, *The retirement*).

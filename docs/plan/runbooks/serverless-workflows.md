@@ -223,9 +223,10 @@ Stage 18's deployment project in Staging held, until its removal on 2026-10-22, 
 without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
 in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
 first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
-`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair behind `training_pair_enabled`, `false`
-until the sitting after Stage 17 2.2's readings (a) and (b); it was written 2026-11-19 with the transform
-pair, the model's tag and the registration in an application's own group, applied the same night (Stage 17 9.5).
+`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair since 2026-11-21, applied after Stage 17
+2.2's readings (a) and (b), `training_pair_enabled` defaulting to `true`; it was written 2026-11-19 with
+the transform pair, the model's tag and the registration in an application's own group, which were applied
+the same night (Stage 17 9.5).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no

@@ -361,7 +361,7 @@ set: one design split by *which account is allowed to hold what*, D26's argument
   `app-etl-dev`'s role (Stage 19's release T). Stage 17 9.5 adds, applied 2026-11-19, the
   transform pair, the model's tag, a pending version's registration for each application in
   `model_applications` and the bundle role's read of its model prefix, and the training pair behind
-  `training_pair_enabled`.
+  `training_pair_enabled`, applied 2026-11-21 after Stage 17 2.2's readings.
 - **`sandbox/ml/` `[P]` — the notebook grant** (Stage 17 decision 7 (a), applied
   2026-11-19): one `awsds-<env>-ml` policy allowing `sagemaker:AddTags` of the `AmazonDataZoneProject` tag
   alone, with the caller's own value, on a model package group that carries no project tag or already the

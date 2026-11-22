@@ -390,9 +390,11 @@ therefore `make gitlab-up BUILD=1` ([`gitlab.md`](gitlab.md) §U), and without t
    The apply runs after the merge, from `main` (Lesson 79), on the user's word naming it.
 6. ***Update project*, per project**, by its owner in the portal, a contributor's press being refused
    (`SUP-157`). The press re-deploys the project's `SageMakerAIDomain` environment with the profile's
-   parameters. Whether it moves a living environment's locked pin is unmeasured: it did not carry
-   `Tooling`'s locked `enableSpaces` (`SUP-380`), and the next release is the first reading (6d 2.7
-   step 8).
+   parameters, and on 2026-11-22 it moved the locked pin in all six Sandbox projects, whose environments
+   were created after the profile's override (6d 2.7 step 8). It did not carry `Tooling`'s locked
+   `enableSpaces`, which an environment took from the blueprint's default before the override (`SUP-380`).
+   A press needs nothing of `sandbox/egress/`: one re-deployed its stacks while the endpoints were being
+   deleted.
 7. **`US-13` green**: `./aws/studio.py awsds-infra-data awsds-infra-sandbox-1` compares the profile's pin
    with the newest `CREATED` version and each blueprint domain's `ImageVersionNumber` with the pin. A
    domain behind it names the project whose owner has not pressed; until every one has, `retire` keeps
