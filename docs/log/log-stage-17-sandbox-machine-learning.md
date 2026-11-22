@@ -4910,3 +4910,57 @@ were told before the writes. Times UTC.*
   No error on any of them.
 - **[Claude] Data Governance's trail**: the same `DeleteEnvironment` at 13:40:50Z, its caller in another
   account recorded with no ARN.
+
+## 2026-11-22 — `EXC-27`: `SUP-447`'s exception written, and `ML-8` and `US-8` judging the role's shape
+
+*Claude's repository edits on the user's word in this session's chat; the two instruments run as the
+infrastructure user with `InfrastructureAccess`, reads alone. Times UTC.*
+
+- **[user] The word**, at 14:51, verbatim: *"SUP-447: escrever o EXC-nn e a mudança no ML-8/US-8 (só no
+  repositório)."*
+- **[Claude] The record**: `docs/AWS_STATE.md` `EXC-27`, accepted by the user's decision of 13:30 (this log,
+  the entry on it), and section C's reading of the role removed. `EXC-27` was free on `origin/main`
+  (`6c30f9be`) when it was written.
+- **[Claude] The checks**: `aws/awslib/flowrole.py` holds the shape: the name
+  `AmazonBedrockFlowServiceRole-*`; every trust statement an `Allow` of `sts:AssumeRole` to
+  `bedrock.amazonaws.com` alone, under `aws:SourceAccount` the account's own and an `aws:SourceArn` within
+  this account's `flow/*`; `SageMakerStudioBedrockFlowServiceRolePolicy` the only attached policy; no inline
+  policy. `aws/sandbox-ml.py` `ML-8` and `aws/studio.py` `US-8` note an unbounded role of that shape with
+  `EXC-27`'s text and fail on any other unbounded role, naming what keeps a flow role out of the shape; both
+  read `iam:ListRolePolicies` for it now. Run offline on the role's documents, the shape function returned
+  no problem, and one or two on each altered copy: another account, no condition, any account's flows, a
+  second policy with an inline one, another name, an `AWS` principal.
+- **[Claude] The readings**, 15:00:01 to 15:04:01: `./aws/sandbox-ml.py` notes `ML-8` on
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` with `EXC-27`'s text, *"all checks passed"*, exit 0.
+  `./aws/studio.py` notes `US-8` on the role in `awsds-infra-sandbox-1` and passes *"all 18
+  blueprint-provisioned role(s) bounded, besides 1 under EXC-27 (19 found by tag)"*, with Production,
+  Staging and Data Governance three each, *"0 check(s) FAILED"*; its exit 1 is the persona profiles, whose
+  sessions held no token (section 10 lists their `sts get-caller-identity` alone).
+
+## 2026-11-22 — 7.6's portal half: the owner's deletions, read
+
+*The user's acts in the portal as `eighth-experimentation`'s owner, the Data Scientist User, as the user's
+word in this session's chat placed them; Claude's reads as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account` (`awsds-infra-data`). Times
+UTC.*
+
+- **[user] The word**, at 14:51, verbatim: *"7.6: as duas deleções que faço pela CLI. As duas definições e o
+  registro falho ficam para My apps, no portal, pelo owner."* The two CLI deletions had run at 13:40 and
+  13:41 on the user's earlier word (this log, the entry on them), and read again at 14:53:50:
+  `get-environment` on `6fl52xzq3yt768` answering *"Environment not found"*, `list-vector-buckets` listing the
+  knowledge base's store `…-46cr0woe7670gg` alone.
+- **[Claude] The failed environment**: Data Governance's trail holds `datazone:DeleteEnvironment` on
+  `b343orq3qka5n4` at 14:59:05Z, no error, as `awsds-data-studio-domain-execution` in the session
+  `user-28f1b390-…`, the Data Scientist User's profile; Sandbox's holds `cloudformation:DeleteStack` of
+  `DataZone-Env-b343orq3qka5n4` at 14:59:17Z by the provisioning role's session from
+  `datazone.amazonaws.com`, on the stack deleted since 03:08:08. The profile's other 380 calls from 14:40:24
+  to 15:01:39 are reads. `get-environment` answers *"Environment not found"* at 15:05:29.
+- **[Claude] The two definitions**: `head-object` on
+  `…/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json` and
+  `…/chatApp/043850fa-6a37-44ad-9ade-89e7e3af8fc5-definition.json` in `awsds-sandbox-smus-projects` answers
+  `404` for both at 15:05:30, where the same call read 1423 and 1129 bytes at 13:37 to 13:40; under
+  `amazon-bedrock/builder/apps/` the project holds `ml-demo-flow`'s
+  `flowApp/d6d9be18-d2cd-4249-bf55-4bd97abc9a33-definition.json` alone. An object's deletion is an S3 data
+  event, which the trail's lookup does not return, so the time the definitions went is not read.
+- **7.6 done**: the four objects of its list are gone. The Nova Lite evaluation's input and output, the
+  project's Bedrock service role, and `ml-demo-flow` with its role (`EXC-27`) stay.
