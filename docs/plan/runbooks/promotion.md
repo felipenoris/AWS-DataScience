@@ -1210,8 +1210,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    logs of Stages 8, 12 and 19): release G's `v0.6.0` through both targets, Production's `publish` creating
    the data product `anph2bq7uigqa8` and its listing `dr8t27tte8ezdc`; N.8.3's reading, which closed
    `EXC-13`'s Production half; the backup, which leaves the bucket on 2026-12-23; 6d 2.7's step 7; the
-   three projects. Its step 7 did not run, the user's choice, so R2 carries `app-dbt`'s first release, and
-   #321's merge and the mirror's push open R2 (item 10).
+   three projects. Its steps 6 and 7 did not run, the user's choice, so R2 carries `app-dbt`'s first
+   release and opens with #321's merge and the mirror's push (item 10). Its merge requests and tags reached
+   GitLab with the local user's password rotation unconfirmed, which R2 settles first.
 6. **With nothing up, now**: [user] Stage 19's xxvi portal half, then 4.12's request by
    `eighth-experimentation` and Stage 20 5.0's by `app-dbt-dev`, both on release G's listing, each
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
@@ -1233,8 +1234,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
    it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
    so either may come first, and R2 follows its day 1 (item 10).
-10. **R2** (N.11.2), after item 7's day 3, item 8's applies, item 9's day 1, whose pass 5 Stage 20 orders
-    before pass 8, and #321's merge: `app-dbt`'s first release,
+10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
+    orders before pass 8, opening with R1's steps 6 and 7 (N.11.2 step 1): `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2618,8 +2619,8 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 and #321's merge (N.6 items 7
-   to 10): Stage 20 orders its pass 8 after pass 5.
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and this sitting's day 1 (N.6 items 7 to 10): Stage
+   20 orders its pass 8 after pass 5.
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2684,14 +2685,20 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
 
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
-After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
-whose pass 5 Stage 20 orders before pass 8, and #321's merge; before 2026-12-18, since it carries
-`app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
+After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies and N.10's day 1,
+whose pass 5 Stage 20 orders before pass 8; before 2026-12-18, since it carries `app-dbt`'s first release,
+which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
-   tunnel.
-2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
-   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8) unless R1 carried it; `app-ml`'s (Stage 17 9.7), whose bundle
+   tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] GitLab's local user's password confirmed
+   rotated, or rotated (N.8.2 step 3), before the first push; [Claude] pull request #321's branch takes
+   `origin/main` by merge, `--self-check` and `make check` read again, then `gh pr ready 321`; [user] #321
+   merged, then `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; [user]
+   `awsds/dev-env`'s README row for `default-v0.10.1` by a merge request, then [Claude] its mirror
+   (`./scripts/gitlab-mirror.py awsds/dev-env`, `gitlab/README.md`, *Changing a recipe*).
+2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order,
+   [Claude] reading the build runner running before each tag ([`gitlab.md`](gitlab.md) §U step 3):
+   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), R1 having left it; `app-ml`'s (Stage 17 9.7), whose bundle
    carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
    `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
    ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
@@ -2734,12 +2741,12 @@ bound it stay N.6's.
 |---|---|---|---|
 | 2026-11-21, ran | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
-| 2026-11-22, ran | R1 (N.11.1) beside day 2, its step 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
+| 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
 | 2026-11-22 on | N.6 item 6, with nothing up | — | R1's listing; Stage 19's xxvi portal half (N.12.4) |
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | `app-ml-dev`'s MLflow App; `app-genai-dev`'s first call to Nova Lite |
 | 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's subscriptions and Stage 20 5.1's tar |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
-| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1; #321 merged |
+| 2026-11-26 | R2 (N.11.2), opening with #321's merge | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
@@ -2819,8 +2826,8 @@ Each reading is in the log of the stage that owns it.
   `GM-8` passing, the house image's literal equal to the account's 73 names. Pull request #321's branch took
   `origin/main` at `5dfff219` by merge (`00113780`), its one conflict in
   [`sagemaker-application.md`](sagemaker-application.md) §S's table; `--self-check` printed every stage of
-  the four applications `ok`, `app-etl`'s nine variables per stage as on `main`, and `make check` passed. R1's
-  step 6 syncs it again with whatever `main` gained since.
+  the four applications `ok`, `app-etl`'s nine variables per stage as on `main`, and `make check` passed. R2's
+  opening (N.11.2 step 1) syncs it again with whatever `main` gained since.
 - **R1 and R2's gates**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
   the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
   package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
@@ -2850,7 +2857,7 @@ The waiting list holds each as a row. In the calendar's order:
 - **Before 6d's remainder** (N.9.5): nothing new. Chrome's proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
 - **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
-  Stage 19 4.12's membership, which R1's approval needs, done 2026-11-21 (Stage 19's log).
+  Stage 19 4.12's membership, which 4.12's approval needs, done 2026-11-21 (Stage 19's log).
 - **Before N.9's day 2**: Stage 17 0.9, read 2026-11-21 (Stage 17's log).
 - **Before N.9's day 3**: `app-ml-dev`'s MLflow App; and, before 10.4's deploy, `app-genai-dev`'s first
   call to Nova Lite, which creates the project's application inference profile whose ARN 10.4's
@@ -2866,8 +2873,8 @@ The waiting list holds each as a row. In the calendar's order:
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
   The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
-- **Before R2**: Stage 17 10.5's acts (above); #321 merged, its branch having taken `origin/main` by merge
-  and its `--self-check` printing every stage `ok` (N.11.1 step 6).
+- **Before R2**: Stage 17 10.5's acts (above), and the answer on whether GitLab's local user's password was
+  rotated before R1's pushes; #321's merge opens the sitting (N.11.2 step 1).
 
 ## Q. After the quotas: Stage 10's pass 3
 
