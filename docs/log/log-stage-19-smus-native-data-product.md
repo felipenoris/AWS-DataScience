@@ -4969,3 +4969,17 @@ From 19:11 to 20:21; times UTC. §N.9's day 3, the other sitting, told of the wr
   change, 0 to destroy."*, `aws_iam_policy.project_access_portal` for `4gqfau9xuo6e4w` and `avhvbqn37ty7m8`,
   each gaining the statement alone. Saved at 21:14:56, the same summary. Not applied: the apply is the
   user's to name.
+
+## 2026-11-22 — Step 6's access-role statement applied
+
+- **[user]** *"Sim, aplique"*, answering whether this session applies the saved plan of `sandbox/warehouse/`
+  (0 to add, 2 to change). N.9 and the orchestrating session were told before it.
+- **[Claude] The apply**, of the plan saved at 21:14:56, from 21:22:50 to 21:23:01 UTC, exit 0: *"Apply
+  complete! Resources: 0 added, 2 changed, 0 destroyed."*, each access-portal policy *"Modifications
+  complete after 1s"*. Re-planned at 21:23:16: *"No changes. Your infrastructure matches the
+  configuration."* Read back at 21:23:30: `ImportTheWarehousesMetadataForADataSource`, the four actions on
+  this account's workgroups, in the default version of `eighth-experimentation`'s policy, `v5`, and of
+  `test-experimentation`'s, `v2`. `./aws/warehouse.py awsds-infra-sandbox-1` at 21:23:43, exit 0: 11 pass,
+  0 fail, 6 note, as at 19:19.
+- **Left of step 6**: the data source `c4n05wth04ll3k` stands `FAILED_CREATION`; deleting it and creating
+  it again is §N.10's day 2's, with the compute up.
