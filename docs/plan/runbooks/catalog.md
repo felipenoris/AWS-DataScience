@@ -59,7 +59,7 @@ Formation grant; a publish writes to the SageMaker Catalog alone (measured 2026-
 | Asset | a project's record of a table or another object, in the project's inventory, which only the project's members see | a source's run (measured, §A); the portal's *Publish to Catalog* before the 2026-10-20 redesign (measured, `SUP-191`); a person by hand (unmeasured) |
 | Revision | each edit of an asset's business or technical metadata, by a person, a source's run (`SYSTEM`) or an API call | DataZone (measured, Stage 19 iv) |
 | Listing | a published revision of an asset or a data product, which every domain user can find | *Publish asset* or `CreateListingChangeSet` (measured, §F) |
-| Data product | named assets published and subscribed as one listing | a member in the portal (measured, §P); Production's `publish` task (designed, release G) |
+| Data product | named assets published and subscribed as one listing | a member in the portal (measured, §P); Production's `publish` task (measured 2026-11-22, release G) |
 | Data source | the import of a Glue database's or a Redshift schema's tables into an inventory, on a schedule or on demand | the `DataLake` environment of *Create database* or of `create-environment` (measured, `SUP-184`, Stage 19 xix); a member's *Create* (read) |
 | Subscription | a project's access to a listing: a request, its approval, a grant per asset to a target | a member's request (measured, §S); an owner's Share (measured, `SUP-362`) |
 | Metadata form type | a typed set of fields attached to an asset or a column | a member of its owning project, under the domain unit's `CREATE_FORM_TYPE` (measured, `SUP-344`) |
@@ -374,8 +374,10 @@ a product's name across the domain: `Search` with the `DATA_PRODUCT` scope needs
 non-member's search is refused (measured 2026-11-16, `SUP-371`), so the create's conflict is the only
 domain-wide answer. The stage that lists a product therefore owns it: Production's `publish` task creates
 `trades-notional` there (Stage 19 decision 26 (b)), `app-etl-dev`'s product was deleted 2026-11-16, and the
-grant for the pair of create actions was applied 2026-11-17 (§O). How DataZone authorizes that pair for a
-project role is unmeasured until release G's first run.
+grant for the pair of create actions was applied 2026-11-17 (§O). At release G's first run, on 2026-11-22,
+DataZone authorized `CreateDataProduct` against the domain's ARN, as it did the product's
+`CreateListingChangeSet` (Stage 19's log); `CreateDataProductRevision` waits for a release that revises the
+product.
 
 ### What one request gives
 

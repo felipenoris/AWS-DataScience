@@ -92,7 +92,7 @@ it is not worth creating.
   `aws:SourceAccount`), and `awsds-prod-proxy-refusals` alarms at **50 refusals in one hour**: from
   `/awsds/prod/proxy`, September refused 1,597 of 12,829 requests with ten hours at 50 or more, all during
   the allow-lists' build-out, and October 53 of 10,919 with none. `OB-3` reads both new alarms `resolves`.
-  **The `[D]` half**, applied at the hub sitting of 2026-11-21 but for `tooling/`, R1's: an SNS action on
+  **The `[D]` half**, applied at the hub sitting of 2026-11-21, and `tooling/`'s in R1 on 2026-11-22: an SNS action on
   `awsds-prod-vpn-health`, `awsds-prod-proxy-status-check` and `awsds-prod-gitlab-status-check`, applied
   in `production/vpn/`, `production/proxy/` and `production/tooling/` with the hosts started, since a `[D]`
   apply re-plans the SSM-resolved AMI and may replace the host; the proxy's alarm takes `notBreaching` in
@@ -112,7 +112,7 @@ it is not worth creating.
   Elastic IP association replaced with it, the alarm, the tunnel's return route and `vpn.awsds.internal` in
   place. `production/tooling/` plans the alarm alone with GitLab stopped, `0 to add, 1 to change, 0 to
   destroy`, and `production/observability/` the dashboard text that described `breaching`, the same counts.
-  R1 applies `tooling/`.
+  R1 applied `tooling/` on 2026-11-22, the alarm's `PutMetricAlarm` at 02:12:56 UTC.
 
   **The hub sitting**, prepared against the live hub on 2026-11-21 and run that night (below)
   ([log](../../log/log-stage-12-observability-finops.md)): the plans read again at 21:17 UTC on `main`'s
@@ -164,10 +164,10 @@ it is not worth creating.
      ```
   6. **[Claude⚡]** `production/observability/` (`0 to add, 1 to change, 0 to destroy`), applied and
      re-planned `No changes`. `./aws/observability.py`'s `OB-3` fails in Production on GitLab's alarm alone,
-     and `EXC-19` narrows to it until R1. `docs/NETWORK.md`'s hub rows and diagram take the new private
+     and `EXC-19` narrowed to it until R1 closed it on 2026-11-22. `docs/NETWORK.md`'s hub rows and diagram take the new private
      addresses and sizes.
   7. **[Claude]** After the day's lowering, `describe-alarms`: the vpn and proxy alarms notify
-     `awsds-prod-alerts`, GitLab's carries no action until R1, and the proxy's alarm, `notBreaching`, reads
+     `awsds-prod-alerts`, GitLab's carried no action until R1's apply of 2026-11-22, and the proxy's alarm, `notBreaching`, reads
      `OK` with the hub stopped. 2.4's provocations may ride the same window, optionally.
 
   **Done 2026-11-21 and 2026-11-22** ([log](../../log/log-stage-12-observability-finops.md)), each apply

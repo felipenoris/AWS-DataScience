@@ -4520,7 +4520,12 @@ apply, on the user's word naming it. The user's acts are named. Times are UTC.*
   release procedure, merged as `9e64c6e2` with its `pip-audit` job failed on the lock's findings;
   **[Claude]** the mirror (`gitlab/mirror.json` from `717d80b5`, the copy already holding the merge's 14
   files). Pull request #365 (`a0aba76c`) moved the lock past ten packages' findings and drafted the pillow
-  pair for `gates-v0.7.0`; tag `default-v0.10.1` on `7f2623b6`, release pipeline #139. **[pipeline]** the images pushed to
+  pair for `gates-v0.7.0`. **[user]** On GitLab, `awsds/ci-gates`' tag `gates-v0.7.0` on `2dedd500`, the commit that
+  records the user's acceptance of the pillow pair as the Dev Env Steward, then `awsds/dev-env`'s merge request
+  !16, #365's lock, merged as `7f2623b6`, its `main` pipeline #137 green, `pip-audit` reading 454 of 454 pins
+  and none blocking for the first time since 2026-11-15. `gitlab/mirror.json` still names `9e64c6e2`: the
+  mirror moves past `7f2623b6` at R2's opening, after the README row's merge request (§N.11.2). Tag `default-v0.10.1` on
+  `7f2623b6`, release pipeline #139, its `pip-audit` 52 accepted and none blocking. **[pipeline]** the images pushed to
   `awsds-prod-ecr-base` at 04:09:13 and `awsds-prod-ecr-dev-env` at 04:20:25 (`sha256:a6f9b5ab…`); `register`
   created Sandbox's version 12 at 04:37:45 (`CreateImageVersion` by `awsds-deploy-devenv-sandbox`, alias
   `0.10.1`); `retire` kept 12 and 11, the versions `list-image-versions` answers after it; both scans

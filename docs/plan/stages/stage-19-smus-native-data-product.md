@@ -543,11 +543,12 @@ The managed policies on the project role, `SageMakerStudioProjectRoleMachineLear
 `CreateListingChangeSet` and neither creation action; the role's boundary,
 `awsds-prod-project-boundary` v3, and the `Workloads` SCPs refuse neither (read 2026-11-16). The
 Service Reference (`v1.5`) gives both actions no resource type and no condition key, as it gives
-`StartDataSourceRun`, which DataZone authorizes against the domain's ARN (`SUP-346`). Unmeasured until
-release G's first Production run, the IAM simulator answering nothing on either action (`SUP-008`,
-read 2026-11-17): that DataZone authorizes the two actions against the same ARN, and
-the listing's revision for a data product (an asset's listing first answers a placeholder revision,
-read 2026-11-10). Unmeasured with no instrument yet: whether DataZone holds `CreateDataProductRevision`
+`StartDataSourceRun`, which DataZone authorizes against the domain's ARN (`SUP-346`). Measured at
+release G's first Production run on 2026-11-22 (the log), the IAM simulator having answered nothing on
+either action (`SUP-008`, read 2026-11-17): DataZone authorized `CreateDataProduct` against the domain's
+ARN, as it did the product's `CreateListingChangeSet`, and the product's listing answered revision 1
+`IN_PROGRESS`, then `ACTIVE` at revision 1 (an asset's listing first answers a placeholder revision, read
+2026-11-10); `CreateDataProductRevision` waits for a release that revises the product. Unmeasured with no instrument yet: whether DataZone holds `CreateDataProductRevision`
 to the owning project's members, which `SUP-346` found it does not do for `StartDataSourceRun`; the
 close's threat-model entries (6.3) read it.
 
@@ -2656,7 +2657,9 @@ needed here. Under its recommendation, a warehouse sitting inside a Sandbox one 
     **Taken 2026-11-16 by the user as (b)** (*"Sigo a (b)"*): release G, after release F's sitting,
     gives Production's `publish` task the data product, `product.json` requires the asset alone, and
     `app-etl-dev`'s data product is deleted before release G's bundle. **Written 2026-11-16**
-    (§Release G as written); step 1 done the same day, step 3 applied 2026-11-17.
+    (§Release G as written); step 1 done the same day, step 3 applied 2026-11-17, and release G ran in
+    R1 on 2026-11-22 (`v0.6.0`, pipeline #138), Production's `publish` creating `trades-notional` and
+    its listing (the log).
 27. **Who sets the retention of the deployment projects' service-created log groups** (D28 item 5,
     `SUP-254`, `EXC-25`). The CLI 1.0.9 names each workflow's group in `CreateWorkflow`,
     `/aws/mwaa-serverless/<domain id>-<project id>/<workflow>`, and the service creates it in the deploy

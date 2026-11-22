@@ -1117,7 +1117,7 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
   `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
 - **A date**: `EXC-13`'s Production half, after the secret's first rotation, due by 2026-11-22, read at the
-  first warehouse sitting after it (the waiting list's Dates).
+  first warehouse sitting after it. **Read 2026-11-22 in R1** (N.8.3): the database took the rotated password.
 - **No step provokes them yet**: Stage 8 xxvii's retry (an apply that creates a role and its host
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
   refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
@@ -2222,7 +2222,8 @@ each act below names its identity. **Run 2026-11-22 in R1** (Stage 19's log): st
    asset alone, which `product.json` requires. **Done 2026-11-16**, 06:03 UTC, through the CLI.
 2. **[user] This repository's pull request merged and the mirror pushed.** The leg's
    `deploy-application.py` reads a first import on the asset's conflict from then on, release F's
-   logs read as before. **PR #307 merged 2026-11-16** as `c5e1718e`; the mirror waits for GitLab.
+   logs read as before. **PR #307 merged 2026-11-16** as `c5e1718e`; the mirror waits for GitLab. **Pushed
+   2026-11-22 in R1**: step 4's template merge request carried it, `07348ff..57f2fac` (Stage 19's log).
 3. **`production/studio/` re-planned and applied**, by Claude on the user's word naming it, from a
    checkout of the merged `main` (Lesson 79): account **Production**, the infrastructure user,
    `InfrastructureAccess` through `awsds-infra-prod`. No run of Production's workflows may be in

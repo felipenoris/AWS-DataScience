@@ -421,7 +421,8 @@ reading that `AccessDenied` as a broken policy and deleting the statement.
   drop-box — the one bucket that ingests files from humans. Recommended off at lab scale; priced here so
   the "no" is a choice.
 - **4.6 — Decide ECR enhanced scanning in the same sitting** — Stage 7 decision 2 deferred it *to this
-  step by name*: basic scan-on-push (free) carries Stage 8's gate; enhanced is **Inspector** — OS *and*
+  step by name*: basic scan-on-push (free) carries Stage 8's gate, and since 2026-11-15 fails every image this
+  estate pushes (`SUP-437`); enhanced is **Inspector** — OS *and*
   language packages, continuous — measured at USD 0.09/image + 0.01 per re-scan, and continuous means a
   re-scan on **every new CVE**, which is the churn to price. If adopted: **[user]** standalone-enable
   Inspector for resource type ECR **in Production only** (the account that owns the registry) — no org
