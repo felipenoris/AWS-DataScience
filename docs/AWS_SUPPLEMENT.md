@@ -5155,7 +5155,7 @@ entry is still true is the reading.
   the source over `app_etl`, the project's only one. Where: `log-stage-20-dbt-lineage.md`, 2026-11-19;
   `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
-- `SUP-453` **`aws-smus-cicd-cli` 1.0.9's catalog import writes the source project's table into the target's
+- `SUP-454` **`aws-smus-cicd-cli` 1.0.9's catalog import writes the source project's table into the target's
   asset, and the target's own data source writes the target's table back at its next run** (read 2026-11-22
   in Staging and Production, Stage 19 step 8 of the order). Each `deploy`'s import revises the target's
   asset by name with the bundle's `GlueTableForm` and `AssetCommonDetailsForm` `sourceIdentifier`:

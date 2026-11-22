@@ -4835,4 +4835,4 @@ reads alone, at 15:09 to 15:13. Times UTC.*
   table before listing. xxv after release G: Staging's daily source revises the unlisted asset in place,
   restoring Staging's table, which the asset had not carried from 04:12:01 to 15:37:24. A listing made
   between an import and the source's next run would publish Sandbox's location and table ARN; Production's
-  `publish` runs the source first. Written as `SUP-453`.
+  `publish` runs the source first. Written as `SUP-454`.
