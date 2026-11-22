@@ -486,6 +486,7 @@ São Paulo as in Oregon.
 | **Redshift Serverless** compute (USD per RPU-hour) | 0.5976 | **0.36** | 1.66 |
 | — at `base_capacity = 4`, the documented floor (USD per hour **a query runs**) | 2.3904 | **1.44** | 1.66 |
 | — a workgroup serving no query | 0.00 | **0.00** | — |
+| — the workgroup's own VPC endpoint, requester-managed, two AZs: no `USW2-VpcEndpoint-Hours` in Sandbox's Cost Explorer, 2026-09-20 to 11-21 ([`SUP-455`](AWS_SUPPLEMENT.md)) | — | **0.00** | — |
 | — data lake queries from Serverless (`awsdatacatalog`, Iceberg, Spectrum-shaped): *"not billed for separately and are included in the amount billed for Amazon Redshift Serverless in RPU-hr amounts"* (the pricing page, read 2026-10-28 for [Stage 19](plan/stages/stage-19-smus-native-data-product.md)) | included | **included** | — |
 | Redshift Managed Storage, serverless (USD/GB-mo) | 0.043 | 0.024 | 1.79 |
 | — a schema filled to its 1 TB quota (USD/month) | 41.47 | **24.58** | 1.79 |
@@ -992,6 +993,15 @@ the source of the table above — gives `sa-east-1` 0.150 USD/GB for the first 1
 what `docs/plan/architecture.md` §4.3 assumed, a point in favour of the unified offer being the live one,
 but verify this row against a real invoice before relying on it. The first 100 GB/month out of AWS is free
 organization-wide and is not modelled here.
+
+Production's per-GB lines, read 2026-11-22 from Cost Explorer for October and for November 1-21, the second
+Cost Explorer's estimate, are the account's, shared by the hub, GitLab and the runners. Same-AZ peering,
+`USW2-DataTransfer-AZ-In-Bytes` and `-Out-Bytes`, read 72.89 and 72.96 GB in October and 6.65 and 6.76 in
+November, billed 0. Cross-AZ peering, `USW2-VpcPeering-Out-Bytes` and `-In-Bytes`, read 0.0798 and 0.0018 GB
+billed 0.00082 USD, and 0.2668 and 0.0162 GB billed 0.00283, the 0.01/GB of the peering row. Internet out,
+`USW2-DataTransfer-Out-Bytes`, read 0.5811 and 0.1527 GB, billed 0. Transfer out to `us-east-1` and
+`us-east-2` billed 0.02/GB, 0.00098 and 0.00052 USD. Every per-GB line but `USW2-VpcEndpoint-Bytes`
+(0.35323 and 0.00281 USD) came to 0.00180 and 0.00335 USD.
 
 Three rows give two rejections a number (Lesson 7). **Transit Gateway**: the hub-and-spoke this estate
 builds is five attachments, so 5 × 0.05 × 730 ≈ **USD 182/month standing**, before a byte — against VPC

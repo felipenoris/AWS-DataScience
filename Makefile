@@ -47,7 +47,7 @@ SHELL := /bin/bash
 ifneq ($(strip $(auto)$(build)$(dry)$(env)$(groups)$(only)$(profile)$(runners)),)
 $(error the flags are upper case - AUTO, BUILD, DRY, ENV, GROUPS, ONLY, PROFILE, RUNNERS; a lower-case one would be ignored)
 endif
-.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env
+.PHONY: help check check-ou check-docs check-all clean up down hub-up hub-down gitlab-up gitlab-down status slices guard-env schedule
 
 help:
 	@printf 'make - the checks, and the D11 lifecycle. READ targets change nothing in AWS;\n'
@@ -65,14 +65,18 @@ help:
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
 	@printf '  check-all   check and check-ou\n'
 	@printf '  slices      the D11 layer table, offline - which slice is [P], [D] or [E]\n'
-	@printf '  status      what is up and the hourly burn (static rates, docs/PRICING.md 3 and 8).\n'
-	@printf '              Reads the [D] power states from EC2, each [E] state file after a\n'
-	@printf '              local terraform init, and the Studio apps from SageMaker, each priced\n'
-	@printf '              by its instance type - a session per account read; a slice or an\n'
-	@printf '              account it cannot read is UNREADABLE and the total is then a floor.\n'
-	@printf '              The EMR Serverless applications started and the OpenSearch\n'
-	@printf '              Serverless collections, which the portal deploys and down never\n'
-	@printf '              deletes, are listed unpriced, and each makes the total a floor\n'
+	@printf '  status      what is up and its burn in two totals (static rates, docs/PRICING.md 3,\n'
+	@printf '              5, 7 and 8): passive, USD per hour billed while a resource is up, used\n'
+	@printf '              or not; active, the rates billed only by use, each in its unit - the\n'
+	@printf '              warehouse per query-hour, an endpoint per GB. Both read USD 0.0000 with\n'
+	@printf '              nothing up. Reads the [D] power states from EC2, each [E] state file\n'
+	@printf '              after a local terraform init, with its interface endpoints counted per\n'
+	@printf '              AZ, and the Studio apps from SageMaker, each priced by its instance\n'
+	@printf '              type - a session per account read; a slice or an account it cannot\n'
+	@printf '              read is UNREADABLE and neither total is then a measurement. The EMR\n'
+	@printf '              Serverless applications started and the OpenSearch Serverless\n'
+	@printf '              collections, which the portal deploys and down never deletes, are\n'
+	@printf '              listed unpriced, and each makes the passive total a floor\n'
 	@printf '  clean       LOCAL delete only: aws/output, .venv, .ruff_cache, every .terraform/.\n'
 	@printf '              Never secrets/, never anything in AWS\n'
 	@printf '\n'
@@ -91,6 +95,9 @@ help:
 	@printf '              deploy and test runners always, the build runner with BUILD=1\n'
 	@printf '  gitlab-down DESTROY the runners, STOP GitLab, DESTROY the SharedServices\n'
 	@printf '              endpoints; the hub keeps running for every other session\n'
+	@printf '\n'
+	@printf '  schedule    render schedule/out/schedule.pdf from schedule/build.py; reads\n'
+	@printf '              nothing in AWS\n'
 	@printf '\n'
 	@printf '  flags of the WRITE targets:\n'
 	@printf '    DRY=1       print every command the target would run, and run none\n'
@@ -133,7 +140,7 @@ help:
 	@printf '                  up = ec2 start-instances, down = ec2 stop-instances, by Name tag.\n'
 	@printf '                  status reads the power state from EC2, not the state file. A\n'
 	@printf '                  stopped host still bills its EBS volume and its [P] Elastic IP,\n'
-	@printf '                  monthly; the hourly total is silent about them\n'
+	@printf '                  monthly; the passive burn, an hourly total, is silent about them\n'
 	@printf '  [E] EPHEMERAL   destroyed at the end of a session, rebuilt from code in minutes:\n'
 	@printf '                  everything metered by the hour - the interface endpoints (egress/,\n'
 	@printf '                  workloads-egress/), the probes, the build runner, and the running\n'
@@ -281,7 +288,7 @@ hub-up:
 
 # `hub-down` stops, never destroys: [D] is a stop/start contract (D11), so the Elastic IPs, the host
 # key and both security groups survive. It is the last thing to run in a session and the easiest to
-# forget, which is why `make status` prices the two hosts.
+# forget, which is why `make status` prices the two hosts in its passive burn.
 hub-down:
 	@./scripts/slices.py down --env production --only vpn,proxy $(if $(AUTO),--auto-approve,) $(if $(DRY),--dry-run,)
 
@@ -333,3 +340,8 @@ check-all:
 	printf '\n\033[1m--- make check-ou\033[0m\n'; \
 	$(MAKE) --no-print-directory check-ou  || fail=1; \
 	exit $$fail
+
+CHROME ?= /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+schedule:
+	@python3 -I schedule/build.py
+	@"$(CHROME)" --headless=new --disable-gpu --no-pdf-header-footer --user-data-dir="$$(mktemp -d)" --print-to-pdf="$(CURDIR)/schedule/out/schedule.pdf" "file://$(CURDIR)/schedule/out/report.html" 2>/dev/null

@@ -166,6 +166,8 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   registers, approves and serves `app-etl`'s model (Stage 10 steps 5.2 and 5.4) and approves another
   application's version by the release's model hash (Stage 17 pass 9); each has an offline self-check in
   `make check`.
+- `schedule/` — the schedule of what is left in the plan, an A4 report in Portuguese for the user. Its
+  content is data inside `build.py`; `make schedule` renders `schedule/out/schedule.pdf`.
 - `Makefile` — how those checks are run: `make check` offline, `make check-ou` with an SSO session. The same
   scripts sit behind the `pre-commit` hooks, so the commit gate and the target cannot disagree. `make`
   itself is a convenience, not a dependency — every target is a direct call to scripts that also run
@@ -175,7 +177,7 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   every hook and `make check` on each pull request with no AWS credential. It also carries **D11's lifecycle** since Stage 2
   step 8: `make slices` prints which slice is `[P]`, `[D]` or `[E]`; `make up ENV=<account-folder>` applies
   the ephemeral ones and starts the dormant ones; `make down ENV=…` reverses it; `make status` says what is
-  up, the Studio apps included, and what it burns per hour. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
+  up, the Studio apps included, and what it burns: per hour while up, and per unit of use. Stage 3 exercised the machinery twice: the three `egress/` `[E]` slices
   built, measured and torn down to USD 0.0000/h, with `foundation/` re-planning byte-identical and every
   `[E]` id new on the second `up`. The `[D]` rows — since 6c the two hub hosts, `production/vpn/` and
   `production/proxy/`, and since Stage 7 GitLab's `production/tooling/` — are stopped rather than

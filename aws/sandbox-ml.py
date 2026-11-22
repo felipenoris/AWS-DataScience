@@ -28,7 +28,8 @@
 #             python3 aws/sandbox-ml.py -                # CloudShell, ambient
 #   writes:   aws/output/sandbox-ml.txt, and each pipeline's live definition under
 #             aws/output/sandbox-ml/ (untracked - see .gitignore)
-#   reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, GetPolicy, GetPolicyVersion;
+#   reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, GetPolicy,
+#             GetPolicyVersion;
 #             kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
 #             DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListProcessingJobs,
 #             DescribeProcessingJob, ListModelPackageGroups,
@@ -88,7 +89,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from awslib import bedrockscope, context, profiles
+from awslib import bedrockscope, context, flowrole, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -767,6 +768,9 @@ def main(argv: list) -> int:
         attached = (run_json("iam", "list-attached-role-policies", "--role-name", rname) or {}).get(
             "AttachedPolicies", []
         )
+        inline = (run_json("iam", "list-role-policies", "--role-name", rname) or {}).get(
+            "PolicyNames", []
+        )
         bedrock_roles.append(
             {
                 "name": rname,
@@ -777,6 +781,8 @@ def main(argv: list) -> int:
                     PROJECT_TAG, ""
                 ),
                 "policies": [a.get("PolicyName", "") for a in attached],
+                "inline": inline,
+                "trust": role.get("AssumeRolePolicyDocument"),
             }
         )
 
@@ -1950,14 +1956,26 @@ def main(argv: list) -> int:
             ", ".join(f"{t} {p['tags'].get(t, 'absent')}" for t in BEDROCK_TAGS)
             + " (verification xvii).",
         )
+    # A flow environment's own role is EXC-27 while its shape holds (awslib/flowrole.py).
     for br in bedrock_roles:
         what = f"role {br['name']}"
         if not br["boundary"]:
+            problems = flowrole.shape_problems(
+                br["name"], br["trust"], br["policies"], br["inline"], account
+            )
+            if br["name"].startswith(flowrole.NAME_PREFIX) and not problems:
+                checks.note("ML-8", what, flowrole.NOTE)
+                continue
+            outside = (
+                f"; outside {flowrole.EXCEPTION_ID}'s shape: {'; '.join(problems)}"
+                if br["name"].startswith(flowrole.NAME_PREFIX)
+                else ""
+            )
             checks.fail(
                 "ML-8",
                 what,
                 f"no permissions boundary - an interactive principal outside D13 (policies: "
-                f"{', '.join(br['policies']) or 'none'}).",
+                f"{', '.join(br['policies']) or 'none'}){outside}.",
             )
         else:
             checks.ok(

@@ -19,8 +19,9 @@ the table stop being evidence. `./scripts/slices.py check` fails on both, and it
 `make check`.
 
 What is not in this file: which resources a slice contains, and what it costs to run. The
-first is the slice's own code; the second is `usd_per_hour` below, copied from
-docs/PRICING.md 3 with the row named - prices are measured, never reasoned (Lesson 6).
+first is the slice's own code; the second is `usd_per_hour` and `per_use` below, copied from
+docs/PRICING.md with the row named - prices are measured, never reasoned (Lesson 6) - each in
+a unit whose class, passive or active, UNIT_CLASS decides.
 """
 
 from __future__ import annotations
@@ -38,6 +39,36 @@ LAYER_NAMES = {
     PERSISTENT: "persistent - created once, never destroyed",
     DORMANT: "dormant - kept, powered off between sessions",
     EPHEMERAL: "ephemeral - destroyed at the end of a session",
+}
+
+
+# The classes `make status` totals apart, by how docs/PRICING.md says the service bills:
+#
+#   passive  billed while the resource exists or runs, used or not: what the environment costs
+#            per hour if nobody uses it
+#   active   billed only while the resource is used, and nothing when nobody uses it
+PASSIVE = "passive"
+ACTIVE = "active"
+
+# A rate's unit decides its class, and this table is the one place that decides it. `make status`
+# looks every rate's unit up here, and `slices.py check` fails on a `per_use` unit with no row.
+HOUR = "h"
+GB_MONTH = "GB-month"
+QUERY_HOUR = "query-hour"
+GB_PROCESSED = "GB processed"
+UNIT_CLASS = {
+    # An hour the resource exists or runs: an EC2 host, an interface endpoint and a public IPv4
+    # address (docs/PRICING.md 3, 7 and 8), and a Studio app while it is Pending, InService or
+    # Deleting, since only running apps bill (3, 8 and 10).
+    HOUR: PASSIVE,
+    # A GB stored for a month: a stopped host's EBS volume, and a space's volume with its app
+    # stopped (docs/PRICING.md 2 and 8). `make status` prints these as notes and totals none.
+    GB_MONTH: PASSIVE,
+    # Redshift Serverless compute: 0.36 USD per RPU-hour of query time, per second with a 60-second
+    # minimum, and 0.00 for a workgroup serving no query (docs/PRICING.md 5).
+    QUERY_HOUR: ACTIVE,
+    # A GB an interface endpoint processes, 0.01 USD beside its hourly rate (docs/PRICING.md 3, 7).
+    GB_PROCESSED: ACTIVE,
 }
 
 
@@ -263,11 +294,22 @@ class Slice:
     name: str  # the slice folder inside it
     layer: str  # P | D | E
     why: str  # what the slice holds, in one line - so a reader need not open it
-    usd_per_hour: float = 0.0  # 0.0 when nothing in the slice is metered by the hour
+    # Per HOUR the slice is up, besides its interface endpoints; 0.0 when nothing else in it bills
+    # by the hour.
+    usd_per_hour: float = 0.0
+    # The interface endpoints the slice declares, one Availability Zone each. A down line quotes
+    # them at ENDPOINT_HOUR each; an up line prices the ones its state holds, per AZ, so an apply
+    # that names an optional endpoint group is priced with it.
+    endpoints: int = 0
     # A host the slice creates only when an apply asks for it, as (resource address, USD/h) pairs:
     # usd_per_hour is the slice without them, and `make status` adds a pair's rate for each instance
     # of that address the state holds.
     optional_hosts: tuple[tuple[str, float], ...] = ()
+    # What the slice bills by use rather than by the hour, as (USD, unit) pairs, each unit a row of
+    # UNIT_CLASS: the warehouse's query-hour, an endpoint's GB. `make status` prints each pair on
+    # the slice's line and, in the active burn, each distinct pair once with the slices that bill it,
+    # never a sum and never a metered use.
+    per_use: tuple[tuple[float, str], ...] = ()
 
     @property
     def path(self) -> str:
@@ -287,13 +329,21 @@ class Slice:
 # Every slice on disk today. The [P] rows are free or nearly free at rest: five state
 # buckets and their keys (KMS is priced per key-month, docs/PRICING.md 2, so it is a floor
 # line and not an hourly one), two Identity Center / Organizations slices whose objects cost
-# nothing at all, and the foundation networks. The [D] and [E] rows carry `usd_per_hour`, and
-# `make status` meters both - the two [D] hosts bill while every [E] slice is down.
+# nothing at all, and the foundation networks. The [D] and [E] rows carry `usd_per_hour`,
+# `endpoints` and `per_use`, and `make status` meters both layers - the [D] hosts bill while
+# every [E] slice is down.
 #
 # usd_per_hour is copied from docs/PRICING.md 3, measured us-west-2 rates (Lesson 6), and
-# is the at-rest-while-up figure - per-GB processing is traffic, not time, and stays in the
-# stage's Cost section: interface endpoint 0.010/h each, NAT gateway 0.045/h + public IPv4
-# 0.005/h. Per account: endpoints x 0.010 + 0.050 where a NAT exists (egress_mode A).
+# is the at-rest-while-up figure: NAT gateway 0.045/h + public IPv4 0.005/h, a host by its
+# type. An interface endpoint bills ENDPOINT_HOUR per Availability Zone it sits in
+# (docs/PRICING.md 3 and 7, 0.010 USD per endpoint per AZ), counted from the state on an up
+# line and from `endpoints` on a down one. Per account: the endpoints, plus 0.050 where a NAT
+# exists (egress_mode A). Per-GB processing is traffic, not time, so it is a per_use rate:
+# ENDPOINT_GB, on every slice that declares endpoints (docs/PRICING.md 7, 0.01 USD/GB);
+# `slices.py check` fails on one without the other.
+ENDPOINT_HOUR = 0.010
+ENDPOINT_GB = ((0.01, GB_PROCESSED),)
+
 SLICES = [
     Slice("sandbox", "bootstrap", PERSISTENT, "state bucket + its KMS key (step 2)"),
     # Stage 6b step 4.2: the account was renamed, not vended, so this row replaced a
@@ -329,22 +379,30 @@ SLICES = [
     # Stage 3 pass 3. The endpoint counts are step 8.3's per-role lists: core 8 + the account's
     # extras. The NAT left at 6c step 5.1 and these three figures moved with it: each was
     # NAT 0.045 + its Elastic IP 0.005 + the endpoints, and each is now the endpoints alone,
-    # counted from the slice's own plan rather than from a list somebody might have edited
-    # (`terraform plan | grep -c aws_vpc_endpoint.interface`), at the measured 0.010/h per
-    # endpoint of docs/PRICING.md 8.
+    # `endpoints` below, counted from the slice's own plan rather than from a list somebody might
+    # have edited (`terraform plan | grep -c aws_vpc_endpoint.interface`), at ENDPOINT_HOUR.
     #
     # Sandbox's idle floor went **up**, 0.160 -> 0.180, because 5.2 has to enumerate what the NAT
     # used to cover silently, and that is the only axis on which it rises. Per gigabyte a NAT is
     # 0.045 against an interface endpoint's 0.010 (both measured, docs/PRICING.md 8), so design B
     # costs +0.020/h fixed here and saves 0.035 per GB: break-even ~0.57 GB/h, which one container
-    # pull passes in minutes. Estate-wide the fixed rate falls as well, 0.470 -> 0.390/h. This
-    # column is hourly only, so it cannot show the axis that decides the comparison.
+    # pull passes in minutes. Estate-wide the fixed rate falls as well, 0.470 -> 0.390/h. The
+    # per-GB axis that decides the comparison is ENDPOINT_GB, which `make status` prints and
+    # cannot meter.
     #
     # None of the three includes 5.3's optional groups: `bedrock-base` and `bedrock-agent` add
     # 0.020 each, `emr` 0.070, `mlflow` and `redshift` 0.010 each, only for an apply that names
-    # them, and a static rate that assumed them would over-report every session that does not.
-    # `make status` quotes this column; the flag's cost is in `make help`.
-    Slice("sandbox", "egress", EPHEMERAL, "18 interface endpoints (5.2) - no NAT", 0.180),
+    # them. `make status` prices an up slice by the endpoints its state holds, so a group is
+    # billed while it is up and a session without one is not over-reported; a down line quotes
+    # the count here. The flag's cost is in `make help`.
+    Slice(
+        "sandbox",
+        "egress",
+        EPHEMERAL,
+        "18 interface endpoints (5.2) - no NAT",
+        endpoints=18,
+        per_use=ENDPOINT_GB,
+    ),
     # Stage 9 step 4.3a re-cut it to VPC-Workloads' set (3.3a), the endpoints a job and a worker call;
     # Stage 19 step 4.4 adds `datazone` for the deployment project.
     Slice(
@@ -352,7 +410,8 @@ SLICES = [
         "egress",
         EPHEMERAL,
         "8 interface endpoints (St.9 4.3a, St.19 4.4) + DNS Firewall - no NAT",
-        0.080,
+        endpoints=8,
+        per_use=ENDPOINT_GB,
     ),
     # 12 since Stage 7 (2026-10-12): 6c 5.5's 13 plus `secretsmanager` (step 1.7), which the GitLab
     # host's bootstrap reads its leaf keys and gitlab-secrets.json through and the runner its
@@ -362,7 +421,8 @@ SLICES = [
         "egress",
         EPHEMERAL,
         "12 interface endpoints (5.5, 7 1.7, 7 dec 9) - no NAT",
-        0.120,
+        endpoints=12,
+        per_use=ENDPOINT_GB,
     ),
     # Stage 6c step 1.3a - VPC-Workloads' endpoint slice, zero NAT (D38). Stage 9 step 3.3a names
     # seven of its endpoints: sts, logs, kms, glue and lakeformation of the core (decision 12),
@@ -374,7 +434,8 @@ SLICES = [
         "workloads-egress",
         EPHEMERAL,
         "8 interface endpoints (St.9 3.3a, St.19 4.4) + DNS Firewall - no NAT",
-        0.080,
+        endpoints=8,
+        per_use=ENDPOINT_GB,
     ),
     # Stage 19 step 4.11 - the chain layer above the workflows the CI/CD CLI creates in each
     # deployment project: state machines, schedules and failure rules, which bill nothing at rest.
@@ -438,6 +499,13 @@ SLICES = [
     # measured 2026-11-21; var.instance_type in production/proxy/variables.tf). Since 2026-11-22
     # the slice's user data has a step (0), a 1 GiB swap file and update-motd masked, and the
     # build fits a t3.micro again; the rate stays t3.small's until the size is chosen.
+    #
+    # The row has no per_use rate. docs/PRICING.md 3 says an EC2 proxy has no per-GB processing
+    # charge, where a NAT gateway has one; 3 and 7 price internet data transfer out at 0.090 USD/GB
+    # past the free 100 GB a month, and peering at 0.01 USD/GB each way, across Availability Zones
+    # only. Production's Cost Explorer for October 2026 (docs/PRICING.md 7): same-AZ peering 73 GB
+    # each way billed 0, cross-AZ peering 0.08 GB at 0.01, internet out 0.58 GB billed 0. The lines
+    # are the account's, so the hub's share of them is unread.
     Slice(
         "production",
         "proxy",
@@ -634,20 +702,16 @@ SLICES = [
     ),
     # Stage 5b pass 1 - the compute half, and the whole point of the split.
     #
-    # usd_per_hour IS THE WORST CASE, NOT THE RATE, and it was 0.0 until 2026-09-20 cost 9.48 USD to
-    # correct. The argument for the zero was true and useless: Redshift Serverless bills 0.36
-    # USD/RPU-hour of QUERY time and nothing while idle, so an existing workgroup serving no query
-    # really is 0.00/h. What that reasoning missed is what `make status` is FOR - an operator asking
-    # "what is this session costing me" - and on the day one forgotten query ran for 6 h 33 min at
-    # base capacity, `make status` answered 0.0000 USD/h for the whole of it. An authored zero on the
-    # estate's most expensive object made its only runaway invisible to the estate's own burn meter.
-    #
-    # So the number here is 4 RPU x 0.36 = 1.44, the rate while a query IS running, and the column's
-    # meaning for this one row is a CEILING rather than an average. That over-reads a quiet session,
-    # which is the safe direction: the failure this row exists to prevent is an operator who reads
-    # 0.00 and stops looking. The real rate for a session is ./aws/warehouse.py's burn line, which
-    # reads ComputeSeconds - and note that the metric lands per HALF-HOUR interval, so a figure taken
-    # right after an expensive query under-reads it.
+    # The workgroup bills by use: Redshift Serverless charges 0.36 USD per RPU-hour of query time and
+    # nothing while idle (docs/PRICING.md 5), so its rate is per_use, 4 RPU x 0.36 = 1.44 USD per
+    # query-hour, and its hourly rate is 0.0. `make status` prints the 1.44 in the active burn for as
+    # long as the workgroup exists, queried or not, so the active burn reads zero only once `make
+    # down` has destroyed it. An hourly zero alone hid a runaway: on 2026-09-20 one forgotten query
+    # ran 6 h 33 min at base capacity, most of the 9.48 USD that sitting cost, while `make status`
+    # read 0.0000 USD/h. What a session actually ran up is ./aws/warehouse.py's burn line, which reads
+    # ComputeSeconds; the metric lands per half-hour interval, so a figure taken right after an
+    # expensive query under-reads it. The workgroup's own VPC endpoint, which Redshift creates in two
+    # AZs and no state holds, adds no endpoint hours to the bill (SUP-455).
     #
     # The other guards, and what each one turned out to be worth on 2026-09-20:
     #   the usage limit    UNPROVEN against this statement: breach_action = deactivate refused every
@@ -668,7 +732,7 @@ SLICES = [
         "warehouse-compute",
         EPHEMERAL,
         "the 4-RPU workgroup + its serverless-compute usage limit - no pause exists, so [E]",
-        usd_per_hour=1.44,
+        per_use=((1.44, QUERY_HOUR),),
     ),
     # Stage 9 step 9.1 - the governed class of D40's warehouse, the Sandbox pair copied into Production
     # with the same split and the same rank. [P] here is 0.0 for the same reason Sandbox's row is: the
@@ -680,15 +744,15 @@ SLICES = [
         "the governed Redshift namespace, its admin secret, 3 audit groups, the exec role + alarms",
     ),
     # Stage 9 step 9.4: the operator raises the compute by hand before the DDL job and takes it down
-    # after; awsds-deploy-prod cannot (the root SCP exempts InfrastructureAccess alone). The ceiling is
-    # Sandbox's reasoning, 4 RPU x 0.36 while a query runs. The slice reads production/warehouse/'s
+    # after; awsds-deploy-prod cannot (the root SCP exempts InfrastructureAccess alone). Its per_use
+    # rate is Sandbox's, 4 RPU x 0.36 per query-hour. The slice reads production/warehouse/'s
     # state, applied 2026-10-23, so `up` no longer holds it (refusal 9's table is empty).
     Slice(
         "production",
         "warehouse-compute",
         EPHEMERAL,
         "the 4-RPU governed workgroup + its serverless-compute usage limit - no pause exists, so [E]",
-        usd_per_hour=1.44,
+        per_use=((1.44, QUERY_HOUR),),
     ),
     # Stage 12 steps 1, 2 and 9 - a dashboard, alarms and quota alarms. Nothing here bills by the
     # hour: a dashboard and an alarm bill by the month past CloudWatch's free tier (three dashboards,

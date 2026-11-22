@@ -22,7 +22,8 @@
 #             ListProjects, GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
 #             sagemaker:ListDomains, DescribeDomain, ListTags, ListApps, ListImages,
 #             ListImageVersions,
-#             iam:ListRoles, GetRole,
+#             iam:ListRoles, GetRole, ListAttachedRolePolicies and ListRolePolicies on a flow
+#             environment's role (EXC-27),
 #             cloudformation:DescribeStacks, tag:GetResources, s3:GetBucketTagging,
 #             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
 #             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
@@ -40,6 +41,8 @@
 #     `deployment-production` and `Generative AI model governance`; `engineering` is retired
 #   - the step 3 deny Sids are DenySageMakerJobsOffVpc and DenySageMakerInstanceCeiling
 #   - the D13 boundary on project roles is named awsds-<env>-project-boundary (step 2)
+#   - a flow environment's own role, AmazonBedrockFlowServiceRole-*, is EXC-27 while its shape
+#     holds (awslib/flowrole.py)
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The behavioural proofs - a notebook reading the lake
@@ -55,7 +58,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import context, flowrole, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -908,6 +911,7 @@ def main(argv: list) -> int:
     # allows sts:AssumeRole on every role, so a trust that names the account's root or any
     # principal is a role the project's code may assume (US-12, TM-30).
     role_rows: dict = {}  # profile -> [(role name, boundary name or '-', how it was found)]
+    flow_shapes: dict = {}  # profile -> {unbounded flow role: what keeps it out of EXC-27}
     open_trust: dict = {}  # profile -> [(role name, whom its trust names)]
     roles_read: dict = {}  # profile -> how many roles' trust was read
     for p in INTERACTIVE_PROFILES + HEADLESS_PROFILES + (DATA_PROFILE,):
@@ -965,6 +969,23 @@ def main(argv: list) -> int:
             barn = (role.get("PermissionsBoundary") or {}).get("PermissionsBoundaryArn") or "-"
             found = "tag" if by_tag else "name"
             rows.append((name, barn.split("/")[-1], found))
+            if barn == "-" and name.startswith(flowrole.NAME_PREFIX):
+                listed = []
+                for sub, key, field in (
+                    ("list-attached-role-policies", "AttachedPolicies", "PolicyName"),
+                    ("list-role-policies", "PolicyNames", None),
+                ):
+                    lr = cli.run("iam", sub, "--role-name", name, "--output", "json", log=False)
+                    if not lr.ok:
+                        logerr(p, f"iam {sub} {name}", lr.stderr)
+                        listed = None
+                        break
+                    items = json.loads(lr.stdout or "{}").get(key, [])
+                    listed.append([i.get(field, "") for i in items] if field else items)
+                if listed is not None:
+                    flow_shapes.setdefault(p, {})[name] = flowrole.shape_problems(
+                        name, role.get("AssumeRolePolicyDocument"), listed[0], listed[1], own
+                    )
         role_rows[p] = rows
         open_trust[p] = loose
         roles_read[p] = n_read
@@ -1593,14 +1614,25 @@ def main(argv: list) -> int:
                 else "no blueprint-provisioned role exists yet - the check is unexercised here.",
             )
             continue
-        unbounded = [n for n, b, _ in rows if b == "-"]
+        # A flow environment's own role is EXC-27 while its shape holds (awslib/flowrole.py).
+        shapes = flow_shapes.get(p, {})
+        excepted = [n for n, b, _ in rows if b == "-" and n in shapes and not shapes[n]]
+        for n in excepted:
+            checks.note("US-8", f"role {n} in {p}", flowrole.NOTE)
+        unbounded = [n for n, b, _ in rows if b == "-" and n not in excepted]
         wrong = [n for n, b, _ in rows if b != "-" and BOUNDARY_NAME_FRAGMENT not in b]
         if unbounded:
+            outside = [f"{n}: {'; '.join(shapes[n])}" for n in unbounded if shapes.get(n)]
             checks.fail(
                 "US-8",
                 f"project-role boundary in {p}",
                 f"{len(unbounded)} blueprint-provisioned role(s) with NO permissions "
-                f"boundary ({', '.join(unbounded[:3])}...) - INT-15's mechanism is absent.",
+                f"boundary ({', '.join(unbounded[:3])}...) - INT-15's mechanism is absent."
+                + (
+                    f" Outside {flowrole.EXCEPTION_ID}'s shape: {' | '.join(outside)}."
+                    if outside
+                    else ""
+                ),
             )
         elif wrong:
             checks.note(
@@ -1610,10 +1642,12 @@ def main(argv: list) -> int:
             )
         else:
             by_tag = sum(1 for _, _, f in rows if f == "tag")
+            besides = f", besides {len(excepted)} under {flowrole.EXCEPTION_ID}" if excepted else ""
             checks.ok(
                 "US-8",
                 f"project-role boundary in {p}",
-                f"all {len(rows)} blueprint-provisioned role(s) bounded ({by_tag} found by tag)",
+                f"all {len(rows) - len(excepted)} blueprint-provisioned role(s) bounded{besides} "
+                f"({by_tag} found by tag)",
             )
 
     # US-11: each deployment target holds one project, born of its own profile, with every
@@ -2026,7 +2060,8 @@ What the checks are, and where each comes from:
   US-7   idle shutdown ENABLED on every Interactive domain, WITH the admin
          ceiling that bounds what a member may raise the timeout to (step 8.1)
   US-8   every blueprint-provisioned project role carries the D13 boundary
-         (step 2, INT-15 - presence half only)
+         (step 2, INT-15 - presence half only); a flow environment's own role
+         is noted while EXC-27's shape holds
   US-9   the step 3 deny Sids reach all six persona sets together (Lesson 14)
   US-10  running apps reported as the burn they are (conventions 6)
   US-11  each deployment target holds one project, born of its own profile, with every

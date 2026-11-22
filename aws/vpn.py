@@ -90,7 +90,7 @@ HOST_KEY_DENY_SID = "DenyValueReadExceptHostAndInfrastructure"
 # one scripts/tfhygiene/layers.py and docs/PRICING.md 3 price. The slice takes instance_type as
 # a parameter (t3.nano | t3.micro | t3.medium, vpn.md section S6), so a host that is not this
 # size is a deliberate selection and not a failure: VP-1 reports the type it found and passes.
-# The burn line of `make status` and the hourly rows of PRICING keep quoting the nano's rate
+# The passive burn of `make status` and the hourly rows of PRICING keep quoting the nano's rate
 # whatever is running, so this line is the only place the reader is told the two have parted
 # company (a t3.medium is eight times the rate).
 #
@@ -591,7 +591,7 @@ def main(argv: list) -> int:
             if itype != BASELINE_INSTANCE_TYPE:
                 drift.append(
                     f"the type is not the {BASELINE_INSTANCE_TYPE} baseline, so every HOURLY "
-                    "figure here and in `make status` understates the burn while it runs"
+                    "figure here and in `make status` understates the passive burn while it runs"
                 )
             if vsize.isdigit() and int(vsize) != BASELINE_ROOT_VOLUME_SIZE_GIB:
                 drift.append(
