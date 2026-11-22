@@ -554,6 +554,25 @@
 
 - Update dnf on an Amazon Linux instance without internet access — AL2023's default `mirrorlist=` URL points into the regional repository bucket itself (`al2023-repos-<region>-de612dc2`, the S3 dualstack hostname), so the S3 gateway endpoint carries the whole package path; only a repo file referencing `cdn.amazonlinux.com` needs internet (Stage 3): <https://repost.aws/knowledge-center/ec2-al1-al2-update-yum-without-internet>.
 
+- Amazon Linux 2023's Squid, read 2026-11-21 for the proxy host's replacement (Stage 12 step 2.2): the
+  AL2023.12 package list as of 2023.12.20261021 has `squid` `6.13-1.amzn2023.0.6`, full support to
+  2029-06-30; release 2023.12.20261112's core updated packages list `squid-6.13-1.amzn2023.0.7`; the
+  2023.12.20261120 release, the new image's, lists none:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261112.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261120.html>.
+
+- Amazon Linux 2023's memory floor, zram and update-motd, read 2026-11-22 for the hub hosts' sizes
+  (`SUP-405`, `SUP-406`): the system-requirements page gives 512 MB as the minimum, says a `dnf upgrade`
+  between some releases can need more, and turns zram swap on by default since AL2023.3 for instance types
+  under 800 MB, naming the nano sizes; the page on package updates names no update-motd; issue 441 on
+  AWS's AL2023 tracker (opened 2023-09-09, open) has `update-motd.service` refresh the message at a reboot
+  or once a day:
+  <https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html>,
+  <https://docs.aws.amazon.com/linux/al2023/ug/managing-repos-os-updates.html>,
+  <https://github.com/amazonlinux/amazon-linux-2023/issues/441>.
+
 - ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
 
 - VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.
@@ -580,9 +599,23 @@
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
 - Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
-  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
-  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
-  <https://www.squid-cache.org/Doc/config/acl/>.
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The pages for Squid
+  6.9 and 5.10, read 2026-11-21, give `acl aclname dstdomain [-n] .foo.com ...`, the flag before the
+  names, which `render-squid.sh.tftpl` writes on the allow-list planes for `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>,
+  <https://www.squid-cache.org/Versions/v6/cfgman/acl.html>,
+  <https://www.squid-cache.org/Versions/v5/cfgman/acl.html>.
+
+- Amazon EC2 user data — *"User data is limited to 16 KB, in raw form, before it is base64-encoded"*
+  (read 2026-11-21); the proxy host's rendered user data is 15,148 bytes with `TM-01`'s `-n`
+  (`log-stage-11-dlp.md`, 2026-11-21):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html>.
+
+- Amazon Linux 2023 release notes — the 2023.12.20260917 release, the proxy host's image, names no Squid
+  update, and the AL2023.12 package list describes 2023.12.20261021 (read 2026-11-21, the Squid row not
+  reached), so the host's Squid version is unread:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20260917.md>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>.
 
 - Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
   IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and
@@ -608,6 +641,12 @@
 - SageMaker IAM condition keys (`sagemaker:VpcSubnets`, `NetworkIsolation`, `InstanceTypes`, `VolumeKmsKey`): <https://docs.aws.amazon.com/sagemaker/latest/dg/security_iam_service-with-iam.html>.
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
+
+- SageMaker `DescribeApp` and ListApps's `AppDetails`, read 2026-11-21 for `SUP-229`: DescribeApp's
+  `CreationTime` says an application restarted within 24 hours of its last shutdown is an update that keeps
+  its metadata; `AppDetails` gives only the creation time:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeApp.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_AppDetails.html>.
 
 - SageMaker Pipelines (a D7 option): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
 

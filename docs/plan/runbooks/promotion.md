@@ -2630,6 +2630,8 @@ After 2026-11-22 01:59:59 UTC, the admin secret's first scheduled rotation in Pr
    request from `eighth-experimentation` and Stage 20 5.0's from `app-dbt-dev` on the listing the leg
    created, each approved by the Governance Manager once 4.12's membership is in; [Claude] each
    fulfilment read on both sides, then Stage 20 5.1's model, archive and tar over the link 5.0 writes.
+   When step 7 runs, 5.0's request waits for its `bundle` job: `app-dbt-dev`'s source imports the link
+   as an asset (`SUP-197`), which the bundle would carry and its guard refuse (Stage 20 8.6).
 6. [user] [Pull request #321](https://github.com/felipenoris/AWS-DataScience/pull/321) merged, its branch
    having taken `origin/main` by merge (it read `CONFLICTING` on 2026-11-20), so release G's leg ran the
    script it was read with; the mirror pushed at the merge, since the legs clone the scripts from it. The

@@ -73,8 +73,8 @@ module's arithmetic:
 
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
-| **WireGuard host** `awsds-prod-vpn` | VPC-Networking · public · az1 | `10.31.160.22` (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
-| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
+| **WireGuard host** `awsds-prod-vpn`, `t3.medium`: the tracked `instance_type.auto.tfvars`'s selection since 2026-11-21, D4's default being `t3.nano` (Stage 12 decision due 4) | VPC-Networking · public · az1 | `10.31.160.131`, read 2026-11-22 (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
+| **Squid proxy** `awsds-prod-proxy`, `t3.small`, the slice's default since 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.128`, read 2026-11-22 (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
@@ -123,7 +123,7 @@ module's arithmetic:
                          │  ONE internet-gateway route in the whole estate
                          ▼
         ┌──────────── VPC-Networking · 10.31.0.0/16 ─────────────┐
-        │  public az1:  WireGuard 10.31.160.22   Squid 10.31.160.181
+        │  public az1:  WireGuard 10.31.160.131  Squid 10.31.160.128
         │               wg0 10.90.0.1/24, fd90::1/64
         │  the ONLY route for 10.90.0.0/24, in this VPC's public table
         └───┬──────────────┬───────────────┬──────────────┬──────┘
@@ -172,12 +172,20 @@ Three paths, and reading them apart is what makes a failure diagnosable.
 |---|---|---|
 | **AWS APIs with an endpoint** | this VPC's interface endpoints, private DNS on | 0.010/h each + 0.010/GB |
 | **S3 and DynamoDB** | the `[P]` **gateway** endpoints, by prefix-list route | **free**, and this is where an ECR pull's layers come from |
-| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.micro`; **no per-GB processing charge at all** |
+| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.small`; **no per-GB processing charge at all** |
 
 **There is no fourth path.** With no default route, a name the app resolves and then tries to reach
 directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** from that VPC's own
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
+
+**A raw public address matches no name** (`TM-01`, controlled since 2026-11-22). The plane's
+`dstdomain` carries `-n` since the proxy's replacement of 2026-11-21, so Squid no longer matches a request
+naming an address by the name a reverse lookup of it returns, and the address falls to `deny all`. Without
+the flag it did: on 2026-11-21, from a space, `CONNECT 54.213.164.60:443`, an address of
+`airflow-serverless.us-west-2.api.aws` whose record is `ec2-54-213-164-60.us-west-2.compute.amazonaws.com`,
+read `200 TCP_TUNNEL` while that name is refused. On 2026-11-22 the same request read `403 TCP_DENIED`
+with the record unchanged, beside `pypi.org`'s `200` from the same space.
 
 **The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
