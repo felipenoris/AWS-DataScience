@@ -2231,3 +2231,71 @@ Data Governance (`awsds-infra-data`), Production (`awsds-infra-prod`) and Sandbo
   at its next run, 2026-11-23 at 02:43 (`SUP-197`); 8.6 deletes it before R2's tag.
 - **Left of 5.0**: the revocation, with 4.12's, after `promotion.md` §N.10's day 2. 5.1's model, its archive
   and its tar follow with nothing up.
+
+## 2026-11-22 — 5.1: the link read, the model on a branch no tag carries, the archive and the tar
+
+*Claude, in a session started by the orchestrating session, on the laptop with nothing up: reads as the
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account
+1) and `awsds-infra-prod` (Production), the offline tests, the lint and two builds. No write to AWS.
+Production's account id, which the link's `TargetTable` names, was compared by script and is not copied.
+Times UTC.*
+
+- **[Claude] The link and its target**, 5.1's command on `app_dbt` at 14:54:57, exit 0:
+
+  ```text
+  notional_by_desk	None	None	False
+  trades	None	None	False
+  trades_notional	app_etl	trades_notional	False
+  ```
+
+  `get-table` on the link: its catalog Sandbox's, `TargetTable` Production's catalog, `app_etl`,
+  `trades_notional`, `us-west-2`; `TableType` present and empty, `CreatedBy` empty, no `StorageDescriptor`,
+  `Parameters` or `CreateTime`. DataZone's `CreateTable` at 14:05:20, by the project role's
+  `AWSDataZone-Subscriptions` session in Sandbox's trail, named no table type: its `tableInput` holds `name`,
+  `retention` 0, `targetTable` and `isRowFilteringEnabled` `false`, as `eighth-experimentation`'s at 14:05:02
+  in `glue_db_blerpkhn9nj7o0`. The target, as `awsds-infra-prod`: `EXTERNAL_TABLE`, `table_type` `ICEBERG`,
+  updated at 04:52:00 under `deploy-production`'s `dev/data/catalogs/trades_notional`, with the columns
+  `trade_date` `date`, `desk` `string`, `instrument` `string`, `quantity` `int`, `price` `double` and
+  `notional` `double`.
+- **[Claude] The adapter and the link**, read in the lock's `dbt-athena` 1.11.1 after `uv sync --locked`:
+  `list_relations_without_caching`, the cache `dbt build` fills from `glue:GetTables`, skips only a table
+  with no `TableType` key, so the link enters the cache as a table of `app_dbt`; `get_table_type` raises
+  *"Table type cannot be None for table …"* on an empty type; in a build of this project its callers read
+  a model's own relation (the table materialization's old relation, `athena__drop_relation`, the location
+  and column reads), while `dbt docs generate`'s catalog reads every table of a schema. `run-dbt.sh` runs
+  `build`, so the link beside the models takes no part in a run; `docs generate` over `app_dbt` fails while
+  it stands (`SUP-453`).
+- **[Claude] The source and the model**, commit `2de42b7a` on the branch
+  `claude/stage-20-5.1-notional-by-desk-prod`, cut from `main` at `6c30f9be` (pull request #375's merge),
+  pushed, and never merged:
+  - `sources.yml`: `trades_notional`, a second table of the source `app_dbt`, its six columns described;
+  - `notional_by_desk_prod.sql`: `round(sum(notional), 2)` by `desk` from it, `materialized='table'`,
+    `table_type='iceberg'`, `native_drop=true`, as `notional_by_desk`; in `schema.yml` its description and a
+    `not_null` test on `desk`;
+  - `tests/test_dbt_project.py` holding both models, both sources and both tests; `dbt_project.yml`'s
+    comment, and the README's opening line, `transform` row and lineage paragraph;
+  - from `examples/app-dbt/`: `ruff check` *"All checks passed!"* and `ruff format --check` clean after one
+    reformat; `uv run pytest` *"88 passed"*; `awsds-workflows lint .` at `4401f91` with the pipeline's seven
+    instance types *"ok: 4 arquivo(s)"*, exit 0; pre-commit's hooks passed on the commit. The simulation
+    did not run: 1.3 runs it at a change of the lock or of `run-dbt.sh`, and neither changed.
+- **[Claude] The archive and the tar**, by 2.0's commands from `2de42b7a` with the README's `TOOL`,
+  `awsds-workflows` at `4401f91`, which the pipeline's `build-task-code` also pins; `$HOME/tmp/stage20` was
+  absent, so nothing was removed:
+  - `git archive` of `examples/app-dbt` at 15:01:34 (tree `46914522`): `source.tar`, 409,600 bytes, 52
+    members of which 37 files;
+  - `package-task` from 15:01:43 to 15:01:47, exit 0: *"code/app-dbt.zip: 26130142 bytes, 82846577
+    descompactados, para o CPython 3.12 em x86_64-manylinux_2_28"*; 1.4's check
+    `5103 82846577 ['0o100755', '0o100755']`; ten `.so` modules, no `boto3`, `botocore` or `yaml` at the
+    root, no bytecode, `testzip()` clean. SHA256
+    `3ee04adeaf600a736223b96f395e4c082f10c3bbb361c567e0aa1d99dd9914f3`;
+  - against an archive built the same way from `main` at `6c30f9be` in a scratch folder, 26,129,271 bytes
+    and 82,844,381 unzipped: one name more, `app_dbt/project/models/notional_by_desk_prod.sql`, and seven
+    entries apart, `dbt_project.yml`, `schema.yml` and `sources.yml`, and `METADATA`, `RECORD`,
+    `direct_url.json` and `uv_cache.json` in `app_dbt-0.1.0.dist-info/`; every dependency the same;
+  - the tar at 15:02:10, 2.0's `COPYFILE_DISABLE=1 tar --no-xattrs --no-acls --no-mac-metadata` from
+    `examples/`, exit 0: `app-dbt.tar`, 26,535,936 bytes, `52 38 []`; no pax header, the four scripts
+    `0o755`, and the archive inside byte-identical to the one built. SHA256
+    `b86bec1e9048e67cef1fe896ead3e470ec7e7adc8d65ff6d00c19dc434900ac0`.
+- **Left**: 5.2 and 5.3 on `promotion.md` §N.10's day 1, `$HOME/tmp/stage20/app-dbt.tar` checked in the
+  space against the digest above in place of 2.0's. The link's inventory asset, imported at the source's
+  next run (2026-11-23, 02:43), and pass 5's table asset leave `app-dbt-dev` before R2's tag (8.6).

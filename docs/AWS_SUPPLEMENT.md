@@ -1374,6 +1374,26 @@ entry is still true is the reading.
   2026-11-15 listed this session alone in Sandbox, so the line is its own. Where: the same log,
   2026-11-17.
 
+- `SUP-453` **A resource link a subscription's fulfilment writes reads back from `glue get-tables` and
+  `get-table` with `TableType` present and empty, `CreatedBy` empty and no `StorageDescriptor`,
+  `Parameters` or `CreateTime`; `dbt-athena` 1.11.1 caches it as a table of its schema, and its
+  `get_table_type` refuses it** (measured 2026-11-22 in Sandbox, Stage 20 5.1, on `app_dbt.trades_notional`,
+  the link `app-dbt-dev`'s subscription to Production's `trades-notional` wrote at 14:05:20 UTC). DataZone's
+  `CreateTable`, in Sandbox's trail as the project role's `AWSDataZone-Subscriptions` session, carried a
+  `tableInput` of `name`, `retention` 0, `targetTable` and `isRowFilteringEnabled` `false`, no table type;
+  `eighth-experimentation`'s link at 14:05:02, the same. At 14:54:57 `get-tables` answered the link with
+  `"TableType": ""` beside the two Iceberg tables' `EXTERNAL_TABLE`. The service model's text (`aws glue
+  get-table help`, aws-cli 2.37.12) gives `TableType` as the table's type, `EXTERNAL_TABLE` for what Glue
+  creates, `CreatedBy` a minimum length of 1, and says nothing of a link's fields. In `dbt-athena` 1.11.1,
+  read the same day from the lock's release: `list_relations_without_caching`, the cache `dbt build` fills
+  from `GetTables`, skips only a table with no `TableType` key, so the link enters the cache as a table;
+  `get_table_type` raises *"Table type cannot be None for table …"* on an empty type, and is called on a
+  model's own relation during `app-dbt`'s build and on every table of a schema by `dbt docs generate`'s
+  catalog. A
+  build beside a link runs; `docs generate` over the schema fails while the link stands, and an adapter
+  release whose cache classifies each table through `get_table_type` would fail the build as well. Where:
+  `log-stage-20-dbt-lineage.md`, 2026-11-22 (5.1).
+
 ## Lake Formation
 
 - `SUP-100` **`ram enable-sharing-with-aws-organization` both enables trusted access for `ram.amazonaws.com`

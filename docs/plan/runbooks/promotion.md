@@ -1220,8 +1220,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    with nothing up: the requests `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC;
    xxvi's portal half from 13:35 to 13:50 UTC, yes; the Governance Manager's approvals at 14:04:10 and
    14:05:14 UTC, each fulfilment `COMPLETED` within 61 s and read on both sides (Stage 19's and Stage 20's
-   logs); 4.12's consumer read from the query editor at 14:56:17 UTC, and xxiv read (Stage 19's log). Left:
-   Stage 20 5.1's model, its archive and its tar.
+   logs). Stage 20 5.1's model, its archive and its tar the same afternoon, the model on a branch no tag
+   carries (Stage 20's log); 4.12's consumer read from the query editor at 14:56:17 UTC, and xxiv read
+   (Stage 19's log).
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
    pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
@@ -2523,7 +2524,9 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 - **The subscriptions** (N.6 item 6): [user] Stage 19's pass 5 and Stage 20's read the product through
   `eighth-experimentation`'s and `app-dbt-dev`'s subscriptions, requested and approved with nothing up on
   the listing R1's Production leg created on 2026-11-22; [Claude] Stage 20 5.1's model, archive and tar
-  once 5.0's fulfilment names the resource link, before day 1.
+  once 5.0's fulfilment names the resource link, before day 1. Done 2026-11-22:
+  `$HOME/tmp/stage20/app-dbt.tar`, from `2de42b7a` on `claude/stage-20-5.1-notional-by-desk-prod`, a branch
+  no tag carries (Stage 20 5.1).
 - **N.9's day 2**: Stage 17's pass 4 serves the version 3.2 registered, approved on 2026-11-22.
 - **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
   up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
@@ -2574,8 +2577,8 @@ The blocks are the sections titled "The Sandbox warehouse sitting" in
    on 2026-11-20 as `eighth-experimentation`'s project role: `CreateModel`, `CreateEndpointConfig`,
    `CreateEndpoint`, `CreateTransformJob` and `CreatePipeline` `allowed` with the project's tag on the
    resource, and the GPU's endpoint configuration `explicitDeny` by the project boundary.
-8. Stage 20's pass 5, 5.2 and 5.3: the model over the subscribed table deployed and run from
-   `app-dbt-dev`'s space by 2.2's and 2.3's commands, its read and its graph read, then the listing's
+8. Stage 20's pass 5, 5.2 and 5.3: the model over the subscribed table deployed from 5.1's tar and run
+   from `app-dbt-dev`'s space by 2.2's and 2.3's commands, its read and its graph read, then the listing's
    *Lineage* tab as a member of another project. About 45 minutes.
 9. [user] Every space stopped and every portal tab closed, then the lowering (N.10.5). 5.1's grants, the
    copy and both subscriptions stay for day 2, whose 2.1 reads the copy and 3.3 the read in place.
@@ -2769,9 +2772,9 @@ bound it stay N.6's.
 | 2026-11-21, ran | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
-| 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments; Stage 20 5.1 left | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
+| 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
-| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | Stage 20 5.1's tar; item 6's two approvals done 2026-11-22 |
+| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
 
@@ -2927,7 +2930,10 @@ Each reading is in the log of the stage that owns it.
   `my-data-product` granted to it by its owner (6f's log). In the afternoon, Stage 19's xxvi portal half
   (13:35 to 13:50 UTC) and both approvals as the Governance Manager (14:04:10 and 14:05:14 UTC), each
   fulfilment read on both sides with `catalog.py`, `datalake.py` and `deploytargets.py` passing (Stage 19's
-  and Stage 20's logs).
+  and Stage 20's logs). Then Stage 20 5.1: the link `trades_notional` read in `app_dbt`, the model
+  `notional_by_desk_prod` on `claude/stage-20-5.1-notional-by-desk-prod` at `2de42b7a`, a branch no tag
+  carries, 88 tests passing and the lint `ok`, and from it `$HOME/tmp/stage20/app-dbt.tar`, SHA256
+  `b86bec1e…` (Stage 20's log).
 - **R2**: #321's branch took `origin/main` at `77fc285a` by merge (`e6538fb0`, 29 commits, no conflict), its
   `--self-check` printing every stage of the four applications `ok` and `make check` passing (Stage 20's
   log). `awsds-workflows lint` at `4401f91`, the pin each application's next tag takes, reads `ok` for
