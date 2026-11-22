@@ -274,7 +274,7 @@ custom tag to a pipeline, add the prefix `ProjectUserTag` to the tag name."* Eac
 job created as the pipeline's role, in the session `sagemaker-pipeline-<execution id>-<step name>`, so
 each step's arguments carry the boundary's settings. The visual editor writes none of them: it shows
 the project's network and key greyed, writes the key into the output alone, and the boundary refuses
-its training job (5.3, 2026-11-22). A step's arguments name no `AmazonDataZone*` tag, and each job takes
+its training job (5.3, 2026-11-22, `SUP-468`). A step's arguments name no `AmazonDataZone*` tag, and each job takes
 the pipeline's tags (`SUP-467`). `examples/sandbox-ml/pipeline/definition.json` carries the settings and
 ran on 2026-11-22 to the registry's second version.
 
@@ -371,8 +371,8 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   2026-09-10).
 - **A portal form is only as specified as its fields** (Lesson 16). JumpStart's *Train* and *Create
   endpoint* are unread against the settings (0.7, 2.4, 4.2). The pipeline editor writes none of them,
-  and the boundary refuses its training job (5.3, 2026-11-22). The paths known to carry them are an API
-  call from a notebook and a workflow task's `config`.
+  and the boundary refuses its training job (5.3, 2026-11-22, `SUP-468`). The paths known to carry them
+  are an API call from a notebook and a workflow task's `config`.
 - **Serverless inference is refused.** A serverless endpoint's model takes no `VpcConfig`, so
   `DenySageMakerJobsOffVpc` is expected to refuse its `CreateModel` in Sandbox (4.4, unmeasured).
 

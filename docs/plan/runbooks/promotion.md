@@ -2478,7 +2478,7 @@ is owed to a later sitting with `bedrock-base` raised.
 and 4, and step 3 but 10.4's reading 6, which the user deferred at about 21:26 UTC to step 2's sitting
 (`SUP-466`), both switches back to `false` at 21:27:37. Pass 5's pipeline from the SDK ran to the
 registry's second version; the visual editor's two executions were refused by the project boundary, its
-definition writing none of the boundary's four settings (Stage 17 verification xii). Step 2 did not run,
+definition writing none of the boundary's four settings (Stage 17 verification xii, `SUP-468`). Step 2 did not run,
 the user's decision. Stage 17's pass 4, offered after step 4, waits for a later sitting, the user's word at
 about 22:25 UTC.
 

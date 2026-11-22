@@ -3265,6 +3265,40 @@ entry is still true is the reading.
   instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
+- `SUP-468` **SageMaker Unified Studio's visual pipeline editor writes no network setting and no volume key
+  into a step: its *Security* settings show the project's VPC, subnets, security group and key greyed, and
+  the definition carries the key in the output alone; a channel's displayed *S3 data type* default is not
+  written either** (measured 2026-11-22 in Sandbox, Stage 17 5.3, in `eighth-experimentation`'s portal as
+  the Data Scientist User).
+  - The forms: a step's *Advanced settings* hold *Caching*, *Retry* and *Security*. *Security* shows the
+    project role, `vpc-00dca74a35159b11c`, the two subnets, `sg-0fee1c059b82e3562` and the project key,
+    greyed. No field sets network isolation or inter-container encryption.
+  - A pipeline with one *Train model* step: *File* → *Save* asked for no name, and `CreatePipeline` at
+    22:45:27Z named it `Pipeline-1795387181754`, the create page's opening time in epoch milliseconds. The
+    caller was the project role in the person's session, from the browser with no `vpcEndpointId`, and the
+    pipeline carries the portal's four tags, `AmazonDataZoneProject`, `AmazonDataZoneDomain`,
+    `AmazonDataZoneScopeName` and `AmazonDataZoneUser`. The definition holds `OutputDataConfig.KmsKeyId`, and
+    no `VpcConfig`, no `VolumeKmsKeyId` and neither flag.
+  - The first execution's step failed with no job request: *"ClientError: Failed to invoke
+    sagemaker:CreateTrainingJob. Error Details: 1 validation error detected: Value null at
+    'inputDataConfig.1.member.dataSource.s3DataSource.s3DataType' failed to satisfy constraint: Member must
+    not be null"*. The channel's form had shown `S3Prefix`, its default. Another type chosen and `S3Prefix`
+    again, then *Save*, wrote it: `UpdatePipeline` at 22:48:34Z, version 2.
+  - The second execution's training job was refused at 22:49:22Z: *"… is not authorized to perform:
+    sagemaker:CreateTrainingJob on resource: …:training-job/pipelines-rl26r4j8ychr-Training-1C268-TomRXvYbLk
+    with an explicit deny in a permissions boundary:
+    arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"*. The request lacked the four
+    settings, so four of the boundary's statements match it, and the wording names none (Lesson 20).
+  - Entering the editor created no MLflow App: two apps before and after it (`ML-7`) and no
+    `CreateMlflowApp`, where the SageMaker AI guide's *Add integration* page, read 2026-11-21, says *"A
+    default MLflow application will be created when you enter the pipeline visual editor."* AWS's pages
+    were not read for the forms' fields.
+  - Under a boundary that requires the four settings, a pipeline authored in the editor is admitted and its
+    jobs are refused. The path that carries them is a definition from a notebook
+    (`examples/sandbox-ml/pipeline/definition.json`, `SUP-467`).
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
 ### Catalog, data sources and subscriptions
 
 - `SUP-191` **The portal's *Publish to Catalog* on a Glue table writes a data source with business-name
