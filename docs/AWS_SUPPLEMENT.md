@@ -950,9 +950,13 @@ entry is still true is the reading.
   for its dnf above the system's own use, which a t3.micro's 913 MiB hold with little to spare, and about
   twice that if update-motd's dnf parses the cold cache at the same time (inferred: on the nano the two
   were killed 23 s apart, and did not run together - the first kill's task table lists one `dnf` and no
-  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host that lost its first boot is repaired by a replacement, not a resize
-  (`SUP-061`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
-  `terraform-live/production/proxy/variables.tf`; `terraform-live/production/vpn/instance_type.auto.tfvars`.
+  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host
+  that lost its first boot is repaired by a replacement, not a resize (`SUP-061`). A 1 GiB swap file
+  written before the first dnf, with update-motd masked, carries the install on a nano: on 2026-11-22 a
+  t3.nano of the same image finished it in 65 s, `/swapfile` at priority -2 beside the zram at 100, and
+  logged no OOM line (`wireguard-v0.8.1`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
+  `terraform-modules/wireguard/main.tf`; `terraform-live/production/proxy/variables.tf`;
+  `terraform-live/production/vpn/instance_type.auto.tfvars`.
 
 ## Systems Manager
 
@@ -5226,6 +5230,21 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   can plan no change at all while no share is visible; it planned again once the producer had re-granted the
   share and its authorization read `AUTHORIZED`. Where: `log-stage-09-deployment-targets.md`, 2026-10-26;
   `terraform-live/data-governance/data/warehouse-share.tf`; `runbooks/promotion.md` §N.4a.
+
+- `SUP-407` **`aws_instance` refuses a `user_data` over 16,384 bytes at plan, counts bytes rather than
+  characters, and prints the whole value in its error** (measured 2026-11-22, `hashicorp/aws` 6.60.0).
+  The schema check reads *"expected length of user_data to be in the range (0 - 16384), got "* followed
+  by the user data itself: `production/proxy/` padded to 16,385 bytes printed 303 lines, 17,975 bytes of
+  plan output. Offline, a literal of 8,193 characters and 16,385 bytes failed `terraform validate`, and
+  one of 16,384 ASCII bytes passed. `validate` runs the check only on a value it knows: a user data
+  rendered from a variable or a data source is unknown there and passes, and the same value fails at
+  plan. An over-limit user data therefore stops a replacement at plan, before the destroy. A `lifecycle`
+  precondition on the instance is evaluated before the check: with one, the padded plan stopped on
+  *"Resource precondition failed"* alone. The provider's page for `aws_instance` states no limit on
+  `user_data`; EC2's page states 16 KB before base64. The same refusal stopped `wireguard-v0.8.0`'s plan
+  at about 16,432 bytes that day. Where: `log-stage-06c-networking-hub.md` and
+  `log-stage-12-observability-finops.md`, 2026-11-22; `terraform-live/production/proxy/main.tf`;
+  `terraform-modules/wireguard/main.tf`.
 
 ### The `awscc` provider and Cloud Control
 
