@@ -4777,6 +4777,13 @@ entry is still true is the reading.
   the pair grants `AddTags` too, so the pass does not separate whether `CreateTrainingJob` with its tag
   is authorized as `AddTags`, as the processing job's create is. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-22 in Sandbox (Stage 17 5.1, the first `pipeline.py upsert`, from `jup` as
+  `eighth-experimentation`'s role): `DescribePipeline` of the free name `ml-demo-pipeline` was refused at
+  21:56:03, *"no identity-based policy allows the sagemaker:DescribePipeline action"*. v48's
+  `SageMakerDescribeUpdateDeletePermissions` scopes `DescribePipeline`, `UpdatePipeline` and
+  `StartPipelineExecution` to the caller's project tag, while `SageMakerListPermissions` grants
+  `ListPipelines` on the principal tag alone, so the script looks the name up with `ListPipelines`. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-268` **The Amazon provider 9.32.0's SageMaker and Glue operators read the job name before they create
   the job, and count only one error code as absent** (read in the provider's code at

@@ -75,13 +75,10 @@ def upsert(values: dict) -> int:
         "PipelineDescription": "Stage 17: the churn model prepared, trained, checked, registered",
         "RoleArn": role_arn(values),
     }
-    try:
-        sagemaker.describe_pipeline(PipelineName=PIPELINE)
-        exists = True
-    except ClientError as err:
-        if "does not exist" not in refusal(err):
-            raise
-        exists = False
+    # The blueprint grants DescribePipeline only on a pipeline tagged with the caller's project, so a
+    # describe of a free name is refused (SUP-267); ListPipelines carries no resource condition.
+    listed = sagemaker.list_pipelines(PipelineNamePrefix=PIPELINE)["PipelineSummaries"]
+    exists = any(p["PipelineName"] == PIPELINE for p in listed)
     try:
         if exists:
             answer = sagemaker.update_pipeline(**request)
