@@ -397,6 +397,10 @@
   <https://developer.hashicorp.com/terraform/cli/commands/plan>,
   <https://developer.hashicorp.com/terraform/cli/commands/apply>.
 
+- `hashicorp/aws` 6.60.0's page for `aws_instance` (read 2026-11-22, in its source): `user_data` is
+  described with no size limit, while the provider refuses more than 16,384 bytes at plan (`SUP-407`):
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.60.0/website/docs/r/instance.html.markdown>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
