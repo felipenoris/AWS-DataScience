@@ -1842,3 +1842,15 @@ id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
   statement, `scp-battery.md` and `POLICIES.md` follow. The `identity/org-policies` plan, saved again:
   `0 to add, 2 to change, 0 to destroy`, `awsds-org-scp-baseline` 3251 → 3460 bytes (the three Fable 5.2
   ARNs) and `awsds-org-scp-ou-interactive` 1551 → 1956 (the six 5.5 ARNs).
+
+### The three agreements
+
+- **[user] Accepted the agreements for `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5` and
+  `anthropic.claude-haiku-5-5`**, from the laptop's CLI as the infrastructure user through
+  `awsds-infra-sandbox-1`, one `create-foundation-model-agreement` per model, each with the offer token
+  `list-foundation-model-agreement-offers` returned. CloudTrail carries Opus 5.5's at 02:12:42.
+- **[Claude] Opus 5.5 read `AVAILABLE` at 02:13:31** in `us-west-2`, `us-east-1` and `us-east-2`, Sonnet and
+  Haiku 5.5 `PENDING` in all three; **both `AVAILABLE` by 02:14:13**, and all nine readings `AVAILABLE`
+  right after. `./aws/bedrock-scope.py` on the branch's SCP: `BS-1` to `BS-7` pass, `BS-5` with six models
+  `AVAILABLE`; `BS-8` notes Sonnet 4.5 `LEGACY`. No invocation yet: decision 15's `NotResource` in AWS
+  still refuses the 5.5 ids until the `identity/org-policies` apply.

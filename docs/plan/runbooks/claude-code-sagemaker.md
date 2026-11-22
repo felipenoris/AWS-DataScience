@@ -384,7 +384,7 @@ The model ids this estate has accepted, and the ones it would accept for the sco
 | current | `anthropic.claude-opus-5`, `anthropic.claude-sonnet-5` | agreements accepted 2026-09-12; **refused for this account**, see below |
 | previous | `anthropic.claude-opus-4-5-20251101-v1:0`, `anthropic.claude-sonnet-4-5-20250929-v1:0` | agreements accepted 2026-09-12; **invocable, and the scoped set since decision 14** |
 | either way | `anthropic.claude-haiku-4-5-20251001-v1:0` | agreement accepted 2026-09-12; invocable |
-| next (decision 17) | `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5` | **not accepted** (read 2026-10-11, `NOT_AVAILABLE`); accepting them is decision 17's step 2, and whether the gate below refuses them is unmeasured |
+| next (decision 17) | `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5` | agreements accepted 2026-11-22, `AVAILABLE` in the three routed Regions within two minutes; whether the gate below refuses them is unmeasured until decision 15's `NotResource` names them (decision 17's step 3) |
 
 **After-reading.** The status goes `NOT_AVAILABLE` → `PENDING` → `AVAILABLE`. It settled in seconds
 for one model and took minutes for another, so poll rather than assume:
