@@ -4412,3 +4412,8 @@ UTC.
   non-filterable. S3 Vectors' limits page caps a filterable string value at 2 KB. Its metadata-filtering
   page says a key declared non-filterable cannot become filterable later. The IDE's index leaves
   `AMAZON_BEDROCK_METADATA` filterable, and the form exposes no index setting (`SUP-410`).
+- **[Claude] The documents against their status**, counted in the repository's copies at 01:45: the two
+  indexed runbooks hold one Markdown table each (`buildbox.md` 1,187 bytes, `break-glass.md` 19,464), and
+  each of the 18 that failed holds two or more, `security-hub.md` (10,432 bytes) among them. Neither the
+  file's size, its largest table (750 to 8,099 bytes among the failures) nor its longest line separates the
+  two groups. This is a correlation over 20 files, not a cause any reading names.

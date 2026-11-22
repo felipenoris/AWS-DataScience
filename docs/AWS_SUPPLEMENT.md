@@ -3528,8 +3528,10 @@ entry is still true is the reading.
   read *"Invalid record for key '<uuid>': Metadata value is invalid: exceeds 2048 byte string limit
   (Service: S3Vectors, Status Code: 400 …)"*, and each failed document's `statusReason` read *"The document
   was not indexed. No content could be extracted from it, or processing ended before it completed."*
-  Neither reading names the key that exceeded. A knowledge base the IDE creates on S3 Vectors keeps this
-  index for its life. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  Neither reading names the key that exceeded. The two indexed runbooks hold one Markdown table each and
+  the 18 others two or more, a correlation read from the files, not a cause. A knowledge base the IDE
+  creates on S3 Vectors keeps this index for its life. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
 
 ## SageMaker AI spaces and images
 
