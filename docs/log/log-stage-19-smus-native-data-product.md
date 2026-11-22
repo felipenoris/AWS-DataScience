@@ -4633,3 +4633,114 @@ Governance Account` (`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-s
   before the request; only the approval has to follow it. Left: xxvi's portal half, then the
   approval by the Governance Manager as `subscription-approver`, then [Claude]'s reads of the fulfilment on
   both sides.
+
+## 2026-11-22 — 4.12's approval after xxvi's portal half, and the fulfilment read on both sides
+
+*The user opened a Chrome profile signed in as the Governance Manager User and handed it to the side
+session that guides the Governance Manager's acts, in its chat: *"abri uma sessão no chrome como governance
+manager para você realizar as leituras."* That session's Claude drove the profile, 13:35 to 13:50 for xxvi's
+portal half and 14:03 to 14:06 for the approvals, reading AWS as `awsds-infra-data` and `awsds-infra-prod`;
+the bullets marked "side session" are its notes. This session read the fulfilment as the infrastructure
+user with `InfrastructureAccess` in Data Governance (`awsds-infra-data`), Production (`awsds-infra-prod`)
+and Sandbox Account 1 (`awsds-infra-sandbox-1`), 14:07 to 14:25, nothing up. Times UTC.*
+
+- **[user] The approvals' word**, in the side session's chat, answering *"Posso aprovar os dois pedidos como
+  Governance Manager?"*: *"Autorizo aprovar ambos"*. This session was told before the first click.
+- **[Claude, side session] What `deploy-production` shows the Governance Manager**: the whole side menu,
+  Overview to Manage, so the designation hides no entry. *Members*: four, the Governance Manager as *"You"*
+  with `subscription-approver`, beside the two owner groups and the project role; its own row reads *"You
+  cannot change your own designation."*. *Your designation*: *"Subscriptions: Manage subscription
+  approvals"*, *"Catalog: Read only actions"*, *"DataAgent: All actions"*. *Manage* holds Govern and Catalog
+  management and no Domain management; *Subscription requests* lists both requests on `trades-notional` as
+  *Pending*.
+- **[Claude, side session] What it refuses**: Data → Catalogs, Repositories, the query editor's data panel,
+  Inference endpoints, Training jobs and Feature Store answer *"User is not permitted to perform operation:
+  ListConnections DesignationPolicy does not allow access."*, and no editor pane opens. *Files*: *"Failed to
+  fetch folder"*. The asset's *Preview data*: *"Unable to preview data: no Athena connection with a query
+  result location was found."* ML pipelines, JupyterLab, AI apps and Code Spaces answer with the project
+  profile's messages, not the designation's.
+- **[Claude, side session] The trails behind those pages**: in Data Governance, 13:33:18 to 13:49:44, 1,126
+  DataZone calls in the Governance Manager's session of `awsds-data-studio-domain-execution`
+  (`user-e8a1f320-…`); every project-scoped `ListConnections` was `AccessDenied` (196), the domain-scoped
+  ones answered, and no `GetEnvironmentCredentials` ran. In Production from 13:33, no `AssumeRole` into
+  `deploy-production`'s project role carried the Governance Manager's id; the two at 13:47:43 were
+  DataZone's `AWSDataZone-Subscriptions` sessions reading the table while the asset page was open.
+- **[Claude, side session] The Data Agent (`TM-23`)**: no entry point, since it lives in the editor pane that
+  never opens and in a notebook, which was not created; no `StartConversation`, `SendMessage` or
+  `GenerateCode` in either trail. The parameter the browser read,
+  `/amazon/datazone/genAI/dzd-d8yrvx1ko7im6o/dataAgent/enabled`, answers `ParameterNotFound` to the
+  infrastructure user.
+- **xxvi's portal half: yes.** The designation stops the Governance Manager at `ListConnections`, before any
+  credential: the portal never hands it the project role, and no query runs. The members view, the
+  catalog's reads and the subscription requests work. Decision 15 (d) stands, and (a)'s
+  `PROJECT_CONTRIBUTOR` is not called for.
+- **[Claude, side session] The Playground's side effect**: opening the domain's *Playground* at about
+  13:44:38 sent two `CreateSubscriptionRequest` in the Governance Manager's session, the user the principal,
+  on Claude Haiku 4.5's inference-only listing `6wxl6t4zdypvkg` (asset `5m515zlzts23o0`, owned by
+  `GenerativeAIModelGovernanceProject`), with nothing clicked but the menu's link. **[Claude]** read them
+  back at 14:23: requests `6rvesr2xvm0sr4` and `bofaxdia74jz80`, `ACCEPTED` at creation with no reviewer;
+  subscriptions `3x9t8oblwdwwpc` and `c8euiy78k0c368` `APPROVED`, sharing the grant `3sl4d05dcaxe6o`,
+  `COMPLETED` 13:44:40.928 with no target. The Data Scientist User holds the same pair on that listing since
+  2026-10-19 21:12:18 (`4is4lhxpyl2zyo`, `b4tyslseoa3zm8`). No model was invoked (`SUP-452`). Whether the
+  Governance Manager's pair stays is the user's word.
+- **[Claude, side session] The approval panel**: *View request* opens *"Review subscription request"*:
+  *Approve*, selected by default, or *Reject*, an optional decision comment of up to 150 characters, *Data
+  permission* *"Read-only"*, and *Save*. On this data product's listing it offers no *Full access* or
+  *Filtered access*, which `catalog.md`'s approval of 2026-11-17 described.
+- **[Claude, side session] 4.12's approval**: `6gtjmvdzma9n9s`, comment *"Approved for Stage 19 4.12 by the
+  Governance Manager (subscription-approver)."*, saved at 14:04:10. Stage 20 5.0's followed at 14:05:14
+  (Stage 20's log).
+- **[Claude] Data Governance**: the request `ACCEPTED`, `reviewerId` the Governance Manager's profile
+  `e8a1f320-…`, updated 14:04:10.244. `AcceptSubscriptionRequest` at 14:04:10 as the domain execution role in
+  the session `user-e8a1f320-…`, no error; that session's only writes from 13:50:03 to 14:09:46 are the two
+  approvals, among 172 events. Subscription `3yzd1cn5n0sumo` `APPROVED`; grant `5wcj37nf8fh4wg` created
+  14:04:11.934 and `COMPLETED` at 14:05:12.679, 61 s, target `3qjec3ymbu5p5c`, its entity the asset listing
+  `5hpftif3nnoj2o` (`SUP-363`), the asset `da1fycta6l71n4` at revision 6 `GRANTED`.
+- **[Claude] Production's grant**: `BatchGrantPermissions` at 14:04:46 by `deploy-production`'s project role
+  in an `AWSDataZone-Subscriptions` session through `datazone.amazonaws.com`: `SELECT` on
+  `app_etl.trades_notional` to Sandbox's `IAMPrincipals` under
+  `context.datazone.projectId=="avhvbqn37ty7m8"`, no grant option, `CROSS_ACCOUNT_VERSION` `5` in the entry's
+  parameters, listed at 14:04:45.266 beside the project role's two rows. The account's settings did not
+  move: `CROSS_ACCOUNT_VERSION` `4`, `SET_CONTEXT` `TRUE`, three administrators,
+  `AllowFullTableExternalDataAccess` unset.
+- **[Claude] Production's share and catalog policies**: `ram:CreateResourceShare` at 14:04:45 by the same role
+  and session kind, `LakeFormation-V5-2Y5MBO5ADP`, `allowExternalPrincipals` false, on `catalog`,
+  `database/*` and `table/*/*` with the three ReadWrite permissions, its principal Sandbox's account,
+  compared and not printed. Three `glue:PutResourcePolicy` at 14:04:46, one per resource, `enableHybrid`
+  `TRUE`, each one statement allowing Sandbox's account 19 table and partition actions, `GetTable` to
+  `DeleteTableVersion`, with `GetUserDefinedFunctions` added on `catalog` and `database/*`, under
+  `aws:PrincipalOrgID`, and `table/*/*`'s also under `glue:LakeFormationPermissions` `Enabled`. 4.12's
+  *"three statements in Production's Data Catalog resource policy"* are these three per-resource policies:
+  `glue get-resource-policy` answers *"Policy not found"*, and `glue get-resource-policies` lists them
+  (`SUP-195`, `SUP-099`). Production owns six shares, the five `Resource Share From Policy Created by RAM`
+  of its model package groups and this one.
+- **[Claude] Sandbox**: the share `ACTIVE` among the received ones. `glue:CreateTable` at 14:05:02 by
+  `eighth-experimentation`'s project role in an `AWSDataZone-Subscriptions` session: the link
+  `trades_notional` in `glue_db_blerpkhn9nj7o0`, to Production's `app_etl.trades_notional`, beside the link
+  `trades` of 2026-10-22. `BatchGrantPermissions` at 14:05:03, `DESCRIBE` on the link to `IAMPrincipals` and
+  to `arn:aws:identitystore:::user/*` under the project's condition, no failure; `list-permissions` shows the
+  first and the project role's `ALL`, `DESCRIBE`, `DROP` with grant option, never the second (`SUP-109`).
+- **xx's 4.12 half: yes**: the fulfilment completes with Production's `AllowFullTableExternalDataAccess` off.
+- **[Claude] `./aws/catalog.py`**, 14:13 to 14:17, every check passed. `CT-10`, `CT-11` and `CT-12` pass on
+  the lake road; on the product road `CT-17` explains the 15 grants on `app_etl.trades_notional` and
+  `mydatabase.house-price`, three of them fulfilments of approved subscriptions, `CT-15` and `CT-18` pass,
+  and `CT-16` notes two approved subscriptions to a deployment project's listing, each a project's request
+  a person among its members approved. `./aws/datalake.py` and `./aws/deploytargets.py`, 14:21 to 14:24: 23
+  checks pass with 9 notes, `DL-7` counting 11 shares out and no pending invitation, and 45 pass; each exits 1
+  on the profiles of the other SSO sessions, which hold no live token.
+- **[Claude] The register** (decision 11 (b)): Production's fulfilment grants, its share and its catalog
+  policies written as three rows by class in `AWS_STATE.md`'s Lake Formation grant register.
+- **Left of 4.12**: the consumer's read from `eighth-experimentation`'s query editor with no space, then
+  xxiv's `GetDataAccess` in Production's trail; the revocation, with Stage 20 5.0's, after `promotion.md`
+  §N.10's day 2 (2.5).
+
+## 2026-11-22 — The Governance Manager's Playground subscriptions kept, the user's decision
+
+*The user answered in the chat of the side session that guides the Governance Manager's acts, which relayed
+the answer to this session; Claude read the objects as the infrastructure user with `InfrastructureAccess`
+in Data Governance (`awsds-infra-data`), no AWS write. Times UTC.*
+
+- **[user] The decision**, answering *"Mantenho as duas assinaturas automáticas ao Haiku 4.5?"*: *"Manter"*.
+- **[Claude] The objects**, read at 14:30: the subscriptions `3x9t8oblwdwwpc` and `c8euiy78k0c368` on
+  `6wxl6t4zdypvkg`, `APPROVED`, unchanged since 13:44:38 and 13:44:39 (`SUP-452`). Nothing changes in AWS,
+  and the waiting list's row goes.

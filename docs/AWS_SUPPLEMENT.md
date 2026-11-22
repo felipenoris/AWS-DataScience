@@ -3217,7 +3217,14 @@ entry is still true is the reading.
   `LakeFormation-V5-ZKUYXYESG4` and the five per-resource policies keeping their update times and hashes, and
   the grant read `COMPLETED` 16 s after the approval, against 63 s for the first. The same night inside one
   account (`house-price` into `test-experimentation`): the owner's grant 32 s after the request, the link 11 s
-  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22).
+  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22). Read in Production the same
+  day (Stage 19 4.12 and Stage 20 5.0, a deployment project's product to two Sandbox projects, Production's
+  `CROSS_ACCOUNT_VERSION` at 4): the first fulfilment wrote the share `LakeFormation-V5-2Y5MBO5ADP` at
+  14:04:45Z, the grant with `CROSS_ACCOUNT_VERSION` 5 and three per-resource policies at 14:04:46Z, each
+  from `deploy-production`'s project role, and read `COMPLETED` 61 s after the grant's creation; the second,
+  on the same listing, one `BatchGrantPermissions` and no RAM or Glue call, `COMPLETED` 4.5 s after its
+  grant's creation (`log-stage-19-smus-native-data-product.md` and `log-stage-20-dbt-lineage.md`,
+  2026-11-22).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3860,6 +3867,22 @@ entry is still true is the reading.
   runs its previous definition, a `GetFlow` after *Save* reads the edit as lost, and every test is a stack
   update as the provisioning role. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
   `runbooks/bedrock-generative-ai.md` §B.
+
+- `SUP-452` **Opening the portal's domain-level *Playground* subscribes the signed-in user to its default
+  model's inference-only listing, twice, with no approval** (measured 2026-11-22 in Data Governance, Stage
+  19 xxvi). The Governance Manager User, a member of `deploy-production` under a custom designation that
+  withholds `CreateSubscriptionRequest`, opened *Playground* (`/bedrock/playground/explorer`) from the side
+  menu and clicked nothing else. At 13:44:38.941Z and 13:44:39.531Z the portal sent two
+  `CreateSubscriptionRequest` as the domain execution role in the user's session, the user the subscribed
+  principal, on Claude Haiku 4.5's listing of `BedrockInferenceOnlyAssetType`, owned by
+  `GenerativeAIModelGovernanceProject`. Both requests read `ACCEPTED` at creation with no reviewer, each made
+  an `APPROVED` subscription, and the two share one grant, `COMPLETED` 0.8 s after its creation, with no
+  subscription target. No model was invoked and no Bedrock or IAM write followed. The project's designation
+  did not apply, the principal being the user rather than a project. The Data Scientist User holds the same
+  pair on that listing since 2026-10-19 at 21:12:18Z, the day of Stage 17 7.3's first playground calls
+  (`SUP-300`). A model listing's subscribers therefore name every person who has opened the playground.
+  AWS's pages were not read for this behaviour. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-22.
 
 ## SageMaker AI spaces and images
 

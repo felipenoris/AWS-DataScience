@@ -1216,9 +1216,12 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
    model, its archive and its tar. Since R1 carried no `app-dbt` bundle, 5.0 waits on none: its link asset
    and pass 5's table asset leave `app-dbt-dev` before R2's `app-dbt` tag (Stage 20 8.6). Both
-   subscriptions stay until N.10's day 2 ends, since both of its days read through them. **The two requests
-   made 2026-11-22** with nothing up, `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC,
-   both `PENDING`: left, xxvi's portal half, then the Governance Manager's two approvals.
+   subscriptions stay until N.10's day 2 ends, since both of its days read through them. **Run 2026-11-22**
+   with nothing up: the requests `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC;
+   xxvi's portal half from 13:35 to 13:50 UTC, yes; the Governance Manager's approvals at 14:04:10 and
+   14:05:14 UTC, each fulfilment `COMPLETED` within 61 s and read on both sides (Stage 19's and Stage 20's
+   logs). Left: Stage 20 5.1's model, its archive and its tar; 4.12's consumer read from the query editor,
+   for xxiv.
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
    pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
@@ -1235,9 +1238,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    `GROUPS=redshift`, the subscriptions revoked at its end. Its day 1 follows item 6, whose subscriptions
    it reads, and N.9's day 2, whose registered version pass 4 serves; it waits on no result of N.9's day 3,
    so either may come first, and R2 follows its day 1 (item 10).
-10. **R2** (N.11.2), after item 7's day 3, item 8's applies, item 9's day 1, whose pass 5 Stage 20 orders
-    before pass 8, and #321's merge, its branch synced with `main` at `77fc285a` on 2026-11-22: `app-dbt`'s
-    first release,
+10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
+    orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
+    mirror: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2632,8 +2635,8 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 and #321's merge (N.6 items 7
-   to 10): Stage 20 orders its pass 8 after pass 5.
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and this sitting's day 1 (N.6 items 7 to 10), #321
+   merged on 2026-11-22: Stage 20 orders its pass 8 after pass 5.
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2694,7 +2697,9 @@ so step 4 now reads it before the tag.
    options, so each moves to it at the application's next tag, `app-etl`'s after release G. Its successor
    `4401f91` ([pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29), merged
    2026-11-21) adds the rule `operador`'s refusal of the native notebook operator (Stage 8 5.6, `TM-34`), and
-   no application's lint has run at it yet.
+   the lint at it read `ok` for `app-etl`, `app-ml` and `app-genai` on 2026-11-22 (N.12.5). **Merged
+   2026-11-22 at 13:28:54 UTC** by the user as `81d70158`, after R1, so the mirror's push moves to R2's
+   opening (N.11.2 step 1).
 7. When N.9's day 1 read Stage 20's passes 2 and 3, 8.5's verdict is written and 8.6's bundle rehearsed:
    `app-dbt`'s first push and branch pipeline (8.7), then its tag `v0.1.0` by 8.8, `staging/egress/` kept
    up from step 4 to the last Staging leg and `production/workloads-egress/` still up. Otherwise R2
@@ -2708,13 +2713,13 @@ so step 4 now reads it before the tag.
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
 After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
-whose pass 5 Stage 20 orders before pass 8, and #321's merge; before 2026-12-18, since it carries
+whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 2026-12-18, since it carries
 `app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
    tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] GitLab's local user's password confirmed
-   rotated, or rotated (N.8.2 step 3), before the first push; with #321 merged (above), `git pull` and
-   `git push gitlab main`, the mirror the legs clone the scripts from; `awsds/dev-env`'s README row for
+   rotated, or rotated (N.8.2 step 3), before the first push; #321 merged at `81d70158` (N.11.1 step 6),
+   `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; `awsds/dev-env`'s README row for
    `default-v0.10.1` by a merge request, then [Claude] its mirror (`./scripts/gitlab-mirror.py awsds/dev-env`,
    `gitlab/README.md`, *Changing a recipe*), which moves `gitlab/mirror.json` past `7f2623b6`. [Claude]
    Before each tag of step 2, the build runner read running ([`gitlab.md`](gitlab.md) §U step 3).
@@ -2764,11 +2769,11 @@ bound it stay N.6's.
 | 2026-11-21, ran | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
-| 2026-11-22 on | N.6 item 6, with nothing up, its two requests made 2026-11-22 | — | Stage 19's xxvi portal half, then the two approvals (N.12.4) |
+| 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments; Stage 20 5.1 left | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
-| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's two approvals and Stage 20 5.1's tar |
+| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | Stage 20 5.1's tar; item 6's two approvals done 2026-11-22 |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
-| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1; #321 merged |
+| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
@@ -2886,8 +2891,8 @@ The waiting list holds each as a row. In the calendar's order:
   2026-11-22 (N.12.5): the first use is the project's subscription to the model's listing, which an unsaved
   *Run* in the Bedrock IDE's prompt builder made and a playground call does not make (`SUP-445`).
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
-- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half, then the approvals of the two
-  requests made 2026-11-22; N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
+- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half and the approvals of the two
+  requests, done 2026-11-22 (N.12.5); N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
@@ -2895,10 +2900,9 @@ The waiting list holds each as a row. In the calendar's order:
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
   The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #363):
   `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
-- **Before R2**: Stage 17 10.5's acts (above); #321 merged, its branch having taken `origin/main` by merge
-  and its `--self-check` printing every stage `ok` (N.11.1 step 6), which it did again on 2026-11-22 at
-  `77fc285a` (N.12.5), so the merge alone is left; the answer on whether GitLab's local
-  user's password was rotated before R1's pushes.
+- **Before R2**: Stage 17 10.5's acts (above); the answer on whether GitLab's local user's password was
+  rotated before R1's pushes. #321 was merged by the user on 2026-11-22 at 13:28:54 UTC as `81d70158`
+  (N.11.1 step 6), `make check` and `--self-check` passing on that commit.
 
 #### N.12.5 What was read and built with nothing up on 2026-11-22, after R1
 
@@ -2920,7 +2924,10 @@ Each reading is in the log of the stage that owns it.
   7 to add, 2 to change, 0 to destroy."* at 08:48 UTC, as 6h's step 7 expects; nothing saved. N.6 item 6's
   two requests made at 08:27:36 and 08:28:16 UTC, both `PENDING` (Stage 19's and Stage 20's logs). 6f's 2.3
   to 2.5 run: `test-experimentation`'s subscription to `house-price` queried and revoked, and
-  `my-data-product` granted to it by its owner (6f's log).
+  `my-data-product` granted to it by its owner (6f's log). In the afternoon, Stage 19's xxvi portal half
+  (13:35 to 13:50 UTC) and both approvals as the Governance Manager (14:04:10 and 14:05:14 UTC), each
+  fulfilment read on both sides with `catalog.py`, `datalake.py` and `deploytargets.py` passing (Stage 19's
+  and Stage 20's logs).
 - **R2**: #321's branch took `origin/main` at `77fc285a` by merge (`e6538fb0`, 29 commits, no conflict), its
   `--self-check` printing every stage of the four applications `ok` and `make check` passing (Stage 20's
   log). `awsds-workflows lint` at `4401f91`, the pin each application's next tag takes, reads `ok` for

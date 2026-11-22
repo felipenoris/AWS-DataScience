@@ -483,7 +483,10 @@ API, `create-listing-change-set --action UNPUBLISH` (measured 2026-11-14 from th
 
 - A member of the owning project: *Manage → Catalog management → Subscription requests → Requests*, *View
   request*, *Full access* or *Filtered access* with one or more asset filters, an optional response,
-  *Approve* or *Reject* (the approval page, read 2026-11-17).
+  *Approve* or *Reject* (the approval page, read 2026-11-17). On a data product's listing the portal's
+  *"Review subscription request"* panel offers no access choice (measured 2026-11-22, Stage 19 4.12):
+  *Approve*, the default, or *Reject*, an optional decision comment of up to 150 characters, *Data
+  permission* *"Read-only"*, and *Save*.
 - Automatic, by the same page: when the listing requires no approval, and when the requester is Owner or
   Contributor of both the owning and the requesting project.
 - Measured (6f 11.8, 2026-10-26): requested 21:34:55Z, approved 21:36:15Z, `COMPLETED` 21:37:18Z, each

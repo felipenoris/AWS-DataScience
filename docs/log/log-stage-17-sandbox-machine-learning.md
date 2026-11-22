@@ -4812,3 +4812,101 @@ as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`
 - **[Claude] The instruments**: `./aws/sandbox-ml.py` at 08:50Z, `ML-2` reading the new app as above,
   `ML-10` and `ML-11` noting 9.6's and 10.4's objects absent, and `ML-8` failing on the flow's role,
   `AWS_STATE.md`'s expected reading.
+
+## 2026-11-22 — `SUP-447`'s role: the user's decision, an exception
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read the role as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`), reads alone. Times UTC.*
+
+- **[user] The decision**, at 13:30, verbatim: *"Aceitar como exceção (Recomendado)"*. The card's other
+  options, not taken: *"Apagar o flow e a role"* and *"Pôr o boundary à mão"*. The option as the card
+  stated it: an `EXC-nn` row in `docs/AWS_STATE.md` for `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, and
+  `ML-8` (`aws/sandbox-ml.py`) and `US-8` (`aws/studio.py`) recognising the role's shape rather than its id
+  (the name `AmazonBedrockFlowServiceRole-*`, trust in `bedrock.amazonaws.com` alone, AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` alone), so the exception covers every later flow app and
+  fails again if the shape changes; no AWS write.
+- **[Claude] The role read again**, at 13:34: `PermissionsBoundary` null, `RoleLastUsed` empty, created
+  02:02:39Z; its trust `sts:AssumeRole` by `bedrock.amazonaws.com` under `aws:SourceAccount` the account's
+  own and `aws:SourceArn` `arn:aws:bedrock:us-west-2:<account>:flow/*`; one attached policy,
+  `service-role/SageMakerStudioBedrockFlowServiceRolePolicy`, and no inline policy; the only
+  `AmazonBedrockFlowServiceRole-*` role in the account.
+- **Left**: the `EXC-nn` row and the two checks' change, written on the user's word in this session's chat;
+  until then `ML-8` and `US-8` fail on the role, `AWS_STATE.md`'s expected reading.
+
+## 2026-11-22 — 7.6's leftovers: the user's decision to delete the four objects
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read the objects as the infrastructure user with `InfrastructureAccess`
+in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance Account` (`awsds-infra-data`), reads
+alone. Times UTC.*
+
+- **[user] The decision**, at 13:34, verbatim: *"Apagar os quatro (Recomendado)"*. The card's other options,
+  not taken: *"Apagar só os três listados"* and *"Manter tudo"*. Each deletion waits on the user's word in
+  the chat of the session that runs it, and is read back after it (Lesson 86).
+- **[Claude] The four objects**, read at 13:37 to 13:40, every one in `eighth-experimentation`
+  (`avhvbqn37ty7m8`):
+  1. the chat agent's environment `b343orq3qka5n4`, `502a9c64-70fd-4dab-afea-a1a5a98146d4-shared`,
+     `CREATE_FAILED` with no provisioned resource, its stack `DataZone-Env-b343orq3qka5n4` `DELETE_COMPLETE`
+     since 03:08:08; its definition `…/avhvbqn37ty7m8/amazon-bedrock/builder/apps/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json`
+     in `awsds-sandbox-smus-projects`, 1423 bytes, 03:01:39;
+  2. the Haiku 4.5 evaluation's environment `6fl52xzq3yt768`, `avhvbqn37ty7m8ml-demo-eval-haiku45`, `ACTIVE`,
+     its stack `CREATE_COMPLETE` with no resource and one output, the project's Bedrock service role
+     `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, which the environment lists as its provisioned
+     resource `systemRole-AmazonBedrockEvaluationRole-avhvbqn37ty7m8` and did not create; no job of its name
+     (`list-evaluation-jobs` lists `avhvbqn37ty7m8ml-demo-eval-nova-lite` alone, `Completed`), and under its
+     output prefix the 0-byte `amazon-bedrock-evaluations-permission-check` of 02:07:54 alone;
+  3. the vector bucket `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, created 01:03:10, no index, its
+     stack `DataZone-Env-cie8747bea6mxc` `DELETE_COMPLETE` since 01:03:30; the knowledge base's store is the
+     other, `…-46cr0woe7670gg`, created 01:33:17;
+  4. a chat app definition no log records, `…/chatApp/043850fa-6a37-44ad-9ade-89e7e3af8fc5-definition.json`,
+     1129 bytes, 2026-10-30 06:25:43, with no environment; the project's Claude Opus 4.5 application
+     inference profile was created 17 s after it, at 06:26:00, the project's first use of that model.
+- **[Claude] What stays**: the Nova Lite evaluation's input `…/genAI/assets/evaluations/input/evaluation-dataset.jsonl`
+  (2951 bytes, 02:50:45) and its output, and the project's Bedrock service role the second environment
+  names.
+- **Left**: the deletions, each on the user's word: the two definitions from the Bedrock IDE's *My apps* by
+  the project's owner, and the failed environment from the project's blueprint deployments if the app's
+  deletion leaves it; the evaluation's environment from the portal or by `datazone delete-environment`; the
+  vector bucket by `s3vectors delete-vector-bucket` alone. The second environment's deletion must leave
+  the project's Bedrock service role, which its stack did not create.
+
+## 2026-11-22 — 7.6's deletions by the CLI: the evaluation's environment and the empty vector bucket
+
+*Claude's writes on the user's word in this session's chat, *"autorizo os dois"*, answering a question that
+named both deletions; as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), a contributor of `eighth-experimentation`. The sessions "Guia do Governance
+Manager no portal (item 6)", "Decisões pendentes, uma de cada vez" and "Preparação de infraestrutura SSO"
+were told before the writes. Times UTC.*
+
+- **[Claude] Before**, 13:40:33: `6fl52xzq3yt768` `ACTIVE`; the vector bucket
+  `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc` with `aws:kms` encryption and no index. The project's
+  Bedrock service role `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, the environment's listed
+  resource, carries `AmazonDataZoneEnvironment` `5hkjdsy3umpi1c`, the project's `Tooling` environment, and was
+  created 2026-08-23 under `awsds-sandbox-project-boundary`.
+- **[Claude] The environment**: `datazone delete-environment` on `6fl52xzq3yt768` at 13:40:48, exit 0, the
+  record `DELETING` at 13:40:50; its stack `DataZone-Env-6fl52xzq3yt768` `DELETE_COMPLETE` at 13:41:02, and
+  `get-environment` answering *"Environment not found"* at 13:41:14. A contributor's call was admitted.
+- **[Claude] The vector bucket**: `s3vectors delete-vector-bucket` at 13:41:02, exit 0; `list-vector-buckets`
+  at 13:41:03 lists the knowledge base's store `…-46cr0woe7670gg` alone.
+- **[Claude] After**: the service role stands, as before; `list-evaluation-jobs` lists
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite` `Completed`; the 0-byte
+  `…/evaluations/output/avhvbqn37ty7m8ml-demo-eval-haiku45/amazon-bedrock-evaluations-permission-check` of
+  02:07:54 stays, the environment's deletion leaving its output prefix.
+- **Left of 7.6**: the two chat app definitions, `502a9c64-…` and `043850fa-…`, from the Bedrock IDE's *My
+  apps* by the project's owner, and the failed environment `b343orq3qka5n4` from the project's blueprint
+  deployments if the app's deletion leaves it, each on the user's word.
+
+## 2026-11-22 — 7.6's deletions in the trails
+
+*Claude, reads alone, as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`), at 13:51 UTC after the trails' lag.*
+
+- **[Claude] Sandbox's trail**: `datazone:DeleteEnvironment` on `6fl52xzq3yt768` at 13:40:50Z in the
+  infrastructure user's `InfrastructureAccess` session; `cloudformation:DeleteStack` of
+  `DataZone-Env-6fl52xzq3yt768` at 13:41:02Z by `awsds-sandbox-smus-provisioning`'s session
+  `AmazonDataZoneEnvironmentDeployer-<account>`, invoked by `datazone.amazonaws.com`; `s3vectors:DeleteVectorBucket`
+  on `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc` at 13:41:03Z in the infrastructure user's session.
+  No error on any of them.
+- **[Claude] Data Governance's trail**: the same `DeleteEnvironment` at 13:40:50Z, its caller in another
+  account recorded with no ARN.
