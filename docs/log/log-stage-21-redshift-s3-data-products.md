@@ -853,3 +853,94 @@ N.9 answered that its 6d 7.5 window was not open. Times UTC.*
   `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, filtered to schema `lab` and the names
   `trades_hot`, `trades_hot_daily` and `trades_hot_by_desk`. The first statement is not in it. `SUP-460`
   gains the reading, and the two statements' comments in `iam.tf` say what the run calls.
+
+## 2026-11-22 — §N.10's day 2: 2.3, the table, the view and their data product published
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Sim, faça
+2.3 e 2.4 pelo chrome"* (about 23:20). The portal's acts in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner; the reads as the infrastructure user with `InfrastructureAccess` in `Sandbox
+Account 1` (`awsds-infra-sandbox-1`), a contributor of the project. N.9's day 3 and the session preparing the SSO
+infrastructure told first. Times UTC.*
+
+- **[Claude] The asset pages** each opened with the business-name generation's suggestions pending:
+  `trades_hot` *"7 suggestions ready for review — 1 business name · 6 column business names"*, the name
+  *Daily Trading Transactions by Desk and Instrument*; `trades_hot_by_desk` *"4 suggestions ready for review —
+  1 business name · 3 column business names"*, *Daily Hot Trades by Desk with Notional Values*. Neither was
+  accepted or rejected, and each listing carries them as `SuggestionForm`.
+- **[Claude] `trades_hot` published**: *Publish*, the panel *Publish asset* (*"This asset will become
+  discoverable to everyone in your organization and they can request access to this asset."*), *Subscription
+  approval* left at its default *Required*, *Publish asset*: *"Table trades_hot has been published to the
+  catalog."* Listing `cl14qzshdc64y8`, revision 2, `ACTIVE`, created 23:21:18.029 and updated 23:21:19.164, the
+  asset's revision 2; forms `AssetCommonDetailsForm`, `AwsConfigurationForm`, `DataSourceReferenceForm`,
+  `RedshiftTableForm`, `SubscriptionTermsForm` (`approvalRequired` `YES`) and `SuggestionForm`.
+- **[Claude] `trades_hot_by_desk` published** the same way: listing `5t9cxrhio6c8eo`, revision 2, `ACTIVE`,
+  created 23:22:02.144, the asset's revision 2, `RedshiftViewForm` in place of the table's form. The toast
+  calls it a table: *"Table trades_hot_by_desk has been published to the catalog."*
+- **[Claude] The data product**: *Assets → Create → Create data product*, name `sandbox-trades-hot`,
+  description *"Stage 21 pass 2: the Sandbox warehouse's lab.trades_hot and its view lab.trades_hot_by_desk."*,
+  the view and the table, *Create* at 23:23: `614tardy0iah3k`, *Not published*, *Included assets: 2*.
+  *Metadata Forms → Add Form* offered one form, *Classification* (*"The data product's classification: public,
+  internal, restricted or personal."*, 1 field); `internal` saved at 23:24:15, the product's revision 2.
+  *Publish*, the dialog *"This data product will become discoverable to everyone in your organization and they
+  can request access to this data product."*, *Publish*: *"Data product published successfully."* Listing
+  `4q8efayh74yxow`, revision 1, `ACTIVE`, created 23:24:45.910, the product's revision 2; forms
+  `classification` `{"classification":"internal"}` and `ownedByDataProductListing` naming `5t9cxrhio6c8eo` and
+  `cl14qzshdc64y8`, its items the two asset listings at revision 2. The product's publication wrote no new
+  revision of either asset listing.
+- **[Claude] `CT-18` after the publication** (`./aws/catalog.py`, 23:26:18 to 23:29:32, exit 2): `pass`, *"house-price
+  public; trades_notional internal"*. The check reads `GlueTableAssetType` listings alone, and a data product
+  listing only for the asset listings it carries, so neither Redshift listing nor the product's
+  `classification` form is in its reading; 6.3's amendment of `catalog.py` names S3 Object Collections and not
+  Redshift listings. `CT-17` fails on Production's grants to `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` on
+  `app_etl.trades_notional`, `DESCRIBE` on the table and `SELECT` on its columns: Stage 19 5.1's Lake Formation
+  half, which Stage 19's step 7 revokes. `CT-6` lists the source `sandbox-lab-trades-hot`, `REDSHIFT`, no
+  schedule, 3 assets, 1 failed run and 1 successful.
+
+## 2026-11-22 — §N.10's day 2: 2.4, the consumer's compute in `test-experimentation`
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Sim, faça
+2.3 e 2.4 pelo chrome"*. The portal's act in the Data Scientist User's Chrome session, a member of
+`test-experimentation`; the reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] The deploy**: `test-experimentation`'s *Resource blueprints*, *Deploy*. *Managed blueprints* offered
+  *EMR Serverless*, *Lakehouse Database*, *MLflow App*, *Redshift Serverless* and *S3 Bucket*, beside *"Have an
+  existing resource you want to bring in? Create a connection instead."* *Redshift Serverless*, then *Input
+  parameters*: a name (*"The name cannot be changed after creation."*) and a description, and no capacity field.
+  Name `stage21-consumer-redshift`, description *"Stage 21 2.4: the consumer's workgroup, removed at 2.9."*,
+  *Deploy*: *"Blueprint deployment created successfully"*, the deployment `redshift.stage21-consumer-redshift`,
+  its parameters as the profile reads them (database `dev`, base and maximum 4, schema `project`, connection
+  `project.redshift`, `provisionManagedSecret` `true`, `connectToRMSCatalog` `false`).
+- **[Claude] The environment** `dahsfn6j8lqec0`, created 23:27:14.416 by the Data Scientist User from the
+  configuration `c12845c5-…` of the blueprint `dlyaabb17hano0`, `ACTIVE` and its deployment `SUCCESSFUL` at
+  23:29:00. Its stack `DataZone-Env-dahsfn6j8lqec0`, created 23:27:27, `CREATE_COMPLETE` by 23:28:48, holds two
+  resources: `AWS::RedshiftServerless::Namespace` `redshift-serverless-namespace-dahsfn6j8lqec0` (23:27:32) and
+  `AWS::RedshiftServerless::Workgroup` `redshift-serverless-workgroup-dahsfn6j8lqec0` (23:28:28). Sandbox's trail:
+  `CreateNamespace` at 23:27:31 and `CreateWorkgroup` at 23:27:34, each admitted, by
+  `awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>`; no `UpdateWorkgroup` to 23:31.
+- **[Claude] The workgroup**: `AVAILABLE`, base 4 and maximum 4 RPUs, as `CreateWorkgroup` asked; price-performance
+  target disabled, not publicly accessible, enhanced VPC routing off; subnets `awsds-sandbox-private-usw2-az1`
+  (`subnet-016b5a3a62c739894`) and `-az2` (`subnet-09d3399d6b0fec93a`); security group `sg-05e52373c14288c22`,
+  `datazone-4gqfau9xuo6e4w-dev`, the project's (*"Security group for the project."*), all traffic in from itself
+  and out to `0.0.0.0/0`. The request set `search_path` alone, read back as `project, $user, public`, beside the
+  service's defaults: `max_query_execution_time` 14400, `require_ssl` true, `enable_user_activity_logging` true,
+  `auto_mv` true. Its tags name the domain, the project, the environment, the blueprint `RedshiftServerless` and
+  the scope `dev`. The workgroup is outside the warehouse's usage limit, `make down` and `make status`.
+- **[Claude] The namespace**: `AVAILABLE`, database `dev`, admin user `admin` with the password managed in
+  Secrets Manager (`redshift!redshift-serverless-namespace-dahsfn6j8lqec0-admin-…`), the namespace and the secret
+  both under `alias/awsds-sandbox-project`; its default IAM role and its only role are `test-experimentation`'s
+  project role, `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`; no log export.
+- **[Claude] The connection** `project.redshift` (`4i2nv7u733e51s`), `REDSHIFT`, on the environment: workgroup
+  storage, database `dev`, the JDBC and JDBC IAM URLs on port 5439, the temporary directory
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/4gqfau9xuo6e4w/dev/redshift-tmp/`, `READY`. Its
+  `lineageSync` is `enabled` `true`, job `50jlej783a7cb4`, on `cron(28 23 * * ? *)`, the minute of the
+  creation: a daily lineage run nobody chose, which 2.9's removal ends before its first.
+- **[Claude] The Redshift subscription target** `bbw4g031uhkopc`, `redshift.stage21-consumer-redshift-default-target`,
+  created 23:28:52.677: `type` `null` in `list-subscription-targets`, provider *Amazon SageMaker*, manage-access
+  role `awsds-sandbox-smus-manage-access`, `authorizedPrincipals` `datazone_env_dahsfn6j8lqec0`, applicable to
+  `RedshiftViewAssetType` and `RedshiftTableAssetType`, its form `RedshiftServerlessSubscriptionTargetConfigForm`
+  naming the database `dev`, the namespace's admin secret, the workgroup and the schema `project`. Verification
+  iii has its target, so 2.5 to 2.7 may run.
+- **[Claude] Sandbox's workgroups** at 23:31: `awsds-sandbox-warehouse` (4 and 8) and
+  `redshift-serverless-workgroup-dahsfn6j8lqec0` (4 and 4). `test-experimentation` holds six environments, the
+  new one among them, and `create-datalake-database-env-mydatabase-…` stays `VALIDATION_FAILED` from 2026-11-09.
