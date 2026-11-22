@@ -2004,10 +2004,11 @@ secret's `NextRotationDate` read 2026-11-22 01:59:59 UTC on 2026-11-16, never ro
 carries every step below on its own raises, after the rotation and before 2026-12-17: steps 2 and 3 on a
 Production raise after release G's leg, step 4's backup with GitLab already up.
 
-1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22:
+1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22 UTC. `TZ=UTC` keeps
+   the CLI from printing the dates in the laptop's zone (`SUP-435`):
 
    ```bash
-   aws secretsmanager describe-secret --secret-id 'redshift!awsds-prod-warehouse-dbadmin' --query '[LastRotatedDate,NextRotationDate]' --output text --profile awsds-infra-prod --region us-west-2
+   TZ=UTC aws secretsmanager describe-secret --secret-id 'redshift!awsds-prod-warehouse-dbadmin' --query '[LastRotatedDate,NextRotationDate]' --output text --profile awsds-infra-prod --region us-west-2
    ```
 
 2. **[user]** the free trial's Production balance; `make hub-up`; then:

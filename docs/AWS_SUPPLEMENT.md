@@ -5358,6 +5358,24 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `PolicyInputList.1`. The parameter is a list of strings, and the file's content reaches it as one string
   the CLI iterates (inferred from the error). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
+- `SUP-435` **The AWS CLI v2 prints a JSON-protocol service's timestamps in the machine's time zone and EC2's
+  in UTC, so a date read from its output is not always a UTC date** (measured 2026-11-22 with aws-cli 2.37.12
+  on a laptop at UTC-3, default configuration, R1). `aws secretsmanager describe-secret --query
+  LastRotatedDate --output text` printed `2026-11-21T22:17:08.980000-03:00`, and with `TZ=UTC` on the command
+  `2026-11-22T01:17:08.980000+00:00`; `cloudtrail lookup-events` printed every `EventTime` at `-03:00`; `ec2
+  describe-instances --query 'Reservations[0].Instances[0].LaunchTime'` printed `2026-11-22T01:15:54+00:00`
+  with and without `TZ=UTC`. The CLI's service models name the protocols: `json` for Secrets Manager and
+  CloudTrail, whose timestamps travel as epoch seconds, and `ec2` for EC2, which sends ISO 8601 text.
+  botocore's `parse_timestamp` turns a number into a `datetime` with `tzlocal()` and keeps a text's own offset
+  (read in botocore 1.43.114; the CLI v2's own copy is frozen into its binary and was not read). AWS's
+  configuration page gives `iso8601`'s form as `YYYY-MM-DDThh:mm:ssZ`, "including a `Z` after the time", and
+  names no zone; the v2 migration guide names none either; neither output carried a `Z`. Consequence: R1's
+  poll waiting for the warehouse admin secret's `LastRotatedDate` to contain `2026-11-22` read six times from
+  02:00:15Z to 02:05:27Z and never matched a rotation that had finished at 01:17:08Z, and `NextRotationDate`
+  read `2026-12-21T22:59:59-03:00`, a date one day before UTC's. A date that is compared or written down is
+  read with `TZ=UTC` on the command. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22;
+  `runbooks/promotion.md` §N.8.3.
+
 ## Clients and the egress proxy
 
 - `SUP-329` **`wg-quick` with no `MTU` line takes the uplink's MTU minus 80, so a WireGuard host on a
