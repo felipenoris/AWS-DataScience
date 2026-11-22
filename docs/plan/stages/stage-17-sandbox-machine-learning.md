@@ -1902,7 +1902,8 @@ each run (decision 24 (b)).
   that slice's output `app_genai_inference_profile_arn` as the deploy role. The table's egress row is
   written and planned here and created by 10.6's raises, both slices being `[E]`: `staging/egress/` still
   lacks the `optional_service_groups` variable on 2026-11-20, and without it a Staging `make up` ignores
-  `GROUPS=`. The GitLab project is R1's ([`promotion.md`](../runbooks/promotion.md) §N.11.1 step 3).
+  `GROUPS=`. The GitLab project was created in R1 on 2026-11-22, `awsds/app-genai` (id 8) beside `awsds/app-ml`
+  (7) ([`promotion.md`](../runbooks/promotion.md) §N.11.1 step 3; Stage 19's log).
   After the applies: 10.1's simulation repeated on the applied boundary, the calls `TM-30` lists for
   `bedrock-agentcore`, `q` and `codewhisperer` still read `explicitDeny`, and
   `./aws/deploytargets.py`.
