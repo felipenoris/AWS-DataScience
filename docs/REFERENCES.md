@@ -2284,6 +2284,14 @@
   free, Athena's example rate: <https://aws.amazon.com/glue/pricing/>,
   <https://aws.amazon.com/lake-formation/pricing/>, <https://aws.amazon.com/athena/pricing/>.
 
+- **Redshift-managed VPC endpoints and their billing (read 2026-11-22 by a subagent, for `SUP-455`).** The
+  page on Redshift-managed VPC endpoints, which PrivateLink powers, says under its considerations *"For
+  information about pricing, see AWS PrivateLink pricing."*:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/managing-cluster-cross-vpc.html>. The Serverless
+  connection page and the pricing page say nothing of the endpoint Redshift creates for a workgroup:
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless-connecting.html>,
+  <https://aws.amazon.com/redshift/pricing/>.
+
 - **Redshift Serverless — capacity, billing, network and audit (read 2026-09-19, for
   [D40](plan/decisions/D40-redshift-warehouse.md) and
   [Stage 5b](plan/stages/stage-05b-redshift-serverless.md)).** Five pages, and each one contributed a fact the

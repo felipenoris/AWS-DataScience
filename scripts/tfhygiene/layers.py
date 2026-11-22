@@ -502,8 +502,10 @@ SLICES = [
     #
     # The row has no per_use rate. docs/PRICING.md 3 says an EC2 proxy has no per-GB processing
     # charge, where a NAT gateway has one; 3 and 7 price internet data transfer out at 0.090 USD/GB
-    # and peering at 0.01 USD/GB each way, across Availability Zones only. Which of them the proxy's
-    # traffic bills, and the WireGuard host's, is unread.
+    # past the free 100 GB a month, and peering at 0.01 USD/GB each way, across Availability Zones
+    # only. Production's Cost Explorer for October 2026 (docs/PRICING.md 7): same-AZ peering 73 GB
+    # each way billed 0, cross-AZ peering 0.08 GB at 0.01, internet out 0.58 GB billed 0. The lines
+    # are the account's, so the hub's share of them is unread.
     Slice(
         "production",
         "proxy",
@@ -708,7 +710,8 @@ SLICES = [
     # ran 6 h 33 min at base capacity, most of the 9.48 USD that sitting cost, while `make status`
     # read 0.0000 USD/h. What a session actually ran up is ./aws/warehouse.py's burn line, which reads
     # ComputeSeconds; the metric lands per half-hour interval, so a figure taken right after an
-    # expensive query under-reads it.
+    # expensive query under-reads it. The workgroup's own VPC endpoint, which Redshift creates in two
+    # AZs and no state holds, adds no endpoint hours to the bill (SUP-455).
     #
     # The other guards, and what each one turned out to be worth on 2026-09-20:
     #   the usage limit    UNPROVEN against this statement: breach_action = deactivate refused every

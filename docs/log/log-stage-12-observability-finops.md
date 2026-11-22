@@ -1165,3 +1165,59 @@ Times are UTC.*
   created at 18:17:00, 18 s after the workgroup `awsds-sandbox-warehouse`, whose `endpoint.vpcEndpoints`
   holds it: the workgroup's own endpoint (`SUP-128`). No slice's state holds it, so `status` does not price
   it, and whether its hours bill is not in `docs/PRICING.md`.
+
+## 2026-11-22 — Cost Explorer reads the workgroup's endpoint and Production's traffic per GB
+
+*Claude's sitting, in the same session, on the user's *"Sim, meça"* in chat. Read-only throughout: three
+Cost Explorer `GetCostAndUsage` requests, two in Sandbox and one in Production, at 0.01 USD each
+(`docs/PRICING.md` 7); one `GetCostAndUsageWithResources` in Sandbox, refused; CloudTrail `LookupEvents` in
+Sandbox; as the `awsds-infra-*` profiles (the infrastructure user with `InfrastructureAccess`). A subagent
+read three AWS pages for `SUP-455` (`docs/REFERENCES.md`). Times are UTC.*
+
+### The workgroup's own endpoint
+
+- **[Claude] Resource-level data is refused** in Sandbox: *"Resource-level data granularity is an opt-in
+  only feature. You can be enable this feature from the PAYER account’s Cost Explorer Settings page."* The
+  endpoint's hours are read instead from the account's daily `USW2-VpcEndpoint-Hours`, 2026-09-19 to 11-21,
+  against each interface endpoint's lifetime from CloudTrail: 633 `CreateVpcEndpoint` and 484
+  `DeleteVpcEndpoints` events.
+- **[Claude] The managed endpoints**: 15 `CreateWorkgroup` since 2026-09-20, each followed 5 to 18 s later
+  by a `CreateVpcEndpoint` that `redshift.amazonaws.com` invokes, in two subnets. One is open, the
+  workgroup's created at 18:16:42.
+- **[Claude] The fit**, over 63 days without the window's first day and today: the user-made endpoints'
+  exact lifetimes miss Cost Explorer by 207.0 h of absolute error summed over the days, and by 314.6 h with
+  the managed endpoints' two AZs added; hours counted at the top of each clock hour, 209 and 313. On the ten
+  days with a workgroup, Cost Explorer reads a mean of 12.2 h below the user-made hours, where the managed
+  endpoints would add 12.1; on the eight other days with endpoints, 2.3 below. 2026-09-20 billed 273 h,
+  against 273.3 user-made and 305.7 with the managed endpoints. The verdict: the managed endpoint adds no
+  hours (`SUP-455`, `docs/PRICING.md` 5).
+- **[Claude] Unexplained**: 1761 billed hours over the 63 days against 1901.4 user-made; a day's residual
+  runs from 35.4 h below to 8.5 above; 2026-10-14 billed 0 h against 12.4 user-made.
+- **[Claude] Sandbox's VPC lines**, October and November 1-21: `USW2-VpcEndpoint-Hours` 984 h, 9.84 USD,
+  and 300 h, 3.00; `USW2-VpcEndpoint-Bytes` 0.0466 and 0.0410 GB, 0.00047 and 0.00041 USD. No other VPC
+  usage type, and no Redshift line (`SUP-145`).
+
+### Production's traffic per GB
+
+- **[Claude] The lines** are the account's, which the hub shares with GitLab and the runners. November is
+  Cost Explorer's estimate.
+
+  | Usage type | October | November 1-21 |
+  |---|---|---|
+  | `USW2-VpcEndpoint-Bytes` | 35.3231 GB, 0.35323 USD | 0.2809 GB, 0.00281 USD |
+  | `USW2-VpcPeering-Out-Bytes` | 0.0798 GB, 0.00080 USD | 0.2668 GB, 0.00267 USD |
+  | `USW2-VpcPeering-In-Bytes` | 0.0018 GB, 0.00002 USD | 0.0162 GB, 0.00016 USD |
+  | `USW2-DataTransfer-AZ-In-Bytes` and `-Out-Bytes` | 72.8875 and 72.9570 GB, 0 | 6.6464 and 6.7567 GB, 0 |
+  | `USW2-DataTransfer-Out-Bytes`, every service | 0.5811 GB, 0 | 0.1527 GB, 0 |
+  | `USW2-DataTransfer-Regional-Bytes` | 0.0326 GB, 0 | 0.0060 GB, 0 |
+  | `USW2-DataTransfer-xAZ-In-Bytes` and `-Out-Bytes` | 0.0008 and 0.0008 GB, 0 | 0.0007 and 0.0007 GB, 0 |
+  | `USW2-USE1-AWS-Out-Bytes` | 0.0080 GB, 0.00016 USD | 0.0261 GB, 0.00052 USD |
+  | `USW2-USE2-AWS-Out-Bytes` | 0.0410 GB, 0.00082 USD | 0.0000 GB, 0 |
+  | Every per-GB line | 0.35503 USD | 0.00616 USD |
+
+  `USW2-DataTransfer-In-Bytes` read 55.25 GB in October and 5.25 in November, free.
+- **[Claude] Read against `docs/PRICING.md` 3 and 7**: same-AZ peering billed 0, cross-AZ peering at
+  0.01/GB, internet out inside the free 100 GB a month, transfer to other Regions at 0.02/GB. Every line but
+  the endpoints' came to 0.00180 USD in October and 0.00335 in November 1-21. The hub's share is not
+  separable from GitLab's and the runners' without resource-level data. `layers.py` declares no per-GB rate
+  on the proxy or the WireGuard host until the user decides.

@@ -2060,6 +2060,22 @@ entry is still true is the reading.
   `log-stage-09-deployment-targets.md`, 2026-10-25; `log-stage-05b-redshift-serverless.md`, 2026-10-17;
   `docs/PRICING.md` §5.
 
+- `SUP-455` **A Redshift Serverless workgroup's own VPC endpoint adds no hours to the account's
+  `USW2-VpcEndpoint-Hours`** (measured 2026-11-22 in Sandbox from Cost Explorer and CloudTrail, Stage 12).
+  Each `CreateWorkgroup` is followed within 18 s by a `CreateVpcEndpoint` that `redshift.amazonaws.com`
+  invokes: a requester-managed interface endpoint in two subnets, which the same service deletes with the
+  workgroup. CloudTrail holds 15 since 2026-09-20. Cost Explorer's daily `USW2-VpcEndpoint-Hours` from
+  2026-09-20 to 11-21 fits the CloudTrail lifetimes of the user-made endpoints alone with an absolute
+  error of 207 h, and of 315 h once the managed endpoints' two AZs are added. On the ten days with a
+  workgroup, Cost Explorer reads a mean of 12.2 h below the user-made hours, where billing the managed
+  endpoint would add 12.1. On 2026-09-20 it billed 273 h, against 273.3 user-made and 305.7 with the
+  managed endpoints. Sandbox shows no other VPC usage type in October and November, and no Redshift line
+  during the free trial (`SUP-145`), so a charge billed under Redshift is not visible before 2026-12-19.
+  AWS's page on Redshift-managed VPC endpoints sends their pricing to PrivateLink's, and the Serverless
+  connection and pricing pages say nothing of the workgroup's own endpoint. Over the 63 days the bill
+  reads 1761 h against 1901 user-made, and a day's residual reaches 35 h, both unexplained. Where:
+  `log-stage-12-observability-finops.md`, 2026-11-22; `docs/PRICING.md` §5; `SUP-128`.
+
 ## DataZone and SageMaker Unified Studio
 
 ### Domain, account association, blueprints and profiles
