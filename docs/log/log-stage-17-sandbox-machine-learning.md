@@ -5741,3 +5741,24 @@ one-step pipeline. Claude reads the SageMaker API and the trail as the infrastru
 - **`ML-6` at 22:56:05** fails on `Pipeline-1795387181754`: no `VpcConfig`, no isolation, no inter-container
   encryption, no volume key, the latest execution `Failed`, 1 step unlike the committed source. The pipeline
   stands until the user decides on it.
+
+## 2026-11-22 — Day 3's sitting C: the closing reads, and 6d's remainder left
+
+*Claude writes this entry; reads as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1), and no AWS write. Times UTC.*
+
+- **[user] 6d's remainder** did not run: *"Vamos deixar o bloco 6d para outra sessão"* at about 23:22 (6d's
+  log). The lowering is §N.10's day 2's, which shares the raise.
+- **The spaces**: at 23:22:52 no app stands in `eighth-experimentation`'s, `app-ml-dev`'s or `app-genai-dev`'s
+  domain. `jup`'s app was deleted at 23:19:09 by the idle shutdown (`SUP-221`). `jup`, `code`, `jup-ml-dev`
+  and `jup-app-genai-dev` stand with no app.
+- **The portal**: this session's Claude in Chrome tab group no longer existed at about 23:24. Every other
+  portal tab is the user's or §N.10's.
+- **`./aws/sandbox-ml.py` at 23:28:43**: 71 passes, one fail and 89 notes, every call returned. The fail is
+  `ML-6` on the editor's `Pipeline-1795387181754`, as at 22:56:05; `ML-6` passes `ml-demo-pipeline`.
+- **`./aws/catalog.py` at 23:32:28**: 19 checks passed or noted and one failed, `CT-17`, on two grants to
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` in Production's `app_etl.trades_notional`, `DESCRIBE` and
+  `SELECT`, which §N.10 keeps. None is day 3's. §N.10's day 2 was publishing `eighth-experimentation`'s assets
+  through the portal at the time (its 2.3).
+- **Standing from day 3**: `ml-demo-pipeline` and its runs, the registry's versions, `sandbox/bedrock/`'s
+  switches `false` since 21:27:37, and the editor's pipeline until the user's word.
