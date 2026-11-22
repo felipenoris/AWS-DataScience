@@ -1220,8 +1220,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    with nothing up: the requests `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC;
    xxvi's portal half from 13:35 to 13:50 UTC, yes; the Governance Manager's approvals at 14:04:10 and
    14:05:14 UTC, each fulfilment `COMPLETED` within 61 s and read on both sides (Stage 19's and Stage 20's
-   logs). Left: Stage 20 5.1's model, its archive and its tar; 4.12's consumer read from the query editor,
-   for xxiv.
+   logs); 4.12's consumer read from the query editor at 14:56:17 UTC, and xxiv read (Stage 19's log). Left:
+   Stage 20 5.1's model, its archive and its tar.
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
    pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and

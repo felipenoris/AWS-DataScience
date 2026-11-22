@@ -1588,7 +1588,17 @@ entry is still true is the reading.
   query's `StartQueryExecution` carries the source identity. Whether the consumer's opt-in, *Resource
   owners* under *Default permissions for AWS CloudTrail*, adds the principal's ARN to the owner's copy was
   not measured. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22 (2.4's Athena read, and the
-  attribution read after it).
+  attribution read after it). Read again 2026-11-22 in Production, on a data product's cross-account read
+  (Stage 19 4.12, verification xxiv): the query `cb03150a-…` from `eighth-experimentation`'s query editor
+  through the link `glue_db_blerpkhn9nj7o0.trades_notional` left the same pair of `GetDataAccess` in Sandbox,
+  and Production received the shared one as `AWSAccount` with the same kind of `principalId`. Production
+  also received the consumer's `glue:GetTable` and `BatchGetTable` with that identity, two of them carrying
+  the audit context with the query's id, so the owner's trail names the query in Glue's events. The vend's
+  `sts:AssumeRole` reads `AWSService` `glue.amazonaws.com` on the role the location is registered with, here
+  the deployment project's role SMUS registered, into the session `AWSLF-00-AT-<Sandbox account id>-…`,
+  under a session policy of `s3:GetObject` and `s3:ListBucket` on the table's prefix and `kms:Decrypt`
+  through S3; three `Decrypt` follow in that session. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-22 (4.12's consumer read).
 
 ## Athena
 

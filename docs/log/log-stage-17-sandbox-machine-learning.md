@@ -4964,3 +4964,19 @@ UTC.*
   event, which the trail's lookup does not return, so the time the definitions went is not read.
 - **7.6 done**: the four objects of its list are gone. The Nova Lite evaluation's input and output, the
   project's Bedrock service role, and `ml-demo-flow` with its role (`EXC-27`) stay.
+
+## 2026-11-22 — 7.6's portal half: the user's report, and Sandbox's trail
+
+*The user's words in the orchestrating session's chat, relayed to this session; Claude's reads as the
+infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`), at 15:13.
+Times UTC.*
+
+- **[user] The report**, at about 15:00, verbatim: *"Apaguei o deployment do blueprint e os dois apps."* The
+  deployment is `502a9c64-…-shared` under *Resource blueprints*, and the apps are *My apps*' rows *"Untitled
+  App - cer31"* and *"Untitled App - towev"*, as the orchestrating session named them.
+- **[Claude] Sandbox's trail**, read at 15:13 for 14:55 to 15:10, 14 minutes after the portal's call: no
+  `DeleteEnvironment` and no event naming `b343orq3qka5n4`. The call is in Data Governance's trail, made
+  there as the domain execution role in the owner's session (the entry above), while Claude's own
+  `DeleteEnvironment` from Sandbox at 14:53:25 is in both trails (6f's log). The definitions' deletions are S3
+  data events, which the lookup does not return.
+- **[Claude] The project's environments**, at 15:13: ten, every one `ACTIVE`, none named `…-shared`.

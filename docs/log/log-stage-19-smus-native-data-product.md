@@ -4744,3 +4744,53 @@ in Data Governance (`awsds-infra-data`), no AWS write. Times UTC.*
 - **[Claude] The objects**, read at 14:30: the subscriptions `3x9t8oblwdwwpc` and `c8euiy78k0c368` on
   `6wxl6t4zdypvkg`, `APPROVED`, unchanged since 13:44:38 and 13:44:39 (`SUP-452`). Nothing changes in AWS,
   and the waiting list's row goes.
+
+## 2026-11-22 — 4.12's consumer read from the query editor, and xxiv in Production's trail
+
+*The user's query as `eighth-experimentation`'s owner, the Data Scientist User, reported in the orchestrating
+session's chat and relayed to this session; Claude's reads as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and Production (`awsds-infra-prod`),
+reads alone, at 15:09 to 15:13. Times UTC.*
+
+- **[user] The read**, reported at 14:56:55, verbatim: *"A consulta pelo query editor funcionou: `SELECT *
+  FROM "glue_db_blerpkhn9nj7o0"."trades_notional" LIMIT 10;`. Rodei agora."* From `eighth-experimentation`'s
+  query editor on *Athena (SQL)*, with no space, as the orchestrating session relayed it.
+- **[Claude] The query** in the workgroup `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`:
+  `cb03150a-1538-4817-a29a-395ab7f86b68`, `SUCCEEDED`, submitted 14:56:17.674 and completed 14:56:19.531,
+  Athena engine version 3, 623 bytes scanned, 10 rows read and 10 returned (`get-query-runtime-statistics`;
+  the result itself not read). Sandbox's trail: `StartQueryExecution` at 14:56:17Z as
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` in the session `28f1b390-…@5hkjdsy3umpi1c`, source
+  identity `28f1b390-…`, the Data Scientist User's profile, invoked by `sqlworkbench.amazonaws.com`.
+- **[Claude] Sandbox's two `GetDataAccess`**, both at 14:56:18Z in that session, `SELECT`, `requesterService`
+  `ATHENA`, one `lakeFormationRoleSessionName`, `AWSLF-00-AT-<Sandbox account>-QK7JdtCMvN`. The one invoked
+  by `athena.amazonaws.com` is on the link `glue_db_blerpkhn9nj7o0/trades_notional`, with
+  `cellLevelSecurityEnforced` `true`, the project role as `lakeFormationPrincipal` and the audit context
+  `{queryId: cb03150a-1538-4817-a29a-395ab7f86b68}`. The one invoked by `glue.amazonaws.com` is on
+  Production's `app_etl/trades_notional`, `callType` `EXTERNAL`, shared event
+  `0289e0f4-4ddb-441f-869f-609879c22458`.
+- **[Claude] xxiv, Production's trail**: the shared `GetDataAccess` at 14:56:18Z on `app_etl/trades_notional`,
+  its `userIdentity` of type `AWSAccount` with Sandbox's account id and the `principalId`
+  `AROA47P7U4BDOUDA4B63F:28f1b390-…@5hkjdsy3umpi1c`, the project role's unique id and its session, invoked by
+  `glue.amazonaws.com`, with no ARN, no source identity and no audit context. The same identity is on the
+  consumer's `glue:GetTable` at 14:56:08Z and on a `GetTable` and a `BatchGetTable` at 14:56:18Z, the last
+  two carrying the audit context with the query's id. The vend: `sts:AssumeRole` at 14:56:18Z by
+  `glue.amazonaws.com` of `deploy-production`'s project role
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow` into the session `AWSLF-00-AT-<Sandbox
+  account>-QK7JdtCMvN`, under a session policy of `s3:GetObject` on
+  `awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev/data/catalogs/trades_notional` and below,
+  `s3:ListBucket` on that prefix and `kms:Decrypt` through S3; then three `kms:Decrypt` in that session, at
+  14:56:18Z and 14:56:19Z, on `alias/awsds-prod-project`'s key, the encryption context the bucket. Lake
+  Formation registered `awsds-prod-smus-projects/dzd-d8yrvx1ko7im6o/d7qcazihvr3s7k/dev` with that role,
+  hybrid access off, modified 2026-11-11 15:30:23. No error on any of these events.
+- **[Claude] The grant that admits it**, `list-permissions` at 15:12. On Production's table: two
+  `IAMPrincipals` `SELECT` rows for Sandbox, under `context.datazone.projectId=="avhvbqn37ty7m8"` and under
+  `dnl3l158mbhrio`'s (Stage 20 5.0's), beside the deployment project role's own rows; no other row admits a
+  Sandbox principal, and the read's role is `eighth-experimentation`'s, whose id the first condition names.
+  On the link: `IAMPrincipals` `DESCRIBE` under `avhvbqn37ty7m8`'s condition, and the consumer role's `ALL`,
+  `DESCRIBE`, `DROP`.
+- **xxiv answered**: Production's trail names the consumer's account, the project role's unique id and the
+  session `<user id>@<environment id>`, never an ARN, a source identity or a name, and the query's id only in
+  Glue's audit context. The read is admitted by the fulfilment's `SELECT`, and the data is vended through
+  `deploy-production`'s project role, Production's own role, under a session policy scoped to the table's
+  prefix. The S3 reads are data events, which the trail's lookup does not return. Appended to `SUP-416`.
+- **Left of 4.12**: the revocation, by 2.5's path, after `promotion.md` §N.10's day 2.
