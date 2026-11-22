@@ -1221,3 +1221,12 @@ read three AWS pages for `SUP-455` (`docs/REFERENCES.md`). Times are UTC.*
   the endpoints' came to 0.00180 USD in October and 0.00335 in November 1-21. The hub's share is not
   separable from GitLab's and the runners' without resource-level data. `layers.py` declares no per-GB rate
   on the proxy or the WireGuard host until the user decides.
+
+## 2026-11-22 — The hub's per-GB rates stay undeclared
+
+*The user's choice in chat, answering whether `make status` should declare the hub's per-GB rates: *"Não,
+deixe assim"*. Recorded by Claude.*
+
+- **[Claude]** The proxy's and the WireGuard host's rows in `scripts/tfhygiene/layers.py` keep no
+  `per_use` rate: neither cross-AZ peering at 0.01 USD/GB each way nor internet out at 0.090 USD/GB past the
+  free 100 GB a month. The readings behind the question are in the previous entry.
