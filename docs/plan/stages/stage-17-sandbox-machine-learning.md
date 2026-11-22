@@ -1944,7 +1944,7 @@ each run (decision 24 (b)).
   retention mode `none` declared in `us-west-2` and read back there (§M's M1), with 10.1's reading that
   the account owes Amazon's model no form and no agreement; `<env>/chains/`; `<env>/foundation/` with the
   alerts var-file, each deploy role's `state_read_keys` gaining `<env>/studio/` as "What pass 10 builds"
-  has it, absent from both on 2026-11-20, since the script pull request #321 merges reads `MODEL_ID` from
+  has it, absent from both on 2026-11-20, since the script pull request #321 merged (2026-11-22) reads `MODEL_ID` from
   that slice's output `app_genai_inference_profile_arn` as the deploy role. The table's egress row is
   written and planned here and created by 10.6's raises, both slices being `[E]`: `staging/egress/` still
   lacks the `optional_service_groups` variable on 2026-11-20, and without it a Staging `make up` ignores

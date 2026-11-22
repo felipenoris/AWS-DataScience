@@ -2179,3 +2179,20 @@ for SMUS acts; AWS read as the infrastructure user with `InfrastructureAccess` i
   `app-etl`, `app-ml`, `app-genai` and `app-dbt` `ok`, `make check` OK, and pre-commit's hooks passed on the
   merge commit `e6538fb0`, pushed to `claude/plano-estagios-execucao-5f64d8-n6-item10`
   (`00113780..e6538fb0`). The pull request reads `MERGEABLE`; its merge is the user's, before R2.
+
+## 2026-11-22 — #321 merged after R1
+
+*The user merged the pull request on GitHub and told the session that started this one; Claude read the
+object and the tree with nothing up, no AWS call. Times UTC.*
+
+- **[user] The merge**: pull request #321, 8.1's script change with `app-ml`'s and `app-genai`'s.
+- **[Claude] The object**, read with `gh pr view 321` at 13:30: `MERGED` at 13:28:54Z, the merge commit
+  `81d70158` on `main`, a single commit over `ba6455cf`. `scripts/`, `examples/`, `aws/` and
+  `.pre-commit-config.yaml` at `81d70158` equal the branch's head `e6538fb0`, and `ba6455cf` changed none of
+  them since the branch's sync at `77fc285a`.
+- **[Claude] The tree**: `./scripts/deploy-application.py --self-check` on a tree whose scripts and examples
+  equal `81d70158`, at 13:31, exit 0: every stage of `app-etl`, `app-ml`, `app-genai` and `app-dbt` `ok`,
+  `app-dbt`'s staging and prod at 9 variables, the samples *"14 log(s) read as expected, and the composed
+  name"*, and *"OK"*.
+- **Left of 8.1**: the mirror's push at R2's opening, `git pull` and `git push gitlab main` with GitLab up
+  (`promotion.md` §N.11.2 step 1), before `app-dbt`'s first push.
