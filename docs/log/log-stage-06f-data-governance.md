@@ -1607,3 +1607,32 @@ as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`
   `bgma38ycnwdvkg` as *"the owner's Share, a request made by a member of the owning project"*, `CT-17` one
   fulfilment on `mydatabase.house-price`, `CT-8` 57 project-conditioned `IAMPrincipals` grants, `CT-11` no
   direct Share on the lake. 2.7's deletion of `4lrapnc3syxd74` waits on the user's word (decision due 6).
+
+## 2026-11-22 — 2.7: the user's decision to delete the failed record by the API
+
+*The user's choice on a question card in the session "Decisões pendentes, uma de cada vez", relayed to this
+session with the user's words; Claude read Sandbox as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`) and the domain from `Data Governance Account`
+(`awsds-infra-data`), reads alone. Times UTC.*
+
+- **[user] The decision**, at 13:37, verbatim: *"Autorizar a 2.7 (Recomendado)"*. The card's other options,
+  not taken: *"Manter o registro falho"* and *"Adiar"* (until after 4.12's approval). The option as the card
+  stated it: the deletion by the API, `datazone delete-environment --domain-identifier dzd-d8yrvx1ko7im6o
+  --identifier 4lrapnc3syxd74`, not by the portal, whose client-side cleanup after *Create database* deleted
+  a database once (`test`, 2026-10-15, `SUP-172`); `mydatabase` and `house-price` saved before and read back
+  after, with the source `6kk4bknmo46o0g` and the trail's `DeleteDatabase` and `DeleteTable` in the minutes
+  after (Lesson 86). The write runs on the user's word in the chat of the session that runs it, after the
+  other sessions are told.
+- **[Claude] Before**, 13:22 to 13:39: the record `CREATE_FAILED`, created 2026-09-13 01:45:21, updated
+  01:46:15, `provisionedResources` null, its one user parameter `glueDbName` (default `mydatabase`), its last
+  deployment's failure the manage-access role's `lakeformation:CreateLakeFormationOptIn`. `mydatabase`,
+  created 2026-09-13 01:45:38, 17 s after the record, *"Created by DataZone for project
+  eighth-experimentation"*, at the project's `dev/data/catalogs/`; its Lake Formation rows: `IAMPrincipals`
+  `CREATE_TABLE`, `DESCRIBE` and `DROP` under `eighth-experimentation`'s condition, the provisioning role
+  every permission grantable, the manage-access role `CREATE_TABLE` and grantable `DESCRIBE`. `house-price`,
+  `EXTERNAL_TABLE` over the project's `dev/local-uploads/<folder>/`, 13 columns, version 0, updated
+  2026-09-13 02:14:48; its rows: `eighth-experimentation`'s project role every permission and `SELECT`, each
+  grantable, and `IAMPrincipals` `SELECT` under `test-experimentation`'s condition, the fulfilment of
+  `my-data-product`'s subscription of 08:46 (`bgma38ycnwdvkg`). The source `READY`, never run, no schedule,
+  no environment, on the connection `5pf7uc0ugllsb4`. The full `get-database` and `get-table` bodies were
+  saved outside the repository.
