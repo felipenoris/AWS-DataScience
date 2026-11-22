@@ -30,15 +30,16 @@ made from the project profile's blueprint of its kind: `AmazonBedrockPrompt`, `A
 `AmazonBedrockFunction`. DataZone deploys it as the stack `DataZone-Env-<environment id>`, whose handler
 calls Bedrock as the provisioning role; the trail attributes those calls to `datazone.amazonaws.com`, session
 `AmazonDataZoneEnvironmentDeployer-<account>`. The chat agent app is the exception: *Save* writes its
-definition and creates nothing until *Deploy*.
+definition and creates nothing until *Deploy*. A flow app's first *Save* creates its environment; a later
+*Save* writes the definition alone, and each test message deploys it (`SUP-448`).
 
 | Identity | What it does in the builder |
 |---|---|
-| The provisioning role, `awsds-sandbox-smus-provisioning` | the stacks' creates: `CreatePrompt`, `CreateGuardrail`, `CreateFlow` and `PrepareFlow`, the knowledge base's vector bucket and index, `CreateAgent` |
-| The project role, `datazone_usr_role_<project id>_<suffix>` | the portal's own calls: a prompt's test (`ConverseStream`) and its versions, `CreateEvaluationJob`. It is the knowledge base's role, and a sync's embeddings run as it, session `EmbeddingTask-<job id>`, from `bedrock.amazonaws.com` |
-| The service role, `AmazonBedrockServiceRole-<project id>-<suffix>` | a flow's run (`Converse`), an evaluation's inference and its pre-flight `Converse`; the chat agent's `CreateAgent` names it as the agent's role |
+| The provisioning role, `awsds-sandbox-smus-provisioning` | the stacks' creates: `CreatePrompt`, `CreateGuardrail`, `CreateFlow` and `PrepareFlow`, the knowledge base's vector bucket and index, `CreateAgent`; a flow's `UpdateFlow` and `PrepareFlow` at each test |
+| The project role, `datazone_usr_role_<project id>_<suffix>` | the portal's own calls: a prompt's test (`ConverseStream`) and its versions, `CreateEvaluationJob`. It is the knowledge base's role: a sync's embeddings run as it, session `EmbeddingTask-<job id>`, and so does a flow's query embedding (`InvokeModel`), both from `bedrock.amazonaws.com` |
+| The service role, `AmazonBedrockServiceRole-<project id>-<suffix>` | a flow's run: a knowledge base node's generation and a prompt node's `Converse`; an evaluation's inference and its pre-flight `Converse`; the chat agent's `CreateAgent` names it as the agent's role |
 | The model-management role, `AmazonSageMakerBedrockModelManagementRole-<account>` | the project's application inference profile for a model, at the model's first use (§N) |
-| The page itself | the chat agent's preview, `InvokeInlineAgent`, sent by the browser to `bedrock-agent-runtime.us-west-2.amazonaws.com` |
+| The page itself | the chat agent's preview, `InvokeInlineAgent`, and a flow's test, `InvokeFlow` on the alias `TSTALIASID`, both sent by the browser to `bedrock-agent-runtime.us-west-2.amazonaws.com` |
 
 **The flow's own role.** A flow app's environment also creates `AmazonBedrockFlowServiceRole-<environment id>`,
 with AWS's `SageMakerStudioBedrockFlowServiceRolePolicy` and no permissions boundary, and the flow does not
@@ -50,7 +51,7 @@ service role (`SUP-447`). Its trust admits this account's flows alone, and the p
 |---|---|---|---|
 | Prompt | an environment; its stack's `CreatePrompt`; each version by `CreatePromptVersion` as the project role | the project role, for the editor's test | `KWK4ZJRAWD`, two versions, the second asking for Brazilian Portuguese |
 | Guardrail | an environment; its stack's `CreateGuardrail`, under the project key | the caller of the model it guards | `razikgicppzy`, `DRAFT`, one denied topic, after `sagemaker-prereqs-v0.14.0` (§K) |
-| Flow app | an environment; its stack's `CreateFlow` and `PrepareFlow`, under the project key | the service role | `Q9HHV1YRRX`, `Prepared`, one prompt node, run once |
+| Flow app | an environment; its stack's `CreateFlow` and `PrepareFlow`, under the project key, then `UpdateFlow` and `PrepareFlow` at each test (`SUP-448`) | the service role; a knowledge base node's embeddings as the knowledge base's role | `Q9HHV1YRRX`, `Prepared`, a knowledge base node over `ml-demo-runbooks` before the prompt node (7.4b's fallback); no *Share* |
 | Knowledge base | an environment; an S3 Vectors bucket under the project key and its index; the knowledge base and its data source on a prefix of the projects bucket | the project role | `QWDNVYXADH`, `ACTIVE`, 2 of 20 runbooks indexed (`SUP-411`) |
 | Evaluation | an environment whose stack holds one output and no resource; the job, by `CreateEvaluationJob` as the project role | the service role | `31epl34t77s3`, Nova Lite, `Completed`; Haiku 4.5's refused (`SUP-418`) |
 | Chat agent app | *Save*: a definition file. *Deploy*: an environment `<uuid>-shared` and its stack's `CreateAgent` | the service role, named in the create | built; its preview and its deploy refused by Agents Classic (`SUP-446`) |
@@ -58,7 +59,8 @@ service role (`SUP-447`). Its trust admits this account's flows alone, and the p
 
 **The definition files.** The builder keeps each component's definition in the project's prefix of the
 projects bucket, `amazon-bedrock/builder/components/<kind>/<uuid>-definition.json`, and each app's in
-`amazon-bedrock/builder/apps/chatApp/<uuid>-definition.json`, both written by the project role. A row of
+`amazon-bedrock/builder/apps/chatApp/` or `apps/flowApp/<uuid>-definition.json`, all written by the project
+role. A row of
 *My components* stays while its definition does, after its environment is gone (§X).
 
 **What bills at rest** is the knowledge base's S3 Vectors store, by storage: 0.06 USD per GB-month, cents for
@@ -83,14 +85,15 @@ takes one, the `Retrieve` of §U among them.
   pass names it ([`POLICIES.md`](../../../terraform-live/identity/org-policies/POLICIES.md)).
 - The project's application inference profile for the model (§N), created at its first use.
 
-The builder's lists offered Nova Lite and the three Claude 4.5 models to the chat agent and the evaluation,
-and Titan V2 to the knowledge base (2026-11-22).
+The builder's lists offered Nova Lite and the three Claude 4.5 models to the chat agent, the evaluation and a
+flow's knowledge base node, and Titan V2 to the knowledge base (2026-11-22).
 
 **The retention ceiling.** `DenyInvokingModelsThatRetain` refuses, to every principal, the models the vendor
-names as retaining traffic for review, `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1`, and
-Bedrock's retention mode `none`, hand-managed, is declared in all 17 Regions (6e 7.5). AWS refuses
-`claude-opus-5` and `claude-sonnet-5` to this account (`EXC-08` in [`docs/AWS_STATE.md`](../../AWS_STATE.md)).
-None of these models appears in the builder's lists.
+names as retaining traffic for review, `anthropic.claude-fable-5`, `anthropic.claude-fable-5-1` and
+`anthropic.claude-fable-5-2`, and Bedrock's retention mode `none`, hand-managed, is declared in all 17 Regions
+(6e 7.5). AWS refuses `claude-opus-5`, `claude-sonnet-5`, `claude-opus-5-5`, `claude-sonnet-5-5` and
+`claude-haiku-5-5` to this account (`EXC-08` in [`docs/AWS_STATE.md`](../../AWS_STATE.md)). None of these
+models appears in the builder's lists.
 
 **The boundary.** Every project role and every `AmazonBedrock*` role the Tooling environment creates carries
 `awsds-sandbox-project-boundary` (D13); the flow's own role is the exception (§O, `SUP-447`).
@@ -169,12 +172,29 @@ page lists: no PII, word or grounding filter can be set. The blocked message app
 responses. The lab's guardrail stores its content filters at `HIGH` both ways for violence, hate, sexual and
 insults, and `NONE` for prompt attack and misconduct. Its create needs §K's second statement.
 
-**The flow app.** *Build* → *Flow*: a canvas and a palette. The builder has no model node: a prompt node
-carries the model and points at a prompt version, `prompt/<id>:<version>`. The lab's flow is
-`FlowInputNode` → `Prompt_1` (the prompt's version 2) → `FlowOutputNode`, and its one run answered in
-Portuguese. *Save* takes about three minutes and prepares the flow. Claude in Chrome's pointer drag from the
-palette leaves the canvas empty; a scripted HTML5 drag (`dragstart`, `dragenter`, `dragover` and `drop`,
-carrying `application/reactflow`) places a node, and the edges take a pointer drag.
+**The flow app.** *Build* → *Flow*: a canvas and a palette, whose *Nodes* tab lists *Collector*,
+*Condition* and *Iterator*; *Agent* and *Prompt*; *Knowledge Base*, *S3 Retrieval* and *S3 Storage*; and
+*Flow output*. The builder has no model node: a prompt node carries the model and points at a prompt
+version, `prompt/<id>:<version>`. A *Knowledge Base* node takes the knowledge base, a response model (Opus
+4.5 preselected) and a guardrail, with no search type and no result count; it takes `retrievalQuery` and
+returns `outputText`, a generated answer with no citation, and the flow stores the project's application
+inference profile for the model and the guardrail at `DRAFT`. The lab's flow is `FlowInputNode` →
+`KnowledgeBaseNode_1` (`ml-demo-runbooks`, Claude Haiku 4.5, `ml-demo-guardrail`) → `Prompt_1` (the
+prompt's version 2) → `FlowOutputNode`. Claude in Chrome's pointer drag from the palette leaves the canvas
+empty; a scripted HTML5 drag (`dragstart`, `dragenter`, `dragover` and `drop`, carrying
+`application/reactflow`) places a node, and the edges take a pointer drag.
+
+The first *Save* creates the environment and prepares the flow, in about three minutes. A later *Save* reads
+*"Saved"* and writes the definition alone; each test message updates the stack, whose `UpdateFlow` and
+`PrepareFlow` deploy the saved definition, then invokes the flow, 70 to 80 s from the send to the answer
+(`SUP-448`). A flow read with `get-flow` therefore shows the last test, never the last *Save*. A flow app
+has no *Share*: *My apps* lists it *"Not shared"*, and AWS's share page describes chat agent apps alone.
+
+Over the two indexed runbooks the lab's flow answered the questions whose answer they hold, and the prompt
+node rewrote the other two: a question outside them came back as a request for *"conteúdo real do
+runbook"*, and the guardrail's denied topic as a remark that the excerpt held *"uma mensagem de erro
+genérica"*. The guardrail's blocked message and the knowledge base's no-answer text reach the user only
+through the next node.
 
 **The knowledge base.** *AI apps* → *Asset gallery* → *My components* → *Create component* → *Knowledge
 Base*. The form opens on OpenSearch Serverless and 256 dimensions; this estate takes Titan Text Embeddings V2
@@ -211,8 +231,9 @@ guardrail by component uuid (`SUP-446`).
 The app is an Agents Classic agent: *Preview* calls `InvokeInlineAgent` and *Deploy* calls `CreateAgent`, and
 Agents Classic refuses both to an account with no prior agent use; AWS's page says *"There is no exception
 process."* (verification xxxiv). In this account the chat agent app neither previews nor deploys. The
-builder's alternative is a flow app over the knowledge base (7.4b); an agent an application promotes is
-AgentCore's (decision 26 (a), [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G).
+builder's alternative is a flow app with a knowledge base node (above), which chains fixed steps and runs no
+agent loop; an agent an application promotes is AgentCore's (decision 26 (a),
+[`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G).
 
 **The function** is not created: the Lambda it makes runs outside the VPC with a function's default internet,
 outside D38's hub (decision 10).
@@ -253,10 +274,13 @@ from IAM by the simulator (Lesson 24).
 | *"An error occurred while creating the evaluation job: Unknown error. Potentially invalid input"* | `Converse` and `CreateEvaluationJob`: *"`temperature` and `top_p` cannot both be specified for this model. Please use only one."* (`SUP-418`) | Nova Lite; no Claude model |
 | The preview's *"Something went wrong."* under *"Failed to run application Amazon Bedrock encountered an error when invoking the Bedrock runtime API. Try again later."* | `InvokeInlineAgent`, 403 in the browser's response: *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage."* (`SUP-446`) | none in this account: a flow app (7.4b) or AgentCore (decision 26 (a)) |
 | The deploy's *"… failed to stabilize after create/update: … Access denied for operation 'AWS::Bedrock::Agent'."* | `CreateAgent` `AccessDenied`, with no message and no KMS call; the simulator reads it allowed (`SUP-446`) | the same |
+| A flow's answer saying its excerpt holds only *"uma mensagem de erro genérica"* | the guardrail blocked the question at the knowledge base node, and the prompt node rewrote the blocked message: `InvocationsIntervened` under `TopicPolicy` and `Input` (§V) | the question, outside the denied topic |
+| A flow's answer asking for a runbook's real content, the excerpt holding *"uma mensagem genérica de indisponibilidade"* | the knowledge base found nothing: the answer is in none of the indexed documents (`SUP-411`), and the prompt node rewrote the no-answer text | none until the index takes the documents |
+| A flow edited and saved that answers as before | *Save* wrote the definition and deployed nothing (`SUP-448`) | a test message, which deploys it |
 | *"Access to model required"* on *Foundation model as a parser* | not read | the default parser |
 | *"This tool is not available for this project."*, *"No models found. Contact your admin to enable more models."* | the menu's blueprints or the models' enablement | [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G |
 | A model call refused *"with an explicit deny in a service control policy"* | `DenyBedrockInvocationOutsideTheScopedModels` or `DenyInvokingModelsThatRetain` (§I) | a scoped model; [`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §F holds the dated readings |
-| *"… is not available for this account … contact AWS Sales"* | AWS's refusal of `claude-opus-5` and `claude-sonnet-5`, `EXC-08` | none: a Claude 4.5 model |
+| *"… is not available for this account … contact AWS Sales"* | AWS's refusal of `claude-opus-5`, `claude-sonnet-5` and the three 5.5 models, `EXC-08` | none: a Claude 4.5 model |
 
 ## V. The instruments
 
@@ -276,14 +300,17 @@ reads only.
 | The grants on the key | `aws kms list-grants --key-id <project key>`, whose `CreationDate` prints in the laptop's time |
 | A refused create | `aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=<event>`; for `CreateAgent`, the IAM simulator with resource `*`, since the action takes no resource type |
 | A refusal of a call the page sends itself | the browser's network response, `InvokeInlineAgent`'s among them |
+| The definition a flow runs | `aws bedrock-agent get-flow --flow-identifier <id>`, which reads the last test's deploy (`SUP-448`); the saved definition is the app's file in the projects bucket |
+| Whether the guardrail intervened, on which policy and which side | `aws cloudwatch get-metric-statistics --namespace AWS/Bedrock/Guardrails --metric-name InvocationsIntervened`, with the dimensions `GuardrailArn` and `GuardrailVersion`, or `GuardrailContentSource`, `GuardrailPolicyType` and `Operation=ApplyGuardrail`; `Invocations` counts two per answered question and one per blocked input |
+| The door of a flow's model calls | the event's `vpcEndpointId` against `aws ec2 describe-vpc-endpoints`: a knowledge base's calls carry an id the account does not hold (`SUP-449`) |
 
 ## U. What is unmeasured
 
 | What | Closed by |
 |---|---|
-| Whether the flow builder offers a knowledge-base node, and a flow app's answers over `ml-demo-runbooks` | 7.4b's fallback, the user's |
 | `Retrieve` on the knowledge base from a space, through `bedrock-agent-runtime` | verification xxiv |
-| A shared app's snapshot in the project's catalog, and answers that cite the runbooks' chunks | verifications xxiv and xxv; no app has shared |
+| A shared app's snapshot in the project's catalog, and answers that cite the runbooks' chunks | none in this account: the chat agent app is refused (`SUP-446`), a flow app has no *Share* (`SUP-448`), and a knowledge base node returns no citation |
+| A flow's `InvokeFlow` and its knowledge base's `Retrieve` and `RetrieveAndGenerate`: data events, which `lookup-events` never returns | none planned |
 | Which metadata key exceeds 2 KB in the 18 failed runbooks | none planned (`SUP-411`) |
 | Whether the guardrail's unconstrained grant is retired with the guardrail | the guardrail's deletion, which decision 5 does not plan |
 | What becomes of the flow's own role: an exception, the flow's deletion, whose stack holds the role, or a boundary attached by hand | the user's ([`waiting-on-the-user.md`](../waiting-on-the-user.md)) |

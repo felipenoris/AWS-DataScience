@@ -3540,8 +3540,8 @@ entry is still true is the reading.
 - `SUP-417` **The Bedrock IDE's guardrail is created by DataZone as the provisioning role under the project
   key, and Bedrock refuses it unless that role may `kms:CreateGrant` on the key, which SMUS's key-permissions
   page does not name** (measured 2026-11-22 in Sandbox, Stage 17 7.4). The guardrail was created from the
-  portal's *Build* → *Guardrail* with one denied topic. At 01:56:24Z `CreateGuardrail`, called from
-  `datazone.amazonaws.com` as `awsds-sandbox-smus-provisioning` (session
+  portal's *My components* → *Create component* → *Guardrail* with one denied topic. At 01:56:24Z
+  `CreateGuardrail`, called from `datazone.amazonaws.com` as `awsds-sandbox-smus-provisioning` (session
   `AmazonDataZoneEnvironmentDeployer-<account>`), was refused with *"You don't have sufficient permissions
   for this KMS key."*, and in the same second `kms:CreateGrant` on the project key was refused: *"… is not
   authorized to perform: kms:CreateGrant on resource: arn:aws:kms:us-west-2:<account>:key/<project key> because
@@ -3657,9 +3657,27 @@ entry is still true is the reading.
   role and the new one reads no `RoleLastUsed`. Its trust admits `bedrock.amazonaws.com` for this account's
   flows alone, its policy names only the project's Bedrock objects by tag, models through an inference
   profile, `RetrieveAndGenerate` on `*` and the project key through Bedrock, and the project role may not pass
-  it (`iam:PassRole` `implicitDeny` in the simulator). No SMUS page read for this project describes the role.
-  A check that every blueprint-authored role carries the boundary fails on each flow app's environment. Where:
-  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  it (`iam:PassRole` `implicitDeny` in the simulator). No SMUS page read for this project describes the role,
+  the flow app pages read on 2026-11-22 included. A check that every blueprint-authored role carries the
+  boundary fails on each flow app's environment. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+
+- `SUP-448` **The Bedrock IDE's flow builder deploys a flow on each test message and never on *Save*, and
+  offers a flow app no *Share*** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). `ml-demo-flow` was edited to
+  carry a knowledge base node. *Save* read *"Saved"* and wrote the four-node definition to the project's
+  bucket, `amazon-bedrock/builder/apps/flowApp/<uuid>-definition.json`, and `GetFlow` still read the two-node
+  flow prepared two hours before. The first test message ran a PUT of the asset `genAI/assets/flows/<uuid>`,
+  DataZone's `UpdateEnvironment`, a PUT of the environment's `definition.json` and the update of the stack
+  `DataZone-Env-<environment id>` (04:25:26Z to 04:25:36Z), whose `UpdateFlow` and `PrepareFlow` ran as the
+  provisioning role from `datazone.amazonaws.com`, before the browser's `InvokeFlow` on `TSTALIASID`
+  (04:25:49Z). Each of the three later messages, with no edit between them, updated the stack again
+  (`UpdateFlow` at 04:28:33Z and 04:30:29Z), and a message took 70 to 80 s from the send to the answer. The
+  stack updated `BedrockFlow` alone. *My apps* lists the flow *"Not shared"*, with a delete icon alone. AWS's
+  flow app pages say *Save* saves the app and the run button tests it, and its share page describes chat agent
+  apps alone (`build-flow.html`, `app-share.html`, read 2026-11-22). A flow saved and never tested therefore
+  runs its previous definition, a `GetFlow` after *Save* reads the edit as lost, and every test is a stack
+  update as the provisioning role. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
+  `runbooks/bedrock-generative-ai.md` §B.
 
 ## SageMaker AI spaces and images
 
@@ -5041,6 +5059,21 @@ entry is still true is the reading.
   returned 96 profiles, all `SYSTEM_DEFINED`. In the console's code a playground disable deletes the
   profile, so a later enable gives a new id and an old series no longer resolves to a model. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-10-19; `aws/bedrock-usage.py`.
+
+- `SUP-449` **A knowledge base's model calls inside a Bedrock flow carry a `vpcEndpointId` the account does
+  not hold, and no `vpcEndpointAccountId`** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). A flow whose
+  knowledge base node answers from `ml-demo-runbooks` wrote, per question, `InvokeModel` on the embeddings
+  model's application inference profile as the knowledge base's role and `Converse` on the response model's
+  profile as the flow's execution role, both invoked by `bedrock.amazonaws.com` with `vpcEndpointId`
+  `vpce-0cf920938fc4d8fc6`. `DescribeVpcEndpoints` in the account answers *"The Vpc Endpoint Id
+  'vpce-0cf920938fc4d8fc6' does not exist"* (`InvalidVpcEndpointId.NotFound`), and the account's own
+  `bedrock-runtime` endpoint has another id. The flow's prompt node, calling `Converse` as the same role on the
+  same profile, carries no `vpcEndpointId`. CloudTrail's record contents page says an event originated by AWS
+  through a service's VPC usually carries `AWS Internal` or the service name in both fields (read
+  2026-11-22). `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events, as Bedrock's CloudTrail
+  page says, and `lookup-events` returns none. A door read from `vpcEndpointId` alone therefore names an
+  endpoint outside the estate; the id is compared with the account's endpoints before a call is attributed
+  to one (Lesson 40). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ## Terraform
 

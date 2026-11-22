@@ -4632,3 +4632,72 @@ UTC.
 - **[Claude] What waits on the user**: the flow's role, which `ML-8` fails on every run while the flow
   exists: accept it as an exception, delete the flow, whose stack holds the role, or attach the boundary by
   hand. A second flow app, 7.4b's fallback, creates a second such role.
+
+## 2026-11-22 — Day 2's sitting B: 7.4b's fallback, a knowledge base node in `ml-demo-flow`
+
+- **[user] The authorization.** *"autorizo o plano B, editando o flow existente."*: `ml-demo-flow` edited to
+  carry a knowledge base node, rather than a new flow app, whose environment would create a second role with
+  no boundary (`SUP-447`).
+- **[Claude] The edit**, in the portal as Data Scientist User. *Build* → *Flow* → `ml-demo-flow`: the
+  builder's *Nodes* tab lists *Logic* (*Collector*, *Condition*, *Iterator*), *Orchestration* (*Agent*,
+  *Prompt*), *Data* (*Knowledge Base*, *S3 Retrieval*, *S3 Storage*) and *Other* (*Flow output*). The canvas
+  took the *Knowledge Base* node from a scripted HTML5 drag (`DragEvent`s carrying `application/reactflow`
+  `KnowledgeBaseNode`), and the edges from pointer drags. The node's form offers the knowledge base, a
+  response model (Nova Lite, Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5, Opus 4.5 preselected)
+  and a guardrail, with no search type and no result count, as AWS's page lists
+  (`add-kb-component-prompt-flow-app.html`, read 2026-11-22): `ml-demo-runbooks`, Claude Haiku 4.5 and
+  `ml-demo-guardrail`. The flow became *Flow input* → `KnowledgeBaseNode_1` (`retrievalQuery`) → `Prompt_1`
+  (`excerpt`, prompt `KWK4ZJRAWD` version 2) → *Flow output*.
+- **[Claude] *Save* does not deploy** (`SUP-448`). *Save* read *"Saved"* at about 04:21 and wrote the app's
+  definition, `amazon-bedrock/builder/apps/flowApp/<uuid>-definition.json`, to the project's bucket, with the
+  four nodes; `get-flow` still read the two-node definition prepared at 02:02:40.
+- **[Claude] Each test message deploys.** The first message's send ran a PUT of the asset
+  `genAI/assets/flows/<uuid>`, DataZone's `UpdateEnvironment` on `5er1gtql9ewbgw`, a PUT of the environment's
+  `definition.json`, and the update of the stack `DataZone-Env-5er1gtql9ewbgw` from 04:25:26 to 04:25:36,
+  whose `UpdateFlow` and `PrepareFlow` ran as the provisioning role from `datazone.amazonaws.com`. The flow
+  read `Prepared` with the four nodes at 04:25:31, and the browser sent `InvokeFlow` on the alias
+  `TSTALIASID` at 04:25:49. Each of the three later messages repeated the update with no edit between them:
+  the stack from 04:26:50 to 04:27:01, `BedrockFlow` its one resource updated; `UpdateFlow` and `PrepareFlow`
+  at 04:28:33 and 04:28:34, then at 04:30:29 and 04:30:30. A message took about 70 to 80 s from the send to
+  the answer. No role was created.
+- **[Claude] The answers**, to four questions in Portuguese:
+  - *"Em quais situações o uso do root da conta Management é justificado?"*: the three cases of
+    `break-glass.md`, Identity Center unavailable, a broken organization, and a restrictive policy that
+    denies what it should not.
+  - *"O que aconteceu com o buildbox e onde as imagens são construídas agora?"*: retired on 2026-10-12 at
+    Stage 7 step 6.5 after six releases, the images built by the build runner's pipeline
+    (`gitlab/awsds/dev-env/README.md`), the push by the runner's role through ECR's credential helper, as
+    `buildbox.md` says.
+  - *"Em qual porta o proxy Squid do hub escuta?"*: no answer; the prompt node called its excerpt *"uma
+    mensagem genérica de indisponibilidade"*. The port is in neither indexed document (`SUP-411`).
+  - *"Em quais ações da bolsa devo investir minhas economias para ter o maior retorno?"*: refused by the
+    guardrail at the input; the prompt node called its excerpt *"uma mensagem de erro genérica"* and asked
+    for a runbook excerpt.
+
+  The guardrail's blocked message and the knowledge base's no-answer text reach the user rewritten by the
+  prompt node, never verbatim. The node's output is `outputText` alone, so the flow's answers carry no
+  citation (verification xxv's citation half).
+- **[Claude] The guardrail's metrics**, `AWS/Bedrock/Guardrails`, `razikgicppzy` at `DRAFT`, per minute:
+  `Invocations` 2 at 04:25, 04:27 and 04:28 and 1 at 04:30; `InvocationsIntervened` 0, 0, 0 and 1, the 1
+  under `GuardrailPolicyType` `TopicPolicy` and `GuardrailContentSource` `Input`; `TopicPolicy` at `Output`
+  read 0 at 04:25, 04:27 and 04:28, with no datapoint at 04:30. An answered question is evaluated twice, its
+  input and its response, and a blocked input once.
+- **[Claude] The trail, per message** (`SUP-449`), read as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`); the second message's, 04:27:25 to 04:27:30: `GetInferenceProfile` as the
+  project's service role; `InvokeModel` on the embeddings profile `p391nstyc81c` as the project role, the
+  knowledge base's role; `Converse` on `ljl42zoh6e4v` as the service role, the node's generation; `GetPrompt`;
+  and the prompt node's `Converse` as the service role. Every event is invoked by `bedrock.amazonaws.com`.
+  The two knowledge base calls carry `vpcEndpointId` `vpce-0cf920938fc4d8fc6` and no `vpcEndpointAccountId`;
+  `describe-vpc-endpoints` answers *"The Vpc Endpoint Id 'vpce-0cf920938fc4d8fc6' does not exist"*
+  (`InvalidVpcEndpointId.NotFound`), the account's own `bedrock-runtime` endpoint being
+  `vpce-0081304ac7a7cbdd3` and its `bedrock-agent-runtime` `vpce-0ef6168e25e9adb32`. The other events carry
+  no `vpcEndpointId`. `lookup-events` holds no `InvokeFlow`, `Retrieve` or `RetrieveAndGenerate`.
+- **[Claude] No *Share* for a flow app.** *My apps* lists `ml-demo-flow` *"Not shared"*, with a delete icon
+  alone. AWS's share page describes chat agent apps alone, and the flow app pages name no share
+  (`app-share.html`, `build-flow.html`, read 2026-11-22). The authorized *Share* was not performed, and
+  verification xxiv's catalog half has no object to read.
+- **[Claude] A correction to this day's 7.4 entry**: the guardrail's form opens from *My components* →
+  *Create component* → *Guardrail*, not from *Build*.
+- **[Claude] What waits on the user**: nothing new. The flow keeps the project's service role as its
+  execution role, `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` stands as before (`SUP-447`), and xxiv's
+  `Retrieve` from a space stays the user's.
