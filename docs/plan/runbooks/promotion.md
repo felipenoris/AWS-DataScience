@@ -2306,7 +2306,7 @@ about 3 USD, against 0.36 to 0.87 USD for the next day's Config cycle.
 | Day | Raise | Blocks | Hours |
 |---|---|---|---|
 | 1 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | 6d decision 6's render and reading; Stage 20's sitting A; 6d 4.7, 7.6, 7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half. Ran 2026-11-21 to 7.6; the rest rides day 2's end (N.9.3) | about 6.5 |
-| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B with 2.3 to 3.2, and pass 7; then 6d's remainder of day 1 | about 8 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17's sitting B with 2.3 to 3.2, and pass 7; then 6d's remainder of day 1. Ran 2026-11-21 to 22 without 6d's remainder (N.9.4) | about 8 |
 | 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | 6e 6.4's window; Stage 17's sitting C and pass 5 | about 8 |
 
 A group lasts one apply, so each day's raise names every group its blocks call, and no other. The tunnel is
@@ -2346,12 +2346,12 @@ items in order" and [Stage 20](../stages/stage-20-dbt-lineage.md)'s "Sitting A i
 10. 6d's step 12: 4.7's schedule deleted, the spaces stopped, the portal tabs closed; then the lowering
     (N.9.6).
 
-**Day 1 ran on 2026-11-21 to step 8**: Stage 20's sitting A whole, and 6d to 7.6. The user deleted the
-spaces and lowered the estate before step 9. Step 8's 7.5 half, steps 9 and 10 are 6d's *The remainder after
-day 1*, about 75 minutes on the base endpoint set, at the end of day 2 before its lowering, the user's
-choice of 2026-11-21 (N.9.4): 7.7's sign-out ends every portal tab, so it comes after that day's portal work. The deep
-link is its one method (`SUP-398`), with Chrome relaunched on the proxy flag under the monitored profile
-and the copy's portal tab watched (`SUP-399`).
+**Day 1 ran on 2026-11-21 to step 8**: Stage 20's sitting A whole, and 6d to 7.6. The user deleted the spaces
+and lowered the estate before step 9. Step 8's 7.5 half, steps 9 and 10 are 6d's *The remainder after day 1*,
+about 75 minutes on the base endpoint set, planned for the end of day 2, the user's choice of 2026-11-21, and
+left unrun there (N.9.4). 7.7's sign-out ends every portal tab, so it comes after the sitting's last portal
+work. The deep link is its one method (`SUP-398`), with Chrome relaunched on the proxy flag under the
+monitored profile and the copy's portal tab watched (`SUP-399`).
 
 #### N.9.4 Day 2: Stage 17's sitting B, its passes 2 and 3, pass 7, and 6d's remainder
 
@@ -2389,6 +2389,14 @@ that shape the day:
 - Each project's *Update project* banner, seen at 0.9's reading on 2026-11-21, stays unpressed: the press
   re-deploys the project's `Tooling` environment (`SUP-380`) and is 6d 2.4's after half, which Claude reads
   before and after.
+
+**Day 2 ran on 2026-11-21 to 22** (Stage 17's and 6d's logs): steps 1, 2 and 4, pass 7 with 7.4b's fallback, a
+knowledge base node in the existing flow on the user's word, after Agents Classic refused the chat agent
+(`SUP-446`); the closing reads at 05:03 UTC and Sandbox's lowering from 05:08 to 05:15. Step 3 did not run,
+the user's choice at 04:59 UTC, and 6d's remainder waits for a later Sandbox sitting on the base endpoint set
+(6d's `Status`). 3.2 created the group at 00:18 UTC, so 3.3 reads `eighth-experimentation`'s source run of
+about 17:38 UTC on 2026-11-22. The owner's *Update project* presses, 6d 2.4's after half, ran from 05:14 UTC,
+read by the coordinating session.
 
 #### N.9.5 Day 3: 6e 6.4, Stage 17's sitting C and its pass 5
 
@@ -2435,10 +2443,10 @@ At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
 - a Config cycle of Sandbox's `[E]` slices each day, 0.36 to 0.87 USD whatever its length.
 
 Before the spaces, day 1 bills about 0.22 USD/h, day 2 0.27, 0.31 after the rebuilds and 0.28 since the VPN
-host's return, and day 3 0.26, some 1.4, 2.4 and 2.2 USD of hub and endpoints; with the spaces and the Config cycle, 2 to 4 USD a day and 9
-to 11 USD for the sitting. The
-models' tokens, the jobs and the embeddings are billed apart, and 6e 6.4's session is the largest of them;
-Stage 17's training jobs are about five minutes of `ml.m5.xlarge` each, at 0.23 USD/h.
+host's return, and day 3 0.26, some 1.4, 2.4 and 2.2 USD of hub and endpoints; with the spaces and the Config
+cycle, 2 to 4 USD a day and 9 to 11 USD for the sitting. The models' tokens, the jobs and the embeddings are
+billed apart, and 6e 6.4's session is the largest of them; Stage 17's training jobs are about five minutes of
+`ml.m5.xlarge` each, at 0.23 USD/h.
 
 #### N.9.8 What follows the sitting
 
@@ -2677,10 +2685,10 @@ before 2026-12-18 when it carries `app-dbt`, or with that archive moved to dbt 1
 #### N.11.3 The sittings' cost
 
 At the rates of [`gitlab.md`](gitlab.md) §U and [`cost-model.md`](../cost-model.md)'s "Per session": the hub,
-0.036 USD/h (N.9.7); GitLab's session, 0.1961 USD/h, and its three runners with `BUILD=1`, 0.2493;
-Staging's and Production's egress, 0.080 USD/h each while raised; a Config cycle of GitLab's `[E]` slices,
-0.21 to 0.38 USD per sitting. A sitting of six to eight hours bills about 0.48 USD/h before the targets'
-egress, some 4 to 6 USD in all. R1 adds N.8.3's warehouse queries, at 1.44 USD per query-hour and nothing idle, against
+0.036 USD/h (N.9.7); GitLab's session, 0.1961 USD/h, and its three runners with `BUILD=1`, 0.2493; Staging's
+and Production's egress, 0.080 USD/h each while raised; a Config cycle of GitLab's `[E]` slices, 0.21 to 0.38
+USD per sitting. A sitting of six to eight hours bills about 0.48 USD/h before the targets' egress, some 4 to
+6 USD in all. R1 adds N.8.3's warehouse queries, at 1.44 USD per query-hour and nothing idle, against
 Production's trial. The two replace the sittings of release G, of N.8.3 and of each application's first
 release, each of which raised the same hub, GitLab and egress.
 

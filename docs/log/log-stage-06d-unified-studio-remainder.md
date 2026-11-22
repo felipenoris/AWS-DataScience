@@ -4811,7 +4811,7 @@ reads through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure use
   half (`studio.py`), `US-13` and the other projects' presses, `eighth-experimentation` and
   `test-experimentation` among them, after this sitting's lowering.
 
-## 2026-11-22 — 2.7 step 8 and 2.4's after half: the image pin through the six projects
+## 2026-11-22 — 2.7 step 8 and 2.4's after half: the image pin through every Sandbox project
 
 *The coordinating session's readings (*"Ambiente no ar: coordenação e applies do hub (Stage 12 2.2 [D])"*),
 relayed to this session after the presses and written here by Claude. That session read through
@@ -4880,5 +4880,5 @@ the same profiles. Times are UTC.*
   blueprint environment holds the image pin that way.
 - **[Claude] The records**: `SUP-380`'s later reading covers the six projects, the parameter and the creation
   condition left unseparated. `dev-env.md` §B step 6, 2.4 and 2.7 step 8 carry the reading. No domain names
-  version 11 any more; `jup` and `code` in `d-m8m0uefej9kb` still do (`describe-space`, after the presses), so `retire`
-  keeps it (`dev-env.md` §B, *The retirement*).
+  version 11 any more; `jup` and `code` in `d-m8m0uefej9kb` still do (`describe-space`, after the presses), so
+  `retire` keeps it (`dev-env.md` §B, *The retirement*).

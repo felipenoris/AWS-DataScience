@@ -1029,10 +1029,10 @@ generative AI apps: a chat agent app and a flow app."*
 | Object | What it is | In the lab |
 |---|---|---|
 | Chat agent app | a model with instructions, and optionally a knowledge base, a guardrail and functions | built 2026-11-22; its preview and its deploy refused by Agents Classic (7.4b, `SUP-446`) |
-| Flow app | *"A flow app let you link prompts, supported foundational models, and other units of work, such as an Amazon Bedrock knowledge base, together and create generative AI workflows for end-to-end solutions."* | created 2026-11-22 with one prompt node, run once (7.4) |
+| Flow app | *"A flow app let you link prompts, supported foundational models, and other units of work, such as an Amazon Bedrock knowledge base, together and create generative AI workflows for end-to-end solutions."* | created 2026-11-22 with one prompt node, run once (7.4); a knowledge base node added the same day, 7.4b's fallback; no *Share* (`SUP-448`) |
 | Prompt, guardrail | a reusable prompt with variables and versions; a filter on a model's input and output | created 2026-11-22 (7.4), the guardrail after `sagemaker-prereqs-v0.14.0` (`SUP-417`) |
 | Function | a Lambda function an agent calls | left uncreated: no control names a Lambda (decision 10) |
-| Evaluation | a job that scores a model over a dataset; *"Amazon Bedrock in SageMaker Unified Studio doesn't support Human-based evaluations."* | Nova Lite's completed 2026-11-22; the form refuses every Claude model (7.4, `SUP-418`) |
+| Evaluation | a job that scores a model over a dataset; *"Amazon Bedrock in SageMaker Unified Studio doesn't support Human-based evaluations."* | Nova Lite's completed 2026-11-22; Claude Haiku 4.5's refused on the form's `temperature` with `top_p` (7.4, `SUP-418`) |
 | Knowledge base | the user's documents embedded into a vector store a model retrieves from | created 2026-11-22 on Titan V2 and S3 Vectors after `sagemaker-prereqs-v0.13.0` (7.4a, decision 12, `SUP-410`); 2 of 20 runbooks indexed (`SUP-411`) |
 
 **Agents Classic.** The IDE's builder carries the notice *"Agents Classic will no longer be open to new
@@ -1315,9 +1315,9 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **An ML pipeline**, and the visual editor's forms (pass 5).
 - **Feature Store**: the entry, the project role's grant, the runtime endpoint, the offline store's
   table under Lake Formation (6.4, verification xxxiii).
-- **The Bedrock IDE's remainder**: a flow app over the knowledge base, `Retrieve` from a space and a
-  shared snapshot in the catalog (7.4b, verifications xxiv and xxv). The other objects were read
-  2026-11-22 ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
+- **The Bedrock IDE's remainder**: `Retrieve` from a space (7.4b, verification xxiv). No shared snapshot
+  reaches the catalog and no answer cites a chunk, the chat agent app being refused and a flow app having
+  no *Share* ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
 - **A worker's `CreateModel` and `CreateTransformJob` as a project role**, in any account (verifications
   xxix and xxx).
 - **The provider's calls at 9.38.0 on a worker**: read in the code and not seen in a trail (`SUP-372`,

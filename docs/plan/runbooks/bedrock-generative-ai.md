@@ -212,13 +212,13 @@ and not a cause. A knowledge base the IDE creates on S3 Vectors keeps this index
 **The evaluation.** *Build* → *Model evaluation*: a model, a task, metrics and a dataset. The IDE runs
 automatic evaluations alone, with no judge model and no human workers. Under *Question and answer*, a
 custom dataset takes Toxicity alone; Accuracy and Robustness keep the built-in BoolQ, Natural Questions and
-Trivia QA (`SUP-419`). The form sends `temperature` and `top_p` together, which every Claude model refuses,
-so the IDE evaluates Nova Lite and no Claude model; its *Default* sends `maxTokens` 2048, `temperature` 0 and
-`topP` 0, values its panel does not show (`SUP-418`). The upload dialog warns *"Once uploaded, you cannot
-delete the file"*, and a second upload under the same name replaces the file. The list's *Date created*
-column is headed *(UTC-07:00)* and shows the browser's local time. The lab's job completed in ten minutes,
-and its one output file holds each prompt, its reference response, the model's answer and the metric's
-score: `Builtin.Toxicity` from 0.00035 to 0.00123 over 20 records.
+Trivia QA (`SUP-419`). The form sends `temperature` and `top_p` together, which Claude Haiku 4.5 refuses, so
+Nova Lite's is the evaluation that ran (Opus 4.5 and Sonnet 4.5 were not submitted); its *Default* sends
+`maxTokens` 2048, `temperature` 0 and `topP` 0, values its panel does not show (`SUP-418`). The upload dialog
+warns *"Once uploaded, you cannot delete the file"*, and a second upload under the same name replaces the
+file. The list's *Date created* column is headed *(UTC-07:00)* and shows the browser's local time. The lab's
+job completed in ten minutes, and its one output file holds each prompt, its reference response, the model's
+answer and the metric's score: `Builtin.Toxicity` from 0.00035 to 0.00123 over 20 records.
 
 **The chat agent app.** *Build* → *Chat agent*: a model, a system prompt, inference parameters, *Data* (a
 knowledge base; *Override default search* selects hybrid search and the number of source chunks),
@@ -271,7 +271,7 @@ from IAM by the simulator (Lesson 24).
 | *"Amazon Bedrock couldn't deploy the Knowledge Base. Delete this component, and then create a new one. [Failed to create environment …: … S3Vectors index creation failed: Insufficient access to perform asynchronous indexing. …]"* | `CreateIndex` refused: the key grants `indexing.s3vectors.amazonaws.com` nothing (`SUP-410`) | §K's first statement; delete in two acts (§X) and create again |
 | A sync `FAILED`, or `COMPLETE` with failures: *"Metadata value is invalid: exceeds 2048 byte string limit"*, and per document *"The document was not indexed. No content could be extracted from it, or processing ended before it completed."* | the index leaves `AMAZON_BEDROCK_METADATA` filterable (`SUP-411`) | none in the form (§U) |
 | The guardrail's environment: *"Access denied for operation 'AWS::Bedrock::Guardrail'."* | `CreateGuardrail`: *"You don't have sufficient permissions for this KMS key."*; `kms:CreateGrant`: *"… no identity-based policy allows the kms:CreateGrant action"*, both as the provisioning role (`SUP-417`) | §K's second statement |
-| *"An error occurred while creating the evaluation job: Unknown error. Potentially invalid input"* | `Converse` and `CreateEvaluationJob`: *"`temperature` and `top_p` cannot both be specified for this model. Please use only one."* (`SUP-418`) | Nova Lite; no Claude model |
+| *"An error occurred while creating the evaluation job: Unknown error. Potentially invalid input"* | `Converse` and `CreateEvaluationJob`: *"`temperature` and `top_p` cannot both be specified for this model. Please use only one."* (`SUP-418`) | Nova Lite, whose job completed; Opus 4.5 and Sonnet 4.5 were not submitted |
 | The preview's *"Something went wrong."* under *"Failed to run application Amazon Bedrock encountered an error when invoking the Bedrock runtime API. Try again later."* | `InvokeInlineAgent`, 403 in the browser's response: *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior service usage."* (`SUP-446`) | none in this account: a flow app (7.4b) or AgentCore (decision 26 (a)) |
 | The deploy's *"… failed to stabilize after create/update: … Access denied for operation 'AWS::Bedrock::Agent'."* | `CreateAgent` `AccessDenied`, with no message and no KMS call; the simulator reads it allowed (`SUP-446`) | the same |
 | A flow's answer saying its excerpt holds only *"uma mensagem de erro genérica"* | the guardrail blocked the question at the knowledge base node, and the prompt node rewrote the blocked message: `InvocationsIntervened` under `TopicPolicy` and `Input` (§V) | the question, outside the denied topic |

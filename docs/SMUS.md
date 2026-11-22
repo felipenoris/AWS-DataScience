@@ -535,6 +535,12 @@ collection bills while it exists and S3 Vectors bills by the gigabyte stored (`P
 2026-10-12). That standing shape is the one D12's silent budget is worst at catching, so the store is
 chosen per knowledge base ([Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) decision 12).
 
+What each Bedrock blueprint's object does once built, measured 2026-11-22 in `eighth-experimentation`, is
+[`bedrock-generative-ai.md`](plan/runbooks/bedrock-generative-ai.md): the chat agent app deploys through
+Agents Classic, which refuses this account (`SUP-446`); the flow's stack creates a role with no permissions
+boundary (`SUP-447`); a guardrail and a knowledge base on S3 Vectors each need a statement in the project
+key's policy (`SUP-417`, `SUP-410`).
+
 **`S3Bucket` and `S3TableCatalog` create storage this project did not author.** The governing question
 is not their cost but their **encryption key and bucket policy**, which come from the blueprint rather
 than from `docs/GOVERNANCE.md` §Encryption's per-account CMK rule. Stage 6 step 2.4's throwaway project

@@ -3695,21 +3695,22 @@ entry is still true is the reading.
   `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant` and `DescribeKey`. The guardrail therefore left on
   the project key a grant to Bedrock that no guardrail id bounds.
 
-- `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, and every Claude model
-  it offers refuses both, so the IDE evaluates no Claude model; the portal reports an unknown error** (measured
-  2026-11-22 in Sandbox, Stage 17 7.4). The form's *Inference configurations* panel holds Max tokens 500,
-  Temperature 0.5, Top P 0.5 and Top K 50 by default, and a cleared Top P returns to 0.5. Its model list
-  offered Nova Lite, Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5. With Haiku 4.5, Question and
-  answer and Toxicity over a 20-line custom dataset, DataZone created the evaluation environment, whose stack
-  holds an output and no resource. At 02:07:54Z Bedrock's pre-flight `Converse`, as the project's
-  `AmazonBedrockServiceRole-*` on the application inference profile, was refused: *"The model returned the
-  following errors: `temperature` and `top_p` cannot both be specified for this model. Please use only
-  one."*, and `CreateEvaluationJob`, as the project role, with *"There was a validation exception when
-  running inference for model identifier arn:aws:bedrock:us-west-2:<account>:application-inference-profile/<id>.
-  Please review the error and retry: …"* and the same reason. The trail's `Converse` event shows
-  `inferenceConfig` holding `maxTokens` 1 alone, and the job's `inferenceParams` read
-  `HIDDEN_DUE_TO_SECURITY_REASONS`. The portal read *"An error occurred while creating the evaluation job:
-  Unknown error. Potentially invalid input"*, and no evaluation job exists. The environment stayed `ACTIVE`.
+- `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, which Claude Haiku
+  4.5 refuses, so the IDE did not evaluate it; the portal reports an unknown error** (measured 2026-11-22 in
+  Sandbox, Stage 17 7.4). The form's *Inference configurations* panel holds Max tokens 500, Temperature 0.5,
+  Top P 0.5 and Top K 50 by default, and a cleared Top P returns to 0.5. Its model list offered Nova Lite,
+  Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5; Opus 4.5 and Sonnet 4.5 were not submitted. With
+  Haiku 4.5, Question and answer and Toxicity over a 20-line custom dataset, DataZone created the evaluation
+  environment, whose stack holds an output and no resource. At 02:07:54Z Bedrock's pre-flight `Converse`, as
+  the project's `AmazonBedrockServiceRole-*` on the application inference profile, was refused: *"The model
+  returned the following errors: `temperature` and `top_p` cannot both be specified for this model. Please use
+  only one."*, and `CreateEvaluationJob`, as the project role, with *"There was a validation exception when
+  running inference for model identifier
+  arn:aws:bedrock:us-west-2:<account>:application-inference-profile/<id>. Please review the error and retry:
+  …"* and the same reason. The trail's `Converse` event shows `inferenceConfig` holding `maxTokens` 1 alone,
+  and the job's `inferenceParams` read `HIDDEN_DUE_TO_SECURITY_REASONS`. The portal read *"An error occurred
+  while creating the evaluation job: Unknown error. Potentially invalid input"*, and no evaluation job exists.
+  The environment stayed `ACTIVE`.
   The prompt editor drops Top P instead: its form at Temperature 1 and Top P 0 stored, in both versions of the
   prompt, `inferenceConfiguration` `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no
   `topP`, and its test of Haiku 4.5 was admitted (`ConverseStream` at 01:48:24Z as the project role). The trail
@@ -5056,9 +5057,9 @@ The Bedrock IDE, SageMaker Unified Studio's builder of Bedrock components, is re
 [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio), *The Bedrock IDE*: `SUP-410`
 and `SUP-411` (a knowledge base on S3 Vectors: the key statement its index needs, and the index's filterable
 metadata), `SUP-417` (a guardrail: `kms:CreateGrant` on the project key), `SUP-418` and `SUP-419` (an
-evaluation: the sampling parameters every Claude model refuses, and its datasets), `SUP-445` (the names),
-`SUP-446` (the chat agent on Agents Classic), `SUP-447` (a flow's role with no boundary) and `SUP-448` (a
-flow deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base's calls carry.
+evaluation: the sampling parameters Claude Haiku 4.5 refuses, and its datasets), `SUP-445` (the names),
+`SUP-446` (the chat agent on Agents Classic), `SUP-447` (a flow's role with no boundary) and `SUP-448` (a flow
+deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base's calls carry.
 
 - `SUP-288` **The Bedrock use-case form is stored as double base64 over a flat JSON object, and one
   submission covers every model** (measured 2026-09-11, Stage 6e M2). `PutUseCaseForModelAccess` and

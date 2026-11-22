@@ -140,12 +140,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    opinion about. The unnamed ones do not stay unanswered; they get answered by whoever is executing, at
    the moment they least want to be designing identity. The tell is a step whose verb is "create X
    **using** Y" — `using` almost always hides a form.
-   A later instance, 2026-11-22 (Stage 17 7.4, `SUP-418`): the step named an automatic evaluation of
-   Haiku 4.5 by its task, metric and dataset, and not the form's *Inference configurations*. That panel
-   always sends Temperature and Top P, a cleared Top P returns to 0.5, and every Claude model the form
-   offers refuses the two together, so the unnamed field made the named model impossible. The same step
-   named a PII filter for the guardrail, a field the IDE's form does not have. SMUS's guardrail page lists
-   two policies, content filters and denied topics. Both were readable before the sitting.
+   A later instance, 2026-11-22 (Stage 17 7.4, `SUP-418`): the step named an automatic evaluation of Haiku 4.5
+   by its task, metric and dataset, and not the form's *Inference configurations*. That panel always sends
+   Temperature and Top P, a cleared Top P returns to 0.5, and Claude Haiku 4.5 refuses the two together, so
+   the unnamed field made the named model impossible. The same step named a PII filter for the guardrail, a
+   field the IDE's form does not have. SMUS's guardrail page lists two policies, content filters and denied
+   topics. Both were readable before the sitting.
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next
    step depends on one.** Lesson 16 is about fields a wizard *asks* about; this is the class it does not
    cover, because the wizard never asks. Enabling Control Tower created an Identity Center user,
