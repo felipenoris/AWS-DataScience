@@ -41,8 +41,9 @@ lab".
 | [`bedrock/`](bedrock/README.md) | 7.4's evaluation dataset, and what the portal exports in pass 7 | 7.4, 7.4b |
 | `extra_values.json` | the values no space reading gives, each `"<NAME>"` until it is filled | — |
 
-Every object carries the tag `AmazonDataZoneProject` with the project's id and a name starting with
-`ml-demo-`. `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live pipeline's steps with
+Every object has a name starting with `ml-demo-` and carries the tag `AmazonDataZoneProject` with the
+project's id, but a model package version, which takes no tag and is authorized against its group's
+(`SUP-406`). `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live pipeline's steps with
 `pipeline/definition.json`.
 
 ## The values

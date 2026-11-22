@@ -3891,6 +3891,30 @@ entry is still true is the reading.
   user profile carry. A notebook in a space creates a training job without the training pair by naming no
   tag; a workflow's operator names it and needs the pair (`sandbox/workflows/`). Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
+  **Read again 2026-11-22** (Stage 17 3.2): `CreateModelPackageGroup` from the same space, its `Tags`
+  naming `AmazonDataZoneProject` alone, was recorded at 00:18:45 with the same seven keys and admitted
+  through `sandbox/ml/`'s statement, whose `aws:TagKeys` condition admits that key alone, so the six others
+  were not in the authorization. A versioned `CreateModelPackage` with no tag argument was recorded at
+  00:34:10 with no `tags` key (`SUP-406`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-406` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
+  refused as `sagemaker:AddTags` on `model-package/<group>/new`, and the same request with no tag argument
+  is authorized against the group's tags** (measured 2026-11-22 in Sandbox, Stage 17 3.2, as
+  `eighth-experimentation`'s role from a space). CreateModelPackage's API reference says a package created
+  in a group uses the group's tags and *"you cannot supply a tag argument"*. With `Tags` naming
+  `AmazonDataZoneProject`, the request at 00:18:46 read *"not authorized to perform: sagemaker:AddTags on
+  resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/ml-demo-xgboost/new because no
+  identity-based policy allows the sagemaker:AddTags action"*, `requestParameters` null: the authorization
+  answers before any validation of the tag argument, and names a permission. Without
+  `Tags`, the request at 00:34:10 created version 1, `PendingManualApproval`, recorded with no `tags` key.
+  The one statement on the role allowing `CreateModelPackage` on that resource is the blueprint's
+  `SageMakerCreatePermissions` (`SageMakerStudioProjectRoleMachineLearningPolicy` v48), conditioned on
+  `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag, so the version's resource tag
+  at the create is its group's. `ListTags` on the version answers *"ValidationException: Tag operations are
+  supported only on ModelPackage Group not on ModelPackage Versions."* An `AddTags` grant on `model-package/*`
+  would authorize a request the API reference excludes; a registration names no tag, into a group tagged
+  with the project.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ## MWAA
 

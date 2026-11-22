@@ -98,7 +98,8 @@ def vpc_config(values: dict) -> dict:
 
 
 def project_tags(values: dict) -> list:
-    """The tag SageMakerCreatePermissions asks of every create."""
+    """The tag SageMakerCreatePermissions asks of every create but a model package version's,
+    which takes no tag and is authorized against its group's (SUP-406)."""
     return [{"Key": PROJECT_TAG, "Value": values["PROJECT_ID"]}]
 
 

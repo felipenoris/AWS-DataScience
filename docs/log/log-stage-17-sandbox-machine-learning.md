@@ -4249,3 +4249,27 @@ UTC.
   - `from-mlflow`: the MLflow registry holds `ml-demo-xgboost` version 1 at 00:18:56, and SageMaker's
     registry no version from it. The app reads `AutoModelRegistrationDisabled`, so the MLflow door writes the
     MLflow registry alone.
+
+## 2026-11-22 — Day 2's sitting B: 3.2's version, created with no tag
+
+- **[user] The version with no tag argument**, from `jup`: `register.py package`'s request without `Tags`,
+  in a block Claude wrote, followed by a `ListTags` on the new version:
+
+  ```
+  version: model-package/ml-demo-xgboost/1
+  list_tags refused: ValidationException: Tag operations are supported only on ModelPackage Group not on ModelPackage Versions.
+  ```
+- **[Claude] The version's readings.** `ml-demo-xgboost` version 1, created 00:34:10, `Completed`,
+  `PendingManualApproval`, created by the user profile `28f1b390-…` of `d-m8m0uefej9kb` as the project role
+  with that profile as the session's source identity; the image `sagemaker-xgboost:3.0-5` and the better
+  job's `model.tar.gz`. CloudTrail records it from 10.20.54.175 through `vpce-02feedaa4ad58acf4` with no
+  `tags` key in its request.
+- **[Claude] What admitted it.** On the role, the one statement allowing `CreateModelPackage` on that
+  resource is the blueprint's `SageMakerCreatePermissions` (`SageMakerStudioProjectRoleMachineLearningPolicy`
+  v48), conditioned on `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag and on
+  `aws:PrincipalTag/EnableSageMakerMLWorkloadsPermissions`; `awsds-sandbox-workflows` v7's
+  `RegisterAPendingVersionForAppMl` names `app-ml-dev`'s project and group alone. The version's resource tag
+  at the create is therefore its group's (`SUP-406`), the half of verification lviii the simulation of
+  2026-11-17 left open, read here from a space. The refusal of 00:18:46 was of a request the API reference
+  excludes, so decision 7 (a) writes no `sandbox/ml/` statement for a version, and `register.py package`
+  sends no tag on the version (this sitting's commit).
