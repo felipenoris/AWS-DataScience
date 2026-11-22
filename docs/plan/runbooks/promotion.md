@@ -1232,7 +1232,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
    the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
-   `<env>/studio/`, and the retention mode the user's act in each target.
+   `<env>/studio/`, whose plans carry `TM-28`'s fence too unless its applies ran first, and the retention
+   mode the user's act in each target.
 9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,

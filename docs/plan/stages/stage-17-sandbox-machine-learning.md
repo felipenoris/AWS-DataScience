@@ -1947,7 +1947,10 @@ each run (decision 24 (b)).
   creates the inference profile, the role's statements and, under decision 27 (a), the account's
   guardrail with its version and the account-level configuration, read back with
   `ListEnforcedGuardrailsConfiguration`, and moves the boundary to its next version, the plan read for a
-  boundary diff of the Bedrock statements and nothing else; the user's act in each target, the
+  boundary diff of the Bedrock statements and nothing else, or also `TM-28`'s `agent-registry:*` in
+  `DenyServicesNoProjectUsesHere` (PR #372) if that slice's `TM-28` apply has not run first, the user's
+  word then naming both (both boundaries lacked it at version 4 on 2026-11-22; Lesson 69); the user's act
+  in each target, the
   retention mode `none` declared in `us-west-2` and read back there (§M's M1), with 10.1's reading that
   the account owes Amazon's model no form and no agreement; `<env>/chains/`; `<env>/foundation/` with the
   alerts var-file, each deploy role's `state_read_keys` gaining `<env>/studio/` as "What pass 10 builds"

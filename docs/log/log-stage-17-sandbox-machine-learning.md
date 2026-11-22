@@ -4980,3 +4980,37 @@ Times UTC.*
   `DeleteEnvironment` from Sandbox at 14:53:25 is in both trails (6f's log). The definitions' deletions are S3
   data events, which the lookup does not return.
 - **[Claude] The project's environments**, at 15:13: ten, every one `ACTIVE`, none named `…-shared`.
+
+## 2026-11-22 — 10.5's boundary plan and `TM-28`'s unapplied fence
+
+*The overlap reported by the orchestrating session on main at `f37ff75c` and re-read here; Claude's reads
+as the infrastructure user with `InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`) and
+`Production Account` (`awsds-infra-prod`), at about 17:05, no write. Times UTC.*
+
+- **[Claude] The overlap.** #372 (`77fc285a`) adds `agent-registry` to `fenced_services` in
+  `staging/studio/` and `production/studio/`, each planned *"0 to add, 2 to change"* (`SUP-356`), and the
+  waiting list holds those applies on the user's word. `sagemaker-prereqs` renders the list as the
+  boundary's `DenyServicesNoProjectUsesHere`, in the boundary 10.5 moves to its next version in the same
+  slices, its plan read for the Bedrock statements and nothing else (Lesson 69).
+- **[Claude] The boundaries**: `awsds-staging-project-boundary` and `awsds-prod-project-boundary` at
+  version 4, last updated 2026-11-17 at 16:08:08 and 16:09:01. Neither `DenyServicesNoProjectUsesHere`
+  names `agent-registry:*`: Staging's denies `sqlworkbench`, `redshift`, `redshift-serverless`,
+  `redshift-data`, `q`, `codewhisperer`, `bedrock` and `bedrock-agentcore`, Production's `sqlworkbench`,
+  `redshift-data`, `q`, `codewhisperer`, `bedrock` and `bedrock-agentcore`.
+- **[Claude] Recorded**: 10.5's plan reading names `TM-28`'s fence unless that apply ran first, the
+  `TM-28` waiting row names 10.5's applies, and `promotion.md` §N.6 item 8 carries the clause.
+
+## 2026-11-22 — Day 3's prerequisites re-read on main at `f37ff75c`: the Sandbox slices and the tars
+
+*The plans are the orchestrating session's, relayed to this session and not re-run here; the tars read by
+Claude on the laptop, no AWS call. Times UTC.*
+
+- **[Claude, the orchestrating session] `sandbox/bedrock/` and `sandbox/ml/`**, planned at about 16:55 as
+  `awsds-infra-sandbox-1` with `-input=false`, from a worktree whose slices equal `origin/main` at
+  `f37ff75c`: each read *"No changes. Your infrastructure matches the configuration."*
+- **[Claude] The tars** under `$HOME/tmp/stage17-day3/`, built from `77fc285a`: `git diff --stat 77fc285a
+  origin/main -- examples/app-ml examples/app-genai` is empty. Outside the documents, the commits since
+  change only #321's `.pre-commit-config.yaml`, `Makefile`, `aws/cicd.py`, `scripts/deploy-application.py`
+  and `scripts/model-chain.py`, and every entry of `app-ml.tar`, `app-genai.tar`, `app-ml-source.tar` and
+  `app-genai-source.tar` lies under `app-ml/`, `app-genai/`, `examples/app-ml/` or `examples/app-genai/`.
+  The tars still match main.
