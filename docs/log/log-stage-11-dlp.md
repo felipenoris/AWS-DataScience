@@ -528,6 +528,9 @@ ran as the infrastructure user (`InfrastructureAccess`). No apply. Times are UTC
     `DenyServicesNoProjectUsesHere`, 6d decision 17's fence, and `aws_iam_policy.person_session` reads its
     document `(known after apply)` (`SUP-356`), so each apply is expected to read `0 added, 1 changed` and
     its re-plan `No changes`. Both boundaries read `v4` today.
+- **[Claude] The plans again**, after `main` at `65401691` (#370) was merged into this branch, a merge that
+  touches none of the three slices: the same actions line for line, exit 2 each, `identity/org-policies/`
+  ended 07:09:04, `production/studio/` 07:09:10 and `staging/studio/` 07:09:15.
 - **[Claude] The sizes**: the amended document is 1874 characters minified, five statements, under the
   5120 its precondition enforces; the description is 508 characters, under Organizations' 512, which no
   plan reads.
