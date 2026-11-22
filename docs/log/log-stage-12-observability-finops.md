@@ -660,3 +660,229 @@ Staging's and Production's `egress/` and both warehouses down.*
   endpoint every client pins, whose Elastic IP and host key carry over, so no `.conf` changes. Neither runs
   while a spoke session needs the proxy or the tunnel; the hub sitting takes the tunnel down on the
   operator's device first (`runbooks/vpn.md` §K6) and plans again.
+
+## 2026-11-21 — the hub sitting's pre-flight against the live hub, and `CreationTime` read against `CreateApp`
+
+*Claude, a session the orchestrating session started at the user's request of 21:00 UTC to advance what
+the running environment allows, in the worktree `hub-applies-proxy-vpn` on `claude/hub-applies-proxy-vpn`,
+cut from `origin/main` at `4053faee`, from about 21:10 UTC. Every AWS call ran as the infrastructure user
+with `InfrastructureAccess` in `us-west-2`, read-only: `awsds-infra-prod`, `awsds-infra-sandbox-1`, and
+`make status`'s five profiles. No apply, no `--on-host`, no plan file kept. The environment was §N.9's day
+2, held by another session: both hub hosts running since 19:46, Sandbox's `egress/` with four groups and
+its `probes/`, the spaces `jup` and `code` in `d-m8m0uefej9kb`.*
+
+### Readings
+
+- **[Claude] `make status`**, 21:12:56 to 21:15:37: `production/vpn` and `production/proxy` up, one
+  instance each, `sandbox/egress` up with 33 resources and `sandbox/probes` with 4, `production/tooling`
+  stopped, every other `[E]` slice down; `studio/sandbox/jup` (JupyterLab, `ml.t3.medium`) since 20:07 and
+  `studio/sandbox/code` (CodeEditor, `ml.t3.large`) *"about 1.74 USD so far since 2026-11-21 03:54 UTC"*;
+  estimated burn 0.3590 USD/h.
+- **[Claude] The plans**, `-input=false` as `awsds-infra-prod` on this branch, whose `terraform-live/` and
+  `terraform-modules/` are `main`'s, each output read in full:
+  - `production/proxy/`, 21:17:05: `1 to add, 2 to change, 1 to destroy`, resource for resource the plan of
+    20:21:09. `aws_instance.this` is replaced on `ami` (masked) and `user_data`, destroy first (`-/+`); the
+    alarm and `proxy.awsds.internal` change in place; the association does not change. It carries no `-n`.
+  - `production/vpn/`, 21:17:21: `2 to add, 3 to change, 2 to destroy`, the plan of 20:27:27. The instance
+    is replaced on `ami` and `user_data`, destroy first, with `associate_public_ip_address` `true -> false`
+    inside the replacement (the module ignores its read-back, so it does not recur);
+    `aws_eip_association.this` is replaced on `instance_id`; the alarm, `aws_route.tunnel_return` and
+    `vpn.awsds.internal` change in place.
+  - `production/observability/`, 21:17:37: `0 to add, 1 to change, 0 to destroy`, the dashboard's markdown.
+- **[Claude] `./aws/proxy.py`**, without `--on-host`, stamped 21:21:57Z, exit 0: `i-0d42d0393c39eefdb`
+  running, public `44.255.111.239`; `sandbox-foundation` holds 42 entries in the parameter; `PX-3` `note`,
+  unanswered without `--on-host`. **`./aws/vpn.py`**, stamped 21:22:38Z, exit 0: `VP-1` to `VP-7` and
+  `VP-9` pass, `VP-2` reading `52.89.212.1 -> i-011ffd7b6dde40a9a`, `VP-6` `awsds-prod-vpn-health` `OK`.
+- **[Claude] Who used the hub**, `filter-log-events` over the three hours to about 21:25:
+  - `/awsds/prod/vpn`: 166 sampler lines, `handshake=never` for `mbp` and `raspi` from 19:47:29 to
+    21:22:49; `scutil --nc list` reads the laptop's four WireGuard profiles `Disconnected`.
+  - `/awsds/prod/proxy`: 3,065 lines from three Sandbox sources. `10.20.15.119` at 19:50:52 (`10.32.0.10`
+    and `example.com` `403 TCP_DENIED`, `pypi.org` `200`); `10.20.20.46` at 20:19:42 and 20:20:09 (the
+    portal's `dzd-` domain, Redshift); `10.20.38.182`, `jup`: `pypi.org`, the portal, Redshift,
+    `github.com` (6,550,620 bytes at 20:19:13), `raw.githubusercontent.com` (14,336 bytes at 20:19:16),
+    `TM-01`'s probe at 20:29:25, and a `client-telemetry` and `cognito-identity` pair in `us-east-1` about
+    every 2.5 s from 20:17:53 to the last line, 21:23:16.
+- **[Claude] The idle shutdown**, CloudTrail `DeleteApp` by `AWSServiceRoleForAmazonSageMakerNotebooks`:
+  `code` at 21:19:50, `jup` at 21:23:14. The domain's `IdleTimeoutInMinutes` is 60; both spaces read
+  `InService` at 21:29:04.
+
+### What each replacement does to a client
+
+- **[Claude] The tunnel**: `scutil --nc show` reads `RemoteAddress : 52.89.212.1:51820` for `mbp` and
+  `mbp-split-tunnel`, the Elastic IP the replaced association moves. The new host fetches its key from
+  `awsds-prod-vpn-host-key`, the ARN `production/networking/` exports, and writes one `[Peer]` per entry
+  of `peers.auto.tfvars`; neither appears in the plan.
+- **[Claude] The proxy**: `proxy-on` in `~/.zshrc` exports `http://proxy.awsds.internal:3128`, Chrome's
+  flag in `client-vpn-proxy-configuration.md` §4.1 names the same, and the house image's `https_proxy` is
+  `ARG PROXY_URL=http://proxy.awsds.internal:3128` (`dev-env/Dockerfile` line 404), one value in every
+  commit since `b7d37ff9` (2026-10-14), overridden by no build. Both spaces run `awsds-sandbox-dev-env`
+  version 11. The proxy's apply re-points `proxy.awsds.internal` from `10.31.160.140`, the tunnel's
+  `vpn.awsds.internal` from `10.31.160.22`, both in place, TTL 60.
+- **[Claude] The new proxy's time to serve** is unmeasured. Its first boot installs the packages, renders
+  the parameter while Squid is stopped (`(4) first render - squid is not running yet`), then starts Squid.
+  An access stream is created at its first line, not at boot: `i-0d42d0393c39eefdb/access` at
+  2026-09-18T17:13:54Z, its first event at 17:13:49Z, the day after that host was built.
+- **[Claude] Squid on the new host**, from AWS's records read 2026-11-21: the AL2023.12 package list as of
+  2023.12.20261021 has `squid` `6.13-1.amzn2023.0.6`, full support to 2029-06-30; release
+  2023.12.20261112's core updated packages list `squid-6.13-1.amzn2023.0.7`; releases 2023.12.20261026 to
+  20261109 and 20261117 to 20261120 list no squid. `al2023-ami-2023.12.20261120.0` installs from its own
+  release's repository, so its Squid is `6.13-1.amzn2023.0.7` (inferred; `rpm -q squid` on the host is the
+  reading). Squid 6.9's `acl` page gives `acl aclname dstdomain [-n] .foo.com ...`.
+
+### `CreationTime` against `CreateApp` (`SUP-229`)
+
+- **[Claude] CloudTrail**, `lookup-events` in Sandbox for `CreateApp`, `DeleteApp`, `CreateSpace` and
+  `DeleteSpace` on 2026-11-21:
+  - `code` in `d-m8m0uefej9kb`: `CreateSpace` 03:54:05, `CreateApp` 03:54:10, the idle `DeleteApp`
+    05:04:31, `DeleteSpace` 18:34:05 by the infrastructure user, `CreateSpace` 20:08:41, `CreateApp`
+    20:08:46. `describe-app` and `list-apps` (21:27:03) read `CreationTime` 03:54:10.197.
+  - Restarts inside one space: `vscode` in `d-m8m0uefej9kb`, `CreateApp` at 03:29:56 and 07:09:41, reads
+    03:29:56; `jup-ai`, 03:29:01 and 06:53:49, reads 03:29:01; `vscode` in `d-jaid1tvg20jv`, 03:30:54 and
+    05:27:00, reads 03:30:54. `jup`, whose space was new at 20:07:15, reads 20:07:19.488, its one
+    `CreateApp`.
+  - The spaces' `LastModifiedTime`, `jup` 20:07:19.215 and `code` 20:08:45.303, did not move with the idle
+    shutdown's `DeleteApp`.
+- **[Claude] The API reference**, read 2026-11-21: DescribeApp's `CreationTime` says an application
+  restarted within 24 hours of its last shutdown is an update and keeps its metadata; ListApps's
+  `AppDetails` says only *"The creation time."*; neither names a space deleted and made again.
+- `code`'s second run, 20:08:46 to 21:19:50, cost about 0.12 USD at 0.100 USD/h.
+
+### The code
+
+- **[Claude] `scripts/slices.py status`** bills an app from the later of its `CreationTime` and its
+  space's, read with one `list-spaces` per account that has a billing app, and prints *"at most"*: a
+  restart inside one space still dates from the first `CreateApp`. Exercised on the live `list-spaces`
+  (`code` 20:08:41, `jup` 20:07:15) with `code`'s app at 21:15:37: *"0.1000 USD/h, at most 0.11 USD so
+  far"*, *"since 2026-11-21 20:08 UTC"*; with the spaces unread, *"at most 1.74"* since 03:54; an app of a
+  user profile and an app newer than its space keep the app's time; a dry run reads no space.
+  `./scripts/slices.py status --env sandbox`, exit 0.
+- **[Claude] `docs/AWS_SUPPLEMENT.md`**: `SUP-229` gains this reading, and its title says what holds now.
+- **[Claude] Stage 12 step 2.2**: the hub sitting's block, window (a) recommended.
+- **[The orchestrating session, relayed]** `production/vpn/` planned from `main` at `4053faee` at 21:30 UTC,
+  `2 to add, 3 to change, 2 to destroy`, and saved for the user's authorization; this session ran no
+  command on that slice from then on.
+
+## 2026-11-22 — the hub sitting's applies: the tunnel host rebuilt on `t3.medium`, the proxy on `t3.small`
+
+*Claude, in the same session and branch, at the request of the session coordinating the hub sitting,
+from about 00:30 UTC, after pulling that session's `f44ef879` and merging `origin/main` at `65254241`. The
+applies, the consoles and `./aws/observability.py` are the coordinating session's, relayed with their
+times; `--on-host` and the SSM measurement ran on the user's word, and the re-probe is the user's. This
+session's own AWS calls ran as the infrastructure user with `InfrastructureAccess` in Production
+(`awsds-infra-prod`, `us-west-2`) from 00:39:49 to 00:40:14, read-only. No write. Times are UTC.*
+
+### The tunnel host
+
+- **[The coordinating session, relayed]** `production/vpn/` from `main` at `4053faee`, the saved plan of
+  21:30, applied 2026-11-21 23:01:36 to 23:02:54: `2 added, 3 changed, 2 destroyed`, re-plan `No
+  changes`. `main` moved to `8919ee39` (#351) at 23:00:52, after the plan was saved; `git diff` shows #351
+  touches no input of the slice. The new host `i-0d6f67c37254eaa87`: `t3.nano`, `ami-09f6e62a9fe578f92`
+  (`al2023-ami-2023.12.20261120.0-kernel-6.18-x86_64`), `10.31.160.47`. `./aws/vpn.py` passed every
+  check, each of them describe-level.
+- **[The coordinating session, relayed] Its console**: the user data's BEGIN at 23:02:31, then step (1),
+  `dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent`; the repository's metadata, 91 MB
+  at 74 MB/s; at 25 s `Out of memory: Killed process 1962 (dnf)`, `anon-rss` 165,736 kB and about 348 MB
+  swapped, the only dnf running, on 415 MiB of memory and 415 MiB of zram swap; then `Cloud-init 22.2.2
+  received SIGTERM, exiting` as systemd stopped `cloud-final.service`; at 48 s update-motd's dnf
+  (`70-available-updates`) killed too. The host had no `wireguard-tools`, no `wg0` and no CloudWatch
+  agent, and `/awsds/prod/vpn` received no event after 23:02.
+- **[The coordinating session, relayed]** #353 selected `t3.medium` in the tracked
+  `instance_type.auto.tfvars`, merged as `2b180819`, and the host was rebuilt from `main` at that commit
+  with `-replace=module.wireguard.aws_instance.this`, 23:22:32 to 23:23:46: `2 added, 3 changed,
+  2 destroyed`, re-plan `No changes`. The new host `i-03ae94285145bff76`: `t3.medium`, the same image,
+  `10.31.160.131`, ENI `eni-0131f5e6d80575e56`. Its console: BEGIN at 23:23:25, step (1) done at 23:24:02,
+  37 s; the uplink `ens5`, the key in hand, `wg0.conf` for 2 peers, the sampler, the agent accepted, and
+  `END - the tunnel endpoint is up` at 23:24:06. `52.89.212.1` associated; `vpn.awsds.internal` at
+  `10.31.160.131`, TTL 60; the route `10.90.0.0/24` to the new ENI `active`; `awsds-prod-vpn-health` `OK`
+  on the new instance, its action `awsds-prod-alerts`. SSM `Online` at 23:23:33.
+- **[The coordinating session, on the user's word, relayed]** `./aws/vpn.py --on-host`: every check
+  passes, `wg0` listening on 51820 with 2 peers, `10.90.0.2/32` and `10.90.0.3/32`. The stream
+  `i-03ae94285145bff76/handshakes` from 23:24:25: `peer=mbp handshake=never` and `peer=raspi
+  handshake=never`, about every 70 s. No client's handshake with the new host is read yet; it is the
+  user's.
+- **[Claude]** The tunnel was down from 23:01:38 to 23:24:06, about 22 minutes, and no device held it.
+
+### A cold dnf's memory (`SUP-405`, `SUP-406`)
+
+- **[The coordinating session, on the user's word, relayed]** SSM `AWS-RunShellScript` on the t3.medium at
+  23:26, command `fbb03c56-7f5c-4d57-bc61-3fe28daa84e9`, the cache in throwaway directories under
+  `/var/tmp`, deleted after; nothing installed. `MemTotal` 3835 MiB, no swap, 257 MiB used at rest (the
+  CloudWatch agent 143 MiB RSS), 3351 MiB available. A cold `dnf install --downloadonly squid jq
+  amazon-cloudwatch-agent`: exit 0, `VmHWM` 617 MiB, 26 s, a 204 MiB cache. A cold `dnf check-update`:
+  exit 0, 623 MiB, 25 s.
+- **[The coordinating session, relayed]** The proxy's console on the `t3.small`: `zram_generator::config:
+  zram0: system has too much memory (1909MB), limit is 800MB, ignoring.`
+- **[Claude] AWS's pages**, read 2026-11-22 (`docs/REFERENCES.md`): the AL2023 system-requirements page
+  turns zram on by default since AL2023.3 for instance types under 800 MB, naming the nano sizes, and says
+  that a `dnf upgrade` between some releases can need more than 512 MB; the page on package updates names
+  no update-motd. A `t3.micro` read 913 MiB total on 2026-09-06 (Stage 6c's log), above the generator's
+  limit, so a micro has no swap either.
+
+### The proxy
+
+- **[The coordinating session, relayed]** #354 made `t3.small` the slice's default, merged as `65254241`.
+  `production/proxy/` from `main` at that commit, a saved plan, applied 23:51:42 to 23:53:26: `1 added,
+  2 changed, 1 destroyed`, the instance replaced on `ami` and `user_data` with `instance_type` `t3.micro ->
+  t3.small`; re-plan `No changes`. The §N.9 day 2 session confirmed first that no S3 write was in flight.
+  The old host was destroyed in 1 min 3 s; the new `i-071bcc561f75b51d7`: `t3.small`, the same image,
+  `10.31.160.128`. `proxy.awsds.internal` at `10.31.160.128`, TTL 60; `awsds-prod-proxy-status-check`
+  `OK`, `notBreaching`, its action `awsds-prod-alerts`.
+- **[The coordinating session, relayed] Its console**: `squid-6.13-1.amzn2023.0.7` installed, steps (2) to
+  (4) with no `FAILED` line, (5) `systemctl enable --now squid`, (6), and `done - the proxy is up`.
+- **[The coordinating session, relayed] The first requests** in the new instance's stream: 23:54:00,
+  `10.20.54.175 CONNECT config.mlflow-telemetry.io:443 403 TCP_DENIED`; 23:54:03, `cognito-identity` and
+  `client-telemetry` in `us-east-1`, `200 TCP_TUNNEL`. The proxy served nothing from 23:51:43 to 23:54:00,
+  about 2 min 17 s.
+- **[The coordinating session, on the user's word, relayed]** `./aws/proxy.py --on-host`, about 00:20 on
+  2026-11-22: exit 0, `PX-1`, `PX-2` and `PX-3` pass, `sandbox_foundation allowlist -n 42`.
+- **[The user, relayed]** `TM-01`'s re-probe at 00:20:41 from `jup`: `403` on both addresses and `200` on
+  `pypi.org`, so `TM-01` is controlled. The curls' results and the log lines are in Stage 11's log of
+  2026-11-22.
+
+### `production/observability/` and `OB-3`
+
+- **[The coordinating session, relayed]** `production/observability/` from `main` at `65254241`,
+  00:22:16 to 00:22:27: `0 added, 1 changed, 0 destroyed`, the dashboard's markdown from *"The proxy's
+  alarm reads `ALARM`..."* to *"The three hosts' alarms read `OK`..."*; re-plan `No changes`.
+- **[The coordinating session, relayed]** `./aws/observability.py`: `OB-3` fails in Production on
+  `awsds-prod-gitlab-status-check` alone, `production/tooling/`'s, which R1 applies after the admin
+  secret's first rotation (2026-11-22 01:59:59 UTC); every other `OB-3`, and `OB-1` and `OB-5`, pass.
+  `EXC-19` lifts with that apply.
+
+### Read back by this session
+
+- **[Claude]** `describe-instances` at 00:39:49: `awsds-prod-vpn` a running `t3.medium` at `10.31.160.131`,
+  launched 23:23:14; `awsds-prod-proxy` a running `t3.small` at `10.31.160.128`, launched 23:52:54, public
+  `184.36.57.235`; `awsds-prod-gitlab` a stopped `t4g.large`. `describe-addresses`: `52.89.212.1` on the
+  tunnel host. `list-resource-record-sets` on `awsds.internal`: `proxy` and `vpn`, `A`, TTL 60, at those
+  two addresses. `describe-alarms`: `awsds-prod-vpn-health` and `awsds-prod-proxy-status-check` `OK`,
+  `notBreaching`, one action each, `awsds-prod-alerts`; `awsds-prod-gitlab-status-check` `OK`,
+  `notBreaching`, no action. The proxy's alarm has read `OK` since 19:53:53 on 2026-11-21, through the
+  replacement.
+
+### The hub's cost lines
+
+- **[The §N.9 day 2 session, relayed]** `docs/PRICING.md`, `runbooks/vpn.md`, this stage's 5.2 and Stage
+  20's pass 8 priced the hub at D4's `t3.nano`, 0.0310/h, while the tracked file has selected `t3.medium`
+  since #353 and that is what runs (that session's `describe-instances`: the tunnel host `t3.medium` and
+  the proxy `t3.small`, both running). At `docs/PRICING.md` §8's rates the running hub is the `t3.medium`'s
+  0.0416, the `t3.small`'s 0.0208 and the proxy's public IPv4 at 0.005: 0.0674/h, 49.20 for 730 hours, and
+  0.0724/h with the VPN's Elastic IP, the floor line. On `t3.nano` the same sum is 0.0310/h, 22.63 for 730
+  hours. Going from `t3.medium` back to `t3.nano` saves 0.0364/h, 26.57 for 730 hours.
+- **[Claude]** Each of those lines now gives the running figure with D4's beside it, and stays true
+  until decision due 4 is taken. `docs/PRICING.md`'s typical Sandbox hour carried the same `t3.nano`
+  figure and takes the same correction. In 5.2's table the `[D]` reading is 49.20 against 8.90, the 132
+  hours of September at 0.0674, so 40.30 a month more, beside 22.63 against 4.09 at 0.0310, 18.54: the 4.09
+  is those hours at 0.0310, so it does not pair with 49.20. `scripts/tfhygiene/layers.py`'s vpn row stays
+  0.0052: its comment says it prices the baseline and not the host, and `./aws/vpn.py`'s `VP-1` reports
+  the gap.
+
+### Records
+
+- **[Claude]** This stage: the `Status` row, 2.2's sitting (step 3's `t3.micro` sentence now history, the
+  done paragraph with what is owed), 5.2's hub row and decision due 4, the tunnel host's default size,
+  with its options and no recommendation. `SUP-405` and `SUP-406` in `docs/AWS_SUPPLEMENT.md`, and
+  AWS's pages in `docs/REFERENCES.md`. `docs/NETWORK.md`'s hub rows and diagram: `10.31.160.131` and
+  `10.31.160.128`, with the sizes. `docs/AWS_STATE.md`: `EXC-19` narrowed to GitLab's alarm, the proxy
+  alarm's `breaching` row and the `PX-3` row closed, the tunnel host's size. `waiting-on-the-user.md`: the
+  Hub row and the size decision. `TM-01`'s records are in Stage 11's log.

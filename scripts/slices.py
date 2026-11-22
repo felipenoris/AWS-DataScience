@@ -645,6 +645,12 @@ def managed_resources(module: dict) -> int:
 #
 # The statuses that bill, with the word `status` prints: Pending and InService, and Deleting until
 # the delete finishes, which is why down-studio-apps.py waits on it. Failed and Deleted bill nothing.
+#
+# The time an app bills from. `CreationTime` is the first CreateApp under the app's ARN (domain,
+# space, type, name): an app created again within 24 hours of its last shutdown counts as an update
+# and keeps it (the DescribeApp reference), across a space deleted and made again under the same
+# name too (SUP-229). The space's own creation bounds that second case; a restart inside one space
+# is dated by CloudTrail's CreateApp alone, so the spend printed is an upper bound.
 BILLING_APP_STATUSES = {"Pending": "pending", "InService": "UP", "Deleting": "deleting"}
 
 # USD per hour by app type and instance type: the measured us-west-2 rows "SageMaker Studio
@@ -688,18 +694,49 @@ def studio_apps_billing(env: str, dry: bool) -> list | None:
     return [a for a in apps if a.get("Status") in BILLING_APP_STATUSES]
 
 
-def print_studio_app(env: str, app: dict, now: datetime) -> float | None:
+def studio_spaces_created(env: str, dry: bool) -> dict | None:
+    """{(domain id, space name): creation time} for every space in one account, or None.
+
+    One `list-spaces` with no domain filter answers for every domain, as `list-apps` does. None
+    leaves each app's line on its own CreationTime, the wider bound, and never reads as "no space".
+    """
+    res = run(
+        ["aws", "sagemaker", "list-spaces", "--region", backend.REGION, "--output", "json"],
+        env_extra={"AWS_PROFILE": backend.profile(env)},
+        dry=dry,
+        capture=True,
+    )
+    if res is None:
+        return None
+    if res.returncode != 0:
+        print(f"    FAILED to list the Studio spaces in {env}", file=sys.stderr)
+        print(res.stderr.strip(), file=sys.stderr)
+        return None
+    spaces = json.loads(res.stdout or "{}").get("Spaces", [])
+    return {
+        (s["DomainId"], s["SpaceName"]): datetime.fromisoformat(s["CreationTime"]).astimezone(
+            timezone.utc
+        )
+        for s in spaces
+        if s.get("CreationTime")
+    }
+
+
+def print_studio_app(env: str, app: dict, now: datetime, spaces: dict | None) -> float | None:
     """One app's line; returns its hourly rate, or None when docs/PRICING.md holds no row for it."""
     instance = app.get("ResourceSpec", {}).get("InstanceType", "-")
     rate = STUDIO_APP_USD_PER_HOUR.get((app["AppType"], instance))
     owner = app.get("SpaceName") or app.get("UserProfileName", "-")
     since = datetime.fromisoformat(app["CreationTime"]).astimezone(timezone.utc)
+    space_created = (spaces or {}).get((app.get("DomainId"), app.get("SpaceName")))
+    if space_created is not None and space_created > since:
+        since = space_created
     if rate is None:
         cost = "rate unmeasured"
     else:
-        # The app bills from its creation, Pending included, so the elapsed time bounds the spend.
+        # The app bills from its start, Pending included; `since` is no later than that start.
         so_far = rate * (now - since).total_seconds() / 3600
-        cost = f"{rate:.4f} USD/h, about {so_far:.2f} USD so far"
+        cost = f"{rate:.4f} USD/h, at most {so_far:.2f} USD so far"
     label = f"studio/{env}/{owner}"
     print(
         f"  {label:<40} {BILLING_APP_STATUSES[app['Status']]:<7} {app['AppType']} {instance}"
@@ -872,8 +909,9 @@ def cmd_status(args) -> int:
         apps_read = True
         if not apps:
             quiet.append(env)
+        spaces = studio_spaces_created(env, args.dry_run) if apps else {}
         for app in apps:
-            rate = print_studio_app(env, app, now)
+            rate = print_studio_app(env, app, now, spaces)
             if rate is None:
                 unmeasured += 1
             else:
