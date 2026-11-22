@@ -1012,7 +1012,9 @@ project*, and no single mechanism expresses that:
    `for-use-with-all-datazone-projects=true`, *"to allow all Amazon SageMaker Unified Studio projects in this
    account to access it"*; 6h decision 8 (a), taken 2026-11-17, puts it on both objects when a second
    project needs the warehouse (`sandbox/warehouse/`'s `all_projects_tag_enabled`), and `WH-7` then reads
-   it on both and neither tag on the admin secret (`INV-20`). The tag is on **two**
+   it on both and neither tag on the admin secret (`INV-20`). Its window was answered standing on
+   2026-11-22: the switch is on by default and the map holds `test-experimentation` beside
+   `eighth-experimentation`, applied in the Sandbox warehouse sitting. The tag is on **two**
    objects, which is Lesson 14's shape, so both come from one authored map in `sandbox/warehouse/`.
    **It is a tag KEY, so it names exactly one project** (read 2026-09-20): AWS's instruction is to add *"1 of
    the following tags"*, and the two options are one project or every project in the account. There is no
@@ -1020,7 +1022,9 @@ project*, and no single mechanism expresses that:
    and admitting a second project is [6h](plan/stages/stage-06h-redshift-connection.md) decision 8 rather
    than a second map entry. `sandbox/warehouse/`'s `projects` variable refuses one at plan time while the wide
    tag's switch is off, because the alternative is a silent overwrite that breaks the first project's
-   connection with nothing to say which.
+   connection with nothing to say which. The wide tag opens IAM alone: a project outside the map has no
+   access role and no `5439` rule, so it reaches the workgroup only through the Data API, where layer 3
+   is the only gate.
 2. **The IAM reach** — `redshift-serverless:GetCredentials`, `GetWorkgroup`, `ListTagsForResource` —
    mints the database session, and it sits on **two** roles: the project role, and the per-project
    **access role** the form demands (below). On the Data page `GetCredentials` is called by the access

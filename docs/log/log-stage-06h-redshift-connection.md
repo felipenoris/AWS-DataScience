@@ -2536,3 +2536,58 @@ as the infrastructure user, permission set `InfrastructureAccess`, through `awsd
   is out of `projects`, and 5.2b as written would read the network's timeout (Lesson 42). The user's choice,
   in the waiting list's decision 8 row and `promotion.md` §N.12.4: `test-experimentation` in `projects`
   within the wide tag's applies of the sitting's steps 5 and 9, or 5.2b re-specified.
+
+## 2026-11-22 — decision 8 (a)'s window taken as standing and 6.4 as keep; the standing change written and planned, not applied
+
+*Claude, in a session the orchestrating session started for Stage 6h, in a worktree of its own, on the
+laptop with the environment up for other stages and the Sandbox warehouse's compute down. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] The reads before the question**, 2026-11-22 before 02:30: `describe-security-groups` named
+  `test-experimentation`'s group `datazone-4gqfau9xuo6e4w-dev`, in the workgroup's VPC, beside
+  `datazone-avhvbqn37ty7m8-dev`; `iam get-role` read `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw` under
+  `awsds-sandbox-project-boundary`; `datazone list-projects` paired `4gqfau9xuo6e4w` with
+  `test-experimentation`. In the code: `./aws/warehouse.py` reads the authored map from
+  `sandbox/warehouse/variables.tf`, never from the state, so a map passed by `-var-file` reads `WH-7` fail;
+  `.amazonaws.com` is on the proxy's Sandbox plane (`production/networking/hub-anchors.tf`), so a space
+  reaches the Data API with no endpoint and without the `5439` rule.
+- **[Claude] The options presented**: per sitting with `test-experimentation` in `projects` for the
+  window (recommended), per sitting with 5.2b rewritten for the Data API, or standing. The per-sitting
+  recommendation as the waiting list wrote it, the project out of the map and 5.2b from a notebook, was
+  shown not to run: the notebook has no `5439` rule (the entry of 2026-11-20).
+- **[user] Decision 8 (a)'s window**, in this session's chat, after asking for more context: *"Peço a
+  solução C. Permanente. Um commit põe test-experimentation no mapa e deixa a tag ligada por padrão. Eu
+  escrevo o código e rodo o plan, sem apply."*
+- **[user] 6.4**, the same message: *"Pode manter o lab na 6.4."*
+- **[Claude] The code**: `sandbox/warehouse/variables.tf`'s `projects` default gains
+  `"4gqfau9xuo6e4w"` (quoted: the key begins with a digit), its role and group as read above, and
+  `all_projects_tag_enabled` defaults to `true`. The comment beside the validation now says the access role
+  gates the Data page, the `5439` rule the notebook, and the schema `GRANT` alone the Data API.
+- **[Claude] The plans** of `sandbox/warehouse/` from the branch, Terraform 1.17.2, `-input=false`, saved
+  to a scratch file and not applied:
+
+  | UTC | Variables | Plan |
+  |---|---|---|
+  | 02:30:27 | `all_projects_tag_enabled=true`, `data_transfer_role_enabled=false` | *"Plan: 7 to add, 2 to change, 0 to destroy."* |
+  | 02:31:29 | none, the new defaults | *"Plan: 7 to add, 2 to change, 0 to destroy."* |
+  | 02:31:42 | `all_projects_tag_enabled=false` | *"Error: Invalid value for variable"* on `variable "projects"` |
+  | 02:31:53 | both `true` | *"Plan: 9 to add, 2 to change, 0 to destroy."* |
+
+  The seven adds are `test-experimentation`'s: `aws_iam_policy.project_warehouse`, `project_access_portal`,
+  `aws_iam_role.project_access`, the three attachments and `aws_vpc_security_group_ingress_rule.project_5439`.
+  The two changes are `aws_redshiftserverless_namespace.this`, its tags losing `AmazonDataZoneProject` and
+  gaining `for-use-with-all-datazone-projects = "true"`, and `aws_iam_policy.project_warehouse["avhvbqn37ty7m8"]`,
+  whose document's data source is read during apply *"(depends on a resource or a module with changes
+  pending)"*: it references `aws_iam_role.project_access`, which gains an instance (`SUP-356`). The outputs
+  `all_projects_tag` (create), `projects` and `project_access_role_arns` (update) change with them.
+- **[Claude] The instrument** from the branch, `./aws/warehouse.py awsds-infra-sandbox-1`, 02:32:22 to
+  02:32:42, exit 2, no call failed: `WH-7` fail, *"the map holds 2 projects and neither object wears
+  for-use-with-all-datazone-projects"*; `WH-11` fail, `test-experimentation`'s role *"is missing
+  awsds-sandbox-warehouse-project-4gqfau9xuo6e4w"*; `WH-9` a note, that project holding no connection. Both
+  fails are the change's state before its apply, and they stand from the merge to the warehouse sitting's
+  step 7 (`AWS_STATE.md` §C).
+- **[Claude] The records**: the stage file's `Status`, decision 8 (the doors' gates restated, the window
+  taken), 6.4, and the warehouse sitting's block (step 7 the standing apply, step 9 5.1's after half from
+  `app-dbt-dev`, step 11 nothing); `waiting-on-the-user.md`, `promotion.md` §N.10 and §N.12, the runbook,
+  `docs/SMUS.md`, `docs/NETWORK.md`, `docs/AWS_STATE.md` and the slice's README.

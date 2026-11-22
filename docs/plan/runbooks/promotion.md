@@ -2477,9 +2477,8 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 - **`sandbox/ml/`'s endpoint statements** (Stage 17 decision 7) ran from `main` on 2026-11-20 with nothing
   up (N.6 item 3): pass 4 creates an endpoint configuration and an endpoint.
 - **[user] With nothing up:**
-  - 6h decision 8 (a)'s window: the wide tag per sitting or standing.
-  - 6h 5.2b's network door (N.12.4): `test-experimentation` in `projects` within the wide tag's applies, or
-    5.2b re-specified.
+  - 6h decision 8 (a)'s window, taken 2026-11-22 as standing: pull request #PRNUM merged before day 1,
+    which also gives 5.2b's network door (N.12.4).
   - Stage 21 1.3's wizard half, the enable wizard read and cancelled.
   - Stage 21 4.5's write path: `sandbox/data/`'s key policy naming the data transfer role (D31), or
     reads alone.
@@ -2492,7 +2491,7 @@ usage limit, so each day starts at zero of its 10 RPU-hours.
 | Day | Raise | Blocks | Hours |
 |---|---|---|---|
 | 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | 5b; 6h to 0.4's portal half; Stage 19's pass 5 to 5.3; Stage 17's pass 4; Stage 20's pass 5 | about 7.5 |
-| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | Stage 21's passes 2 to 5 and their closing reads; Stage 19's 5.4 with Stage 21's rollback; 6h 6.4; the subscriptions revoked | about 7.5 |
+| 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | Stage 21's passes 2 to 5 and their closing reads; Stage 19's 5.4 with Stage 21's rollback; the subscriptions revoked | about 7.5 |
 
 A breach of the usage limit deactivates the compute until its amount is raised; Stage 17's and Stage 20's
 blocks call no warehouse, so they run on through one. The amount is the user's value: on a breach the
@@ -2516,9 +2515,9 @@ The blocks are the sections titled "The Sandbox warehouse sitting" in
    included. About 15 minutes.
 4. [user; Claude] 6h's step 1, the editor's first session on `sandbox`, then 5b's step 3, the
    `max_query_execution_time` test. About 40 minutes.
-5. 6h's steps 2 to 10: 5.2, 5.2a's owed half, 5.3, 5.4, 5.1; [Claude⚡] the wide tag on, `sandbox/warehouse/`
-   then `warehouse-compute/`; 5.2b; [Claude⚡] the tag off unless it stands; 0.4's portal half. About 2 hours
-   10 minutes.
+5. 6h's steps 2 to 10: 5.2, 5.2a's owed half, 5.3, 5.4, 5.1's before half; [Claude⚡] the standing apply,
+   `sandbox/warehouse/` then `warehouse-compute/`; 5.2b; 5.1's after half from `app-dbt-dev`'s space; 0.4's
+   portal half. About 2 hours 10 minutes.
 6. Stage 19's pass 5, steps 1 to 6: the session, `USAGE ON DATABASE awsdatacatalog`, 5.2's read with
    DataZone's grant alone (xiii), 5.1's Lake Formation half only on its refusal, the copy and the view, and
    5.3's source, which is Stage 21's 2.2. About 1 hour 25 minutes.
@@ -2547,7 +2546,7 @@ passes 2 to 4 in order" and its §5.
    `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
    five-minute wait.
 3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, then the view and the
-   tables that item names dropped; 6h's 6.4, keep or drop `lab`; then the subscriptions of N.6 item 6
+   tables that item names dropped, `lab` kept (6h 6.4, taken 2026-11-22); then the subscriptions of N.6 item 6
    revoked, Stage 19 4.12's (by its 2.5) and Stage 20 5.0's, each read on both sides. Then the lowering
    (N.10.5).
 
@@ -2700,7 +2699,7 @@ bound it stay N.6's.
 | 2026-11-22, after 01:59:59 UTC | R1 (N.11.1), N.6 item 6 inside it | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation; N.9's day 1, for `app-dbt`'s release |
 | 2026-11-23 | N.9's day 2, 6d's remainder at its end | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-24 | N.9's day 3, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base` | `app-ml-dev`'s MLflow App |
-| 2026-11-25 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | R1's subscriptions and Stage 20 5.1's tar; day 2's registered version; 6h 5.2b's door (N.12.4) |
+| 2026-11-25 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | R1's subscriptions and Stage 20 5.1's tar; day 2's registered version; 6h decision 8 (a)'s merge (N.12.4) |
 | 2026-11-26 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-27 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; #321 merged in R1 |
 
@@ -2821,12 +2820,14 @@ The waiting list holds each as a row. In the calendar's order:
   `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Which portal act counts as that first use, the
   playground's or a notebook's, is read on the day.
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
-- **Before N.10's day 1**: N.10.1's acts, and 6h 5.2b's network door. `sandbox/warehouse/`'s security group
+- **Before N.10's day 1**: N.10.1's acts, and 6h decision 8 (a)'s merge. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
   and lets `projects` take a second entry: `test-experimentation` in `projects` within the wide tag's
   applies of 6h's steps 5 and 9 gives it the door, with its access-role policies, at no extra apply.
+  The user took decision 8 (a)'s window as standing on 2026-11-22 (pull request #PRNUM):
+  `test-experimentation` joins `projects` at 6h's step 7, which gives it the rule, and the tag stays.
 
 ## Q. After the quotas: Stage 10's pass 3
 
