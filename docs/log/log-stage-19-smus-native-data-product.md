@@ -4794,3 +4794,45 @@ reads alone, at 15:09 to 15:13. Times UTC.*
   `deploy-production`'s project role, Production's own role, under a session policy scoped to the table's
   prefix. The S3 reads are data events, which the trail's lookup does not return. Appended to `SUP-416`.
 - **Left of 4.12**: the revocation, by 2.5's path, after `promotion.md` §N.10's day 2.
+
+## 2026-11-22 — Step 8 of the order: the scheduled source runs after R1's imports, and the import's technical forms
+
+*Claude, reads alone, as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`), Staging (`awsds-infra-staging`) and Production (`awsds-infra-prod`), from 15:46 to
+15:52. Times UTC.*
+
+- **[Claude] Staging's source** `52f18khk7kdi4w` (`cron(28 15 * * ? *)`, `publishOnImport` false): the
+  scheduled run `d91kg8n15fx95c`, 15:37:23 to 15:37:24, `SUCCESS`, `added: 0`, `updated: 1`; its activity
+  `SUCCEEDED_UPDATED` on `trades_notional`, the asset `as6m73yp8shr80`. The scheduled runs of 2026-11-19 to
+  2026-11-21 read `unchanged: 1`. The asset at revision 5 (15:37:24, `SYSTEM`), with no listing.
+- **[Claude] Production's source** `5zggi2lr2ezy4w` (`cron(32 15 * * ? *)`, `publishOnImport` false): the
+  scheduled run `3jckn2l353hvgw`, 15:44:02 to 15:44:03, `SUCCESS`, `unchanged: 1`, its activity `UNCHANGED`
+  on `da1fycta6l71n4`; before it, R1's prioritized run `co4ptp86eqz1qo` at 05:03:19, `updated: 1`. The asset
+  stays at revision 6 (05:03:20, `SYSTEM`); its listing `5hpftif3nnoj2o` `ACTIVE` at listing revision 8
+  (05:03:24) carrying asset revision 6, and the product listing `dr8t27tte8ezdc` `ACTIVE` at revision 1
+  (05:03:33), product `anph2bq7uigqa8` revision 1, its one item `5hpftif3nnoj2o` at revision 8. Neither run
+  touched a listing.
+- **[Claude] What the imports wrote**, each revision read with `get-asset` and compared form by form (the
+  bodies saved outside the repository). The CLI's import revisions, by the deploy roles' IAM user profiles,
+  carry `app-etl-dev`'s table in `GlueTableForm` and in `AssetCommonDetailsForm`'s `sourceIdentifier`:
+  Sandbox's catalog id and table ARN, the location under `awsds-sandbox-smus-projects/…/ceweti7jbiu1hs/dev/`
+  and the table's `updateTime` of 2026-11-15 22:28:31Z, while the asset's `externalIdentifier` stays the
+  target's table. They are Staging's revision 2 (2026-11-16 02:09:30, `awsds-deploy-staging`) and 4
+  (2026-11-22 04:12:01, the same role), and Production's 2 (2026-11-16 02:50:37, `awsds-deploy-prod`) and 5
+  (2026-11-22 04:47:12, the same role). The target's source wrote its own table back at its next run:
+  Staging's revision 3 (the scheduled run of 2026-11-16 15:37:24) and 5 (today's), Production's 3 (the
+  `publish` task's run of 2026-11-16 03:05:17) and 6 (R1's, 05:03:20, four seconds before the listing at
+  05:03:24). Every revision since the first import keeps the description, `classification` `internal` and
+  `SubscriptionTermsForm` as the import wrote them; the source rewrites the technical forms alone. No
+  revision followed `staging-catalog` (04:37:48 to 04:37:57) or `production-catalog` (05:04:14 to
+  05:04:22).
+- **[Claude] `./aws/catalog.py`**, 15:49 to 15:53: *"all checks passed"*, `CT-15` reading *"12 listings: 2 of
+  deploy-production, none of deploy-staging or of a chain application's dev project (app-etl-dev,
+  app-dbt-dev)"*.
+- **[Claude] Read against the stage**: xvii's Staging half after release G, the source updates the imported
+  asset and creates none, and the update keeps `dev`'s business metadata (the open part of 2026-11-17).
+  Production's scheduled run reads `unchanged` because the `publish` task's run had already restored the
+  table before listing. xxv after release G: Staging's daily source revises the unlisted asset in place,
+  restoring Staging's table, which the asset had not carried from 04:12:01 to 15:37:24. A listing made
+  between an import and the source's next run would publish Sandbox's location and table ARN; Production's
+  `publish` runs the source first. Written as `SUP-453`.

@@ -5155,6 +5155,22 @@ entry is still true is the reading.
   the source over `app_etl`, the project's only one. Where: `log-stage-20-dbt-lineage.md`, 2026-11-19;
   `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
+- `SUP-453` **`aws-smus-cicd-cli` 1.0.9's catalog import writes the source project's table into the target's
+  asset, and the target's own data source writes the target's table back at its next run** (read 2026-11-22
+  in Staging and Production, Stage 19 step 8 of the order). Each `deploy`'s import revises the target's
+  asset by name with the bundle's `GlueTableForm` and `AssetCommonDetailsForm` `sourceIdentifier`:
+  `app-etl-dev`'s table, Sandbox's catalog id and table ARN, its S3 location and its `updateTime`, while the
+  asset's `externalIdentifier` stays the target's table. Measured on both releases that imported:
+  `deploy-staging`'s revisions 2 (2026-11-16) and 4 (2026-11-22, 04:12:01 UTC) by `awsds-deploy-staging`,
+  `deploy-production`'s 2 and 5 (04:47:12 UTC) by `awsds-deploy-prod`. The target's source, with
+  `publishOnImport` false, rewrote those forms with its own table at its next run and kept the description,
+  the `classification` form and the subscription terms the import wrote: a scheduled run (Staging, 15:37:24
+  UTC, `updated: 1`) or the `publish` task's run (Production, 05:03:20 UTC, four seconds before its
+  listing). So the first scheduled run after an import reads `updated: 1` where nothing ran the source
+  since, and `unchanged: 1` every other day. Between an import and the source's next run the asset names
+  another account's table, and a listing made in that window publishes that table's location and ARN.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
 ## Bedrock
 
 The Bedrock IDE, SageMaker Unified Studio's builder of Bedrock components, is recorded under
