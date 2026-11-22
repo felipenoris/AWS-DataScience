@@ -4573,3 +4573,62 @@ UTC.
   for the preview and `CreateAgent` for the deploy, and Agents Classic refuses this account.
 - **[Claude] What waits on the user**: 7.4b's fallback, a flow app over the knowledge base with the preview's
   questions and the one *Share*, and the deletion of the failed chat agent's environment.
+
+## 2026-11-22 — Day 2's sitting B: 2.5 and 7.5 read by the instrument, and the flow's role without the boundary
+
+- **[Claude] The run.** `./aws/sandbox-ml.py` as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`), its report generated at 03:25:56: exit 2, one check failed, `ML-8` (below).
+- **[Claude] 2.5, `ML-3`.** The three tagged jobs pass, *"the four settings, project role, key and tag"*,
+  each `Completed` on `ml.m5.xlarge`: `ml-demo-xgb-tagged-20261121-233934` (89 s billed, validation AUC
+  0.8209), `-20261121-235427` (84 s, 0.8209) and `-20261122-000754` (88 s, 0.8394). The four admitted
+  `CreateTrainingJob`, the untagged job's at 23:19:36 and the three tagged, pass as the project role, session
+  `SageMaker`, through `vpce-02feedaa4ad58acf4`, the SageMaker API endpoint, from the space's `10.20.54.175`.
+  `ml-demo-xgb-untagged-20261121-231933` reads `Stopped`, with no billed seconds. The five refusals of 2.3,
+  23:53:43 to 23:54:20 (`no-vpc`, `no-isolation`, `no-ice`, `no-volume-key` and `ceiling`), each read *"with
+  an explicit deny in a permissions boundary: …/awsds-sandbox-project-boundary"*; the refusal at 23:19:44
+  names `sagemaker:AddTags`, *"because no identity-based policy allows the sagemaker:AddTags action"*
+  (`SUP-408`). The trail's `BatchGetImage` events on `sagemaker-xgboost` are the infrastructure user's own
+  reads, the pre-flight's at 2026-11-21 19:15:34 and four at 00:09:04 to 00:09:08, with no `vpcEndpointId`;
+  no pull by a training job is in this account's trail, the repository being AWS's.
+- **[Claude] 7.5, `ML-8`.** The prompt `Bedrock-Prompt-dsffvybs9lppcg`, the flow `Bedrock-Flow-5er1gtql9ewbgw`,
+  the guardrail `1c6faa73-f751-408c-890b-35fe5ada49cb-dev` and the knowledge base
+  `avhvbqn37ty7m8-ml-demo-runbooks` each carry `AmazonDataZoneProject` `avhvbqn37ty7m8`; the knowledge base
+  reads `ACTIVE`, embeddings `p391nstyc81c`, store `S3_VECTORS`, role the project role. The evaluation job is
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite`, and no agent exists. The vector buckets are
+  `amazon-bedrock-ide-avhvbqn37ty7m8-46cr0woe7670gg` and the first attempt's `…-cie8747bea6mxc`. The trail's
+  creates, none with a `vpcEndpointId` (verification xviii): as the provisioning role, session
+  `AmazonDataZoneEnvironmentDeployer-<account>`, `CreateKnowledgeBase` at 01:33:19, `CreateDataSource` at
+  01:33:29, the create's own `StartIngestionJob` at 01:33:30, `CreateGuardrail` at 01:56:24 (`AccessDenied`)
+  and 02:45:13, `CreatePrompt` at 01:49:04, `CreateFlow` at 02:02:40 and `CreateAgent` at 03:05:39
+  (`AccessDenied`); as the project role, in the person's session, the *Sync* click's `StartIngestionJob` at
+  01:34:13 and `CreateEvaluationJob` at 02:07:54 (`ValidationException`) and 02:52:08. No `CreateAgentAlias`.
+  The six projects' roles carry `EnableAmazonBedrockPermissions` `true` and no
+  `EnableAmazonBedrockIDEPermissions` (verification xvii). Every `AmazonBedrockServiceRole-*` and
+  `AmazonBedrockLambdaExecutionRole-*` carries `awsds-sandbox-project-boundary`, and one role fails:
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, *"no permissions boundary - an interactive principal outside
+  D13 (policies: SageMakerStudioBedrockFlowServiceRolePolicy)"*.
+- **[Claude] The flow's role, read** (`SUP-447`). The provisioning role created it from
+  `datazone.amazonaws.com` at 02:02:39 (`CreateRole`, `AttachRolePolicy`), 20 s after the flow's
+  environment and a second before `CreateFlow`; the request names no `permissionsBoundary`. It carries the
+  flow's five tags and `KmsKeyId`, the project key's id. Its trust admits `bedrock.amazonaws.com` under
+  `aws:SourceAccount` and `aws:SourceArn` `flow/*` of this account. Its one policy is AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` v9: `GetPrompt`, `Retrieve`, `ApplyGuardrail`, `InvokeAgent`,
+  `lambda:InvokeFunction` on `amazon-bedrock*` and `InvokeModel` on application inference profiles, each on
+  the project's tag; `InvokeModel` on a foundation model through an inference profile; `RetrieveAndGenerate`
+  on `*`; and the key its `KmsKeyId` tag names, through Bedrock, under each object's encryption context.
+  `RoleLastUsed` is empty: the flow's `executionRoleArn` is `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`.
+  The stack `DataZone-Env-5er1gtql9ewbgw` declares the role with no condition, so it is always created. Its
+  parameter `useAwsManagedPoliciesWithoutBoundary`, passed `true`, gives it the managed policy and no
+  boundary; `false` would give it inline policies under AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`. The flow takes the role only when `bedrockServiceRoleArn`
+  is empty, and the environment passed the project's service role. The `AmazonBedrockFlow` blueprint
+  configuration reads `environmentRolePermissionBoundary` `awsds-sandbox-project-boundary`, as the six other
+  Bedrock blueprints' do, and the template takes no parameter for it. The IAM simulator reads `iam:PassRole`
+  to `bedrock.amazonaws.com` `implicitDeny` for the project role, on this role and on the project's service
+  role. `awsds-sandbox-project-boundary` v3 denies SageMaker creates off their settings, direct S3 on Lake
+  Formation's prefixes and the lake data key outside S3; its instance-ceiling statement, written with
+  `NotAction`, matches only a request that carries instance types, so the boundary would deny no call the
+  role's policy grants.
+- **[Claude] What waits on the user**: the flow's role, which `ML-8` fails on every run while the flow
+  exists: accept it as an exception, delete the flow, whose stack holds the role, or attach the boundary by
+  hand. A second flow app, 7.4b's fallback, creates a second such role.

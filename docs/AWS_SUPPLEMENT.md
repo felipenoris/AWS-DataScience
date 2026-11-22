@@ -3642,6 +3642,25 @@ entry is still true is the reading.
   dates Agents Classic's closing to new customers, July 30, 2026, and names no refusal of its own calls.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
+- `SUP-447` **The Bedrock IDE's flow environment always creates a role of its own, and creates it with no
+  permissions boundary: the blueprint configuration's `environmentRolePermissionBoundary` does not reach it,
+  and the flow runs as the project's service role instead** (read 2026-11-22 in Sandbox, Stage 17 7.5). The
+  stack of a flow app's environment declares `AWS::IAM::Role` with no condition, named
+  `AmazonBedrockFlowServiceRole-<environment id>`. The environment passed the stack parameter
+  `useAwsManagedPoliciesWithoutBoundary` `true`, which gives the role AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` and no boundary; `false` gives it inline policies under AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`. Neither branch reads the boundary the
+  `AmazonBedrockFlow` blueprint configuration names, `awsds-sandbox-project-boundary` here, and the template
+  takes no parameter for it. The provisioning role's `CreateRole`, from `datazone.amazonaws.com`, named no
+  `permissionsBoundary`. The flow's `ExecutionRoleArn` is the new role only when `bedrockServiceRoleArn` is
+  empty; the environment passed the project's `AmazonBedrockServiceRole-*`, so the flow ran as that bounded
+  role and the new one reads no `RoleLastUsed`. Its trust admits `bedrock.amazonaws.com` for this account's
+  flows alone, its policy names only the project's Bedrock objects by tag, models through an inference
+  profile, `RetrieveAndGenerate` on `*` and the project key through Bedrock, and the project role may not pass
+  it (`iam:PassRole` `implicitDeny` in the simulator). No SMUS page read for this project describes the role.
+  A check that every blueprint-authored role carries the boundary fails on each flow app's environment. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
