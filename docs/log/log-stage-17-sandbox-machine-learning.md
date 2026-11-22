@@ -5014,3 +5014,27 @@ Claude on the laptop, no AWS call. Times UTC.*
   and `scripts/model-chain.py`, and every entry of `app-ml.tar`, `app-genai.tar`, `app-ml-source.tar` and
   `app-genai-source.tar` lies under `app-ml/`, `app-genai/`, `examples/app-ml/` or `examples/app-genai/`.
   The tars still match main.
+
+## 2026-11-22 — 3.3: `eighth-experimentation`'s source run after the group, and verification v
+
+*Claude's reads as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`), at about 16:55 and from 17:41 to
+17:50; no write. Times UTC.*
+
+- **[Claude] Before the run**, at about 16:55: `Tooling-default-sagemaker-modelpackagegroup-datasource`
+  (`4tb4qnmgi0iej4`, `cron(32 17 * * ? *)`) `READY`, `ENABLED`, `publishOnImport` `false`, tracking
+  `SageMakerModelPackageGroupAssetType` over an empty list; its last run, 2026-11-21 from 17:38:11 to
+  17:38:20, `SUCCESS` with 0 assets. Sandbox holds one model package group, `ml-demo-xgboost`, `Completed`
+  since 00:18:45. The infrastructure user's `Search` in the project is refused, *"User is not permitted to
+  perform operation: Search"*, being no member of it, so the run's activities are the instrument.
+- **[Claude] The run** `ahyxtok17bxok0`, `SCHEDULED`, 17:38:11 to 17:38:24: `SUCCESS`, `added` 0,
+  `updated` 0, `unchanged` 0, `failed` 0, no error; `list-data-source-run-activities` returns no item. The
+  source reads `lastRunAssetCount` 0 and the same empty list.
+- **[Claude] `ML-4`**, `./aws/sandbox-ml.py` at 17:47:08, all checks passed: `ml-demo-xgboost` *"tagged
+  avhvbqn37ty7m8; 1 version(s): v1 Approved"*, and its `model.tar.gz` *"the model data under the project
+  key"*.
+- **[Claude] `CT-6`**, `./aws/catalog.py` at 17:50:08, all checks passed: a note listing the source among
+  the schedules nobody wrote, *"in eighth-experimentation on cron(32 17 * * ? *) (87 FAILED, 4 SUCCESS)"*.
+- **[Claude] Verification v: neither.** The source neither fails on the share nor ingests the group, which
+  had existed for 17 hours with the project's tag: it tracks an empty list, and nothing adds to it. 3.3 is
+  done.
