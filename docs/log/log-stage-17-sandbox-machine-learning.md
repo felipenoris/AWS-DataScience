@@ -4896,3 +4896,17 @@ were told before the writes. Times UTC.*
 - **Left of 7.6**: the two chat app definitions, `502a9c64-…` and `043850fa-…`, from the Bedrock IDE's *My
   apps* by the project's owner, and the failed environment `b343orq3qka5n4` from the project's blueprint
   deployments if the app's deletion leaves it, each on the user's word.
+
+## 2026-11-22 — 7.6's deletions in the trails
+
+*Claude, reads alone, as the infrastructure user with `InfrastructureAccess` in `Data Governance Account`
+(`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`), at 13:51 UTC after the trails' lag.*
+
+- **[Claude] Sandbox's trail**: `datazone:DeleteEnvironment` on `6fl52xzq3yt768` at 13:40:50Z in the
+  infrastructure user's `InfrastructureAccess` session; `cloudformation:DeleteStack` of
+  `DataZone-Env-6fl52xzq3yt768` at 13:41:02Z by `awsds-sandbox-smus-provisioning`'s session
+  `AmazonDataZoneEnvironmentDeployer-<account>`, invoked by `datazone.amazonaws.com`; `s3vectors:DeleteVectorBucket`
+  on `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc` at 13:41:03Z in the infrastructure user's session.
+  No error on any of them.
+- **[Claude] Data Governance's trail**: the same `DeleteEnvironment` at 13:40:50Z, its caller in another
+  account recorded with no ARN.
