@@ -4485,8 +4485,9 @@ acts are named. Times are UTC.*
   **The build runner did not last**: at 02:41:40 an apply of `production/runners/` with `build_runner`
   false, Terraform from the laptop as the infrastructure user, terminated it. The trail's calls from 02:41:20
   to 02:42:41 are `make gitlab-up` without `BUILD=1`'s shape: the three runners refreshed, the build
-  runner's `TerminateInstances`, then the egress slice's endpoints read. 6e's session applied only
-  `identity/org-policies` that night, and the run is otherwise unidentified. Nothing read the runner
+  runner's `TerminateInstances`, then the egress slice's endpoints read. It came from neither 6e's session,
+  which applied only `identity/org-policies` that night, nor N.9 day 2's, whose applies were `sandbox/`
+  slices, and the run is otherwise unidentified. Nothing read the runner
   again before release G's tag: pipeline #138, created 03:56:35, held `build-image` with no runner until
   `make gitlab-up BUILD=1` raised it again at 04:01:22 (`runners/` 7 added, 0 changed, 0 destroyed), and
   it took `build-image` at 04:03:15.
