@@ -4165,3 +4165,87 @@ UTC.
   23:54:28 and trained 23:55:13 to 23:56:37, 84 s billed, read `Completed` with isolation and
   inter-container encryption on: the five refusals are read against a pass of the same sitting. The
   negatives ran through the proxy's replacement (23:51:43 to 23:54:00), which none of them crosses.
+
+## 2026-11-22 — Day 2's sitting B: 2.4, verification iii, 3.1 and 3.2's first attempt
+
+- **[user] 2.4, the portal's path.** On `eighth-experimentation`'s *XGBoost Classification* page,
+  *Deploy* ▾ → *JupyterLab* answered *"Failed to open notebook JupyterLab is not ready. Please ensure your
+  space is running and try again."* while `jup` read `InService` (read by Claude at the time). *Notebook*
+  is disabled under both menus (0.7). Neither entry opens the sample notebook in this project, so no job
+  was submitted from the portal: the SDK path of 2.2 is this stage's training path.
+- **[user] Verification iii from `jup`**, the hub read and one ranged `GetObject`, creating nothing:
+
+  ```
+  start 00:12:57
+  hub xgboost-classification-model 2.2.0 Available
+  uris 5
+  get s3://jumpstart-cache-prod-us-west-2/source-directory-tarballs/training/xgboost-classification/prepack/inference-xgboost-classification/v1.0.0/sourcedir.tar.gz 206 bytes 0-99/77423531
+  end 00:12:58
+  ```
+- **[Claude] Verification iii's readings: yes.** CloudTrail records `DescribeHubContent` at 00:12:57 from
+  10.20.54.175 as the project role through `vpce-02feedaa4ad58acf4`, the SageMaker API endpoint. The
+  proxy's stream from 00:12:57 to 00:12:58 holds one line, the Access Grants plugin's
+  *"CONNECT <Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 200 6623 4020 TCP_TUNNEL"*. The spoke
+  has no default route, so the 206 from `jumpstart-cache-prod-us-west-2` is the S3 gateway endpoint's: the
+  bucket name its policy has listed since Stage 3 is exercised for the first time.
+- **[user] 3.1, the second run:**
+
+  ```
+  ml-demo-xgb-tagged-20261122-000754: created
+  ml-demo-xgb-tagged-20261122-000754: Completed, 88 s billed
+  validation:auc: 0.8394
+  train:auc: 0.8577
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261122-000754/output/model.tar.gz
+  🏃 View run ml-demo-xgb-tagged-20261122-000754 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/78645bec5e354cdaa13ca6321d5b3fcd
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ```
+- **[Claude] 3.1's compare view**, read in the MLflow UI through Chrome: *"Comparing 2 Runs from 1
+  Experiment"*, `validation_auc` 0.83936 for `max_depth` 3 and `num_round` 50 against 0.82091 for 5 and 200,
+  `train_auc` 0.858 against 0.951. The better job is `ml-demo-xgb-tagged-20261122-000754`, the run
+  `78645bec5e354cdaa13ca6321d5b3fcd`. The UI's compare URL loses its run list on load (it redirects to
+  `?workspace=default`); selecting both runs in the run list and *Compare* opens the view.
+- **[user] 3.1's model and 3.2's two doors**, in that order:
+
+  ```
+  sagemaker-user@default:~/AWS-DataScience/examples/sandbox-ml$ /opt/awsds/venv/bin/python register.py log-model ml-demo-xgb-tagged-20261122-000754
+  /opt/awsds/venv/bin/python register.py package ml-demo-xgb-tagged-20261122-000754
+  /opt/awsds/venv/bin/python register.py from-mlflow ml-demo-xgb-tagged-20261122-000754
+  ml-demo-xgb-tagged-20261122-000754: model.tar.gz logged into run 78645bec5e354cdaa13ca6321d5b3fcd under archive/
+  /home/sagemaker-user/AWS-DataScience/examples/sandbox-ml/register.py:81: UserWarning: [00:18:19] WARNING: /workspace/src/c_api/c_api.cc:1500: Unknown file format: ``. Using UBJSON (`ubj`) as a guess.
+    booster.load_model(str(scratch / members[0].name))
+  2026/11/22 00:18:19 WARNING mlflow.models.model: `artifact_path` is deprecated. Please use `name` instead.
+  ml-demo-xgb-tagged-20261122-000754: booster logged as runs:/78645bec5e354cdaa13ca6321d5b3fcd/model
+  🏃 View run ml-demo-xgb-tagged-20261122-000754 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/78645bec5e354cdaa13ca6321d5b3fcd
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ml-demo-xgboost: created
+  ml-demo-xgboost version from ml-demo-xgb-tagged-20261122-000754: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:AddTags on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/ml-demo-xgboost/new because no identity-based policy allows the sagemaker:AddTags action
+  Successfully registered model 'ml-demo-xgboost'.
+  2026/11/22 00:18:56 INFO mlflow.store.model_registry.abstract_store: Waiting up to 300 seconds for model version to finish creation. Model name: ml-demo-xgboost, version 1
+  Created version '1' of model 'ml-demo-xgboost'.
+  ml-demo-xgboost: MLflow version 1 from ml-demo-xgb-tagged-20261122-000754's model.tar.gz
+  ```
+- **[Claude] 3.1's model and verification iv: yes.** The archive is the run's
+  `artifacts/archive/model.tar.gz`, 10,727 bytes. The booster is not under the run: MLflow 3.16.0 stores it
+  as the logged model `m-b2cb7244247a4203ab67bdc66eb9a7c7` under the experiment's `models/`, written 00:18:35
+  (`MLmodel`, `conda.yaml`, `model.ubj` of 58,361 bytes, `python_env.yaml`, `requirements.txt`). The house
+  interpreter's XGBoost loads the `sagemaker-xgboost:3.0-5` image's `xgboost-model` by guessing UBJSON from a
+  file with no extension. Both objects read `aws:kms` under the project key `a81b1ef3-…` with the bucket key:
+  the store the app holds no key for encrypts under the project's.
+- **[Claude] 3.2's first attempt.** CloudTrail, every call from 10.20.54.175 through
+  `vpce-02feedaa4ad58acf4`:
+  - `CreateModelPackageGroup` at 00:18:45 admitted, the group `Completed`. Its recorded request carries seven
+    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-405`): the two
+    `sagemaker:` ARNs of the profile and the domain, `sagemaker:space-arn` naming `jup`, and
+    `AmazonDataZoneProject`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` and
+    `AmazonDataZoneDomain`. The group's `AddTags` statement admits the key `AmazonDataZoneProject` alone, so
+    the six others were not in the authorization the statement read.
+  - `CreateModelPackage` at 00:18:46 refused with the `AddTags` message above, `requestParameters` null. The
+    group holds no version.
+  - `CreateModelPackage`'s API reference says a version created in a group takes no tag argument and uses
+    the group's tags, and `register.py package` sends the project tag. The refused request is one the API
+    does not accept. Decision 7 (a) writes a statement per measured refusal, so the request the API accepts,
+    the version with no tags, is measured before any statement is written.
+  - `from-mlflow`: the MLflow registry holds `ml-demo-xgboost` version 1 at 00:18:56, and SageMaker's
+    registry no version from it. The app reads `AutoModelRegistrationDisabled`, so the MLflow door writes the
+    MLflow registry alone.
