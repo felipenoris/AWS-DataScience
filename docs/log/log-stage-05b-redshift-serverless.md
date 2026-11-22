@@ -1377,3 +1377,61 @@ request #340 on 2026-11-20 at 15:52:10. Times are UTC.*
 - **[Claude] §N.10.1, the acts before it**: release G and 4.12, 6h decision 8 (a)'s window, Stage 21 1.3's
   wizard half and 4.5's write path, and Sandbox's free-trial balance; at 23:01, after the user chose Stage 19
   5.2's door, its apply from `main`, done 2026-11-20 (Stage 19's log).
+
+## 2026-11-22 — the Sandbox warehouse sitting's day 1: 5b's steps 1 to 3
+
+*Claude, in the session the orchestrating session started for `promotion.md` §N.10's day 1, run beside
+§N.9's day 3 under one raise, on the laptop, as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1). The trial's balance
+and the raise are the user's, relayed by the orchestrating session. Times are UTC.*
+
+- **[user] The trial's balance before the sitting**, read at 17:41 with nothing up and pasted in the
+  orchestrating session's chat, verbatim: *"Free trial credits remaining $287.10 out of $300.00"*, *"Free
+  trial expiration December 19, 2026"*. 0.41 USD since the 287.51 of 2026-10-25 (computed, its cause not
+  attributed).
+- **[Claude] `make status`** before the raise, 17:42 to 17:48: `estimated burn: USD 0.0000/h`.
+- **[user] The raise**, one for both days of the afternoon: `make hub-up`, then `make up ENV=sandbox
+  GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, the union of §N.9's day 3 groups and this day's.
+  The first `make up` stopped at `sandbox/egress` on a state lock, `ef80f647-…`, `OperationTypeApply`,
+  created 18:01:09 from this laptop by Terraform 1.17.2, held by no running process, and nothing written
+  under it (the state object unchanged since 05:18:18, no interface endpoint in Sandbox), read by the
+  orchestrating session at 18:04. The user ran the `force-unlock` and the same `make up`; the egress state was
+  rewritten at 18:16:24. Read by the orchestrating session at 18:22: 26 interface endpoints `available`,
+  `redshift-serverless` among them, the workgroup `AVAILABLE` at 4 RPU, `make status` up on
+  `sandbox/warehouse-compute` (2 resources), `sandbox/probes` (4), `sandbox/egress` (34), `production/vpn`
+  and `production/proxy`, *"estimated burn: USD 1.7094/h"* at static rates.
+- **[Claude] Step 1, the database half of the rotation of 2026-11-19**: `./aws/warehouse.py
+  awsds-infra-sandbox-1 --sql`, 18:24:15 to 18:25:03, exit 2, every call returned. The statements carried
+  the rotated secret and read the database: `WH-6`, `WH-12` and `WH-14` pass, so the second rotation reads
+  as the first did (`EXC-13`, `SUP-129`). `WH-7` and `WH-11` fail, 6h's standing change unapplied until its
+  step 7 (`AWS_STATE.md` §C); `WH-9` a note, `test-experimentation` holding no connection. `WH-3` reads the
+  usage limit 10 RPU-hours `deactivate`, `WH-15` idle, `WH-2` `max_query` 120 s.
+- **[Claude] Step 2, the re-plan of `warehouse-compute/`** against the live workgroup, from `main` at
+  `f37ff75c`, provider 6.68.0, 18:25:07 to 18:25:18: *"No changes. Your infrastructure matches the
+  configuration."* The question the log of 2026-10-18 left is closed: the provider ignores the undeclared
+  key `enable_large_strings_opt_in`, and the slice takes 6h's step 7 apply.
+- **[user] The test's word**, in this session's chat, for its three writes: the project's query ended with
+  `pg_terminate_backend` if the editor could not cancel it, the admin's query through the Data API, and its
+  `cancel-statement` at 150 s: *"Autorizo os três"*. Then, for the editor's statements as the project's
+  database user, asked whether Claude should run them through the user's Chrome: *"Sim, rode pelo
+  Chrome"*.
+- **[Claude] Step 3, the `max_query_execution_time` test**, in `eighth-experimentation`'s Query editor as the
+  Data Scientist User, through Claude in Chrome, on the connection `redshift-serverless.redshift`, database
+  `sandbox`, the cell's *Limit 100* toggle off so that no `LIMIT` reaches the `CREATE TABLE … AS`:
+  `CREATE TABLE lab.wh_digits (d INT);` *"Query executed successfully"*; the `INSERT` of the ten digits,
+  *"Affected rows: 10"*; `CREATE TABLE lab.wh_n AS …`, in 1 s, read back by the admin at 10,000 rows, both
+  tables owned by `IAMR:datazone_usr_role_avhvbqn37ty7m8_…`. The long query as the project's user, query
+  `14512448`, from 18:38:46.466 to 18:40:56.649, 130 s, no queue time, `failed`; the editor: *"ERROR: Query
+  (14512448[child_sequence:1]) cancelled by WLM abort action of Query Monitoring Rule
+  "max_query_execution_time". … code: 1078"*. The same query as `dbadmin`, `usesuper` true, through the
+  Data API (statement `63cd5b00-…`), query `14512514`, from 18:41:27.660 to 18:43:36.796, 129 s,
+  `FAILED` with the same wording, *"location: wlm_query_action.cpp:196"*. Neither needed a cancel. Both
+  tables dropped from the editor by their owner, `lab` holding `hello` and `hello_jupyter_via_access`
+  again at 18:45. `ComputeCapacity` read 4 RPU from 18:25 to 18:45, so neither query scaled the workgroup.
+- **The verdict: (c).** The parameter is enforced, as a Query Monitoring Rule named
+  `max_query_execution_time` whose abort binds a superuser too, about ten seconds past its 120. It binds
+  queries on the compute nodes; the runaway of 2026-09-20 read leader-node catalog tables alone, which the
+  rule did not reach, so `pg_terminate_backend` stays the bound for those (`redshift-connection.md` §J).
+- **[Claude] What the editor showed besides**: a *"Try the new Query Editor"* prompt, answered *Later*, so
+  the classic editor ran every statement; and on typing in the cell, *"A problem occurred while getting
+  autocompletion data"*, *"autocompleteMsg.getMetadataErrorAccessDenied"*, which stopped no statement.
