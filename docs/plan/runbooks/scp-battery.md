@@ -346,13 +346,13 @@ detached.
 and `DenyInvokingModelsThatRetain`, probed by hand on 2026-09-12 after the apply
 ([`claude-code-sagemaker.md`](claude-code-sagemaker.md), M3). These rows are that measurement in
 `probes.py`, run with `--phase root`; the battery ran them on 2026-10-17, every row as expected
-([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)).
+([the 6e log](../../log/log-stage-06e-claude-code-bedrock.md)). The two Fable 5.2 rows have not run.
 
 | Probe (from `awsds-policy-canary`, `--region us-west-2`) | Expected | Statement it answers |
 |---|---|---|
 | `aws bedrock put-account-data-retention --mode inherit` | `AccessDenied` naming the baseline | `DenyBedrockRetentionModeOtherThanNone`. **`creates`**: with the deny lifted it sets the canary's mode, and the next row writes `none` back |
 | `aws bedrock put-account-data-retention --mode none` | succeeds, writing the value set on 2026-09-12 | none: the contrast, and the reading that the condition key is still published, since a `StringNotEquals` over an absent key would refuse this call too |
-| `aws bedrock-runtime invoke-model --model-id <profile> --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}' /dev/null`, once for each of `us.` and `global.` `anthropic.claude-fable-5` and `anthropic.claude-fable-5-1` | `AccessDenied` naming the baseline | `DenyInvokingModelsThatRetain`. With the deny lifted the canary still cannot answer, having no use-case form and no agreement, so a gate refusal reads `ALLOWED`. A profile routes to other Regions, where the canary's own Region control may refuse a destination first: read the policy id |
+| `aws bedrock-runtime invoke-model --model-id <profile> --cli-binary-format raw-in-base64-out --body '{"anthropic_version":"bedrock-2023-05-31","max_tokens":1,"messages":[{"role":"user","content":"ping"}]}' /dev/null`, once for each of `us.` and `global.` `anthropic.claude-fable-5`, `anthropic.claude-fable-5-1` and `anthropic.claude-fable-5-2` | `AccessDenied` naming the baseline | `DenyInvokingModelsThatRetain`. With the deny lifted the canary still cannot answer, having no use-case form and no agreement, so a gate refusal reads `ALLOWED`. A profile routes to other Regions, where the canary's own Region control may refuse a destination first: read the policy id |
 
 If the `inherit` row reads `ALLOWED` and the run stopped before the next row, put the mode back by hand:
 `aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-policy-canary`.
@@ -553,6 +553,33 @@ step 6.4's measurement window.
 
 The rows read the image's pins rather than the statement's `NotResource`, which is the list under test: a
 row built from it would invoke a misspelt id and pass while the image's own call is refused.
+
+**The `TM-28` amendment — `awsds-org-scp-ou-interactive` gains `DenyAgentCoreBuiltInTools`** (written
+2026-11-22). Run with `--phase ou` a minute or more after the `identity/org-policies/` apply (`SUP-350`).
+Every row is `ro` or `blocked`: no row can open a session, and the runtime it names does not exist.
+
+| Probe | Expected | Statement it answers |
+|---|---|---|
+| From `awsds-infra-sandbox-1`: `aws bedrock-agentcore get-code-interpreter-session --code-interpreter-identifier aws.codeinterpreter.v1 --session-id <26 zeros>`, and `get-browser-session` on `aws.browser.v1` | `AccessDenied` naming the Interactive document | `DenyAgentCoreBuiltInTools` on AWS's own tools, through the grant's `*CodeInterpreterSession` and `*BrowserSession`. Authorized, each answered `ResourceNotFoundException`, *"Session not found"* (2026-11-22, before the statement existed) |
+| From `awsds-infra-sandbox-1`: `start-code-interpreter-session` and `start-browser-session` naming `awsds_canary_probe-0000000000`, a tool that does not exist | `AccessDenied` | the same statement on a tool of the account's own, which `Resource: "*"` covers |
+| The same two starts from `awsds-policy-canary` | `ResourceNotFoundException` (authorized) | none: the contrast, where no Interactive document reaches. It attributes a sandbox refusal that names no policy (the Athena rows' pattern) |
+| From `awsds-infra-sandbox-1`: `aws bedrock-agentcore-control get-agent-runtime`, and `aws bedrock-agentcore invoke-agent-runtime`, on a runtime that does not exist | `ResourceNotFoundException` (authorized) | none: the runtime's actions stay open for [Stage 17](../stages/stage-17-sandbox-machine-learning.md) 10.11. `GetAgentRuntime` answered so on 2026-11-22; `InvokeAgentRuntime` is unmeasured |
+
+A deny row reading `ResourceNotFoundException` after the read-back found the document attached means
+AgentCore resolved the session or the tool before it authorized: the row is recorded untested (Lesson 21),
+and the simulation below reads the statement.
+
+**`InvokeCodeInterpreter`, `ConnectBrowserAutomationStream`, `InvokeWebSearch` and `InvokeWebAnswer` have
+no row.** The CLI removes the first, an event stream; the second is a WebSocket; CLI 2.37.12's model
+carries neither web call (`SUP-451`). They are read as a Sandbox project role, the Region in the context
+(`SUP-008`), on `*`: each `explicitDeny` with `AllowedByOrganizations` false after the apply. Before the
+statement existed, on 2026-11-22, the role read `allowed` on `InvokeCodeInterpreter` and on `InvokeWebSearch`
+at the ARNs the grant names, and `implicitDeny` on `InvokeWebAnswer` and on `ConnectBrowserAutomationStream`
+at `*` (`SUP-451`).
+
+```bash
+aws iam simulate-principal-policy --policy-source-arn <a Sandbox project role's ARN> --action-names bedrock-agentcore:InvokeWebSearch bedrock-agentcore:InvokeWebAnswer bedrock-agentcore:InvokeCodeInterpreter bedrock-agentcore:ConnectBrowserAutomationStream bedrock-agentcore:StartCodeInterpreterSession bedrock-agentcore:StartBrowserSession --context-entries ContextKeyName=aws:RequestedRegion,ContextKeyValues=us-west-2,ContextKeyType=string --query 'EvaluationResults[].[EvalActionName,EvalDecision,OrganizationsDecisionDetail.AllowedByOrganizations]' --output text --profile awsds-infra-sandbox-1
+```
 
 ## Phase 5 — step 7.8's documents, one attach at a time
 

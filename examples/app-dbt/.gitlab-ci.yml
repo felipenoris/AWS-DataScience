@@ -36,10 +36,11 @@ variables:
   GATES_UV_PROJECTS: "."
   # The workflow tooling, by commit: its lint reads manifest.yaml and the workflows it names against the
   # rules of a SageMaker application, offline, and its package-task builds the worker's archive. The
-  # commit is the merge of awsds-workflows pull request #28, whose CLI_VARIABLES admits the project's
-  # Athena workgroup (the infrastructure repository's Stage 20 decision 17 (b)), after #27's rule `job`
-  # left a processing task's isolation to the task (step 6.4).
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4613ddce2bfd2bf43cf79aa4d6bc1d07a9dbc362.zip"
+  # commit is the merge of awsds-workflows pull request #29, whose rule `operador` refuses the native
+  # notebook operator by name (the infrastructure repository's Stage 8 5.6), after #28's CLI_VARIABLES
+  # admitted the project's Athena workgroup (Stage 20 decision 17 (b)) and #27's rule `job` left a
+  # processing task's isolation to the task (Stage 20 step 6.4).
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
   # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
   # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
   # (allowed_instance_types) in the infrastructure repository. A copy, since the application's repository

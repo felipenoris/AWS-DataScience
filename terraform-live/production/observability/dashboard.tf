@@ -26,7 +26,7 @@ locals {
         markdown = <<-EOT
           ## The hub and Production
 
-          The WireGuard host and the Squid proxy are the two `[D]` hosts every other account's session depends on (D38). A **stopped** host shows a gap in its status-check graph; a **failing** one shows 1. The proxy's alarm reads `ALARM` whenever the proxy is stopped, by design (`treat_missing_data = breaching`); the tunnel's and GitLab's read `OK` while stopped. A full disk has no panel: no host publishes a disk metric.
+          The WireGuard host and the Squid proxy are the two `[D]` hosts every other account's session depends on (D38). A **stopped** host shows a gap in its status-check graph; a **failing** one shows 1. The three hosts' alarms read `OK` while stopped (`treat_missing_data = notBreaching`, Stage 12 decision due 1) and notify `awsds-${var.env}-alerts` when a running host fails, so a dead host and a stopped one read alike until a session starts it. A full disk has no panel: no host publishes a disk metric.
 
           Runbooks: [vpn.md](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/vpn.md) (section C5a for the planes and their lists), [gitlab.md](https://github.com/felipenoris/AWS-DataScience/blob/main/docs/plan/runbooks/gitlab.md). Instruments: `./aws/proxy.py`, `./aws/vpn.py`, `./aws/dns-allowlist.py`, `./aws/observability.py`.
         EOT

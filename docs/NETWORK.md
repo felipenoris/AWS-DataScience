@@ -73,8 +73,8 @@ module's arithmetic:
 
 | Element | Where | Address | Layer · slice |
 |---|---|---|---|
-| **WireGuard host** `awsds-prod-vpn` | VPC-Networking · public · az1 | `10.31.160.22` (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
-| **Squid proxy** `awsds-prod-proxy` | VPC-Networking · public · az1 | `10.31.160.140` (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
+| **WireGuard host** `awsds-prod-vpn`, `t3.nano`: D4's default, which governs again since 2026-11-22 (#356, Stage 12 decision due 4) after `t3.medium` from 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.195`, read 2026-11-22 (moves with every replacement) + the `[P]` Elastic IP **`52.89.212.1`**; `wg0` at `10.90.0.1/24` **and `fd90::1/64`** | `[D]` `production/vpn/` |
+| **Squid proxy** `awsds-prod-proxy`, `t3.small`, the slice's default since 2026-11-21 | VPC-Networking · public · az1 | `10.31.160.128`, read 2026-11-22 (moves) + the instance's own public address, new at every start (6g decision 1): `35.90.250.102` 2026-09-17, `52.10.244.25` 2026-09-18, one instance across both | `[D]` `production/proxy/` |
 | `vpn.awsds.internal` · `proxy.awsds.internal` | the apex zone | the two **private** addresses above | `[D]`, in each host's own slice |
 | **Gateway endpoints** S3 + DynamoDB | all five VPCs — no ENI | none: their **ids** are the INT-05 anchors, the only endpoint ids a policy may name | `[P]` each `foundation/`·`networking/`·`workloads/` |
 | **Interface endpoints** | private · **az1 only** (D9) | one ENI each, new on every `make up` | `[E]` the four `egress/` slices |
@@ -123,7 +123,7 @@ module's arithmetic:
                          │  ONE internet-gateway route in the whole estate
                          ▼
         ┌──────────── VPC-Networking · 10.31.0.0/16 ─────────────┐
-        │  public az1:  WireGuard 10.31.160.22   Squid 10.31.160.181
+        │  public az1:  WireGuard 10.31.160.195  Squid 10.31.160.128
         │               wg0 10.90.0.1/24, fd90::1/64
         │  the ONLY route for 10.90.0.0/24, in this VPC's public table
         └───┬──────────────┬───────────────┬──────────────┬──────┘
@@ -172,12 +172,20 @@ Three paths, and reading them apart is what makes a failure diagnosable.
 |---|---|---|
 | **AWS APIs with an endpoint** | this VPC's interface endpoints, private DNS on | 0.010/h each + 0.010/GB |
 | **S3 and DynamoDB** | the `[P]` **gateway** endpoints, by prefix-list route | **free**, and this is where an ECR pull's layers come from |
-| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.micro`; **no per-GB processing charge at all** |
+| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.small`; **no per-GB processing charge at all** |
 
 **There is no fourth path.** With no default route, a name the app resolves and then tries to reach
 directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** from that VPC's own
 endpoint list (`vpc-egress`'s output) rather than written: a blanket suffix would send a service with
 no endpoint into a timeout with no message, where the proxy gives a **403 naming the host**.
+
+**A raw public address matches no name** (`TM-01`, controlled since 2026-11-22). The plane's
+`dstdomain` carries `-n` since the proxy's replacement of 2026-11-21, so Squid no longer matches a request
+naming an address by the name a reverse lookup of it returns, and the address falls to `deny all`. Without
+the flag it did: on 2026-11-21, from a space, `CONNECT 54.213.164.60:443`, an address of
+`airflow-serverless.us-west-2.api.aws` whose record is `ec2-54-213-164-60.us-west-2.compute.amazonaws.com`,
+read `200 TCP_TUNNEL` while that name is refused. On 2026-11-22 the same request read `403 TCP_DENIED`
+with the record unchanged, beside `pypi.org`'s `200` from the same space.
 
 **The names come from the endpoints, not from the service roster** (`vpc-egress-v0.11.1`, 2026-09-09).
 A service has one canonical private DNS name; an endpoint answers for **several**, and the bypass list
@@ -311,7 +319,7 @@ otherwise, naming the endpoint. The case that forced it: `sagemaker.studio` answ
 | the probe groups `[E]` | no ingress; egress scoped to the peers the **peering matrix** generates |
 | `awsds-prod-jobs` · `awsds-staging-jobs` `[P]` | TCP from **its own group**, every port: Glue's requirement for a connection's group, so a job's driver and executors reach each other. Egress to its own group, TCP/443 to the VPC's interface-endpoint group and TCP/443 to the S3 prefix list, and in Production TCP/5439 to the warehouse's group `awsds-prod-warehouse`, a rule `production/warehouse/` writes beside its ingress (applied 2026-10-25, Stage 9 9.4: the load job's connection timed out without it). Applied 2026-10-22 (Stage 9 decision 12 (a)); the governed warehouse's `5439` ingress names it (Stage 9 step 9.1) |
 | `datazone-<project>-dev`, blueprint-made, one per deployment project: Staging's and VPC-Workloads' measured 2026-11-11 | all traffic from itself; outbound all to `0.0.0.0/0`, which the subnets' routes narrow to the VPC itself, its interface endpoints, the S3 and DynamoDB gateways and, over the peering, VPC-Networking, whose proxy refuses these two ranges everything (the planes `production-workloads` and `staging-foundation`, no entry); routes read 2026-11-11 on both targets' subnets. The `Tooling` environment creates it outside Terraform ([Stage 19](plan/stages/stage-19-smus-native-data-product.md) step 4.6), with two Glue network connections, one per private subnet |
-| `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection |
+| `awsds-sandbox-warehouse` `[P]` | TCP/5439 from **an admitted SMUS project's own security group**, group-to-group, one rule per project — **never a CIDR**, which would admit every ENI in two /18s including every other project's apps. **No egress rule at all**: nothing in this design has the warehouse originate a connection, and the day `COPY` is granted (5b decision 5) is the day one is written with a named destination. With no project admitted the group has **no ingress rule**, which is the state Stage 5b pass 1 applied in. **One rule since 2026-09-21**, for project `avhvbqn37ty7m8` (6h 2.3), exercised from a space on 2026-10-10 (6h 3.3): the socket's local address inside the container read `169.255.254.3`, not a VPC address, and the group-to-group rule admitted the connection. **A second rule is written, not applied**, from `datazone-4gqfau9xuo6e4w-dev` (`test-experimentation`, in the workgroup's VPC, read 2026-11-22), by 6h decision 8 (a)'s standing answer: it is applied at the Sandbox warehouse sitting's 6h step 7. The wide tag opens no port, so a project outside the map reaches no workgroup from its notebook |
 | `awsds-prod-warehouse` `[P]`, `sg-0f018ef6c4848a9a3` since 2026-10-23 | TCP/5439 from **the jobs' group `awsds-prod-jobs`**, group-to-group and never a CIDR: the two subnets also hold the MWAA Serverless workers (Stage 10), and a CIDR would admit them (Stage 9 step 9.1). **No egress rule at all**, for Sandbox's reason. 6h's per-project layer does not exist here. The deployment project Production holds since 2026-11-11 is admitted since 2026-11-12 by a rule of its own (`sgr-021fb49c3c05b5697`, read back that day beside the jobs' rule), TCP/5439 from its security group `datazone-<project>-dev`, group-to-group: the warehouse workflow's job runs on the project's Glue connections, which carry that group (Stage 19 step 4.11, decision 16 (b)). The project's group admits itself inbound and every destination outbound (read 2026-11-12), so the path needs no egress rule |
 
 **The second world-open rule closed on 2026-09-08 (6c step 6.5)**: `awsds-sandbox-vpn` is destroyed,

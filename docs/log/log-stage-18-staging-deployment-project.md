@@ -2025,3 +2025,11 @@ Read-only calls as the infrastructure user, `InfrastructureAccess` in `Staging` 
   (x), Stage 19's 7.2 line and `runbooks/catalog.md` name per-resource policies, and the core-documents
   review carries the same correction into `docs/SMUS.md`, 6f and `INT-23`. 6f 11.12's first step already
   reads the policies with `glue get-resource-policies`.
+
+## 2026-11-21 — the two clones under `$HOME/tmp/` read gone
+
+*Claude, from N.9's day 1 session, with nothing up; no AWS call.*
+
+- **[Claude] The read**: `ls -d "$HOME"/tmp/app-etl-check "$HOME"/tmp/app-etl-table` answered *"No such
+  file or directory"* for both, the clones the entries of 2026-10-22 name. Their removal by the user went
+  unrecorded, and the waiting list's row is removed.

@@ -311,10 +311,12 @@ the real bill.
 | Internet data transfer out, first 10 TB (see §7 note) | 0.150/GB | 0.090/GB | 1.67 |
 | Inter-region transfer to the other region | 0.16/GB out of São Paulo | 0.02/GB into São Paulo | asymmetric |
 
-**Typical Sandbox hour, as built** (6c, 2026-09-07, `us-west-2`): 18 endpoints 0.180 + one `ml.t3.medium`
-app 0.050 + the hub's two hosts 0.0156 (`t3.nano` + `t3.micro`) ≈ **0.25/h**, with no per-GB NAT charge —
-an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a four-hour session
-pays about 1.00 in hours and 0.36-0.87 in Config, and two short sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
+**Typical Sandbox hour, as built** (`us-west-2`): 18 endpoints 0.180 (6c, 2026-09-07) + one `ml.t3.medium`
+app 0.050 + the hub's two hosts 0.0260, the VPN's `t3.nano` and the proxy's `t3.small`, ≈ **0.26/h**
+(0.0624 and ≈ 0.29/h while the VPN ran `t3.medium`, #353 to #356), with no per-GB NAT
+charge — an EC2 proxy bills nothing per gigabyte. A session adds the Config row above once, so a
+four-hour session pays about 1.02 in hours and 0.36-0.87 in Config, and two short
+sessions pay Config twice. The comparison 6c closed, kept as the record — typical Sandbox
 hour (its endpoints + one Studio app + WireGuard, plus the NAT under design A): design A `sa-east-1`
 **≈ 0.44/h**, `us-west-2` **≈ 0.22/h**; design B **≈ 0.40** and **≈ 0.20**. Both were up one endpoint
 (`datazone`, Stage 6 step 4.2) from 2026-08-21; design A came back down on 2026-08-25 when it was removed,
@@ -373,10 +375,11 @@ Billed beside the hour:
 - **Endpoint processing**, 0.01 USD/GB: 2.86 GB on 2026-10-12, the day of the first image build (0.029),
   and 0.21 GB on 2026-10-13.
 - **AWS Config**, per cycle rather than per hour: the GitLab row of the table above, 0.21-0.38.
-- **The hub**, when no other session holds it: 0.0206/h, the `t3.nano` 0.0052, the `t3.micro` 0.0104 and
-  the proxy's public IPv4 0.005. The proxy sets `associate_public_ip_address`, billed while the host runs:
-  `PublicIPv4:InUseAddress` read twice the hosts' running hours on 2026-10-12. The VPN's Elastic IP bills
-  0.005/h stopped or running, a floor line.
+- **The hub**, when no other session holds it: 0.0310/h, the VPN's `t3.nano` 0.0052 (D4's size, the
+  tracked file's again since #356, Stage 12 decision due 4; 0.0674/h while it ran `t3.medium` at 0.0416,
+  #353), the `t3.small` 0.0208 and the proxy's public IPv4 0.005. The proxy sets
+  `associate_public_ip_address`, billed while the host runs: `PublicIPv4:InUseAddress` read twice the
+  hosts' running hours on 2026-10-12. The VPN's Elastic IP bills 0.005/h stopped or running, a floor line.
 - **CPU credits**: neither slice sets `credit_specification`, so `t4g.large` and the `t3a.small` pair
   launch `unlimited`. A load above baseline bills 0.04 USD/vCPU-h on `t4g` and 0.05 on `t3a` (Price List
   Query API, `USW2-CPUCredits:*`, offer 2026-10-12); no `CPUCredits` usage type was billed 2026-10-11..10-14.
@@ -413,8 +416,9 @@ What the row leaves out, and why:
 
 - **The account** bills nothing (§10); what it costs is one slot of the account quota, the reason the
   stage is blocked.
-- **The hub** serves every unit, so a unit adds nothing to its 0.0206/h (the GitLab session's hub
-  line above); the peering and zone rows a vend adds there are free.
+- **The hub** serves every unit, so a unit adds nothing to its 0.0310/h (the GitLab session's hub line
+  above); the peering
+  and zone rows a vend adds there are free.
 - **What the unit's people run**: a space at 0.050/h on `ml.t3.medium` (above) and its volume at 0.112
   per GB-month with every app stopped (§8). Unit 1 also carries Stage 5b's warehouse, which step 1's
   composition does not: 0.40/month for its admin secret (§6) and 1.44 per query-hour at 4 RPU (§5).
@@ -471,6 +475,7 @@ São Paulo as in Oregon.
 | Glue crawler (USD/DPU-h) | 0.69 | 0.44 | 1.57 |
 | Glue Iceberg compaction / optimization (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
 | Glue catalog statistics (USD/DPU-h) | 0.44 | 0.44 | **1.00** |
+| Glue Data Quality runs (USD/DPU-h), the evaluation configurations behind SageMaker Unified Studio's *Data profile* among them (`docs/plan/upstream-releases.md`). A configuration bills nothing; a run takes at least 2 DPU for at least 1 minute. The pricing page's examples use 0.44 with no Region named, and the `AWSGlue` offer for `us-west-2` published 2026-11-20 carries no data quality product (read 2026-11-21) | — | — | |
 | Glue Data Catalog storage (USD per 100k objects-mo) | 1.00 | 1.00 | **1.00** |
 | Glue Data Catalog requests (USD per 1M) | 1.00 | 1.00 | **1.00** |
 | **Athena** SQL (USD per TB scanned) | 9.00 | 5.00 | 1.80 |
@@ -513,7 +518,7 @@ measured from `ComputeSeconds`. **The free trial absorbed it.** The Redshift Ser
 that day, which is how AWS says trial usage looks; the Management credits page that showed no credit on
 2026-09-20 does not carry this trial. 12.10 USD consumed against `ComputeSeconds`' 11.91 USD since
 2026-09-19, the rest storage (inferred). Every Redshift figure until 2026-12-19 is absorbed rather than
-billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii). Read again by the user on 2026-10-25: Sandbox *"$287.51 out of $300.00"*, the same expiration; Production *"$299.71 out of $300.00"* and *"Free trial expiration January 21, 2027"*, 90 days after the namespace's creation on 2026-10-23, so the window opens with the namespace and not with the first workgroup (Stage 9's log). On 2026-10-26, before and after the warehouse sitting of §N.2: Production 299.71 then 299.69, 0.02 USD for two Data API statements and a `--sql` session whose `ComputeSeconds` read 79 RPU-seconds (0.0079 at the rate), the 60-second minimum per query being what the balance bills; Sandbox 287.51 unchanged, its 18 RPU-seconds not yet visible. The same evening, before and after Stage 9 xxiv's sitting: Production 299.66 then 299.54, 0.12 USD where `ComputeSeconds` read 78 RPU-seconds (0.0078). The 299.69 of 01:50 had become 299.66 with no workgroup in between, so a reading within the hour after a sitting can miss part of its bill. On 2026-10-30, with no workgroup since, Production read 299.50: xxiv's sitting cost 0.16 USD in all, 0.04 of it landing after the reading 38 minutes past its end.
+billed ([Stage 5b](plan/stages/stage-05b-redshift-serverless.md) verification xiii). Read again by the user on 2026-10-25: Sandbox *"$287.51 out of $300.00"*, the same expiration; Production *"$299.71 out of $300.00"* and *"Free trial expiration January 21, 2027"*, 90 days after the namespace's creation on 2026-10-23, so the window opens with the namespace and not with the first workgroup (Stage 9's log). On 2026-10-26, before and after the warehouse sitting of §N.2: Production 299.71 then 299.69, 0.02 USD for two Data API statements and a `--sql` session whose `ComputeSeconds` read 79 RPU-seconds (0.0079 at the rate), the 60-second minimum per query being what the balance bills; Sandbox 287.51 unchanged, its 18 RPU-seconds not yet visible. The same evening, before and after Stage 9 xxiv's sitting: Production 299.66 then 299.54, 0.12 USD where `ComputeSeconds` read 78 RPU-seconds (0.0078). The 299.69 of 01:50 had become 299.66 with no workgroup in between, so a reading within the hour after a sitting can miss part of its bill. On 2026-10-30, with no workgroup since, Production read 299.50: xxiv's sitting cost 0.16 USD in all, 0.04 of it landing after the reading 38 minutes past its end. On 2026-11-21 Production read *"$299,18 com diferença de $300,00"*: release F's sitting of 2026-11-16, the only workgroup since 2026-10-30, cost 0.32 USD where `ComputeSeconds` read 139 RPU-seconds (0.0139).
 
 **Almost all of it was one forgotten query, and the number was recorded wrong twice before it settled.** A
 `count(*)` over a triple cross join ran **6 h 33 min** at base capacity after its client stopped polling — the
@@ -705,6 +710,27 @@ per token. Measured 2026-09-12 from each model's agreement rate card, `USW2_Inpu
 `USW2_OutputTokenCount`. A session's bill moves by that difference only in proportion to how much of
 it runs on Sonnet rather than on the primary.
 
+**The 5.5 generation**, read 2026-10-11 from each model's agreement rate card and confirmed against
+the Pricing API (`AmazonBedrockFoundationModels`, `us-west-2`, the `us.` standard dimensions). Stage
+6e decision 17 moves the scoped set here only once an invocation answers, and on 2026-11-22 AWS
+refused all three to this account (`AWS_STATE.md` `EXC-08`):
+
+| Model | Input | Output | Cache read | Cache write, 5 min |
+|---|---|---|---|---|
+| Claude Opus 5.5 — the primary, once the image pins it | 4.40 | 22.00 | 0.22 | 5.50 |
+| Claude Sonnet 5.5 — in the picker, once the image pins it | 2.20 | 11.00 | 0.11 | 2.75 |
+| Claude Haiku 5.5 — background work, once the image pins it | 0.11 | 0.55 | 0.011 | 0.1375 |
+
+**Every rate falls against the 4.5 set**: Opus by a fifth, Sonnet by a third, Haiku to a tenth. Cache
+read is 5% of input for Opus and Sonnet 5.5, where every 4.5 model publishes 10%, and cache reads were
+32% of the measured day below. **Haiku 5.5 alone publishes a long-context tier at five times its
+standard rate** (0.55 / 2.75 / 0.055 / 0.6875); neither source states the threshold, and
+`./aws/bedrock-usage.py` prices every token at the standard row, so a long-context session reads low.
+
+**Sonnet 4.5 is LEGACY since 2026-10-08.** Its public extended access starts 2027-01-08 at a price
+the provider sets and AWS announces, and it reaches end of life on 2027-04-08 (`get-foundation-model`,
+read 2026-10-11). The 3.30 / 16.50 above holds until the first of those dates.
+
 **Pinning a Haiku is a decision and not a detail**: without the pin, background work bills at the
 primary model's rate.
 
@@ -768,6 +794,13 @@ are under 0.01 USD a sync and an S3 Vectors store cents a month; an OpenSearch S
 collection would be the standing line, which is why Stage 17 decision 12 recommends S3 Vectors and its
 7.6 deletes a store with a minimum OCU.
 
+**Flows, measured 2026-11-22** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) 7.4, from the
+`us-west-2` offer file `AmazonBedrock` (version `20261111013037`, published `2026-11-11T01:30:37Z`): a flow's
+run bills `USW2-BedrockFlows-v1-invokeFlow`, *Flow Execution*, at 0.035 USD per 1,000 node transitions, beside
+the tokens its nodes' models and embeddings bill at the rates above. The file holds no product for prompt
+management or for model evaluation jobs, and *Automatic Prompt Optimization* (`USW2-APO-v1-optimizePrompt`),
+which this estate did not use, is 0.03 USD per 1,000 tokens.
+
 **AgentCore, measured 2026-11-17** for [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) step
 10.11, from the `us-west-2` offer file `AmazonBedrockAgentCore` (version `20261113204112`, published
 `2026-11-13T20:41:12Z`), read from a cloud session with no AWS credentials. An agent's runtime bills what
@@ -780,12 +813,20 @@ its sessions consume, and the offer holds no row for a runtime that exists with 
 | Runtime, committed baseline (`USW2-Runtime:Committed-baseline:vCPU-v2`, `:Memory-v2`) | per vCPU-hour, per GB-hour | 0.0997, 0.0132 |
 | Runtime, instance-based management (`USW2-Runtime:Instance-based:<type>:Management-Hours`, 889 rows) | per hour | by instance type: `m5.large` 0.01152, `c5.large` 0.0102 |
 | Browser tool and Code Interpreter, consumption-based | per vCPU-hour, per GB-hour | 0.0895, 0.00945 |
+| Web search tool (`USW2-WebSearchTool:Consumption-based:Queries`), read 2026-11-22 from version `20261120191134`, published `2026-11-20T19:11:34Z` | per query | 0.007, after a `Global-WebSearchTool` tier of 5,000 queries at 0.00 whose period the file does not state |
 
 The first row's figures are the ones AWS's pricing page gave on 2026-11-16. The offer file does not say
 which runtime the `-v2` usage types price, so which pair a session of 10.11 meters is that step's
 reading, from the first bill. The offer's other families, unused here, are Gateway, Memory, Policy,
 Evaluations and Knowledge-Base. The model's tokens and the guardrails' text units are billed apart, at
 the rates above.
+
+**The AWS Agent Registry, measured 2026-11-22** for `TM-28`, from the `us-west-2` offer file
+`awsagentregistry` (version `20261106194856`, published `2026-11-06T19:48:56Z`, three products); its region
+index lists `us-west-2`, `us-east-1`, `eu-west-1`, `ap-northeast-1`, `ap-southeast-2` and `us-gov-west-1`.
+Each tier opens at 0.00 USD, with no period stated: search calls 0.00002 USD each past 1,000,000, list and
+get calls 0.000004 past 2,000,000, records 0.0004 each past 5,000. The estate holds no registry
+(2026-11-22).
 
 ### Amazon Q Developer — the assistant the IDE offers, and not the one this estate enabled
 
@@ -986,7 +1027,7 @@ Paulo that discipline is worth exactly twice as much.
 | EC2 `t4g.xlarge` (4 vCPU, 16 GiB) — measured 2026-10-24 with the Price List Query API (`USW2-BoxUsage:t4g.xlarge`, offer published 2026-10-23T22:13:55Z), the one size above GitLab's that `production/tooling/` admits | 0.2144 | 0.1344 | 1.60 |
 | EC2 `t3.nano` (0.5 GiB, x86) | 0.0084 | 0.0052 | 1.62 |
 | EC2 `t3.micro` (1 GiB, x86) | 0.0168 | 0.0104 | 1.62 |
-| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4) | 0.0336 | 0.0208 | 1.62 |
+| EC2 `t3.small` (2 GiB, x86) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3.small`), a Stage 8 deploy runner candidate (decision 4); read again 2026-11-21 with `t3.micro`'s row, both unchanged (offer published 2026-11-21T00:48:16Z), for the proxy's size (`production/proxy/`) | 0.0336 | 0.0208 | 1.62 |
 | EC2 `t3a.micro` (1 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.micro`, the same offer), the size below the deploy and test runners | 0.0151 | 0.0094 | 1.61 |
 | EC2 `t3a.small` (2 GiB, x86, AMD) — measured 2026-10-12 with the Price List Query API (`USW2-BoxUsage:t3a.small`), the Stage 8 deploy runner (decision 4) and the test runner (decision 11) | 0.0302 | 0.0188 | 1.61 |
 | EC2 `t3a.medium` (4 GiB, x86, AMD) — measured 2026-10-24 (`USW2-BoxUsage:t3a.medium`), the size above the deploy and test runners that both variables admit | 0.0605 | 0.0376 | 1.61 |

@@ -12,7 +12,7 @@ definition (Airflow 3.0.6 through dag-factory), run by workers the service start
 project role, inside the project's network. Since [D41](../decisions/D41-sagemaker-application.md)
 (2026-10-15) an application's workflow is created instead from its repository by the CI/CD CLI, which
 deploys it to the `dev` project (Stage 10 step 2.1; the deploy measured in the lab that day) and, since
-release F (Stage 19 decision 6 (b), `v0.5.2` in Production since 2026-11-16), to each target's
+release F (Stage 19 decision 6 (b); release G's `v0.6.0` in Production since 2026-11-22), to each target's
 deployment project from the pipeline ([`sagemaker-application.md`](sagemaker-application.md) §T). This
 runbook covers the three task kinds Stage 6i exercised: a SageMaker processing job in the house image, a
 `PythonOperator` and a `BashOperator`.
@@ -199,11 +199,13 @@ from `GlueJobOperator` or start its own data source's run with the blueprint's p
   `project-roles.tf` sets `publishing_starts_the_source`); a Sandbox project's source imports on its
   schedule or on a member's run in the portal (Stage 19 decision 17).
 - **Release G's task also creates, revises and lists the product's data product** (Stage 19 decision
-  26 (b)), on `main` and tagged `v0.6.0` at its sitting: a data product's name is the domain's, so the
+  26 (b)), in Production since 2026-11-22 (`v0.6.0`, pipeline #138): a data product's name is the domain's, so the
   stage that lists the product owns it. Neither managed policy grants `datazone:CreateDataProduct` or
   `CreateDataProductRevision` (v48 and v77, read 2026-11-16). The statement that gives them to the same
   role, beside the start (`publishing_creates_the_data_product`), was written 2026-11-16 and applied
-  with `production/studio/` on 2026-11-17, release G's step 3 ([`promotion.md`](promotion.md) §N.8.5).
+  with `production/studio/` on 2026-11-17, release G's step 3 ([`promotion.md`](promotion.md) §N.8.5). Its first
+  run, in R1 on 2026-11-22, created `trades-notional` and listed it, DataZone authorizing `CreateDataProduct`
+  against the domain's ARN (Stage 19's log).
 
 The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and one attachment per project role:
 
@@ -223,9 +225,10 @@ Stage 18's deployment project in Staging held, until its removal on 2026-10-22, 
 without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
 in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
 first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
-`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair behind `training_pair_enabled`, `false`
-until the sitting after Stage 17 2.2's readings (a) and (b); it was written 2026-11-19 with the transform
-pair, the model's tag and the registration in an application's own group, applied the same night (Stage 17 9.5).
+`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair since 2026-11-21, applied after Stage 17
+2.2's readings (a) and (b), `training_pair_enabled` defaulting to `true`; it was written 2026-11-19 with
+the transform pair, the model's tag and the registration in an application's own group, which were applied
+the same night (Stage 17 9.5).
 
 The policy allows `DescribeProcessingJob` on a job with no project tag, `AddTags` of the caller's own
 project tag alone, on a job with no project tag or with the caller's, and `glue:GetJob` on a job with no

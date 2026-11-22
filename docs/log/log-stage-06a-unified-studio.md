@@ -3670,3 +3670,169 @@ Formation admin seats surfaced from an unrelated plan ([Lesson 31](../plan/lesso
 row is long, it is read first by anyone planning a pass, and nothing mechanical checks it against the
 bodies it summarises. Recorded here rather than turned into a rule: the gate that would catch it does not
 exist, and inventing one on the strength of three occurrences is a bigger claim than the evidence carries.
+
+---
+## 2026-11-21 — Unified Studio's resource blueprints read against the domain, and the instruments for their controls
+
+*Provenance: **this entry is Claude's**, written in a session of its own: the user reported a project's new
+*Resource blueprints* page (*"O SMUS agora tem um menu "Resource blueprints""*) and answered *"Sim,
+começar"* to the adjustments Claude proposed. Reads only, as the infrastructure user through
+`awsds-infra-data`, `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-prod` and
+`awsds-infra-identity`; nothing applied. The controls it reads, the blueprint configurations and their
+grants, are this stage's (step 1.7, `grants.tf`), and 6d's log is a peer session's while §N.9's day 1 runs.
+Times are UTC.*
+
+- **[Claude] The release**, read 2026-11-20 from AWS's release notes, the What's New post, the admin guide's
+  overview and the four pages under it, the user guide's page and botocore 1.44.8 (2026-11-20 21:09): a
+  project's *Resource blueprints* page lists its environments and deploys a blueprint from a gallery, which
+  a blueprint authorization grant decides, as the configuration's provisioning role. `SMUS.md` §Resource
+  blueprints and `upstream-releases.md` carry it.
+- **[Claude] The domain**, read before 02:48: 24 managed blueprints, unchanged; five profiles and ten
+  projects, each project with a profile and none in the `ADMIN` category; 19 configurations, each naming its
+  account's `awsds-<env>-smus-provisioning` and holding one `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant,
+  `CONTRIBUTOR` on the root domain unit, children excluded. The root unit has no child, no `CREATE_PROJECT`
+  grant and four `CREATE_PROJECT_FROM_PROJECT_PROFILE` grants; no account holds a `ToolingLite`
+  configuration. `ListPolicyGrants` refuses the type on a domain unit, *"EntityType: DomainUnit is not
+  applicable for PolicyType: CreateEnvironmentFromBlueprint"*; a configuration's grants are read on
+  `ENVIRONMENT_BLUEPRINT_CONFIGURATION` with `<account-id>:<blueprint-id>`, the configuration's own account.
+- **[Claude] `US-14`** in `./aws/studio.py`, with section 3's `GRANTS` column: each configuration's grants
+  read in its own account and judged against `grants.tf`'s one grant (`INV-24`). The run ending 03:32:18
+  read it passing on 1 configuration in Data Governance, 14 in Sandbox and 2 in each target, *"0 check(s)
+  FAILED."*; its exit 1 is the persona profiles', whose session holds no token. On synthetic grants the
+  judge failed every other shape: a second grant, `OWNER`, children included, another unit, one project, a
+  user-created designation, a user principal, and none.
+- **[Claude] `make status`** (`scripts/slices.py`) lists in every account the EMR Serverless applications
+  `STARTING`, `STARTED` or `STOPPING` and the OpenSearch Serverless collections in any status but `DELETING`
+  and `FAILED`, each unpriced and making the total a floor. The run at 03:35 read none in the five accounts,
+  beside a peer sitting's hub, `sandbox/egress`, `sandbox/probes` and four Studio apps in Sandbox. On canned
+  listings an application `STARTED` and collections `ACTIVE` and `UPDATE_FAILED` printed, `DELETING` and
+  `FAILED` did not, and a refused listing took the `UNREADABLE` path.
+- **[Claude] The records**: `INV-24`; `aws/INDEX.md`; Stage 17 9.6 and the waiting list's gallery reading;
+  Stage 21 2.4 and 2.9; `SMUS.md`'s `ToolingLite` row and §Resource blueprints; `promotion.md` §R; the
+  `Makefile`'s help.
+
+## 2026-11-21 — The gallery read in `app-ml-dev`, and `S3Bucket` measured in `test-experimentation`
+
+*Provenance: the gallery's list is **the user's** reading, quoted as written; **the rest is Claude's**, in
+the session of the entry above. The user answered *"Pode seguir com o item 4"* to Claude's proposal to read
+`S3Bucket`'s template and deploy a bucket in `test-experimentation`. Claude created two `S3Bucket`
+environments there and deleted them, and the bucket the first left, as the infrastructure user through
+`awsds-infra-sandbox-1`; that role is a contributor of `test-experimentation` through its group profile
+(`SUP-159`). The peer session running §N.9's day 1 was told before the first write and after the last.
+Times are UTC.*
+
+- **[The user] The gallery**, in `app-ml-dev`: *"Aparecem na lista de blueprints "SageMakerAIDomain" e
+  "Tooling", como já deployed. No botão "Deploy", ele abre uma janela com as opções: EMR Serverless,
+  Lakehouse Database, MLflow App, S3 Bucket."*
+- **[Claude] The forms**, read in the user's Chrome session, each dialog cancelled before *Deploy* and the
+  list still holding the two deployments after the last. Each asks a name and a description, then:
+  *Amazon EMR release* and *Permission mode*, `compatibility` (*"Data managed using full-table access"*) or
+  `fineGrained`, for *EMR Serverless*; `glueDbName`, optional, for *Lakehouse Database*, the `DataLake`
+  blueprint; `mlflowAppName` for *MLflow App*; and *Bucket name* for *S3 Bucket*, an editable box holding
+  `amazon-sagemaker-` over *"Prefilled with the recommended prefix amazon-sagemaker. Must be 3 to 33
+  characters."* The `experimentation` profile's default for that parameter is `changeme-project-bucket`.
+- **[Claude] The template** `DataZone-Amazon-SageMaker-S3Bucket-prod-20250923` (5,749 bytes, last modified
+  2026-11-21 01:19:23), read through its access point with a signed call: one bucket named by `bucketName`,
+  `DeletionPolicy: Retain`, SSE-KMS when `kmsKeyArn` is passed and SSE-S3 otherwise, public access blocked,
+  CORS for every origin, and a policy that denies calls without TLS and admits the role `executionRoleArn`
+  names. `SageMakerStudioProjectProvisioningRolePolicy` v86, the provisioning role's one policy, grants the
+  bucket's calls in Sid `S3Create` on `arn:aws:s3:::sagemaker-*` alone, `DeleteBucket` absent.
+- **[Claude] A bucket named `sagemaker-awsds-probe-…`**: `create-environment` at 04:48:49, `ACTIVE` when
+  polled at 04:49:59, the stack `CREATE_COMPLETE` with no service role. The stack's `kmsKeyArn` and
+  `executionRoleArn` were the `Tooling` environment's `kmsKeyArn` and `userRoleArn`; the configuration names
+  no key (`SUP-392`). Read at 04:50:21: SSE-KMS under `alias/awsds-sandbox-project`, `BucketKeyEnabled`
+  false, `SSE-C` blocked; the four `AmazonDataZone*` tags beside CloudFormation's three; the template's
+  policy, public access block and CORS; `BucketOwnerEnforced`; no versioning, lifecycle or logging. The
+  project's nine connections were unchanged.
+- **[Claude] The reach, simulated** with the bucket's and the key's policies and the organization's
+  context: the project's user role was `allowed` `s3:PutObject`, `GetObject` and `ListBucket` by the bucket
+  policy, and `kms:GenerateDataKey` and `Decrypt` through S3 by `SageMakerStudioProjectRoleMachineLearningPolicy`,
+  `SageMakerStudioProjectUserRolePolicy` and the key policy; `app-ml-dev`'s role read `implicitDeny` on the
+  three S3 actions, with and without the bucket policy. Without `aws:ResourceOrgID` in the context,
+  `PutObject` read `explicitDeny` from the SCP `DenyS3ObjectWriteOutsideOrganization`.
+- **[Claude] A bucket keeping the portal's prefix**: `create-environment` with `amazon-sagemaker-probe-…` at
+  04:57:14, `CREATE_FAILED` at 04:57:49 with *"User:
+  arn:aws:sts::<account>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>
+  is not authorized to perform: s3:CreateBucket on resource: "arn:aws:s3:::amazon-sagemaker-probe-…"
+  because no identity-based policy allows the s3:CreateBucket action"*, and no stack left (`SUP-393`).
+- **[Claude] The deletion**: both environments at 04:58:36, gone by 04:59:15. The first stack read
+  `ProjectBucketPolicy` `DELETE_COMPLETE` and `ProjectBucket` `DELETE_SKIPPED`. At 04:59:56 the bucket stood
+  empty, `aws:kms`, its four `AmazonDataZone*` tags kept and no policy, and the simulator gave both project
+  roles `implicitDeny` (`SUP-394`). Claude deleted it at 05:00:15; `head-bucket` answered 404, and
+  `test-experimentation` held its five earlier environments.
+- **[Claude] The records**: `SUP-392` to `SUP-394`; `SMUS.md`'s `S3Bucket` row and §Resource blueprints, where
+  the measurement leaves the blueprint in category 1; Stage 17 9.6; the waiting list's gallery row, which the
+  user took; `upstream-releases.md`'s resource-blueprints row.
+
+## 2026-11-21 — `US-15`, the buckets a deleted environment leaves, and the supplement reviewed
+
+*Provenance: **this entry is Claude's**, in the session of the two entries above. The user answered *"Sim,
+implementar"* to Claude's question whether to write a check listing the buckets `S3Bucket` leaves, and asked
+during the work *"Revise se é necessário atualizar algo no AWS_SUPPLEMENT considerando o aprendizado com esta
+sessão."* Reads only, as the infrastructure user through `awsds-infra-sandbox-1`, `awsds-infra-staging`,
+`awsds-infra-prod` and `awsds-infra-data`; nothing created, changed or deleted. Times are UTC.*
+
+- **[Claude] DataZone's answer to a non-member**, read by 05:22: `GetEnvironment` answered
+  *"ResourceNotFoundException ... Environment not found"* for the two `S3Bucket` environments deleted at 04:58
+  and for an id that never existed. It answered the same to Production's `InfrastructureAccess` on
+  `test-experimentation`'s `SageMakerAIDomain` environment, which that session's `ListEnvironments` listed
+  `ACTIVE` among the project's five, and to Sandbox's on `deploy-production`'s `Tooling`, listed the same way.
+  Sandbox's session read the environments of six Sandbox projects (`SUP-157`).
+- **[Claude] The listing**: in Sandbox, Staging, Production and Data Governance the tagging API listed 3, 4, 7
+  and 7 buckets, each account's `list-buckets` count, none with an `AmazonDataZone*` tag. Every stack DataZone
+  deploys, `DataZone-Env-<environment id>`, carries `AmazonDataZoneEnvironment`: 19, 3, 3 and 1 live. In
+  Sandbox the tag is on 82 resources of nine types, Athena workgroups, Glue connections and databases,
+  security groups, log groups, SageMaker domains, an MLflow app and schedule groups beside the stacks.
+- **[Claude] What deleted environments left**: five log groups in Sandbox, `datazone-<project>-dev` of five
+  projects no longer in the domain, four created on 2026-08-22 and 23 and one on 2026-11-18, 0 bytes each at
+  3, 30 or 731 days. Each keeps its environment's `AmazonDataZone*` tags and CloudFormation's three; the
+  first's `aws:cloudformation:stack-id` names a stack `describe-stacks` answers *"does not exist"* by that id
+  (`SUP-174`).
+- **[Claude] `US-15`** in `./aws/studio.py`: in each account, every resource carrying
+  `AmazonDataZoneEnvironment` against the environments a live stack carries. A bucket whose environment no
+  live stack carries is read again with `get-bucket-tagging` and failed (`INV-25`); a bucket S3 no longer
+  holds or tags is a note, and any other resource is a note. On synthetic inputs an orphan bucket failed, and
+  so did one whose second read was refused; a bucket whose stack lives and an account with nothing tagged
+  passed; a bucket the index listed after its deletion or after its tag's removal passed with a note; a log
+  group and an access point were noted; a failed listing left the account unjudged. The run of 05:30:03 read
+  `US-15` passing in the four accounts, *"no bucket carries an environment's tag"* beside 19, 3, 3 and 1 live
+  environment stacks, with the note naming Sandbox's five groups, and *"0 check(s) FAILED."*; its exit 1 is the
+  profiles of identities whose session holds no token and the persona sets' `ListDomains` refusals. `US-10`
+  read two running apps in Sandbox, a peer sitting's. The legend gained `US-14`, missing since 03:32.
+- **[Claude] The domain's RAM share**, read at 05:32: version 14 of
+  `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess` is the default and the only `ATTACHABLE`
+  version, the share still at 13. Version 14 adds `GetProjectProfile` and eight other actions; neither names
+  `ListEntityOwners`, refused to Sandbox's session on the root domain unit at 05:36:31, *"because no
+  resource-based policy allows the datazone:ListEntityOwners action"* (`SUP-360`).
+- **[Claude] The supplement reviewed** against the sitting: `SUP-157`, `SUP-174` and `SUP-360` gain the
+  readings above, and `SUP-008` the key policy the simulator evaluated for the probe bucket's reach (the entry
+  above), refused as written with *"ResourceNames are not in a valid ARN format: *."*. No new id: the
+  template's behaviours are `SUP-392` to `SUP-394`, the tagging API's S3 support is documented, and the CLI's
+  Glue reading is a release fact (`upstream-releases.md`).
+- **[Claude] The records**: `INV-25`; `aws/INDEX.md`; `SMUS.md`'s `S3Bucket` measurement;
+  `upstream-releases.md`'s RAM share reading.
+
+## 2026-11-21 — The domain's RAM share moved to version 14
+
+*Provenance: **this entry is Claude's**, in the session of the entries above. The user answered *"Sim,
+mover"* to Claude's question *"Movo o share RAM do domínio para a versão 14?"*, asked after the reading of the
+entry above. The write ran as the infrastructure user through `awsds-infra-data` (`InfrastructureAccess`,
+Data Governance), and the readings also through `awsds-infra-sandbox-1`, `awsds-infra-staging` and
+`awsds-infra-prod`. The two peer sessions on this machine were told before the write and after the reading.
+Times are UTC.*
+
+- **[Claude] Before**, read by 05:45:20: the share `DataZone-EXTENDED_ACCESS-<domain id>-ORG-ONLY` `ACTIVE` and
+  `ASSOCIATED` at version 13, no longer the default. The domain's resource policy held two statements, the
+  organization principals' and one of 20 actions for `sagemaker.amazonaws.com`. Sandbox, Staging and Production
+  were refused `GetProjectProfile` on `experimentation`, *"because no resource-based policy allows the
+  datazone:GetProjectProfile action"*, and `ListEntityOwners` on the root domain unit in the same wording.
+- **[Claude] The move**, 05:45:59: `aws ram associate-resource-share-permission --resource-share-arn <share>
+  --permission-arn arn:aws:ram::aws:permission/AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess
+  --permission-version 14 --replace --profile awsds-infra-data` answered `{"returnValue": true}`.
+- **[Claude] Read back**: at 05:46:17 the association at version 14, the default, `lastUpdatedTime` 05:46:02,
+  and the share's own `lastUpdatedTime` still 2026-08-21; the organization principals' statement held version
+  14's 173 actions and no other, and the service principal's was unchanged. At 05:46:23 `GetProjectProfile`
+  answered `experimentation` `ENABLED` in the three accounts, and `ListEntityOwners` stayed refused in the same
+  wording (`SUP-360`).
+- **[Claude] The records**: `SUP-360` and `SUP-157`; `upstream-releases.md`'s next reading; `catalog.md`'s
+  designations paragraph.

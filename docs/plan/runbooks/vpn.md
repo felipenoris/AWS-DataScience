@@ -45,7 +45,7 @@ forever versus what is powered off between sessions (D11). All of it is in Produ
 | The **WireGuard host** | `production/vpn/` · `[D]` | one **x86_64** burstable instance in `VPC-Networking`'s public subnet, `usw2-az1`. `t3.nano` by default, the size a slice parameter (§S6), tag `Name=awsds-prod-vpn` — the tag is what everything looks the host up by (§K0a). `wg0` at `10.90.0.1/24`, MTU 1280, IMDSv2 required, no port 22, no key pair; the shell is SSM (§K0a) |
 | Its **name** `vpn.awsds.internal` | `production/vpn/` · `[D]` | an A record at the host's private address, in the `[P]` apex zone. It did not exist until 2026-09-06: step 2.1 said pass 4 would write it and pass 4 did not (§S2) |
 | The **handshake log + alarm** | `production/vpn/` · `[D]` | log group `/awsds/prod/vpn` (30 days) with per-peer named lines, and the health alarm `awsds-prod-vpn-health` |
-| The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's public key and `host` number. Public halves only; the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5) |
+| The **roster** `peers.auto.tfvars` | the repository (tracked) | every enrolled device's public key and `host` number. Public halves only; the shape gate `./scripts/check-tfvars-shape.py` refuses the regressions it can see (§K5). Each entry costs the host's user data about 160 bytes, and the plan refuses a user data over EC2's 16,384: 1,928 bytes were free on 2026-11-22, and `module.wireguard.user_data_bytes` in `terraform console` reads the count |
 | **The proxy** — not part of the VPN | `production/proxy/` · `[D]` + `production/networking/` · `[P]` | a second `[D]` host in the same subnet: Squid, at `proxy.awsds.internal:3128`, wearing the public address its instance is given at start. It is the estate's only way to the internet, and therefore the client's; it is a separate slice with its own instrument (`./aws/proxy.py`, `PX-1`..`PX-4`). It is listed here because a VPN session that cannot reach it has no internet, and because `make hub-up` starts both (§S5) |
 
 `./aws/vpn.py` reads all of it, `VP-1` through `VP-9`, and is the first thing to run when a question
@@ -120,10 +120,10 @@ is topological:
 | Exit | none for tunnel traffic: the client's internet is the **proxy**, a separate `[D]` host | none. There are zero NAT gateways in this estate (D38); an `egress/` slice is interface endpoints and, in the two compute VPCs, a DNS firewall |
 | Endpoints | the `[P]` **gateway** endpoints of the hub (free, always there) | the `[E]` **interface** endpoints, billed hourly, new ids every `make up` |
 | Who needs it | a laptop reaching a private address or name, and the monitored profile's internet (§S4) | Stage 6's notebooks, Stage 7's GitLab host and runners — anything that lives in a private subnet, whose only management path is the `ssm` trio |
-| At-rest burn | USD 0.0052/h running, plus the proxy's 0.0104 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.080 (Staging) · 0.120 (`VPC-SharedServices`) · 0.080 (`VPC-Workloads`), the endpoints alone (`scripts/tfhygiene/layers.py`, read 2026-11-17) |
+| At-rest burn | USD 0.0052/h running on D4's `t3.nano` (0.0416 while the host ran `t3.medium`, #353 to #356); plus the proxy's 0.0208 and its public IPv4's 0.005 | 0.180 (Sandbox) · 0.080 (Staging) · 0.120 (`VPC-SharedServices`) · 0.080 (`VPC-Workloads`), the endpoints alone (`scripts/tfhygiene/layers.py`, read 2026-11-17) |
 
-A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0206/h against the
-0.08 to 0.18/h an account's `egress/` slice would raise.
+A session that needs only the tunnel starts only the hub (§S5): `make hub-up`, 0.0310/h against the 0.08 to
+0.18/h an account's `egress/` slice would raise.
 
 The host's second job is gone. From 2026-08-21 to 2026-09-06 it was also a NAT instance for the Sandbox
 isolated tier — `vpc_nat_cidrs`, `source_dest_check` off, a masquerade for those ranges, and a
@@ -241,6 +241,17 @@ The host's shape is two parameters of `production/vpn/`, both held in one tracke
 both directions, the disk only grows. The pre-flight reads are common to both; the disk's own
 asymmetries have their own subsection, and the switch procedure is written for the type, with the disk's
 differences called out where they land.
+
+**The nano builds again from `wireguard-v0.8.1`.** On v0.7.0 a `t3.nano`'s first boot stopped at step
+(1): the AL2023 repository's metadata, 91 MB on 2026-11-21, takes a cold `dnf` to about 620 MiB, the
+nano holds 415 MiB of RAM and as much zram, and the OOM killer took the install (`SUP-405`, `SUP-406`).
+The host was rebuilt on `t3.medium` (#353) and went back to the nano with #356. v0.8.1's step (0)
+writes a 1 GiB swap file and masks update-motd, whose `dnf check-update` runs at every boot, before the
+first `dnf`, so the first boot fits every admitted size. Measured on 2026-11-22: the nano's first boot
+on v0.8.1 finished step (1)'s `dnf` in 65 s and reached `END` 86 s after power-on, with no OOM line.
+The first apply on v0.8.1 replaces the host, because the user data changed; the size it builds is still
+the tracked file's selection, and after that a size switch is the stop and start below, with the swap
+file already on the disk.
 
 **The AMI decides the family; the parameter decides only the size within it.** The `wireguard` module
 pins the Amazon Linux 2023 x86_64 image by SSM parameter —

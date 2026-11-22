@@ -150,7 +150,7 @@ variable "host_key_secret_arn" {
 # ------------------------------------------------------------------ shape and observability
 
 variable "instance_type" {
-  description = "D4's shape - the smallest burstable there is - on the architecture main.tf's AMI pins, x86_64 since 2026-08-20 (it was t4g.nano, arm64, from D4 until then). Measured at 0.0052 USD/h in this region, +23.8% on the Graviton shape it replaced (docs/PRICING.md 8, both rows read the same day; Lesson 6). A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it. The value must match the image: this module validates nothing here, deliberately - a size list belongs with the caller that selects from it, and the caller's own validation is the closed list. What decides which family is admissible is the SSM parameter in main.tf and nothing else, so moving that line is what moves this default, in that order."
+  description = "D4's shape - the smallest burstable there is - on the architecture main.tf's AMI pins, x86_64 since 2026-08-20 (it was t4g.nano, arm64, from D4 until then). Measured at 0.0052 USD/h in this region, +23.8% on the Graviton shape it replaced (docs/PRICING.md 8, both rows read the same day; Lesson 6). It builds again since wireguard-v0.8.1: on v0.7.0 a nano's first-boot dnf was OOM-killed on the AL2023 repository's metadata (2026-11-21), and user-data.sh.tftpl's step (0) - a 1 GiB swap file and update-motd masked - is what lets it finish. A variable rather than a literal so a capacity or throughput finding is a one-line change - not an invitation to grow it. The value must match the image: this module validates nothing here, deliberately - a size list belongs with the caller that selects from it, and the caller's own validation is the closed list. What decides which family is admissible is the SSM parameter in main.tf and nothing else, so moving that line is what moves this default, in that order."
   type        = string
   default     = "t3.nano"
 }
@@ -201,6 +201,12 @@ variable "log_retention_days" {
   description = "Retention of the handshake log group, 30 days - the same decision Stage 3 took for flow logs, for the same reason: a diagnostic, not an audit trail."
   type        = number
   default     = 30
+}
+
+variable "alarm_actions" {
+  description = "The SNS topic ARNs the health alarm notifies when the running host fails its status checks - the caller's account alerts topic (Stage 12 step 2.2). Empty, the default, leaves the alarm notifying nobody. The topic's policy must admit cloudwatch.amazonaws.com for this account's alarms, which ./aws/observability.py OB-3 reads."
+  type        = list(string)
+  default     = []
 }
 
 variable "root_volume_size" {

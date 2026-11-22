@@ -17,11 +17,12 @@ variable "fenced_bucket_names" {
   ]
 }
 
-# Staging holds no warehouse (D40), so every door to one is on the list.
+# Staging holds no warehouse (D40), so every door to one is on the list. The Agent Registry is a service
+# prefix of its own, outside bedrock-agentcore, granted by AWS's ML policy since v48 (TM-28).
 variable "fenced_services" {
-  description = "The services the deployment project's role never calls in this account: the generative ones and Redshift's."
+  description = "The services the deployment project's role never calls in this account: the generative ones, the Agent Registry and Redshift's."
   type        = list(string)
-  default     = ["bedrock", "bedrock-agentcore", "q", "codewhisperer", "redshift", "redshift-data", "redshift-serverless", "sqlworkbench"]
+  default     = ["bedrock", "bedrock-agentcore", "agent-registry", "q", "codewhisperer", "redshift", "redshift-data", "redshift-serverless", "sqlworkbench"]
 }
 
 variable "fenced_repository_names" {

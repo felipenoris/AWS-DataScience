@@ -3613,3 +3613,1150 @@ are UTC.*
 - **[Claude] The records**: decision 7, the deliverables row, the ready list and the `Status` row in the
   stage file; `runbooks/sagemaker-ai-ml.md`'s paragraph on what a notebook creates; `promotion.md` §N.6
   item 3, §N.9.1 and §N.10.1; the waiting list's Sandbox row; Current position.
+
+## 2026-11-20 — Day 2's training pair planned from `main`'s tree
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox
+Account 1), from this session's worktree at `main`'s `5dfff219`; nothing applied. Times are UTC.*
+
+- **[Claude] The plan** of `sandbox/workflows/` with `-var training_pair_enabled=true`, saved as
+  `$HOME/tmp/stage17-training-pair-preflight.tfplan`: *"Plan: 0 to add, 1 to change, 0 to destroy."*,
+  `aws_iam_policy.workflows` alone, its statements from seven to nine with
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`. The default plan reads
+  *"No changes."* Day 2 applies the saved file only while the slice's state and `main`'s tree have not
+  moved; Terraform refuses it otherwise.
+- **[Claude] 2.1's dataset**, `Telco-Customer-Churn.csv` on `raw.githubusercontent.com`, answers 200 to a
+  `HEAD` from the laptop.
+- **[Claude] 10.4's `DEV_MODEL_ID`**: `aws bedrock list-inference-profiles --type-equals APPLICATION` in
+  Sandbox lists three profiles, the domain's Claude Haiku 4.5 and Nova Lite of 2026-10-19 and
+  `eighth-experimentation`'s Claude Opus 4.5 of 2026-10-30, none of `app-genai-dev`'s: the project's first
+  Nova Lite call, before 10.4's deploy, creates it (`promotion.md` §N.12.4).
+- **[Claude] 9.7's gate, dry**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
+  the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
+  package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
+  the day of each tag, before the tag (Lesson 77).
+- **[Claude] 9.9's and 10.9's Sandbox halves**, written by a subagent of this session and read by
+  Claude: `./aws/sandbox-ml.py` gained `ML-10` (section 12, `app-ml` in `app-ml-dev`) and `ML-11`
+  (section 13, `app-genai` in `app-genai-dev`), its read-only calls `describe-model-package`,
+  `describe-model-package-group`, `list-model-packages`, `get-guardrail`, `list-guardrails`,
+  `list-enforced-guardrails-configuration`, `list-inference-profiles`, `list-tags-for-resource`,
+  `list-objects-v2` and `s3 cp` to the laptop. Its run at 21:04:17 returned every call: `ML-10`
+  passes on `models app-ml-score-*`, `none`, and `ML-11` on `ListEnforcedGuardrailsConfiguration`, `empty`;
+  nine notes name the objects 9.6 and 10.4 create, among them no application inference profile tagged
+  with `app-genai-dev` and `awsds-sandbox-bedrock-application` v1 with no
+  `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount`, the state between sittings. `OR-10`, `OR-11`
+  and `DT-14` are owed.
+
+## 2026-11-21 — 0.9: the left navigation read in both projects
+
+*Claude's hand in the user's Chrome, on the portal session the user opened for it (*"Abri uma sessão no
+chrome no SMUS para você realizar as leituras."*), signed in as the Data Scientist User (read in the account
+menu), with the estate down. Links were followed and nothing was created; each project's *Update project*
+banner was left alone, and the tab was closed at the end. Times are UTC, from about 17:58 to 18:11.*
+
+- **[Claude] The navigation**, the same in `eighth-experimentation` and `app-etl-dev`, in order: Overview,
+  Discover, Data, Files, Repositories, Connections, Resource blueprints (*New*), Compute; Notebooks,
+  Workflows; **Data analytics**: Query Editor, Visual ETL, Data processing jobs; **AI/ML**: Models,
+  Training jobs, MLflow, Inference endpoints, ML pipelines, Feature Store; **Generative AI**: Playground,
+  AI apps; **IDEs**: JupyterLab, Code Spaces; Manage at the foot. *JumpStart models*, *Model registry* and
+  *Partner AI apps* are absent.
+- **[Claude] The AI/ML entries**, each read in both projects, paths under `/projects/<id>/`:
+  - *Models*, `modelhub`: the tabs *Foundation models* (939 models, a model finder by type, featured
+    providers) and *My models* (`modelhub/registered`: *"These are your own trained, versioned,
+    production-ready models. You can register models using the SageMaker SDK in a notebook."*, filtered by
+    *Model group*, *Model* or *Deployable models*), *"No models found"* in both projects.
+  - *Training jobs*, `trainingjobs`: *"View and manage SageMaker training jobs created from notebooks."*,
+    *"You don't have any training jobs."*; its *Browse models to train* opens *Foundation models*.
+  - *MLflow*, `compute?type=mlflow`: Compute's *MLflow* tab, *MLflow environments*, under the banner *"The
+    Compute page is migrating to Resource blueprints."*; `eighth-experimentation` lists `ml-demo-mlflow`,
+    *On*, *App*, created 2026-10-19 06:39, and `app-etl-dev` *"No MLflow Apps or Tracking Servers found"*.
+    The legacy experiments page 1.1 read is no longer what the entry opens.
+  - *Inference endpoints*, `endpoints`: *"You don't have any inference endpoints."*, *Create new endpoint*.
+  - *ML pipelines*, `pipelines/view`: *Delete*, *Edit*, *Create in visual editor*, *"No pipelines"*.
+  - *Feature Store*, `feature-store`: *"You don't have any feature groups."*, *Create feature group*.
+- **[Claude] The Generative AI entries**:
+  - *Playground*, `/bedrock/playground/explorer`, a domain path with no project in it: *Chat playground*,
+    and Amazon Bedrock's panel with *Discover*, *Models*, *Playgrounds* (*Chat*, *Image and video*) and
+    *Shared apps and prompts*. `app-etl-dev`'s page preselected Nova Lite; no prompt was sent.
+  - *AI apps*, `bedrock/playground/chat`: a new chat agent app, *"Not saved"*, *"Not deployed"*, *"Not
+    shared"*, *App ID: -*, under Agents Classic's notice, never saved; the panel's *Build* (*Chat agent*,
+    *Flow*, *Prompt*, *Model evaluations*) and *Asset gallery* (*My apps*, *My prompts*, *My components*).
+    *My components*, `bedrock/components`, lists *Components (0)* in `app-etl-dev`, typed *Knowledge base*,
+    *Guardrail* or *Function*.
+  - In `app-etl-dev`, *AI apps* opened from *Playground* rendered *"Whoops, something went wrong."*, the
+    console reading *"TypeError: Cannot read properties of undefined (reading 'foundationModel')"* in the
+    playground's code at 18:07:05; *Reload page* drew the builder.
+- **[Claude] Not opened**: *JupyterLab* (`code`), which opens a space, *Code Spaces* (`code-spaces`) and
+  *Manage*.
+- **[Claude] The verdicts**: xxvii, neither chapter as written: the menu carries the IAM-based chapter's
+  entries, with *My models* where that chapter names *Registered Models*, and neither of the Identity Center
+  chapter's *JumpStart models* and *Model registry*. xxxiii's 0.9 half: *Feature Store* shows in an Identity
+  Center domain. The paths of "The menu, entry by entry" are corrected in the stage file the same day.
+- **[Claude] Day 2's saved plan**: Terraform 1.17.2, on the laptop since this day, refuses
+  `$HOME/tmp/stage17-training-pair-preflight.tfplan` (Stage 8's log, `SUP-403`), so day 2 plans the
+  training pair again from `main`.
+
+## 2026-11-21 — Day 2's pre-flight with nothing up
+
+*Claude, in a session the user opened to prepare `promotion.md` §N.9's day 2 (*"Faça toda a preparação
+necessária para iniciarmos a sessão do dia 2 do §N.9."*). Reads and plans as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), `make status` and the
+instruments through their own profiles, from this session's worktree at `main`'s `0c78f571`. Nothing applied
+and nothing raised; the one other session on the laptop was idle. Times are UTC.*
+
+- **[Claude] `make status`**, 18:45: *"estimated burn: USD 0.0000/h"*, the proxy, VPN and GitLab hosts
+  `stopped`, no Studio app, no EMR Serverless application started and no OpenSearch Serverless collection.
+- **[Claude] The instruments**, 18:47 to 19:09, each as expected with everything down:
+  - `./aws/sandbox-ml.py`: 35 pass, no check failed, no call failed; `ML-2` `ml-demo-mlflow` `Created` on
+    MLflow 3.16.0, `ML-7` the four quotas at 20, 30, 8 and 10, `ML-8` Titan V2 `AVAILABLE` and `AUTHORIZED`.
+  - `./aws/devenv.py`: `DE-1`, `DE-4` and `DE-5` pass (version 11, 73 names); `DE-2` fails while
+    `sandbox/egress/` is down.
+  - `./aws/egress.py` on Production, Staging and Sandbox: no metered egress, no call failed.
+  - `./aws/catalog.py`: 15 pass and 5 notes, no check failed; `./aws/bedrock-scope.py`: `BS-1` to `BS-7`
+    pass; `./aws/remote-ide.py`: `RI-3` and `RI-4` pass.
+  - `./aws/studio.py`: 58 pass and 7 notes, no check failed, `US-13` reading version 11 in
+    `eighth-experimentation`'s blueprint domain; the persona and deploy profiles did not authenticate, with
+    no sign-in on their sessions.
+  - `./aws/bedrock-usage.py` from 2026-11-01 to 18:51: 17 invocations and 0.0005 USD computed, the newest
+    event at 2026-11-19 04:24:23, so pass 7's and 6e 6.4's baseline has not moved since 2026-11-20. `BU-5`
+    notes Nova Lite unpriced: `docs/PRICING.md`'s row names the model, not its id.
+- **[Claude] The training pair re-planned.** The file of 2026-11-20 read as *"plan file was created by
+  Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between different Terraform
+  versions"* (`SUP-403`). `sandbox/workflows/` planned *"No changes."* at 18:57:04 (`-detailed-exitcode`
+  0); with `-var training_pair_enabled=true`, *"Plan: 0 to add, 1 to change, 0 to destroy."*, saved over the
+  old file at 18:57:22. Read with `terraform show -json`: `aws_iam_policy.workflows`'s `policy` alone, from 7
+  statements to 9 with `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject`,
+  3,146 characters minified, as on 2026-11-20.
+- **[Claude] Day 2's raise, dry and planned.** `make up ENV=sandbox
+  GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent DRY=1` names `sandbox/egress/` and `sandbox/probes/`, the
+  warehouse's compute held by refusal 11. `sandbox/egress/` planned at 18:58 with the four groups as
+  `TF_VAR_optional_service_groups`: *"Plan: 33 to add, 0 to change, 0 to destroy."*, 24 interface
+  endpoints, the base set's 18 with `airflow-serverless`, `sagemaker.mlflow`, `bedrock`, `bedrock-runtime`,
+  `bedrock-agent` and `bedrock-agent-runtime`. Its `no_proxy_all_groups`, 73 names, equals the Dockerfile's
+  literal, so `DE-3` reads green after the raise.
+- **[Claude] 2.4's model**, `describe-hub-content` on `SageMakerPublicHub`: `xgboost-classification-model`
+  2.2.0 `Available`, beside `xgboost-regression-model`. Its document: `DefaultTrainingInstanceType`
+  `ml.m5.4xlarge`, outside the boundary's ceiling, with `ml.m5.xlarge` among `SupportedTrainingInstanceTypes`;
+  `TrainingEnableNetworkIsolation` and `EncryptInterContainerTraffic` `true`; `DefaultTrainingDatasetUri`
+  under `jumpstart-cache-prod-us-west-2/training-datasets/`; `MaxRuntimeInSeconds` 360000.
+- **[Claude] Pass 7's service role**, `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, carrying
+  `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9 and `SageMakerStudioBedrockEvaluationJobServiceRolePolicy`
+  v3 with the flow's and the agent's. Its tags name the project, the domain, the bucket
+  `awsds-sandbox-smus-projects` and the bucket's default key. Simulated at 19:03 with those tags,
+  `aws:RequestedRegion` and both accounts as context; the boundary and the organization allowed every call:
+  - `allowed`: `s3:GetObject` and `s3:ListBucket` on the project's `shared/ml-demo/bedrock/kb/`, `kms:Decrypt`
+    of the key through S3, `bedrock:InvokeModel` on an application inference profile tagged with the project
+    and on a foundation model through a profile, `s3vectors:PutVectors` on `amazon-bedrock-ide-<project>*`;
+  - `implicitDeny`: another project's prefix, Titan V2's foundation model with no profile, the domain's
+    Haiku 4.5 profile, which carries no project tag, Haiku 4.5's system profile, another vector bucket name.
+- **[Claude] The application inference profiles**: three in Sandbox, the domain's Haiku 4.5 (`cp0gmvjv1h8q`)
+  and Nova Lite (`csu817ovl4kz`), tagged with the domain alone, and `eighth-experimentation`'s Opus 4.5
+  (`zy55dk32prho`). Pass 7's knowledge base (Titan V2) and its evaluation job, flow and chat agent (Haiku
+  4.5) each run as the service role, so each needs a profile of the project's for its model: the IDE's
+  first use creates one (decision 13's path), or IAM refuses the call with *no identity-based policy
+  allows*.
+- **[Claude] The rest**:
+  - the runbooks 7.4a indexes: 20 files and 1,210,723 bytes at `0c78f571`;
+  - 2.1's dataset and awsds-workflows' `scripts/space_values.py` answer 200 to a `HEAD`;
+  - AWS's `sagemaker-xgboost:3.0-5` exists in `us-west-2` (`ecr batch-get-image`, no failure), the URI SDK
+    3.21.0's `image_uris.retrieve` prints;
+  - `./aws/sandbox-ml.py` prints `MLFLOW_APP_ARN=` under section 3 since this sitting (run at 19:14:50, 35
+    pass), the place `examples/sandbox-ml/README.md` names for the value;
+  - `$HOME/tmp/stage17-day2-extra_values.json` holds `XGBOOST_IMAGE_URI` and `MLFLOW_APP_ARN` for the
+    space's clone, outside git since the ARN carries the account's id.
+- **[Claude] Left to the day**: the user's acts of `promotion.md` §N.9.4, and the training pair's apply on
+  the user's word naming it.
+
+## 2026-11-21 — Day 2's sitting B: the opening readings, 0.3 and 0.7
+
+*Claude, in the session the orchestrating session started for `promotion.md` §N.9.4's day 2, with the user
+at the laptop. Claude's reads as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1) and, for the proxy's log, `awsds-infra-prod` (account
+Production); the instruments through their own profiles. The portal was read by Claude through Claude in
+Chrome, in the user's Chrome signed in as the Data Scientist User, at the user's choice (*"Você, pelo
+Chrome"*); nothing was saved, created or submitted. The space's readings are the user's, pasted, with the
+account id written `<Sandbox Account 1>`. Times are UTC.*
+
+- **[Claude] The opening readings** (order 1), with the hub and the day's four groups raised before them;
+  the MLflow endpoint `vpce-0c34126a42848e404` was created at 19:47:33:
+  - `make status`, 19:55: `production/vpn` and `production/proxy` `UP`, `sandbox/egress` `UP` with 33
+    resources and `sandbox/probes` with 4, *"no Studio app billing"*, *"estimated burn: USD 0.2090/h"*.
+  - `./aws/egress.py awsds-infra-sandbox-1`: every check passed; `EG-5` *"24 interface endpoint(s) + 0
+    NAT(s) = ~USD 0.240/h"*.
+  - `./aws/devenv.py`: `DE-1` to `DE-6` pass, the baked list and the account's at 73 names, sha256
+    `61f1e1646df12c14`; `DE-5` read the image's bytes at 19:58:18.
+  - `./aws/sandbox-ml.py`, 19:58:24 to 20:01:52: 37 pass, none failed. `ML-9`:
+    `aws.sagemaker.us-west-2.mlflow` answered by `vpce-0c34126a42848e404`, `available`, private DNS on;
+    the S3 gateway's list names `sagemaker-us-west-2` and `jumpstart-cache-prod-us-west-2`;
+    `awsds-sandbox-egress-allow` 14 entries. `ML-2` `ml-demo-mlflow` `Created` on MLflow 3.16.0; `ML-7`
+    20, 30, 8 and 10; `ML-8` Titan V2 `AVAILABLE` and `AUTHORIZED`, and no knowledge base, vector bucket,
+    agent, prompt, flow, guardrail or evaluation job.
+  - 1.6's "before", 20:07: `list-metrics` holds no `BytesProcessed` series for `vpce-0c34126a42848e404`.
+- **[user] The spaces**, in `eighth-experimentation`'s blueprint domain `eighth-experimentation-ai-domain`
+  (`d-m8m0uefej9kb`), read by Claude with `list-spaces` and `list-apps`, both `InService`: `jup`, JupyterLab
+  on `ml.t3.medium` with `awsds-sandbox-dev-env` version 11, created 20:07:15, remote access `DISABLED`;
+  `code`, Code Editor on `ml.t3.large`, created 20:08:41, remote access `ENABLED`, for 6d's 7.5 and 7.7.
+- **[user] 0.3, the space.** The versions in both interpreters, pasted:
+
+  ```text
+  == /opt/awsds/venv/bin/python
+  python 3.12.14
+  sagemaker 3.21.0
+  sagemaker-core 2.21.0
+  mlflow 3.17.2
+  mlflow-skinny 3.17.2
+  sagemaker-mlflow 0.5.0
+  xgboost absent
+  xgboost-cpu 3.3.0
+  boto3 1.43.92
+  pandas 2.3.3
+  == /opt/conda/bin/python
+  python 3.12.14
+  sagemaker absent
+  sagemaker-core 2.21.0
+  mlflow 3.15.2
+  mlflow-skinny 3.15.2
+  sagemaker-mlflow 0.5.0
+  xgboost 2.1.4
+  xgboost-cpu absent
+  boto3 1.43.75
+  pandas 2.3.3
+  ```
+
+  **[Claude]** The house interpreter holds the lock's versions. Neither `SAGEMAKER_USER_CONFIG_OVERRIDE` nor
+  `SAGEMAKER_ADMIN_CONFIG_OVERRIDE` is set (*"no override variable"*), the user configuration
+  `~/.config/sagemaker/config.yaml` is `absent`, and the admin configuration is the only `config.yaml` under
+  `/etc`, `/opt` and `/home`, pasted:
+
+  ```yaml
+  == /etc/xdg/sagemaker/config.yaml
+  SchemaVersion: '1.0'
+  SageMaker:
+    PythonSDK:
+      Modules:
+        Session:
+          DefaultS3Bucket: awsds-sandbox-smus-projects
+          DefaultS3ObjectKeyPrefix: shared/
+        RemoteFunction:
+          IncludeLocalWorkDir: true
+          VpcConfig: &id001
+            SecurityGroupIds:
+            - sg-0fee1c059b82e3562
+            Subnets:
+            - subnet-016b5a3a62c739894
+            - subnet-09d3399d6b0fec93a
+        NotebookJob:
+          RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+          S3RootUri: s3://awsds-sandbox-smus-projects/shared/
+          VpcConfig: *id001
+        Serve:
+          S3ModelDataUri: s3://awsds-sandbox-smus-projects/shared/
+    Pipeline:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+    Model:
+      ExecutionRoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      VpcConfig: *id001
+    ModelPackage:
+      ValidationSpecification:
+        ValidationRole: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+    ProcessingJob:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      NetworkConfig:
+        VpcConfig: *id001
+    TrainingJob:
+      RoleArn: arn:aws:iam::<Sandbox Account 1>:role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c
+      Environment:
+        BOTOCORE_EXPERIMENTAL__PLUGINS: S3AccessGrantsPlugin=aws_s3_access_grants_boto3_plugin.s3_access_grants_plugin
+      VpcConfig: *id001
+    MonitoringSchedule:
+      MonitoringScheduleConfig:
+        MonitoringJobDefinition:
+          NetworkConfig:
+            VpcConfig: *id001
+    AutoMLJob:
+      AutoMLJobConfig:
+        SecurityConfig:
+          VpcConfig: *id001
+    AutoMLJobV2:
+      SecurityConfig:
+        VpcConfig: *id001
+    CompilationJob:
+      VpcConfig: *id001
+  ```
+
+  **[Claude]** What a `CreateTrainingJob` through the SDK's own classes gets filled in: the project role, the
+  project's security group (`datazone-avhvbqn37ty7m8-dev`) and both private subnets, and the S3 Access Grants
+  plugin in the container's environment. No key, no tag, no isolation and no inter-container encryption
+  anywhere, so 2.2 (a) and (b) stay two readings. The S3 defaults name the bucket's root `shared/`, outside
+  the project's `<domain>/<project>/` prefix. `examples/sandbox-ml/` calls boto3's client, which reads none of
+  this file. The clone read `b3b900b 2026-11-21T16:51:08-03:00`; `space_values.json` holds `ACCOUNT_ID`,
+  `DOMAIN_ID`, `PROJECTS_BUCKET`, `PROJECT_ID`, `PROJECT_KEY_ID`, `PROJECT_ROLE_NAME`, `PROJECT_SG`, `REGION`,
+  `SUBNET_AZ1` and `SUBNET_AZ2`; the user replaced the clone's `extra_values.json` with the laptop's. The
+  fetch of `space_values.py` is the proxy's line *"2026-11-21T20:19:16+0000 10.20.38.182 CONNECT
+  raw.githubusercontent.com:443 200 14336 974 TCP_TUNNEL"*.
+- **[Claude] 0.7, the forms**, from 20:15, in `eighth-experimentation`; the account menu read *"Data
+  Scientist User"*:
+  - **JumpStart has no *Train* form.** AI/ML → *Models*, searched *"xgboost classification"*: one model,
+    *"XGBoost Classification"*, Model ID `xgboost-classification-model`, *Tabular Classification ·
+    Fine-tune*. Its page offers *Customize* ▾ and *Deploy* ▾, each with *Notebook*, disabled (*"Notebooks
+    are currently not supported for cross-region and cross-account project configurations"*), and
+    *JupyterLab*, not clicked. The *Sample notebooks* tab previews two:
+    - *Deploy*, *"SageMaker Built-In Algorithms: Tabular Classification using XGBoost and Linear
+      Learner"*: SDK 3's `ModelTrainer.from_jumpstart_config(JumpStartConfig(model_id=...))` with
+      `Compute(instance_type="ml.m5.xlarge")`, JumpStart's dataset under
+      `jumpstart-cache-prod-{region}/training-datasets/tabular_multiclass/`, the output under
+      `sagemaker_session.default_bucket()`, a first cell `!pip install ipywidgets==7.0.0`, then
+      `ModelBuilder.deploy()` and the deletes;
+    - *Fine-tune*, *"Training Model with Jumpstart And MLflow In SageMaker Unified Studio"*: SDK 2's
+      `sagemaker.jumpstart.estimator.JumpStartEstimator`, which SDK 3.21.0 does not carry, with t5's
+      hyperparameters, `instance_type` commented out and an MLflow tracking server placeholder.
+
+    2.4's portal path is a sample notebook run in JupyterLab, not a form to submit once.
+  - **Inference endpoints → *Create new endpoint*** opens *Select model*, *"No registered models found. No
+    registered models with approved versions found. Models must have at least one approved version to
+    appear here."*, with *Create endpoint using JupyterLab* and *Create endpoint using Notebook* disabled;
+    no field form and no *Add model*.
+  - **Compute → MLflow**: `ml-demo-mlflow`, *On*, *App*. *Create* ▾ greys both items: *Create MLflow App*
+    (*"The MLflowApp blueprint is not enabled for this project. Contact your administrator to enable
+    it."*) and *Create MLflow Tracking Server* (*"The MLExperiments blueprint is not enabled for this
+    project."*). The page carries *"The Compute page is migrating to Resource blueprints"*.
+  - **ML pipelines → *Create in visual editor***, a draft never saved. The library: *Run notebook or code*,
+    *Run callback*, *Run lambda function*, *Process data*, *Train model*, *Fine tune model*, *Register
+    model*, *Create model*, *Deploy model (endpoint)*, *Deploy model (batch inference)*, *Condition*,
+    *Fail*. The step forms:
+
+    | Step | Fields | *Advanced → Security* | Isolation, inter-container encryption |
+    |---|---|---|---|
+    | *Train model* | Model output S3 URI and Algorithm ECR URI (required), Input Mode *FastFile*, metrics, Instance Type default `ml.m5.xlarge`, Count, Additional storage per instance (30 GB shown), hyperparameters, stopping condition 86400 s, checkpoints, caching, retry | IAM Role empty; VPC `vpc-00dca74a35159b11c`, both subnets and `sg-0fee1c059b82e3562` filled; Encryption KMS key empty | no field |
+    | *Process data* | Image URI (required), Instance `ml.m5.xlarge`, Count 1, storage 1 GB, stopping 86400 s | as *Train model* | no field |
+    | *Create model* | Execution Role, Model S3 URI (required), *Bring your own container*, ECR URI, environment | VPC, subnets, security groups | no field |
+    | *Deploy model (endpoint)* | Endpoint Name (required), *Real-time*, default `ml.t2.medium`, Count 1, Maximum count 1 | none, no key | — |
+    | *Deploy model (batch inference)* | data input and output (output and capture keys *"No Custom Encryption"*), Instance `ml.m5.xlarge`, configuration, data joins, environment | none, no volume key | — |
+
+    Every step's *Tags* say *"Tag keys will be automatically prefixed with "ProjectUserTag"."*, so no form
+    can set `AmazonDataZoneProject`; a *Train model* or *Process data* step submitted from the editor lacks
+    isolation and inter-container encryption, which the boundary requires.
+  - **Generative AI → *My components***: *"Components (0)"*, *Create component* ▾ offering *Knowledge
+    Base*, *Guardrail* and *Function*.
+    - *Create function*, cancelled: name, description, an OpenAPI 3.0.0 schema of up to 5 APIs,
+      authentication *No authentication* by default (or API keys, bearer token, basic), a server URL; no
+      network field and no Lambda field.
+    - *Create a new knowledge base*, cancelled: name and description; sources *Local file*, *Web crawler*
+      and *Project data sources*. *Local file* takes .docx, .doc, .pdf, .txt, .md, .html, .csv, .xls and
+      .xlsx, *"Maximum 10 files, 50MB per file"*, where 7.4a read 50 files on 2026-10-12. *Project data
+      sources* lists *Lakehouse (1)*, *Default Lakehouse connection*; *Redshift (1)*,
+      `redshift-serverless.redshift`; *S3 (3)*: `default.s3_shared`
+      (`s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/`), *S3 (Default)*
+      (`…/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/`) and `sandbox-lake.s3`
+      (`s3://awsds-sandbox-lake/sso-group-data-scientists/`). *Data storage and processing*, fixed at
+      create: the embeddings model *Titan Text Embeddings V2* alone; with it, the embedding type
+      *Floating-point vector embeddings* alone, the dimension 256, 512 or 1024 with 256 preselected; the
+      vector store preselected as *Vector engine for Amazon OpenSearch Serverless*, beside *Amazon S3
+      Vectors - new* and *Amazon Neptune Analytics (GraphRAG) - new*, the last disabled. Chunking
+      *Default*, *Fixed size*, *Hierarchical*, *Semantic* and *None*; parsing *Bedrock default parser*
+      with *"Access to model required"*. 7.4a picks S3 Vectors and 1024 by hand, since the defaults are
+      OpenSearch Serverless and 256.
+  - **Build → *Model evaluations* → *Create evaluation***, left at its second step: the model list *Nova
+    Lite*, *Claude Haiku 4.5*, *Claude Opus 4.5* and *Claude Sonnet 4.5*, the three Claude models
+    *Cross-region*; the task types *General text generation*, *Text summarization*, *Question and answer*
+    and *Text classification*. For *Question and answer*, *Accuracy* and *Robustness* take the built-in
+    datasets alone (*"Custom datasets are not supported for Q&A task type with robustness or accuracy
+    metrics"*: *BoolQ*, *Natural Questions*, *Trivia QA*); *Toxicity* takes *Upload a dataset to S3*
+    (*"max. 100 MB per file, 1 file"*, from the browser) or *Choose a dataset from S3*, which opens
+    *Select a previously uploaded dataset* and read *"No options"*. The field does not browse
+    `shared/ml-demo/bedrock/`: 7.4's dataset reaches the job by the upload.
+  - **Build → *Chat agent***, an unsaved *Untitled App*, its model preselected as *Claude Opus 4.5*; the
+    list *Nova Lite*, *Claude Haiku 4.5*, *Claude Opus 4.5* and *Claude Sonnet 4.5*, each *"Supports
+    Guardrails, Data, Functions"*. The page's banner: *"Agents Classic will no longer be open to new
+    customers starting on July 30, 2026"*.
+
+## 2026-11-21 — Day 2's sitting B: 1.6 and 2.1
+
+Written by Claude in the session the orchestrator started. The user ran the commands in the `jup` space and
+pasted their output. The lines quoted below are excerpts in the paste's order, each line verbatim except the
+account id in S3 Control's host name, written `<Sandbox Account 1>`; left out are the container-credential
+fetches from `169.254.170.2` and six of 1.6's nine MLflow requests, all `200`. Claude's readings ran as
+`awsds-infra-sandbox-1` (Sandbox Account 1) and, for the proxy's log, `awsds-infra-prod`. Times UTC.
+
+- **[Claude] The apps, restarted.** The blueprint domain's 60-minute idle shutdown deleted `code` at
+  21:19:50 and `jup` at 21:23:14 (`DeleteApp` by `AWSServiceRoleForAmazonSageMakerNotebooks`); both spaces
+  stayed `InService` with their home volumes, the clone and `extra_values.json` on them. The user started
+  both again: `list-apps` read them `Pending` at 23:02:08 under the deleted apps' `CreationTime`. The new
+  apps took new addresses, read from their first proxy lines: `jup` 10.20.54.175 (was 10.20.38.182),
+  `code` 10.20.26.209 (was 10.20.20.46).
+- **[user] 1.6**, the step's script with urllib3's connection log on:
+
+  ```
+  start 23:08:13
+  urllib3.connectionpool Starting new HTTPS connection (1): mlflow.sagemaker.us-west-2.app.aws:443
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "GET /api/2.0/mlflow/experiments/get-by-name?experiment_name=ml-demo-first-run HTTP/1.1" 404 142
+  2026/11/21 23:08:33 INFO mlflow.tracking.fluent: Experiment with name 'ml-demo-first-run' does not exist. Creating a new experiment.
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "POST /api/2.0/mlflow/experiments/create HTTP/1.1" 200 26
+  urllib3.connectionpool Starting new HTTPS connection (1): config.mlflow-telemetry.io:443
+  urllib3.connectionpool https://mlflow.sagemaker.us-west-2.app.aws:443 "POST /api/2.0/mlflow/runs/create HTTP/1.1" 200 392
+  urllib3.connectionpool Starting new HTTPS connection (1): sts.us-west-2.amazonaws.com:443
+  urllib3.connectionpool https://sts.us-west-2.amazonaws.com:443 "POST / HTTP/1.1" 200 472
+  urllib3.connectionpool https://awsds-sandbox-smus-projects.s3.us-west-2.amazonaws.com:443 "HEAD / HTTP/1.1" 200 0
+  urllib3.connectionpool https://<Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 "GET /v20180820/accessgrantsinstance/prefix?s3prefix=s3%3A%2F%2Fawsds-sandbox-smus-projects%2Fdzd-d8yrvx1ko7im6o%2Favhvbqn37ty7m8%2Fdev%2Fdata%2Fml%2Fmlflow%2Fworkspaces%2Fdefault%2F1%2Faa66682b1adc4b168ae4f857f1f0e315%2Fartifacts%2Fml-demo-1-6.txt HTTP/1.1" 200 251
+  urllib3.connectionpool https://<Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 "GET /v20180820/accessgrantsinstance/dataaccess?target=s3%3A%2F%2Fawsds-sandbox-smus-projects%2Fdzd-d8yrvx1ko7im6o%2Favhvbqn37ty7m8%2Fdev%2Fdata%2Fml%2Fmlflow%2Fworkspaces%2Fdefault%2F1%2Faa66682b1adc4b168ae4f857f1f0e315%2Fartifacts%2Fml-demo-1-6.txt&permission=WRITE&privilege=Default HTTP/1.1" 403 449
+  urllib3.connectionpool https://awsds-sandbox-smus-projects.s3.us-west-2.amazonaws.com:443 "PUT /dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow/workspaces/default/1/aa66682b1adc4b168ae4f857f1f0e315/artifacts/ml-demo-1-6.txt HTTP/1.1" 200 0
+  run aa66682b1adc4b168ae4f857f1f0e315 experiment 1
+  artifact_uri s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/mlflow/workspaces/default/1/aa66682b1adc4b168ae4f857f1f0e315/artifacts
+  end 23:08:35
+  ```
+
+  and `getent hosts mlflow.sagemaker.us-west-2.app.aws` printed `10.20.36.90     mlflow.sagemaker.us-west-2.app.aws`.
+- **[Claude] 1.6's readings.**
+  - The door: `vpce-0c34126a42848e404` (CloudWatch's service name `aws.sagemaker.us-west-2.mlflow`) had no
+    `BytesProcessed` series at 20:07 or at 23:02; after the run it carried one datapoint, 23:08,
+    `BytesProcessed` 9410 and `NewConnections` 1, its per-subnet series on `subnet-016b5a3a62c739894`
+    alone. The client opened one connection to the host and sent its nine MLflow requests on it. The
+    proxy's log holds no `mlflow` line from 23:05 to 23:10. Verification vi: yes. The name is
+    `mlflow.sagemaker.us-west-2.app.aws`, resolved to the endpoint's address; the endpoint carried the
+    bytes; nothing failed to resolve, so the DNS Firewall list needs no entry.
+  - The artifact: `ml-demo-1-6.txt`, 18 bytes, `LastModified` 23:08:36, `aws:kms` under
+    `alias/awsds-sandbox-project`'s key with the bucket key, the bucket's default. The MLflow store's
+    objects are verification iv's other half, read with 3.1's model.
+  - The S3 Access Grants plugin: before the PUT, `GetAccessGrantsInstanceForPrefix` answered 200 and
+    `GetDataAccess` for `WRITE` 403, then the PUT ran under the role's own credentials, the plugin's
+    fallback. Both S3 Control calls left through the proxy, one tunnel:
+    `2026-11-21T23:08:35+0000 10.20.54.175 CONNECT <Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 200 7313 6347 TCP_TUNNEL`.
+    The house image's `NO_PROXY` names S3 as `s3.us-west-2.amazonaws.com` and
+    `s3.dualstack.us-west-2.amazonaws.com` (`vpc-egress`'s `no-proxy.tf`), which `s3-control` does not end
+    in, so `SUP-091`'s direct path through the gateway endpoint is not a space's: from a space the call
+    takes `SUP-042`'s path through the proxy. The STS call and the PUT left direct: no proxy line.
+  - MLflow's telemetry: `2026-11-21T23:08:33+0000 10.20.54.175 CONNECT config.mlflow-telemetry.io:443 403 3430 89 TCP_DENIED`,
+    the connection the client logged with no response. MLflow's source (`mlflow-skinny` 3.18.0 in the
+    laptop's uv cache; the house lock pins `mlflow` 3.17.2) reads `CONFIG_URL =
+    "https://config.mlflow-telemetry.io"` and turns telemetry off when `MLFLOW_DISABLE_TELEMETRY` is true
+    or `DO_NOT_TRACK` equals `true`; `DO_NOT_TRACK=1`, dbt's spelling in Stage 20, does not. The attempt
+    shows neither set in the space. The allow-list held.
+- **[user] 2.1**, `data.py`:
+
+  ```
+  fetched 7043 rows, 970457 bytes, from https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
+  raw: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/raw/telco.csv
+  prepared: 7032 rows, 11 dropped for a blank TotalCharges
+  train: 4922 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/train.csv
+  validation: 1054 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/validation.csv
+  test: 1056 rows -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/data/test.csv
+  ```
+- **[Claude] 2.1's readings.** One proxy line,
+  `2026-11-21T23:08:52+0000 10.20.54.175 CONNECT raw.githubusercontent.com:443 200 979031 1923 TCP_TUNNEL`,
+  the CSV's 970,457 bytes and the TLS handshake. Verification xxvi: yes. The four objects read 970457,
+  151945, 32496 and 32696 bytes, `LastModified` 23:08:53 to 23:08:54, each `aws:kms` under the project key
+  with the bucket key; the rows match the step's 7,043, split 4922/1054/1056 of 7,032. A second S3 Control
+  tunnel, `200 9301 12888 TCP_TUNNEL`, closed at 23:08:53, the second the objects were written.
+- **[Claude] JupyterLab's telemetry loop, read in the proxy's log.** From `jup`, a pair every 2.5 to 2.6 s,
+  each pair the same sizes:
+  `CONNECT cognito-identity.us-east-1.amazonaws.com:443 200 8072 2932 TCP_TUNNEL` and
+  `CONNECT client-telemetry.us-east-1.amazonaws.com:443 200 5605 3637 TCP_TUNNEL`. 1,529 pairs came from
+  10.20.38.182 between 20:17:53 and 21:23:15, the old app's life from its UI's first minutes to its
+  idle delete, and the loop started again from 10.20.54.175 at 23:07:53 (49 pairs by 23:09:57). The
+  `code` space's addresses carry none, where 6d's log read the pair once per Code Editor start. Both
+  names pass the compute plane's `.amazonaws.com` entry. About 6.6 KB leave per pair, 9.2 MB an hour per
+  open JupyterLab app, and 19 MB arrive. The loop did not hold the app open: its last pair closed a
+  second after the delete. The component that sends it was not identified, and no file of the repository
+  then named `client-telemetry` but 6d's and Stage 19's logs (`SUP-450`).
+
+## 2026-11-21 — Day 2's sitting B: 2.2 (a) and (b), and the training pair applied
+
+Written by Claude in the session the orchestrator started. The user ran `train.py` and `env` in the `jup`
+space and pasted their output, verbatim below except the account id, written `<Sandbox Account 1>`.
+Claude's readings and the apply ran as `awsds-infra-sandbox-1` (Sandbox Account 1), the apply on the user's
+words in this session's chat, *"Autorizo o apply do par"*. Times UTC.
+
+- **[user] 2.2 (a) and (b)**:
+
+  ```
+  2026/11/21 23:19:34 INFO mlflow.tracking.fluent: Experiment with name 'ml-demo-xgboost' does not exist. Creating a new experiment.
+  ml-demo-xgb-untagged-20261121-231933: created
+  admitted, contrary to the stage's expectation: stopped
+  🏃 View run ml-demo-xgb-untagged-20261121-231933 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/b5466f46bf424ac3b1de029f0041ab18
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ml-demo-xgb-tagged-20261121-231943: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:AddTags on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-tagged-20261121-231943 because no identity-based policy allows the sagemaker:AddTags action
+  🏃 View run ml-demo-xgb-tagged-20261121-231943 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/0799746e3de245368186293e8332e751
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ```
+
+  and `env | grep -i -E 'botocore|plugin'` printed
+  `BOTOCORE_EXPERIMENTAL__PLUGINS=S3AccessGrantsPlugin=aws_s3_access_grants_boto3_plugin.s3_access_grants_plugin`.
+- **[Claude] (a), admitted.** `train.py untagged` deletes `Tags` from its request, yet CloudTrail's
+  `CreateTrainingJob` at 23:19:36, from 10.20.54.175 through `vpce-02feedaa4ad58acf4` with the user's
+  profile name as source identity, records `requestParameters.tags` with seven keys:
+  `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn` (`space/d-m8m0uefej9kb/jup`),
+  `AmazonDataZoneProject` `avhvbqn37ty7m8`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` (the
+  user's id) and `AmazonDataZoneDomain` `dzd-d8yrvx1ko7im6o`; `list-tags` on the job reads the same seven.
+  No policy on the role allowed `AddTags`, as (b) shows. Who composes the seven is not read: the space's
+  only botocore plugin is the S3 Access Grants plugin, which also accounts for 1.6's S3 Control calls; the
+  blueprint domain's `TagPropagation` reads `None` (`ExecutionRoleIdentityConfig` `USER_PROFILE_NAME`);
+  the four `AmazonDataZone*` keys are four of the nine the space and its user profile carry, without
+  `ProjectS3Path`, `AmazonDataZoneStage`, `AmazonDataZoneBlueprint`, `AmazonDataZoneDomainAccount` and
+  `AmazonDataZoneDomainRegion`. The job: `Stopped` at 23:19:39, no `TrainingStartTime`, no billable time;
+  isolation and inter-container encryption on, `ml.m5.xlarge`, the project key on the volume, two subnets.
+  The step's expectation for (a) was wrong for a notebook in a space: there the request that names no tag
+  is admitted. `SUP-408`.
+- **[Claude] (b), refused as expected.** CloudTrail's event at 23:19:44, `errorCode` `AccessDenied`, the
+  message above, the same endpoint and source; `DescribeTrainingJob` of the name reads *"Requested resource
+  not found"*: nothing was created. It is `SUP-267`'s exclusion of the `AmazonDataZone*` keys, met by a key
+  the caller names.
+- **[Claude] What (a) leaves in place.** The training pair stays where decision 7 put it: a workflow's
+  operator names the tag, and 2.2 (c) and 2.3's negatives are `train.py tagged`'s variants.
+- **[Claude] Order 6, the training pair applied.** At 23:25 the hub's session and the orchestrator were
+  told; the other three peers were idle on unrelated work. `sandbox/workflows/` planned from this tree,
+  *"No changes."* at 23:24:43. On the user's words, the plan saved at 18:57 (Terraform 1.17.2) applied
+  from 23:29:37 to 23:29:49: *"Apply complete! Resources: 0 added, 1 changed, 0 destroyed."*.
+  `awsds-sandbox-workflows` reads version `v7` (23:29:46), nine statements, `DescribeATrainingJobNoProjectHolds`
+  and `TagATrainingJobWithTheCallersProject` among them. With `-var training_pair_enabled=true`, *"No
+  changes."* at 23:30:36. The default is `true` in this branch, planned at 23:31:40, *"No changes."*; a plan
+  from `main` removes the pair until the branch merges (Lesson 79).
+
+## 2026-11-21 — Day 2's sitting B: 2.2 (c) and 2.3
+
+Written by Claude in the session the orchestrator started. The user ran `train.py` in the `jup` space and
+pasted its output; the lines quoted are verbatim except the account id, written `<Sandbox Account 1>`, and
+the MLflow run links, left out. Claude's readings ran as `awsds-infra-sandbox-1` (Sandbox Account 1). Times
+UTC.
+
+- **[user] 2.2 (c)**, `train.py tagged --wait` after the training pair's apply:
+
+  ```
+  ml-demo-xgb-tagged-20261121-233934: created
+  ml-demo-xgb-tagged-20261121-233934: Completed, 89 s billed
+  validation:auc: 0.8209
+  train:auc: 0.9513
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261121-233934/output/model.tar.gz
+  ```
+- **[Claude] 2.2 (c)'s job**: created 23:39:40, trained 23:40:22 to 23:41:51, 89 s billed, against the
+  step's five minutes. Network isolation and inter-container encryption on, `ml.m5.xlarge` × 1, a 30 GB
+  volume and the output under the project key, the project's two subnets and `sg-0fee1c059b82e3562`,
+  `MaxRuntimeInSeconds` 600, the image `sagemaker-xgboost:3.0-5` from the Region's algorithm registry, the
+  recipe's hyperparameters (`eta=0.2 eval_metric=auc max_depth=5 num_round=200 objective=binary:logistic
+  subsample=0.8`). Its tags are 2.2 (a)'s seven keys: the request's own `AmazonDataZoneProject` and the
+  space's seven, merged into one set. `model.tar.gz`, 125,534 bytes, `aws:kms` under the project key with the
+  bucket key. Validation AUC 0.8209, a reading.
+- **[user] 2.3**, the five negatives and the admitted request again:
+
+  ```
+  ml-demo-xgb-no-vpc-20261121-235342: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-vpc-20261121-235342 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-isolation-20261121-235351: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-isolation-20261121-235351 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-ice-20261121-235359: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-ice-20261121-235359 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-no-volume-key-20261121-235410: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-no-volume-key-20261121-235410 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-ceiling-20261121-235418: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:CreateTrainingJob on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/ml-demo-xgb-ceiling-20261121-235418 with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary
+  ml-demo-xgb-tagged-20261121-235427: created
+  ml-demo-xgb-tagged-20261121-235427: Completed, 84 s billed
+  validation:auc: 0.8209
+  train:auc: 0.9513
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261121-235427/output/model.tar.gz
+  ```
+- **[Claude] 2.3's readings.** Each refusal names the boundary, `awsds-sandbox-project-boundary`, never a
+  statement: the step's *"each naming its statement"* holds as each attributed by the one field it changes.
+  The boundary's version `v3` maps them: `DenySageMakerJobsOffVpc` (`Null` on `sagemaker:VpcSubnets`),
+  `DenySageMakerJobsWithoutNetworkIsolation` and `DenySageMakerJobsWithoutInterContainerEncryption`
+  (`BoolIfExists` false), `DenySageMakerJobsWithoutVolumeEncryption` (`Null` on `sagemaker:VolumeKmsKey`) and
+  `DenySageMakerInstanceCeiling` (`ForAnyValue:StringNotEquals` on `sagemaker:InstanceTypes`). None of the
+  five names exists as a job (`DescribeTrainingJob` exit 254 for each), so none billed. The sixth, created
+  23:54:28 and trained 23:55:13 to 23:56:37, 84 s billed, read `Completed` with isolation and
+  inter-container encryption on: the five refusals are read against a pass of the same sitting. The
+  negatives ran through the proxy's replacement (23:51:43 to 23:54:00), which none of them crosses.
+
+## 2026-11-22 — Day 2's sitting B: 2.4, verification iii, 3.1 and 3.2's first attempt
+
+Written by Claude in the session the orchestrator started. The user acted in the portal and ran the commands
+in the `jup` space; the lines quoted from their pastes and from the proxy's log are verbatim except the
+account id, written `<Sandbox Account 1>`. Claude's readings ran as `awsds-infra-sandbox-1` (Sandbox
+Account 1), `awsds-infra-prod` for the proxy's log, and Claude in Chrome for the MLflow UI. Times UTC.
+
+- **[user] 2.4, the portal's path.** On `eighth-experimentation`'s *XGBoost Classification* page,
+  *Deploy* ▾ → *JupyterLab* answered *"Failed to open notebook JupyterLab is not ready. Please ensure your
+  space is running and try again."* while `jup` read `InService` (read by Claude at the time). *Notebook*
+  is disabled under both menus (0.7). Neither entry opens the sample notebook in this project, so no job
+  was submitted from the portal: the SDK path of 2.2 is this stage's training path.
+- **[user] Verification iii from `jup`**, the hub read and one ranged `GetObject`, creating nothing:
+
+  ```
+  start 00:12:57
+  hub xgboost-classification-model 2.2.0 Available
+  uris 5
+  get s3://jumpstart-cache-prod-us-west-2/source-directory-tarballs/training/xgboost-classification/prepack/inference-xgboost-classification/v1.0.0/sourcedir.tar.gz 206 bytes 0-99/77423531
+  end 00:12:58
+  ```
+- **[Claude] Verification iii's readings: yes.** CloudTrail records `DescribeHubContent` at 00:12:57 from
+  10.20.54.175 as the project role through `vpce-02feedaa4ad58acf4`, the SageMaker API endpoint. The
+  proxy's stream from 00:12:57 to 00:12:58 holds one line, the Access Grants plugin's
+  *"CONNECT <Sandbox Account 1>.s3-control.us-west-2.amazonaws.com:443 200 6623 4020 TCP_TUNNEL"*. The spoke
+  has no default route, so the 206 from `jumpstart-cache-prod-us-west-2` is the S3 gateway endpoint's: the
+  bucket name its policy has listed since Stage 3 is exercised for the first time.
+- **[user] 3.1, the second run:**
+
+  ```
+  ml-demo-xgb-tagged-20261122-000754: created
+  ml-demo-xgb-tagged-20261122-000754: Completed, 88 s billed
+  validation:auc: 0.8394
+  train:auc: 0.8577
+  model: s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/models/ml-demo-xgb-tagged-20261122-000754/output/model.tar.gz
+  🏃 View run ml-demo-xgb-tagged-20261122-000754 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/78645bec5e354cdaa13ca6321d5b3fcd
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ```
+- **[Claude] 3.1's compare view**, read in the MLflow UI through Chrome: *"Comparing 2 Runs from 1
+  Experiment"*, `validation_auc` 0.83936 for `max_depth` 3 and `num_round` 50 against 0.82091 for 5 and 200,
+  `train_auc` 0.858 against 0.951. The better job is `ml-demo-xgb-tagged-20261122-000754`, the run
+  `78645bec5e354cdaa13ca6321d5b3fcd`. The UI's compare URL loses its run list on load (it redirects to
+  `?workspace=default`); selecting both runs in the run list and *Compare* opens the view.
+- **[user] 3.1's model and 3.2's two doors**, in that order:
+
+  ```
+  sagemaker-user@default:~/AWS-DataScience/examples/sandbox-ml$ /opt/awsds/venv/bin/python register.py log-model ml-demo-xgb-tagged-20261122-000754
+  /opt/awsds/venv/bin/python register.py package ml-demo-xgb-tagged-20261122-000754
+  /opt/awsds/venv/bin/python register.py from-mlflow ml-demo-xgb-tagged-20261122-000754
+  ml-demo-xgb-tagged-20261122-000754: model.tar.gz logged into run 78645bec5e354cdaa13ca6321d5b3fcd under archive/
+  /home/sagemaker-user/AWS-DataScience/examples/sandbox-ml/register.py:81: UserWarning: [00:18:19] WARNING: /workspace/src/c_api/c_api.cc:1500: Unknown file format: ``. Using UBJSON (`ubj`) as a guess.
+    booster.load_model(str(scratch / members[0].name))
+  2026/11/22 00:18:19 WARNING mlflow.models.model: `artifact_path` is deprecated. Please use `name` instead.
+  ml-demo-xgb-tagged-20261122-000754: booster logged as runs:/78645bec5e354cdaa13ca6321d5b3fcd/model
+  🏃 View run ml-demo-xgb-tagged-20261122-000754 at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2/runs/78645bec5e354cdaa13ca6321d5b3fcd
+  🧪 View experiment at: https://mlflow.sagemaker.us-west-2.app.aws/#/experiments/2
+  ml-demo-xgboost: created
+  ml-demo-xgboost version from ml-demo-xgb-tagged-20261122-000754: refused
+  AccessDeniedException: User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/SageMaker is not authorized to perform: sagemaker:AddTags on resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/ml-demo-xgboost/new because no identity-based policy allows the sagemaker:AddTags action
+  Successfully registered model 'ml-demo-xgboost'.
+  2026/11/22 00:18:56 INFO mlflow.store.model_registry.abstract_store: Waiting up to 300 seconds for model version to finish creation. Model name: ml-demo-xgboost, version 1
+  Created version '1' of model 'ml-demo-xgboost'.
+  ml-demo-xgboost: MLflow version 1 from ml-demo-xgb-tagged-20261122-000754's model.tar.gz
+  ```
+- **[Claude] 3.1's model and verification iv: yes.** The archive is the run's
+  `artifacts/archive/model.tar.gz`, 10,727 bytes. The booster is not under the run: MLflow 3.16.0 stores it
+  as the logged model `m-b2cb7244247a4203ab67bdc66eb9a7c7` under the experiment's `models/`, written 00:18:35
+  (`MLmodel`, `conda.yaml`, `model.ubj` of 58,361 bytes, `python_env.yaml`, `requirements.txt`). The house
+  interpreter's XGBoost loads the `sagemaker-xgboost:3.0-5` image's `xgboost-model` by guessing UBJSON from a
+  file with no extension. Both objects read `aws:kms` under the project key `a81b1ef3-…` with the bucket key:
+  the store the app holds no key for encrypts under the project's.
+- **[Claude] 3.2's first attempt.** CloudTrail, every call from 10.20.54.175 through
+  `vpce-02feedaa4ad58acf4`:
+  - `CreateModelPackageGroup` at 00:18:45 admitted, the group `Completed`. Its recorded request carries seven
+    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-408`): the two
+    `sagemaker:` ARNs of the profile and the domain, `sagemaker:space-arn` naming `jup`, and
+    `AmazonDataZoneProject`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` and
+    `AmazonDataZoneDomain`. The group's `AddTags` statement admits the key `AmazonDataZoneProject` alone, so
+    the six others were not in the authorization the statement read.
+  - `CreateModelPackage` at 00:18:46 refused with the `AddTags` message above, `requestParameters` null. The
+    group holds no version.
+  - `CreateModelPackage`'s API reference says a version created in a group takes no tag argument and uses
+    the group's tags, and `register.py package` sends the project tag. The refused request is one the API
+    does not accept. Decision 7 (a) writes a statement per measured refusal, so the request the API accepts,
+    the version with no tags, is measured before any statement is written.
+  - `from-mlflow`: the MLflow registry holds `ml-demo-xgboost` version 1 at 00:18:56, and SageMaker's
+    registry no version from it. The app reads `AutoModelRegistrationDisabled`, so the MLflow door writes the
+    MLflow registry alone.
+
+## 2026-11-22 — Day 2's sitting B: 3.2's version, created with no tag
+
+- **[user] The version with no tag argument**, from `jup`: `register.py package`'s request without `Tags`,
+  in a block Claude wrote, followed by a `ListTags` on the new version:
+
+  ```
+  version: model-package/ml-demo-xgboost/1
+  list_tags refused: ValidationException: Tag operations are supported only on ModelPackage Group not on ModelPackage Versions.
+  ```
+- **[Claude] The version's readings.** `ml-demo-xgboost` version 1, created 00:34:10, `Completed`,
+  `PendingManualApproval`, created by the user profile `28f1b390-…` of `d-m8m0uefej9kb` as the project role
+  with that profile as the session's source identity; the image `sagemaker-xgboost:3.0-5` and the better
+  job's `model.tar.gz`. CloudTrail records it from 10.20.54.175 through `vpce-02feedaa4ad58acf4` with no
+  `tags` key in its request.
+- **[Claude] What admitted it.** On the role, the one statement allowing `CreateModelPackage` on that
+  resource is the blueprint's `SageMakerCreatePermissions` (`SageMakerStudioProjectRoleMachineLearningPolicy`
+  v48), conditioned on `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag and on
+  `aws:PrincipalTag/EnableSageMakerMLWorkloadsPermissions`; `awsds-sandbox-workflows` v7's
+  `RegisterAPendingVersionForAppMl` names `app-ml-dev`'s project and group alone. The version's resource tag
+  at the create is therefore its group's (`SUP-409`), the half of verification lviii the simulation of
+  2026-11-17 left open, read here from a space. The refusal of 00:18:46 was of a request the API reference
+  excludes, so decision 7 (a) writes no `sandbox/ml/` statement for a version, and `register.py package`
+  sends no tag on the version (`62f59123`).
+
+## 2026-11-22 — Day 2's sitting B: 3.2's approval in the portal, and no collection to create
+
+- **[user] The approval.** Version 1 approved from the portal's model group page. **[Claude]** CloudTrail
+  records `UpdateModelPackage` at 00:45:45 with `modelApprovalStatus` `Approved`, from the browser and with no
+  `vpcEndpointId`, as the project role in the session `28f1b390-…@5hkjdsy3umpi1c`, the user's id as source
+  identity. The version reads `LastModifiedBy` that role and no `ApprovalDescription`.
+- **[Claude] The registry's pages**, read through Chrome after the approval. AI/ML → *Models* has two tabs,
+  *Foundation models* (939 models) and *My models*, the registry: *"These are your own trained, versioned,
+  production-ready models. You can register models using the SageMaker SDK in a notebook."* It lists
+  `ml-demo-xgboost`, *Model group*, one version. Its *Filter by* offers *All*, *Model group*, *Model* and
+  *Deployable models*; the row's menu offers *Delete model group* alone. The group's page shows the ARN, the
+  creator's id, the tabs *Versions* and *Tags*, *Publish* and *Delete model group*, and version 1 *Not
+  deployed*, *Approved*. No page offers a collection, so 3.2's collection is not created.
+- **[Claude] *Inference endpoints* → *Create new endpoint*** now lists *"ml-demo-xgboost, 1 approved
+  version"* under *"List of deployable models and registered model versions approved for deployment"*. With
+  version 1 selected, *Create endpoint using JupyterLab* is enabled and *Create endpoint using Notebook* is
+  disabled, labelled *"Notebooks are currently not supported for cross-region and …"*. The dialog was
+  cancelled: the portal's endpoint path is a notebook, and 4.1's is `serve.py endpoint`.
+
+## 2026-11-22 — Day 2's sitting B: pass 7's dataset and documents copied
+
+- **[user] 7.4's dataset and 7.4a's documents**, from `jup`, the clone at `b3b900b4`:
+
+  ```
+  20 prompts, 2951 bytes -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/bedrock/evaluation-dataset.jsonl
+  commit b3b900b4a95b526f4d78dcdd3559aa9ca299fdac
+  ...
+  20 documents, 1212570 bytes
+  ```
+
+  The twenty runbooks went to `shared/ml-demo/bedrock/kb/`, from `break-glass.md` (19,464 bytes) to
+  `vpn.md` (85,083), the largest `promotion.md` (217,158).
+- **[Claude] The Bedrock IDE's entry**, read through Chrome: Generative AI → *AI apps* opens the IDE on an
+  unsaved *Untitled App* chat agent, with an inner panel *Amazon Bedrock*: *Models*; *Build* (*Chat agent*,
+  *Flow*, *Prompt*, *Model evaluations*); *Asset gallery* (*My apps*, *My prompts*, *My components*). The
+  interface endpoints `bedrock`, `bedrock-runtime`, `bedrock-agent` and `bedrock-agent-runtime` read
+  `available` in Sandbox.
+
+## 2026-11-22 — Day 2's sitting B: 7.4a's knowledge base refused at its index
+
+Written by Claude in the session the orchestrator started, the portal's acts through Claude in Chrome in the
+user's Chrome signed in as the Data Scientist User, on the authorization below. The banner and the role and
+session names are verbatim except the account id, written `<Sandbox Account 1>`. Claude's readings ran as
+`awsds-infra-sandbox-1` (Sandbox Account 1). Times UTC.
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should create the knowledge base
+  `ml-demo-runbooks` and run a sync.
+- **[Claude] The create**, through Chrome, with the form as 7.4a sets it: the name `ml-demo-runbooks`, the
+  description *"Stage 17 7.4a: the project's runbooks"*, *Project data sources* → S3 (`default.s3_shared`)
+  with the URI `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/bedrock/kb/`,
+  Titan Text Embeddings V2, floating-point, 1024 dimensions, Amazon S3 Vectors, default chunking and the
+  Bedrock default parser. The form opened on OpenSearch Serverless and 256 dimensions. *Foundation model as a
+  parser* was disabled under the alert *"Access to model required"*. *Create* was clicked at 01:02 UTC, and
+  the component list then held `ml-demo-runbooks`, *Knowledge base*, under the portal's banner:
+
+  ```
+  Amazon Bedrock couldn't deploy the Knowledge Base. Delete this component, and then create a new one. [Failed to create environment cie8747bea6mxc: KB vector store creation failed due to: S3Vectors vector store creation failed due to: S3Vectors index creation failed: Insufficient access to perform asynchronous indexing. Ensure that the key used to encrypt the index still exists, is active, and has a resource policy granting access to the S3 service principal 'indexing.s3vectors.amazonaws.com'. (kms_request_id=5c1cca55-9ee1-4126-a995-7503c2b11654) (Service: S3Vectors, Status Code: 403, Request ID: 1b9a477c-ea82-86c8-9942-261750d8d87f) (SDK Attempt Count: 1), Cloudformation stack DataZone-Env-cie8747bea6mxc failed in account <Sandbox Account 1> and us-west-2 for environment cie8747bea6mxc]
+  ```
+
+- **[Claude] The trail and the objects**, read as the infrastructure user:
+  - 01:02:39 `CreateInferenceProfile` by `AmazonSageMakerBedrockModelManagementRole-<Sandbox Account 1>`,
+    session `AWSDataZone-Subscriptions`, from `datazone.amazonaws.com`: the name
+    `dzd-d8yrvx1ko7im6o avhvbqn37ty7m8`, copied from `amazon.titan-embed-text-v2:0`, answered
+    `application-inference-profile/p391nstyc81c`, `ACTIVE`. The profile stays.
+  - The stack `DataZone-Env-cie8747bea6mxc`: `CREATE_IN_PROGRESS` at 01:02:58, its wait handle and two wait
+    conditions (`KnowledgeBaseServiceRolePolicyWaitCondition…`, `CustomResourceRolePolicyWaitCondition…`),
+    `CREATE_COMPLETE` at 01:03:04, `DELETE_IN_PROGRESS` *"User Initiated"* at 01:03:30, `DELETE_COMPLETE` at
+    01:03:33. With S3 Vectors the stack holds its wait handles alone, as `SUP-169` read from the template.
+  - 01:03:10 `CreateVectorBucket` by `awsds-sandbox-smus-provisioning`, session
+    `AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>`, from `datazone.amazonaws.com`:
+    `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, `sseType` `aws:kms` under the key of
+    `alias/awsds-sandbox-project`, admitted, with that role's `GenerateDataKey` and `Decrypt` on the key at
+    the same second.
+  - 01:03:10 `CreateIndex` by the same role: `amazon-bedrock-ide`, dimension 1024, `float32`, `euclidean`,
+    `AMAZON_BEDROCK_TEXT` non-filterable. It was refused with `AccessDenied` and the banner's wording.
+  - No IAM event in us-east-1 from 01:01 to 01:06, and no `CreateKnowledgeBase`; `list-knowledge-bases`
+    answered none at 01:05:40.
+  - The vector bucket stays, `defaultIndexMode` `ENHANCED`, with no index and no tag, so the store carries
+    no project tag (verification xxiii). Empty, it bills nothing.
+- **[Claude] The cause, read 2026-11-22.** The S3 Vectors encryption page's key-policy example grants
+  `indexing.s3vectors.amazonaws.com` `kms:Decrypt` under `aws:SourceArn` (`bucket/*`), `aws:SourceAccount`
+  and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`). SMUS's key-permissions
+  page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch Serverless. Bedrock's
+  knowledge-base setup page names no key policy. The project key's policy at `sagemaker-prereqs-v0.12.0`
+  follows SMUS's page (`SUP-410`).
+- **[Claude] The fix, planned.** `sagemaker-prereqs`' `kms.tf` gains the S3 Vectors page's statement, the
+  bucket narrowed to `amazon-bedrock-ide-*`, behind the knowledge-base blueprint's switch. A plan of
+  `sandbox/sagemaker` against the local module read `0 to add, 1 to change, 0 to destroy`: the project
+  key's policy gains that one statement. The caller went back to its pinned tag. The module's tag and the
+  apply wait on the user.
+
+## 2026-11-22 — Day 2's sitting B: 7.4a's knowledge base created after the key's apply, and its syncs refused by the index's metadata
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should publish
+  `sagemaker-prereqs-v0.13.0`, apply `sandbox/sagemaker`, delete the failed component and recreate the
+  knowledge base with a sync.
+- **[Claude] The tag and the apply.** `sagemaker-prereqs-v0.13.0` was pushed and read back from origin at
+  `4628357d`, and `sandbox/sagemaker` was pinned to it in `207eb246`. The saved plan read
+  `0 to add, 1 to change, 0 to destroy`. The other sessions were told, then the plan was applied as the
+  infrastructure user (`InfrastructureAccess`, `awsds-infra-sandbox-1`): `Modifications complete after 7s`,
+  `Apply complete! Resources: 0 added, 1 changed, 0 destroyed.` at 01:23 UTC. The re-plan read `No changes`,
+  and the key's live policy lists `AllowS3VectorsIndexingOfTheBedrockIdesVectorBuckets` tenth.
+- **[Claude] The failed component, removed in two acts.** *My components* showed an error icon on the
+  failed row and no menu. *Resource blueprints* listed the deployment
+  `34bcff63-e1c0-4b5a-b669-a48df19b6f16-dev`, `AmazonBedrockKnowledgeBase`, *Deployment failed*, with a
+  delete. Its dialog read *"Permanently delete blueprint deployment …? Deleting a blueprint deployment is
+  final and removes all connections created."*; after `confirm`, the portal answered *"Blueprint deployment
+  deleted successfully"* at about 01:25, and the row was gone by 01:26:50. The component stayed listed: its
+  definition, `amazon-bedrock/builder/components/knowledgeBase/34bcff63-…-definition.json` in the project's
+  prefix of the projects bucket, was written by the project role at 01:02:30. Its row then offered *Sync*,
+  *View*, *Edit* and *Delete*. *Delete* asked *"Are you sure you want to delete this Knowledge Base?"* and
+  removed the definition, so the prefix was empty at 01:30:18. The first vector bucket,
+  `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc`, survived both deletes (read 01:33:38).
+- **[Claude] The second create**, the same form: Titan V2, floating-point, 1024 dimensions, S3 Vectors,
+  default chunking, default parser. At 01:33:17 the provisioning role's `CreateVectorBucket`
+  `amazon-bedrock-ide-avhvbqn37ty7m8-46cr0woe7670gg`, under the project key, and `CreateIndex`
+  `amazon-bedrock-ide` were both admitted. The index declares `nonFilterableMetadataKeys`
+  `AMAZON_BEDROCK_TEXT` alone, `indexMode` `ENHANCED`. The knowledge base `QWDNVYXADH`, named
+  `avhvbqn37ty7m8-ml-demo-runbooks`, read `ACTIVE` at 01:33:18. Its role is the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, its embeddings go through
+  `application-inference-profile/p391nstyc81c` at 1024 `FLOAT32`, and its storage is `S3_VECTORS`. Its data
+  source `JXKIPOER3T` reads the projects bucket under the prefix `…/shared/ml-demo/bedrock/kb/`, with
+  `FIXED_SIZE` chunks of 300 tokens and 15 % overlap (the form's *Default*), `dataDeletionPolicy` `DELETE`,
+  encrypted under the project key.
+- **[Claude] The syncs.** The create started one by itself: `TGR4ZAJ1LU`, 01:33:30 to 01:33:55, `COMPLETE`,
+  20 documents scanned, 2 indexed, 18 failed. The *Sync* Claude clicked was `FH5GACQWX9`, 01:34:13 to
+  01:34:40, `FAILED`, 20 scanned, 0 indexed, 18 failed. Both jobs' failure reasons have one form:
+
+  ```
+  Encountered error: Invalid record for key '1606687c-6dd0-480b-9d30-7b498bd1bced': Metadata value is invalid: exceeds 2048 byte string limit (Service: S3Vectors, Status Code: 400, Request ID: 1ecbbd8d-60cc-8d4f-b8de-4d30bfe12103) (SDK Attempt Count: 1). Call to Amazon S3 Vectors did not succeed.
+  ```
+
+  The indexed documents are `break-glass.md` and `buildbox.md`. The 18 others read `FAILED` with a status
+  reason that names no metadata: *"The document was not indexed. No content could be extracted from it, or
+  processing ended before it completed. Check that the document contai…"*. The embeddings ran as the
+  project role, session `EmbeddingTask-FH5GACQWX9`, from `bedrock.amazonaws.com`: 50 `InvokeModel` calls on
+  the application inference profile between 01:34:34 and 01:34:37, all admitted (verification xxii).
+- **[Claude] The pages, read 2026-11-22.** Bedrock's knowledge-base setup page (its S3 Vectors tab) and its
+  chunking page ask that the index declare `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA`
+  non-filterable. S3 Vectors' limits page caps a filterable string value at 2 KB. Its metadata-filtering
+  page says a key declared non-filterable cannot become filterable later. The IDE's index leaves
+  `AMAZON_BEDROCK_METADATA` filterable, and the form exposes no index setting (`SUP-411`).
+- **[Claude] The documents against their status**, counted in the repository's copies at 01:45: the two
+  indexed runbooks hold one Markdown table each (`buildbox.md` 1,187 bytes, `break-glass.md` 19,464), and
+  each of the 18 that failed holds two or more, `security-hub.md` (10,432 bytes) among them. Neither the
+  file's size, its largest table (750 to 8,099 bytes among the failures) nor its longest line separates the
+  two groups. This is a correlation over 20 files, not a cause any reading names.
+
+## 2026-11-22 — Day 2's sitting B: 7.4's prompt and flow created, its guardrail and evaluation refused
+
+- **[user] The authorization.** *"Autorizo"*, answering whether Claude should create, over the two-runbook
+  base, 7.4's prompt, guardrail, flow and automatic evaluation of Haiku 4.5, and 7.4b's chat agent with a
+  single *Share*.
+- **[Claude] The portal session ended** at about 01:51, between the prompt's two versions, with no act of
+  Claude's; the cause was not read. **[user]** *"Entrei"*: the user signed in again as Data Scientist User
+  in the same tab.
+- **[Claude] The prompt.** *Build* → *Prompt*, Claude Haiku 4.5, one variable, `{{excerpt}}`. The first test
+  created the model's application inference profile, `ljl42zoh6e4v`, by the IDE's model-management role's
+  `CreateInferenceProfile` at 01:48:19, then sent `ConverseStream` at 01:48:24 as the project role, admitted.
+  The save is a DataZone environment, `f1fa8784-9ee4-4bfe-ad24-9d62e6a549dc-dev` (`dsffvybs9lppcg`, created
+  01:48:46), whose stack's `CreatePrompt` ran at 01:49:04 as the provisioning role. The prompt is
+  `Bedrock-Prompt-dsffvybs9lppcg` (`KWK4ZJRAWD`), under the project key; the portal names it
+  `untitled-prompt-1yrl1`. Version 1 was created at 01:49:48 and version 2 at 01:53:49, both by
+  `CreatePromptVersion` as the project role; version 2 adds *"Answer in Brazilian Portuguese."* to the text.
+  Both store `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no `topP`, where the form
+  read Top P 0. Each save took about a minute. The split button's *Create version*, chosen from its
+  dropdown, only switches the button's action, and the button's next click creates the version.
+- **[Claude] The guardrail, refused.** *Build* → *Guardrail*, `ml-demo-guardrail`. The form's step 2,
+  *Filters*, offers *Content filters*, shown enabled, and *Denied topics* alone, so the PII filter 7.4 names
+  could not be set. One denied topic was added, *Investment advice*, with two sample phrases. Step 3's blocked
+  message, *"Sorry, the model cannot answer this question."*, also applies to responses. The description typed
+  still named a PII filter. The environment `d4db8360-ee3b-4562-8349-eae449b1b72d-dev` (`ajfy8315ryk3kg`) was
+  created at 01:56:07 and its stack at 01:56:20. At 01:56:24 `CreateGuardrail` was refused with *"You don't
+  have sufficient permissions for this KMS key."*, and `kms:CreateGrant` on the project key with *"… because
+  no identity-based policy allows the kms:CreateGrant action"*, both as the provisioning role from
+  `datazone.amazonaws.com`. The stack rolled back to `DELETE_COMPLETE`, and the environment reads
+  `CREATE_FAILED` with *"Access denied for operation 'AWS::Bedrock::Guardrail'."* (`SUP-417`). SMUS's
+  guardrail page lists two policies, content filters and denied topics (read 2026-11-22), so no IDE guardrail
+  carries a PII filter.
+- **[Claude] The flow.** *Build* → *Flow*, `ml-demo-flow`. Claude in Chrome's pointer drag from the palette
+  left the canvas empty; a scripted `dragstart`, `dragenter`, `dragover` and `drop`, carrying
+  `application/reactflow` `PromptsNode`, placed the node, and the edges took a pointer drag. The builder has
+  no model node: the prompt node carries the model. The node `Prompt_1` points at the prompt's version 2
+  (`prompt/KWK4ZJRAWD:2`), between `FlowInputNode` and `FlowOutputNode`. The environment
+  `d6d9be18-d2cd-4249-bf55-4bd97abc9a33-dev` (`5er1gtql9ewbgw`) was created at 02:02:19, and its stack's
+  `CreateFlow` and `PrepareFlow` ran at 02:02:40 and 02:02:41 as the provisioning role. The flow is
+  `Bedrock-Flow-5er1gtql9ewbgw` (`Q9HHV1YRRX`), `Prepared`, under the project key; the save took about three
+  minutes. One run at 02:03:25: `Converse` as `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`,
+  admitted, and the answer came back in Portuguese.
+- **[Claude] The evaluation, refused.** *Build* → *Model evaluation*, `ml-demo-eval-haiku45`: Claude Haiku
+  4.5, *Question and answer*, Toxicity over `evaluation-dataset.jsonl` (2.88 KB), uploaded by the form, whose
+  dialog reads *"Once uploaded, you cannot delete the file"*. Accuracy and Robustness offer the built-in
+  datasets alone (`SUP-419`). The model list offers Nova Lite, Claude Haiku 4.5, Claude Opus 4.5 and Claude
+  Sonnet 4.5. *Inference configurations* holds Max tokens 500, Temperature 0.5, Top P 0.5 and Top K 50, and
+  a cleared Top P returns to 0.5. The submit created the environment `avhvbqn37ty7m8ml-demo-eval-haiku45`
+  (`6fl52xzq3yt768`, 02:07:10) and its stack (02:07:23, `CREATE_COMPLETE`, one output and no resource), and
+  put the file in `awsds-sandbox-smus-projects` under `…/avhvbqn37ty7m8/genAI/assets/evaluations/input/`. At
+  02:07:54 Bedrock's pre-flight `Converse`, as the project's service role, was refused with *"The model
+  returned the following errors: `temperature` and `top_p` cannot both be specified for this model. Please
+  use only one."*, and `CreateEvaluationJob`, as the project role, with the same reason. The portal read
+  *"An error occurred while creating the evaluation job: Unknown error. Potentially invalid input"*
+  (`SUP-418`). `list-evaluation-jobs` reads none, and the environment stays `ACTIVE`.
+- **[Claude] The names** the IDE gives these objects (`SUP-445`): the portal's name lives in the
+  environment's description, prompts and flows are named `Bedrock-<type>-<environment id>`, the knowledge
+  base `<project id>-<name>`, and the evaluation `<project id><name>`.
+- **[Claude] The key's statement for the guardrail**, written in `terraform-modules/sagemaker-prereqs/kms.tf`
+  (`51459ace`): Bedrock's `PermissionsForGuardrailsCreators`, with the principal narrowed to the provisioning
+  role, on the guardrail blueprint's switch. A plan of `sandbox/sagemaker` with the module read from the
+  working tree read `0 to add, 1 to change, 0 to destroy`, the key's policy gaining that statement alone. The
+  tag and the apply wait on the user.
+- **[Claude] `app-ml-dev`'s MLflow App** is not there yet: `list-mlflow-apps` listed `ml-demo-mlflow` alone at
+  about 02:25.
+
+## 2026-11-22 — Day 2's sitting B: 7.4's guardrail created after the key's second apply, and the evaluation submitted with Nova Lite
+
+- **[user] The authorization.** *"Autorizo os quatro"*, answering whether Claude should publish
+  `sagemaker-prereqs-v0.14.0`, apply `sandbox/sagemaker`, create the guardrail anew and redo the evaluation
+  with Nova Lite.
+- **[Claude] The tag and the apply.** `sagemaker-prereqs-v0.14.0` was pushed and read back from origin at
+  `b71f4d02`, and `sandbox/sagemaker` was pinned to it in `6f3a0fc5`. The saved plan read
+  `0 to add, 1 to change, 0 to destroy`, the key's policy gaining the guardrail statement alone. The other
+  sessions were told, then the plan was applied as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`): `PutKeyPolicy` at 02:39:01, `Apply complete! Resources: 0 added, 1 changed, 0
+  destroyed`. The re-plan read `No changes`. `staging/studio/` and `production/studio/` stay on `v0.11.0`.
+- **[Claude] The failed guardrail deleted** in the portal's two acts: its deployment in *Resource blueprints*
+  at 02:41:22, then its row in *My components* at 02:42:55. `get-environment` on `ajfy8315ryk3kg` reads
+  `ResourceNotFoundException`.
+- **[Claude] The guardrail.** *Create component* → *Guardrail*, `ml-demo-guardrail`, its description now
+  *"Stage 17 7.4: one denied topic, for the runbooks chat agent."*, with the denied topic *Investment advice*
+  and its two sample phrases. The environment `1c6faa73-f751-408c-890b-35fe5ada49cb-dev` (`6udalb5fp1qv0w`)
+  was created at 02:44:56. At 02:45:13 `CreateGuardrail` was admitted as the provisioning role, and in the
+  same second three `kms:CreateGrant` on the project key, each naming `bedrock.us-west-2.amazonaws.com` as
+  grantee and retiring principal: two bound to the encryption context `aws:bedrock:guardrail-id`
+  `razikgicppzy` (`Decrypt`, `Encrypt`, `GenerateDataKey`; `Decrypt`, `Encrypt`), one with no constraint
+  (`Decrypt`, `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant`, `DescribeKey`) (`SUP-417`). The
+  guardrail is `razikgicppzy`, `READY`, version `DRAFT`, under the project key, and is named after its
+  environment (`SUP-445`). Its content filters read `HIGH` both ways for violence, hate, sexual and insults,
+  and `NONE` for prompt attack and misconduct; it holds no word, PII or grounding policy.
+- **[Claude] The evaluation, submitted.** *Build* → *Model evaluations*, `ml-demo-eval-nova-lite`: Nova Lite,
+  *Question and answer*, Toxicity over `evaluation-dataset.jsonl`, Accuracy and Robustness removed. Nova
+  Lite's *Inference configurations* panel held Max tokens 500, Temperature 0.5 and Top P 0.5, with no Top K,
+  and was closed with no change. The upload dialog read *"The file name exists in S3. Uploading will replace
+  the existing file."*, and the same file was uploaded again. The model's application inference profile,
+  `w9u1ufr8ji2z`, was created at 02:51:21 by the IDE's model-management role, the environment
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite` (`dkkpe3opbn4m8g`) at 02:51:25, and at 02:52:08
+  `CreateEvaluationJob`, as the project role, was admitted: `evaluation-job/31epl34t77s3`, `InProgress`, run
+  as the project's service role with no customer key, its output under `…/genAI/assets/evaluations/output/`.
+  `get-evaluation-job` reads `inferenceParams`
+  `{"inferenceConfig":{"maxTokens":2048,"temperature":0,"topP":0,"stopSequences":[]},"additionalModelRequestFields":{}}`,
+  not the panel's values (`SUP-418`). The portal's list heads *Date created* with *(UTC-07:00)* and shows
+  21/11/2026 23:52:08, the laptop's UTC−3 time.
+- **[Claude] The project's application inference profiles**, all named `dzd-d8yrvx1ko7im6o avhvbqn37ty7m8`,
+  one per model: Claude Opus 4.5 (2026-10-30), Titan Text Embeddings V2 (01:02:39), Claude Haiku 4.5
+  (01:48:19) and Nova Lite (02:51:21). The domain's two, named `dzd-d8yrvx1ko7im6o`, hold Haiku 4.5 and Nova
+  Lite (2026-10-19, `SUP-187`).
+
+## 2026-11-22 — Day 2's sitting B: 7.4's evaluation read, and 7.4b's chat agent refused by Agents Classic
+
+- **[Claude] The evaluation's result.** `31epl34t77s3` read `Completed` at 03:02:11, ten minutes after its
+  create, with no failure message. Its one output file, under `…/evaluations/output/avhvbqn37ty7m8ml-demo-eval-nova-lite/31epl34t77s3/models/w9u1ufr8ji2z/taskTypes/QuestionAndAnswer/datasets/evaluation-dataset.jsonl/`,
+  holds 20 records, each with the prompt, the reference response, Nova Lite's answer and `Builtin.Toxicity`:
+  from 0.00035 to 0.00123, mean 0.00053, every answer `END_TURN`. The object is under the project key
+  (`aws:kms`, bucket key on), by the bucket's default. The Haiku 4.5 attempt's output prefix holds
+  `amazon-bedrock-evaluations-permission-check` alone, 0 bytes, written at 02:07:54.
+- **[Claude] The chat agent, built.** *Build* → *Chat agent*. The *Model* list offers Nova Lite, Claude Haiku
+  4.5, Claude Opus 4.5 and Claude Sonnet 4.5, the three Claude models marked *Cross-region*, each *"Supports
+  Guardrails, Data, Functions"* (verification xxv). Claude Haiku 4.5, the system prompt *"You answer questions
+  about this project's runbooks using only the documents in the knowledge base. If the documents do not
+  contain the answer, say that you do not know."*; *Inference parameters* read Temperature 1, Top P 0.5,
+  Maximum length 4096 and the stop sequences `</invoke>`, `</answer>` and `</error>`. *Data*: `ml-demo-runbooks`,
+  *Override default search* on, which selects *Hybrid search (semantic & text)*, and 5 source chunks.
+  *Guardrails*: `ml-demo-guardrail`. *Save* asked for no name, kept `Untitled App - cer31`, and wrote
+  `amazon-bedrock/builder/apps/chatApp/502a9c64-70fd-4dab-afea-a1a5a98146d4-definition.json` at 03:01:39,
+  creating no environment and no agent. The definition names the model `6vwrjnya013a8g:2`, a catalog listing
+  of Claude Haiku 4.5 whose asset has `us.anthropic.claude-haiku-4-5-20251001-v1:0` as its base, and holds
+  `temperature` 1, `topK` 250, `maxTokens` 4096, no `topP`, `ragSearchType` `HYBRID` and `ragNumberOfResults`
+  5 (`SUP-446`). The project's Haiku 4.5 profile, `ljl42zoh6e4v`, routes to `us-east-1`, `us-east-2` and
+  `us-west-2`.
+- **[Claude] The preview, refused.** *"When is using the Management account root justified?"*, sent three
+  times from 03:02 to 03:03:54, each answered *"Something went wrong."* under the banner *"Failed to run
+  application Amazon Bedrock encountered an error when invoking the Bedrock runtime API. Try again later."*.
+  A logging wrapper installed on the page's `fetch` read the call: `POST
+  bedrock-agent-runtime.us-west-2.amazonaws.com/agents/<session id>`, `InvokeInlineAgent`, answered 403 with
+  *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts without prior
+  service usage. To learn more visit
+  https://docs.aws.amazon.com/bedrock/latest/userguide/agents-classic-maintenance-mode.html."*. The other six
+  questions were not sent.
+- **[Claude] The deploy, refused.** *Deploy* with a new alias, `ml-demo-v1`. At 03:05:19 the portal created
+  the environment `502a9c64-70fd-4dab-afea-a1a5a98146d4-shared` (`b343orq3qka5n4`, blueprint
+  `AmazonBedrockChatAgent`), whose stack `DataZone-Env-b343orq3qka5n4` was created at 03:05:33. At 03:05:39
+  `CreateAgent`, as the provisioning role from `datazone.amazonaws.com`, was refused `AccessDenied` with no
+  error message; its request named the project's service role, the project key, the application inference
+  profile `ljl42zoh6e4v` and the guardrail `razikgicppzy` at `DRAFT`. No KMS call by the role or by Bedrock
+  falls between 03:05:30 and 03:08:30. The environment read `CREATE_FAILED` at 03:08:18, and the portal *"…
+  failed to deploy: Environment b343orq3qka5n4 failed to stabilize after create/update: 1: [Resource handler
+  returned message: "Access denied for operation 'AWS::Bedrock::Agent'." (… HandlerErrorCode:
+  AccessDenied)]"*. The IAM simulator reads `bedrock:CreateAgent` `allowed` for the provisioning role, by
+  `SageMakerStudioProjectProvisioningRolePolicy` (`v86`, statement `BRMng`) and the SCPs, with resource `*`
+  under the request's tags; with `agent/*` as the resource it reads `implicitDeny`, the action taking no
+  resource type. `list-agents` reads none. Verification xxxiv: the app is Agents Classic, `InvokeInlineAgent`
+  for the preview and `CreateAgent` for the deploy, and Agents Classic refuses this account.
+- **[Claude] What waits on the user**: 7.4b's fallback, a flow app over the knowledge base with the preview's
+  questions and the one *Share*, and the deletion of the failed chat agent's environment.
+
+## 2026-11-22 — Day 2's sitting B: 2.5 and 7.5 read by the instrument, and the flow's role without the boundary
+
+Written by Claude in the session the orchestrator started, with no act of the user's. The instrument's output
+and the trail's names are quoted verbatim except the account id, written `<Sandbox Account 1>`. Times UTC.
+
+- **[Claude] The run.** `./aws/sandbox-ml.py` as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`), its report generated at 03:25:56: exit 2, one check failed, `ML-8` (below).
+- **[Claude] 2.5, `ML-3`.** The three tagged jobs pass, *"the four settings, project role, key and tag"*,
+  each `Completed` on `ml.m5.xlarge`: `ml-demo-xgb-tagged-20261121-233934` (89 s billed, validation AUC
+  0.8209), `-20261121-235427` (84 s, 0.8209) and `-20261122-000754` (88 s, 0.8394). The four admitted
+  `CreateTrainingJob`, the untagged job's at 23:19:36 and the three tagged, pass as the project role, session
+  `SageMaker`, through `vpce-02feedaa4ad58acf4`, the SageMaker API endpoint, from the space's `10.20.54.175`.
+  `ml-demo-xgb-untagged-20261121-231933` reads `Stopped`, with no billed seconds. The five refusals of 2.3,
+  23:53:43 to 23:54:20 (`no-vpc`, `no-isolation`, `no-ice`, `no-volume-key` and `ceiling`), each read *"with
+  an explicit deny in a permissions boundary: …/awsds-sandbox-project-boundary"*; the refusal at 23:19:44
+  names `sagemaker:AddTags`, *"because no identity-based policy allows the sagemaker:AddTags action"*
+  (`SUP-408`). The trail's `BatchGetImage` events on `sagemaker-xgboost` are the infrastructure user's own
+  reads, the pre-flight's at 2026-11-21 19:15:34 and four at 00:09:04 to 00:09:08, with no `vpcEndpointId`;
+  no pull by a training job is in this account's trail, the repository being AWS's.
+- **[Claude] 7.5, `ML-8`.** The prompt `Bedrock-Prompt-dsffvybs9lppcg`, the flow `Bedrock-Flow-5er1gtql9ewbgw`,
+  the guardrail `1c6faa73-f751-408c-890b-35fe5ada49cb-dev` and the knowledge base
+  `avhvbqn37ty7m8-ml-demo-runbooks` each carry `AmazonDataZoneProject` `avhvbqn37ty7m8`; the knowledge base
+  reads `ACTIVE`, embeddings `p391nstyc81c`, store `S3_VECTORS`, role the project role. The evaluation job is
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite`, and no agent exists. The vector buckets are
+  `amazon-bedrock-ide-avhvbqn37ty7m8-46cr0woe7670gg` and the first attempt's `…-cie8747bea6mxc`. The trail's
+  creates, none with a `vpcEndpointId` (verification xviii): as the provisioning role, session
+  `AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>`, `CreateKnowledgeBase` at 01:33:19,
+  `CreateDataSource` at 01:33:29, the create's own `StartIngestionJob` at 01:33:30, `CreateGuardrail` at
+  01:56:24 (`AccessDenied`) and 02:45:13, `CreatePrompt` at 01:49:04, `CreateFlow` at 02:02:40 and
+  `CreateAgent` at 03:05:39 (`AccessDenied`); as the project role, in the person's session, the *Sync* click's
+  `StartIngestionJob` at 01:34:13 and `CreateEvaluationJob` at 02:07:54 (`ValidationException`) and 02:52:08.
+  No `CreateAgentAlias`.
+  The six projects' roles carry `EnableAmazonBedrockPermissions` `true` and no
+  `EnableAmazonBedrockIDEPermissions` (verification xvii). Every `AmazonBedrockServiceRole-*` and
+  `AmazonBedrockLambdaExecutionRole-*` carries `awsds-sandbox-project-boundary`, and one role fails:
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, *"no permissions boundary - an interactive principal outside
+  D13 (policies: SageMakerStudioBedrockFlowServiceRolePolicy)"*.
+- **[Claude] The flow's role, read** (`SUP-447`). The provisioning role created it from
+  `datazone.amazonaws.com` at 02:02:39 (`CreateRole`, `AttachRolePolicy`), 20 s after the flow's
+  environment and a second before `CreateFlow`; the request names no `permissionsBoundary`. It carries the
+  flow's five tags and `KmsKeyId`, the project key's id. Its trust admits `bedrock.amazonaws.com` under
+  `aws:SourceAccount` and `aws:SourceArn` `flow/*` of this account. Its one policy is AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` v9: `GetPrompt`, `Retrieve`, `ApplyGuardrail`, `InvokeAgent`,
+  `lambda:InvokeFunction` on `amazon-bedrock*` and `InvokeModel` on application inference profiles, each on
+  the project's tag; `InvokeModel` on a foundation model through an inference profile; `RetrieveAndGenerate`
+  on `*`; and the key its `KmsKeyId` tag names, through Bedrock, under each object's encryption context.
+  `RoleLastUsed` is empty: the flow's `executionRoleArn` is `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`.
+  The stack `DataZone-Env-5er1gtql9ewbgw` declares the role with no condition, so it is always created. Its
+  parameter `useAwsManagedPoliciesWithoutBoundary`, passed `true`, gives it the managed policy and no
+  boundary; `false` would give it inline policies under AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`. The flow takes the role only when `bedrockServiceRoleArn`
+  is empty, and the environment passed the project's service role. The `AmazonBedrockFlow` blueprint
+  configuration reads `environmentRolePermissionBoundary` `awsds-sandbox-project-boundary`, as the six other
+  Bedrock blueprints' do, and the template takes no parameter for it. The IAM simulator reads `iam:PassRole`
+  to `bedrock.amazonaws.com` `implicitDeny` for the project role, on this role and on the project's service
+  role. `awsds-sandbox-project-boundary` v3 denies SageMaker creates off their settings, direct S3 on Lake
+  Formation's prefixes and the lake data key outside S3; its instance-ceiling statement, written with
+  `NotAction`, matches only a request that carries instance types, so the boundary would deny no call the
+  role's policy grants.
+- **[Claude] What waits on the user**: the flow's role, which `ML-8` fails on every run while the flow
+  exists: accept it as an exception, delete the flow, whose stack holds the role, or attach the boundary by
+  hand. A second flow app, 7.4b's fallback, creates a second such role.
+
+## 2026-11-22 — Day 2's sitting B: 7.4b's fallback, a knowledge base node in `ml-demo-flow`
+
+- **[user] The authorization.** *"autorizo o plano B, editando o flow existente."*: `ml-demo-flow` edited to
+  carry a knowledge base node, rather than a new flow app, whose environment would create a second role with
+  no boundary (`SUP-447`).
+- **[Claude] The edit**, in the portal as Data Scientist User. *Build* → *Flow* → `ml-demo-flow`: the
+  builder's *Nodes* tab lists *Logic* (*Collector*, *Condition*, *Iterator*), *Orchestration* (*Agent*,
+  *Prompt*), *Data* (*Knowledge Base*, *S3 Retrieval*, *S3 Storage*) and *Other* (*Flow output*). The canvas
+  took the *Knowledge Base* node from a scripted HTML5 drag (`DragEvent`s carrying `application/reactflow`
+  `KnowledgeBaseNode`), and the edges from pointer drags. The node's form offers the knowledge base, a
+  response model (Nova Lite, Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5, Opus 4.5 preselected)
+  and a guardrail, with no search type and no result count, as AWS's page lists
+  (`add-kb-component-prompt-flow-app.html`, read 2026-11-22): `ml-demo-runbooks`, Claude Haiku 4.5 and
+  `ml-demo-guardrail`. The flow became *Flow input* → `KnowledgeBaseNode_1` (`retrievalQuery`) → `Prompt_1`
+  (`excerpt`, prompt `KWK4ZJRAWD` version 2) → *Flow output*.
+- **[Claude] *Save* does not deploy** (`SUP-448`). *Save* read *"Saved"* at about 04:21 and wrote the app's
+  definition, `amazon-bedrock/builder/apps/flowApp/<uuid>-definition.json`, to the project's bucket, with the
+  four nodes; `get-flow` still read the two-node definition prepared at 02:02:40.
+- **[Claude] Each test message deploys.** The first message's send ran a PUT of the asset
+  `genAI/assets/flows/<uuid>`, DataZone's `UpdateEnvironment` on `5er1gtql9ewbgw`, a PUT of the environment's
+  `definition.json`, and the update of the stack `DataZone-Env-5er1gtql9ewbgw` from 04:25:26 to 04:25:36,
+  whose `UpdateFlow` and `PrepareFlow` ran as the provisioning role from `datazone.amazonaws.com`. The flow
+  read `Prepared` with the four nodes at 04:25:31, and the browser sent `InvokeFlow` on the alias
+  `TSTALIASID` at 04:25:49. Each of the three later messages repeated the update with no edit between them:
+  the stack from 04:26:50 to 04:27:01, `BedrockFlow` its one resource updated; `UpdateFlow` and `PrepareFlow`
+  at 04:28:33 and 04:28:34, then at 04:30:29 and 04:30:30. A message took about 70 to 80 s from the send to
+  the answer. No role was created.
+- **[Claude] The answers**, to four questions in Portuguese:
+  - *"Em quais situações o uso do root da conta Management é justificado?"*: the three cases of
+    `break-glass.md`, Identity Center unavailable, a broken organization, and a restrictive policy that
+    denies what it should not.
+  - *"O que aconteceu com o buildbox e onde as imagens são construídas agora?"*: retired on 2026-10-12 at
+    Stage 7 step 6.5 after six releases, the images built by the build runner's pipeline
+    (`gitlab/awsds/dev-env/README.md`), the push by the runner's role through ECR's credential helper, as
+    `buildbox.md` says.
+  - *"Em qual porta o proxy Squid do hub escuta?"*: no answer; the prompt node called its excerpt *"uma
+    mensagem genérica de indisponibilidade"*. The port is in neither indexed document (`SUP-411`).
+  - *"Em quais ações da bolsa devo investir minhas economias para ter o maior retorno?"*: refused by the
+    guardrail at the input; the prompt node called its excerpt *"uma mensagem de erro genérica"* and asked
+    for a runbook excerpt.
+
+  The guardrail's blocked message and the knowledge base's no-answer text reach the user rewritten by the
+  prompt node, never verbatim. The node's output is `outputText` alone, so the flow's answers carry no
+  citation (verification xxv's citation half).
+- **[Claude] The guardrail's metrics**, `AWS/Bedrock/Guardrails`, `razikgicppzy` at `DRAFT`, per minute:
+  `Invocations` 2 at 04:25, 04:27 and 04:28 and 1 at 04:30; `InvocationsIntervened` 0, 0, 0 and 1, the 1
+  under `GuardrailPolicyType` `TopicPolicy` and `GuardrailContentSource` `Input`; `TopicPolicy` at `Output`
+  read 0 at 04:25, 04:27 and 04:28, with no datapoint at 04:30. An answered question is evaluated twice, its
+  input and its response, and a blocked input once.
+- **[Claude] The trail, per message** (`SUP-426`), read as the infrastructure user (`InfrastructureAccess`,
+  `awsds-infra-sandbox-1`); the second message's, 04:27:25 to 04:27:30: `GetInferenceProfile` as the
+  project's service role; `InvokeModel` on the embeddings profile `p391nstyc81c` as the project role, the
+  knowledge base's role; `Converse` on `ljl42zoh6e4v` as the service role, the node's generation; `GetPrompt`;
+  and the prompt node's `Converse` as the service role. Every event is invoked by `bedrock.amazonaws.com`.
+  The two knowledge base calls carry `vpcEndpointId` `vpce-0cf920938fc4d8fc6` and no `vpcEndpointAccountId`;
+  `describe-vpc-endpoints` answers *"The Vpc Endpoint Id 'vpce-0cf920938fc4d8fc6' does not exist"*
+  (`InvalidVpcEndpointId.NotFound`), the account's own `bedrock-runtime` endpoint being
+  `vpce-0081304ac7a7cbdd3` and its `bedrock-agent-runtime` `vpce-0ef6168e25e9adb32`. The other events carry
+  no `vpcEndpointId`. `lookup-events` holds no `InvokeFlow`, `Retrieve` or `RetrieveAndGenerate`.
+- **[Claude] No *Share* for a flow app.** *My apps* lists `ml-demo-flow` *"Not shared"*, with a delete icon
+  alone. AWS's share page describes chat agent apps alone, and the flow app pages name no share
+  (`app-share.html`, `build-flow.html`, read 2026-11-22). The authorized *Share* was not performed, and
+  verification xxiv's catalog half has no object to read.
+- **[Claude] A correction to this day's 7.4 entry**: the guardrail's form opens from *My components* →
+  *Create component* → *Guardrail*, not from *Build*.
+- **[Claude] What waits on the user**: nothing new. The flow keeps the project's service role as its
+  execution role, `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw` stands as before (`SUP-447`), and xxiv's
+  `Retrieve` from a space stays the user's.
+
+## 2026-11-22 — Day 2's sitting B: the closing reads and the lowering
+
+*Claude's hand through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure user with
+`InfrastructureAccess`), `catalog.py` also through `awsds-infra-data`, `awsds-infra-staging` and
+`awsds-infra-prod`; the lowering by the user's hand in a terminal of their own. The user's *"Não, fechar a
+sessão"* at 04:59 closed the sitting without 6d's remainder (6d's log). Times are UTC.*
+
+- **[Claude] `./aws/sandbox-ml.py`**, generated 05:03:58: exit 2, one check failed, `ML-8` on
+  `AmazonBedrockFlowServiceRole-5er1gtql9ewbgw`, *"no permissions boundary - an interactive principal
+  outside D13 (policies: SageMakerStudioBedrockFlowServiceRolePolicy)"* (`SUP-447`), as at 03:25:56; 46
+  checks pass and every call returned. The coordinating session's run at 05:34:11, after *Update project*
+  in every Sandbox project, read the same one failure (6d's log).
+- **[Claude] `./aws/catalog.py`**, generated 05:03:39: every check passed, every call returned.
+- **[Claude] A space no entry named**: CloudTrail records `CreateSpace` `new-jup-xlarge` at 00:12:15 and
+  `DeleteSpace` at 00:39:54 in `eighth-experimentation`'s blueprint domain, both from the browser as the
+  project role in the user's session; its JupyterLab app read `Deleted` at 05:36.
+- **[user] The lowering**: `make down ENV=sandbox`, after the reads, from 05:08:50 (`TerminateInstances`) to
+  05:15:28 (`DeleteFirewallRuleGroup`), read in the Sandbox trail by the coordinating session (6d's log).
+- **[Claude] `make status`** at 05:24:24: `sandbox/egress`, `sandbox/warehouse-compute`, `sandbox/probes` and
+  `staging/egress` down, no Studio app billing in the five environments; Production's `vpn`, `proxy`,
+  `egress`, `workloads-egress`, `tooling` and `runners` up for the coordinating session, *"estimated burn: USD
+  0.5475/h"*.
+- **[Claude] `make check`** at 05:27:42: *"check: OK"*.
+- **[Claude] What stands in Sandbox**: `jup` and `code` `InService` in the blueprint domain with every app
+  `Deleted` (05:36); pass 7's objects, which 7.6 keeps; the flow's own role, waiting on the user (`SUP-447`).
+
+## 2026-11-22 — Day 3's pre-flight, with nothing up
+
+*Claude, in the orchestrating session of `promotion.md` §N.9's day 2, after the day's lowering: read-only
+plans with `-input=false`, Terraform 1.17.2, from 06:26 to 06:32 UTC, and the stage file aligned with
+§N.9.5. Nothing was saved or applied.*
+
+- **[Claude] `sandbox/bedrock/`** (`awsds-infra-sandbox-1`), from `86748b34`, whose slice pull request #369
+  did not change: *"No changes."*; with `application_guardrail_required=true`, *"Plan: 0 to add, 1 to
+  change, 0 to destroy."*, `aws_iam_policy.bedrock_application` (10.4's reading 4); with
+  `account_guardrail_enabled=true`, *"Plan: 3 to add, 0 to change, 0 to destroy."*, the guardrail
+  `account`, its version and `awscc_bedrock_enforced_guardrail_configuration.account` (reading 6). The stage
+  file's 3 to add and 1 to change with both switches is their sum.
+- **[Claude] `sandbox/ml/`**: *"No changes."*
+- **[Claude] `sandbox/workflows/`**, from the merge of `origin/main` at `82edff32`: *"No changes."*;
+  `training_pair_enabled` defaults to `true` since #369, the pair applied on day 2.
+- **[Claude] The stage file**: day 3 raises `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`, since
+  verification xxiv's `Retrieve`, which day 2 left on the user's choice, rides day 3 after 6e 6.4's window
+  (`promotion.md` §N.9.5 step 4). Row 12 carries it, and day 3 bills about 0.28 USD an hour before the
+  spaces, as day 2 did since the VPN host's return.

@@ -390,6 +390,17 @@
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-mwaaserverless-workflow.html>,
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-sagemaker-mlflowapp.html>.
 
+- Terraform's `state pull`, `plan` and `apply` pages (read 2026-11-21, for the laptop's move to 1.17.2):
+  `state pull` converts the state to the running binary's version before it prints it, and the `plan` and
+  `apply` pages name no version for a saved plan file (`SUP-403`):
+  <https://developer.hashicorp.com/terraform/cli/commands/state/pull>,
+  <https://developer.hashicorp.com/terraform/cli/commands/plan>,
+  <https://developer.hashicorp.com/terraform/cli/commands/apply>.
+
+- `hashicorp/aws` 6.60.0's page for `aws_instance` (read 2026-11-22, in its source): `user_data` is
+  described with no size limit, while the provider refuses more than 16,384 bytes at plan (`SUP-407`):
+  <https://github.com/hashicorp/terraform-provider-aws/blob/v6.60.0/website/docs/r/instance.html.markdown>.
+
 ## Networking and access
 
 - WireGuard: <https://www.wireguard.com/>.
@@ -547,6 +558,25 @@
 
 - Update dnf on an Amazon Linux instance without internet access — AL2023's default `mirrorlist=` URL points into the regional repository bucket itself (`al2023-repos-<region>-de612dc2`, the S3 dualstack hostname), so the S3 gateway endpoint carries the whole package path; only a repo file referencing `cdn.amazonlinux.com` needs internet (Stage 3): <https://repost.aws/knowledge-center/ec2-al1-al2-update-yum-without-internet>.
 
+- Amazon Linux 2023's Squid, read 2026-11-21 for the proxy host's replacement (Stage 12 step 2.2): the
+  AL2023.12 package list as of 2023.12.20261021 has `squid` `6.13-1.amzn2023.0.6`, full support to
+  2029-06-30; release 2023.12.20261112's core updated packages list `squid-6.13-1.amzn2023.0.7`; the
+  2023.12.20261120 release, the new image's, lists none:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261112.html>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20261120.html>.
+
+- Amazon Linux 2023's memory floor, zram and update-motd, read 2026-11-22 for the hub hosts' sizes
+  (`SUP-405`, `SUP-406`): the system-requirements page gives 512 MB as the minimum, says a `dnf upgrade`
+  between some releases can need more, and turns zram swap on by default since AL2023.3 for instance types
+  under 800 MB, naming the nano sizes; the page on package updates names no update-motd; issue 441 on
+  AWS's AL2023 tracker (opened 2023-09-09, open) has `update-motd.service` refresh the message at a reboot
+  or once a day:
+  <https://docs.aws.amazon.com/linux/al2023/ug/system-requirements.html>,
+  <https://docs.aws.amazon.com/linux/al2023/ug/managing-repos-os-updates.html>,
+  <https://github.com/amazonlinux/amazon-linux-2023/issues/441>.
+
 - ICANN resolution 2024.07.29.06, reserving `.internal` from delegation in the root zone for private use — why D36 fixes the internal naming on that suffix: <https://www.icann.org/en/board-activities-and-meetings/materials/approved-resolutions-special-meeting-of-the-icann-board-29-07-2024-en>.
 
 - VPC endpoint private DNS (served by an AWS-managed zone, scoped to the endpoint's own VPC — the limit behind Stage 3 step 4's second note): <https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html>.
@@ -573,9 +603,23 @@
   <https://www.chromium.org/developers/design-documents/network-settings/>.
 
 - Squid's `acl` directive — for a request naming an IP address, `dstdomain` matches the name a reverse
-  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The rendered plane
-  lists carry no `-n`, which is the proxy half of `threat-model.md`'s `TM-01`:
-  <https://www.squid-cache.org/Doc/config/acl/>.
+  lookup of that address returns, unless the `-n` option is set (read 2026-10-17). The pages for Squid
+  6.9 and 5.10, read 2026-11-21, give `acl aclname dstdomain [-n] .foo.com ...`, the flag before the
+  names, which `render-squid.sh.tftpl` writes on the allow-list planes for `threat-model.md`'s `TM-01`:
+  <https://www.squid-cache.org/Doc/config/acl/>,
+  <https://www.squid-cache.org/Versions/v6/cfgman/acl.html>,
+  <https://www.squid-cache.org/Versions/v5/cfgman/acl.html>.
+
+- Amazon EC2 user data — *"User data is limited to 16 KB, in raw form, before it is base64-encoded"*
+  (read 2026-11-21); the proxy host's rendered user data is 15,148 bytes with `TM-01`'s `-n`
+  (`log-stage-11-dlp.md`, 2026-11-21):
+  <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html>.
+
+- Amazon Linux 2023 release notes — the 2023.12.20260917 release, the proxy host's image, names no Squid
+  update, and the AL2023.12 package list describes 2023.12.20261021 (read 2026-11-21, the Squid row not
+  reached), so the host's Squid version is unread:
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes-2023.12.20260917.md>,
+  <https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.12.html>.
 
 - Amazon EC2 instance hostname types — *"compute.amazonaws.com is the domain provided by AWS for
   IPv4-based public hostnames"* (the example `ec2-52-54-55-66.ap-southeast-2.compute.amazonaws.com`), and
@@ -601,6 +645,12 @@
 - SageMaker IAM condition keys (`sagemaker:VpcSubnets`, `NetworkIsolation`, `InstanceTypes`, `VolumeKmsKey`): <https://docs.aws.amazon.com/sagemaker/latest/dg/security_iam_service-with-iam.html>.
 
 - SageMaker `RetentionPolicy` for `DeleteDomain` (defaults to `Retain`): <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_RetentionPolicy.html>.
+
+- SageMaker `DescribeApp` and ListApps's `AppDetails`, read 2026-11-21 for `SUP-229`: DescribeApp's
+  `CreationTime` says an application restarted within 24 hours of its last shutdown is an update that keeps
+  its metadata; `AppDetails` gives only the creation time:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeApp.html>,
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_AppDetails.html>.
 
 - SageMaker Pipelines (a D7 option): <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines.html>.
 
@@ -740,6 +790,9 @@
   - Publishing lineage programmatically, the operations `PostLineageEvent`, `GetLineageEvent`,
     `ListLineageEvents`, `DeleteLineageEvent`, `QueryGraph`, `GetLineageNode` and `ListLineageNodeHistory`:
     <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/datazone-data-lineage-apis.html>.
+  - The authorization and API pages read again 2026-11-21, for Stage 20's 3.4 and xv: neither names who may
+    call `DeleteLineageEvent` or what it removes (`SUP-401`), nor a check of a posted event against the
+    dataset's owning project (`SUP-402`).
   - The graph in the portal: dataset, job and job-run nodes, column lineage *"when available in dataset
     nodes"*, a node's versions; in IAM mode a server-side *Query Graph mode* of 1 to 5 hops and a
     client-side *Event Timestamp mode*; a sample graph under *Try sample data lineage*:
@@ -1133,7 +1186,20 @@
   <https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html>. *Data protection* carries
   the deployment-account argument — *"Because the model providers don't have access to those accounts,
   they don't have access to Amazon Bedrock logs or to customer prompts and completions"*:
-  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html>. **Abuse detection
+  re-read 2026-10-11** for Stage 6e decision 17: the Claude models it names as retaining are still
+  Fable 5 and Fable 5.1 alone, so Opus, Sonnet and Haiku 5.5 are outside 7.5's deny.
+
+- **Amazon Bedrock model lifecycle**, the pages Stage 6e decision 17 is written from (read
+  2026-10-11). The page for models launched before 2026-09-07 carries the table with Claude Sonnet 4.5's
+  dates (legacy 2026-10-08, public extended access 2027-01-08, end of life 2027-04-08), the higher price
+  the provider sets during public extended access, and the rule that existing customers may lose
+  access to a Legacy model after 15 days of inactivity:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle-legacy.html>. The page for
+  later models replaces the extended-access phase with a per-model EOL floor on the model card:
+  <https://docs.aws.amazon.com/bedrock/latest/userguide/model-lifecycle.html>. `GetFoundationModel`
+  returns the same dates in `modelLifecycle` (`legacyTime`, `publicExtendedAccessTime`,
+  `endOfLifeTime`), which is what `./aws/bedrock-scope.py` `BS-8` reads.
 
 - **Amazon Bedrock: the endpoints, the logging and the CloudTrail shape** (read 2026-09-11). The
   PrivateLink page gives the interface endpoint service names — `com.amazonaws.<region>.bedrock` and
@@ -1148,7 +1214,9 @@
   content: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>. The
   model-access form's fields (`companyName`, `companyWebsite`, `intendedUsers`, `industryOption`,
   `otherIndustryOption`, `useCases`) are in the API reference:
-  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>.
+  <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_PutUseCaseForModelAccess.html>. The
+  CloudTrail page, read again 2026-11-22, says CloudTrail *"captures all API calls for Amazon Bedrock as
+  events"* and says nothing of a call Bedrock refuses (`SUP-427`).
 
 - **`ListInferenceProfiles`**, read 2026-10-19 for `aws/bedrock-usage.py`: `typeEquals` names
   `SYSTEM_DEFINED` and `APPLICATION` and states no default, and each summary's `models` carries one
@@ -1428,7 +1496,7 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/lake-formation-permissions-for-amazon-sagemaker-unified-studio.html>.
   DataZone's publication and grant errors and their fixes:
   <https://docs.aws.amazon.com/datazone/latest/userguide/troubleshooting-datazone.html>.
-- The managed blueprints' CloudFormation templates, read 2026-10-19 for Stage 18 decision 1: `get-environment-blueprint` returns `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that answers SigV4 only (a plain fetch returns `InvalidRequest`), read with `s3api get-object` as the infrastructure user in Data Governance: `v2/DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723.template.json` (159,043 bytes) and `v2/DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918.template.json` (245,988 bytes) in the bucket the alias `env-partner-blueprin-7y6few8bfipfncrikgx3ouh18fq66usw2b-s3alias` names.
+- The managed blueprints' CloudFormation templates, read 2026-10-19 for Stage 18 decision 1: `get-environment-blueprint` returns `provisioningProperties.cloudFormation.templateUrl`, an S3 access-point URL that answers SigV4 only (a plain fetch returns `InvalidRequest`), read with `s3api get-object` as the infrastructure user in Data Governance: `v2/DataZone-Amazon-SageMaker-ToolingLiteDefault-prod-20260723.template.json` (159,043 bytes) and `v2/DataZone-Amazon-SageMaker-ToolingDefault-prod-20260918.template.json` (245,988 bytes) in the bucket the alias `env-partner-blueprin-7y6few8bfipfncrikgx3ouh18fq66usw2b-s3alias` names. Read 2026-11-21 the same way as the infrastructure user in Sandbox, for [`SMUS.md`](SMUS.md) §Resource blueprints: `v2/DataZone-Amazon-SageMaker-S3Bucket-prod-20250923.template.json` (5,749 bytes).
 - Project membership in SageMaker Unified Studio, read 2026-10-20 for Stage 18 step 6.1 and its question iv:
   a member is a Contributor or an Owner, and a member's analytics runs on IAM session credentials the
   service generates for the project's context:
@@ -1437,6 +1505,12 @@
 - What makes an `ON_DEMAND` tool available in a project, read 2026-10-19 for Stage 17 1.5. Updating a project, an admin's blueprint change reaching a project through the owner's *Actions → Update project*: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/update-project.html>. The Generative AI application development profile, whose template enables seven Bedrock blueprints, `AmazonBedrockKnowledgeBase` among them: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/genai-application-development.html>. The DataZone calls on that path: `UpdateProject` (`projectProfileVersion`, `latest` alone) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_UpdateProject.html>, `CreateEnvironment` (`environmentConfigurationId`; `environmentBlueprintIdentifier` documented as V1-only, which the portal sends on this V2 domain without error) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateEnvironment.html>, `PutEnvironmentBlueprintConfiguration` (`enabledRegions` required, minimum 0 items) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_PutEnvironmentBlueprintConfiguration.html> and `ListEnvironmentBlueprintConfigurations` (no account filter) <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ListEnvironmentBlueprintConfigurations.html>.
 - The portal's JavaScript, read 2026-10-19 for Stage 17 1.5, downloaded from its public CDN and never run; each path changes with a portal release. The main bundle, whose MLflow entries resolve the blueprint from the domain account's configurations: <https://a.b.cdn.console.awsstatic.com/a/v1/WEM6FZF2DHQXD46KL5UJ4ENIRJAVORMDCSYVJVKZIIQ3VJQMLLXA/index.js>. The Bedrock module, which opens the Generative AI menu only with all seven Bedrock types in the profile: <https://a.b.cdn.console.awsstatic.com/a/v1/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/App-D6IrICgA.js>.
 - The knowledge base's promotion and the menu it opens, read 2026-10-19 for Stage 17 7.0a and 7.2. The key permissions a provisioned resource needs, one policy for the Tooling blueprint naming no knowledge-base, OpenSearch Serverless or S3 Vectors statement: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>. The console's two model roles, the provisioning role that creates the inference profile a project needs to reach a model: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/AmazonDataZoneBedrockModelManagementRole.html>; the consumption role a model needs in the playground: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/AmazonDataZoneBedrockFMConsumptionRole.html>. The DataZone console's bundle, downloaded from its public CDN and never run, whose *Set up generative AI* Submit writes an OpenSearch Serverless encryption policy over `collection/bedrock-ide-*`: `a.b.cdn.console.awsstatic.com/a/v1/TDTEDU4FYQYQUV2Q7YXPJZAE2IFRJHB6CPMAXB2DTWLNL6YLKQAQ/main.js`; the path changes with a console release.
+- The key a knowledge base's S3 Vectors store needs, read 2026-11-22 for Stage 17 7.4a after the index was refused (`SUP-410`). S3 Vectors' encryption page, whose key-policy example grants `indexing.s3vectors.amazonaws.com` `kms:Decrypt`, and which says a bucket's and an index's encryption cannot change after creation: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-data-encryption.html>. SMUS's key-permissions page, re-read: ten statements, none for S3 Vectors, a knowledge base or OpenSearch Serverless: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/sagemaker-unified-studio-provisioned-resources-key-permissions.html>. Bedrock's knowledge-base setup page, which names no key policy for an S3 Vectors store: <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-setup.html>.
+- The metadata a knowledge base's S3 Vectors index must leave non-filterable, read 2026-11-22 for Stage 17 7.4a after 18 of 20 documents failed (`SUP-411`). Bedrock's chunking page, which says to add `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` as non-filterable keys when the index is created and advises against hierarchical chunking on S3 Vectors: <https://docs.aws.amazon.com/bedrock/latest/userguide/kb-chunking.html>. The setup page's S3 Vectors tab says the same (cited above). S3 Vectors' limits page, each filterable string value up to 2 KB: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-limitations.html>. Its metadata-filtering page, non-filterable keys configured at the index's creation, and ENHANCED indexes in a bucket created on or after 2026-09-30: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-metadata-filtering.html>. Its page on Bedrock knowledge bases, the metadata limits a high token count with hierarchical chunking can exceed: <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-bedrock-kb.html>.
+- The key a guardrail's creator needs, read 2026-11-22 for Stage 17 7.4 after the IDE's guardrail was refused (`SUP-417`). Bedrock's guardrail encryption page, whose `PermissionsForGuardrailsCreators` grants `kms:Decrypt`, `kms:GenerateDataKey`, `kms:DescribeKey` and `kms:CreateGrant` with no condition, and for its users `kms:Decrypt`: <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-kms.html>. Its permissions page, re-read (cited below): <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html>.
+- What the Bedrock IDE's guardrail and evaluation forms offer, read 2026-11-22 for Stage 17 7.4 through a page-reading agent (`SUP-418`, `SUP-419`). SMUS's guardrail pages, *"A guardrail consists of the following policies"*, content filters (Hate, Insults, Sexual, Violence) and up to five denied topics, silent on word filters, sensitive information and contextual grounding, with blocked messaging for prompts and responses: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/guardrails.html>, and the component's create page in its Markdown form: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/creating-a-guardrail-component.md>. The evaluation pages, re-read (cited below): a custom dataset *"for each metric you select"*, `referenceResponse` required for question-and-answer prompts and for accuracy and robustness, and *"You can change Max tokens, temperature, and Top P inference parameters"*. The question-and-answer task page, which names a Cohere toxicity issue as its only model restriction: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/model-evaluation-tasks-question-answer.md>.
+- What the Bedrock IDE's flow app does on *Save* and on a test, and whether it shares, read 2026-11-22 for Stage 17 7.4b through a page-reading agent (`SUP-448`, `SUP-426`). SMUS's flow app pages, where *Save* saves the app and the run button tests it, and a knowledge base node takes a knowledge base, a response model and an optional guardrail: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-flows-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/build-flow.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/add-kb-component-prompt-flow-app.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/nodes.html>; its share page, for chat agent apps alone: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/app-share.html>. CloudTrail's record contents, where an event AWS originates through a service's VPC usually carries `AWS Internal` or the service name in `vpcEndpointId` and `vpcEndpointAccountId`: <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>; Bedrock's CloudTrail page, where `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events (`AWS::Bedrock::FlowAlias`, `AWS::Bedrock::KnowledgeBase`) and `InvokeModel` and `Converse` management events: <https://docs.aws.amazon.com/bedrock/latest/userguide/logging-using-cloudtrail.html>.
+- The tag a model package version takes, read 2026-11-22 for Stage 17 3.2 after a version naming `Tags` was refused (`SUP-409`). SageMaker's `CreateModelPackage` API reference, whose `Tags` parameter says a package created in a group uses the group's tags and *"you cannot supply a tag argument"* <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateModelPackage.html>.
 - How a model reaches a SageMaker Unified Studio project, read 2026-10-19 for Stage 17 decision 13. The two model roles' managed policies, in the reference and in the admin guide: <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonDataZoneBedrockModelConsumptionPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelManagementPolicy.html>, <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/security-iam-awsmanpol-AmazonDataZoneBedrockModelConsumptionPolicy.html>. Enabling models for projects and playgrounds in the *Amazon Bedrock models* tab, and the governance project an associated account's identity must join before it publishes models: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/amazon-bedrock.html>. The user guide's Bedrock page, where the administrator decides which models a user reaches: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/bedrock.html>. The foundation model required in each Region beside an inference profile, and `bedrock:InferenceProfileArn`: <https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-prereq.html>. AWS's post of 2025-07-09 narrowing the provisioning role to chosen models: <https://aws.amazon.com/blogs/machine-learning/configure-fine-grained-access-to-amazon-bedrock-models-using-amazon-sagemaker-unified-studio>. The portal's model handler, downloaded from its public CDN and never run, whose project subscribes to a model's listing on first use: <https://a.b.cdn.console.awsstatic.com/a/v1/RLDNULH5G2X4O5BRWMHN7HKFEWSA3P4EGBV33RMSSWWVVU6UT5HQ/assets/module-GY0Cw3hN.js>. The environment resource at the pinned `awscc` 1.98.0, with `environment_role_arn`: <https://raw.githubusercontent.com/hashicorp/terraform-provider-awscc/v1.98.0/docs/resources/datazone_environment.md>; the same provider's documentation tree, which holds no asset, listing or subscription resource: <https://github.com/hashicorp/terraform-provider-awscc/tree/v1.98.0/docs/resources>.
 
 - **SageMaker Unified Studio Git connections, cross-account Git, the release notes, and CodeConnections' GitLab self-managed host and connection sharing** — read 2026-10-25 for INT-13 (Stage 7 7.2), after the user read Production's host form listing its VPCs:
@@ -1501,6 +1575,33 @@
   What's New, the Workday integration and the console assistant's new name:
   <https://aws.amazon.com/about-aws/whats-new/2026/11/aws-analytics-workday-data-cloud/>,
   <https://aws.amazon.com/about-aws/whats-new/2026/11/q-developer-renamed-aws-assistant/>.
+- **SageMaker Unified Studio's resource blueprints** — read 2026-11-20 for
+  [`upstream-releases.md`](plan/upstream-releases.md) and [`SMUS.md`](SMUS.md) §Resource blueprints, after the
+  user saw a project's *Resource blueprints* page. The release note of 2026-11-20, and the 2026-11-17 entry on
+  asset ownership transfer: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>;
+  What's New of the same day, found through the directory API:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-sagemaker-adds-new-capabilities/>; the admin guide's
+  overview, the three controls and the two project kinds:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprints.html>; the
+  provisioning role, a blueprint's own before the account's, the project execution role last:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/resource-blueprint-provisioning-role.html>;
+  the grants, a designation and a domain unit, at most 20:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/grant-deploy-resource-blueprints.html>;
+  the *Default Project Profile* and `DISASSOCIATE`:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/remove-project-profile.html>; the
+  blueprints each project kind deploys:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/available-resource-blueprints.html>;
+  the console's *Authorization* tab and the *Manage Environments* requirement:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/authorization-for-blueprints.html>;
+  the exports a custom Tooling blueprint owes the managed ones:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/tooling-managed-compatibility.html>;
+  the *Manage environments* permission's actions:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/designation-permissions.html>; the user
+  guide's page, *Blueprint deployments* and *Deploy*:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/deploying-resources.html>. botocore
+  1.44.8's changelog entry, its PyPI upload time and its DataZone model, compared with 1.44.2's:
+  <https://github.com/boto/botocore/blob/develop/CHANGELOG.rst>, <https://pypi.org/pypi/botocore/1.44.8/json>,
+  <https://github.com/boto/botocore/blob/1.44.8/botocore/data/datazone/2018-05-10/service-2.json>.
 - Code spaces, and an environment's deployment record — the user-guide page that routes IAM and Identity Center domains to their own code-spaces pages, and the DataZone API's `GetEnvironment` and `EnvironmentDeploymentDetails`, which define `VALIDATION_FAILED`, `FAILED_VALIDATION` and the `failureReason` an environment carries (6d 2.6 item 3, the `[]` read 2026-10-30): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/ide-spaces.html>, <https://docs.aws.amazon.com/datazone/latest/APIReference/API_GetEnvironment.html> and <https://docs.aws.amazon.com/datazone/latest/APIReference/API_EnvironmentDeploymentDetails.html>.
 - **RStudio on SageMaker AI, the pages 6d 2.6 item 5 rests on** — read 2026-10-31 before the user's licence and
   policy acts. The licence, granted in `us-east-1` and accepted in the domain's Region after the console's
@@ -1694,6 +1795,44 @@
     inside the `3.0-5` image was not read:
     <https://raw.githubusercontent.com/aws/sagemaker-xgboost-container/master/src/sagemaker_xgboost_container/algorithm_mode/serve_utils.py>.
 
+- **MLflow beside the portal's graph tools (read 2026-11-21, for
+  [`SMUS-GRAPH-TOOLS.md`](SMUS-GRAPH-TOOLS.md)).** Through page-reading agents, in the pages' Markdown form.
+  - The ML pipelines visual editor's MLflow integration: *Integration → MLflow* on the toolbar picks a
+    tracking server or an app and an experiment for the pipeline's metrics, *Update app and experiment*
+    overrides both for one execution, and a default MLflow application is created when the editor is
+    entered. The page names no Studio, no domain type and no writer of the run:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/build-and-manage-steps-integration.html>.
+  - The automatic registration of an MLflow model in the SageMaker Model Registry, an opt-in sync turned on
+    with `UpdateMlflowApp` or `UpdateMlflowTrackingServer`: `mlflow.register_model()` creates a model
+    package group named `<registered model>-<suffix>`, the suffix the first six characters of a SHA-256 of
+    the ARN's last segment, and a version in it, whose approval is a separate SageMaker call:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-model-registration.html>.
+  - Logging through the MLflow SDK with the server's ARN as the tracking URI, the page silent on where the
+    code runs: <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow-track-experiments-log-metrics.html>.
+    The overview, re-read, names no default app for an account or a domain:
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/mlflow.html>.
+  - `CreateTrainingJob`'s `MlflowConfig`, an MLflow resource's ARN, an experiment and a run name, with no
+    sentence on who writes the run or on network isolation:
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateTrainingJob.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_MlflowConfig.html>.
+  - The user guide's MLflow pages, re-read: the UI opens on experiments, models and traces; one page creates
+    an app from *Compute → MLflow* and the other connects one by its ARN; none joins MLflow to ML
+    pipelines, workflows, Visual ETL or lineage, and the release notes hold no MLflow entry:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/use-mlflow-experiments.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-experiments.xml.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/sagemaker-iam-based-domains.html>,
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
+  - MLflow's tracking pages: a run records one execution of code, an experiment groups runs and models, the
+    UI lists, searches and compares runs and charts their metrics, and a child run carries
+    `mlflow.parentRunId`: <https://mlflow.org/docs/latest/ml/tracking/>,
+    <https://mlflow.org/docs/latest/ml/tracking/tracking-api/>. The trace view, a span tree with each span's
+    latency on a timeline and the run a trace was logged in:
+    <https://mlflow.org/docs/latest/genai/tracing/observe-with-traces/ui>. The 3.16.0 highlights, a rebuilt
+    trace explorer, span links and trace views the assistant builds: <https://mlflow.org/releases/3.16.0/>.
+    Tried for whether MLflow 3 removed MLflow Recipes, and returned no text:
+    <https://mlflow.org/docs/latest/genai/mlflow-3/breaking-changes/>,
+    <https://github.com/mlflow/mlflow/releases/tag/v3.0.0>.
+
 - **Amazon Bedrock for an application's model call: Agents Classic, a guardrail enforced in IAM and at
   the account, inference profiles and the models of `us-west-2` (read 2026-11-16 and 2026-11-17, for
   [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) pass 10 and its decisions 22 to 27).**
@@ -1852,6 +1991,57 @@
     USD on the usage types that end in `-v2`, and no row for a runtime that exists with no session
     ([`PRICING.md`](PRICING.md)):
     <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>.
+- **Amazon Bedrock AgentCore's web search and the AWS Agent Registry (read 2026-11-22, for `TM-28` and
+  `SUP-176`).** Each page in its HTML form, through a page-reading agent.
+  - The administrator guide's document history, its first 39,900 of 89,272 characters received verbatim:
+    entries of 2026-11-13 for `SageMakerStudioProjectRoleMachineLearningPolicy` (the API key credential
+    provider, the token vault, the web search tool, the Agent Registry and its service-linked role, KMS
+    through Identity Center, `datazone:UpdateAssetOwner`) and `SageMakerStudioProjectUserRolePolicy`, and of
+    2026-11-14 for the four execution policies of an IAM-mode domain; no entry after 2026-11-14:
+    <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/doc-history.html>.
+  - The Web Search API, generally available 2026-11-10: `InvokeWebSearch` returns ranked results with text
+    extracts from an Amazon-operated web index, filtered by domain and publication time. The guide gives the
+    resource `arn:aws:bedrock-agentcore:<Region>:aws:tool/web-search.v1`, IAM authorization alone, the data
+    plane endpoint and PrivateLink through `com.amazonaws.<region>.bedrock-agentcore`, `us-west-2` among its
+    Regions, and CloudTrail data events, off by default, that log `webSearchId` and `maxResults` and not the
+    query; no page states a retention or names another provider:
+    <https://aws.amazon.com/about-aws/whats-new/2026/11/amazon-bedrock-agentcore-web-search-api/>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-get-started.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-privatelink.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/web-search-api-cloudtrail.html>.
+  - The AWS Agent Registry: a record's type (MCP, Agent, Skills, Custom, Web bot), a description of up to
+    4,096 characters, a descriptor, a source URL and a skill package of up to 5 MiB. Search returns approved
+    records alone and is authorized per registry, so a record-level deny does not reach it.
+    `SubmitRegistryRecordForApproval` moves a record to `PENDING_APPROVAL`, or approves it where the registry
+    auto-approves, and `UpdateRegistryRecordStatus` approves, rejects and deprecates. The owner shares a
+    registry through AWS RAM, with accounts outside the organization by invitation, under four managed
+    permissions. The pages date the end of the preview `bedrock-agentcore` namespace's support 2026-10-30,
+    log control-plane calls as management events, and give no Region list:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-key-capabilities.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-create-manage-records.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-cross-account-sharing.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/registry-iam-permissions.html>.
+  - The rates, read with no credential ([`PRICING.md`](PRICING.md)): the price list's index, which names the
+    service code `awsagentregistry`; AgentCore's `us-west-2` offer file, version `20261120191134`, with the
+    web search tool's rows; the Agent Registry's region index and `us-west-2` offer file, version
+    `20261106194856`:
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonBedrockAgentCore/current/us-west-2/index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/region_index.json>,
+    <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/awsagentregistry/current/us-west-2/index.json>.
+- **AgentCore's built-in tools and the AWS Agent Registry in AWS's service reference (read 2026-11-22, for
+  `TM-28`'s controls and `SUP-451`).** The JSON form, read with no credential, both files at version `v1.5`.
+  AgentCore's 269 actions: `Start`, `Get` and `Stop` of `CodeInterpreterSession` and `BrowserSession`, and
+  `InvokeCodeInterpreter`, on AWS's tool and the account's own (`code-interpreter` and
+  `code-interpreter-custom`, `browser` and `browser-custom`); `ConnectBrowserAutomationStream` and
+  `ConnectBrowserLiveViewStream` with no resource type; `InvokeWebSearch` on
+  `arn:${Partition}:bedrock-agentcore:${Region}:${Account}:tool/web-search.v1`, and `InvokeWebAnswer` on
+  `…:aws:tool/web-answer.v1`; `CreateAgentRuntime` keyed on `bedrock-agentcore:subnets` and
+  `bedrock-agentcore:securityGroups`. The Agent Registry's 32 actions on three resource types, `publisher`
+  with no Region:
+  <https://servicereference.us-east-1.amazonaws.com/v1/bedrock-agentcore/bedrock-agentcore.json>,
+  <https://servicereference.us-east-1.amazonaws.com/v1/agent-registry/agent-registry.json>.
 - SageMaker Unified Studio's standard path read against the plan (read 2026-11-17, for 6d step 4.7 and
   decision 17, `TM-34`, `EXC-11` and Stage 19 decision 15). A notebook run in the background, on a schedule
   and as a workflow's *Notebook Operator* and *Notebook Sensor*:
@@ -2297,6 +2487,8 @@
 
 - Querying Apache Iceberg tables with Athena: <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg.html>.
 
+- Renaming an Iceberg table with Athena, and managing Iceberg tables (read 2026-11-21, for Stage 20 2.5's table swap): neither page names a permission or says how a rename is carried out, which the trail shows as a create and a delete after Glue's Iceberg REST endpoint refuses `renameTable` (`SUP-400`): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-alter-table-rename.html> and <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-managing-tables.html>. Glue's Iceberg REST pages, read again the same day, the connection page listing the endpoint's operations without `RenameTable`: <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html> and <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html>.
+
 - Iceberg table maintenance with Athena (`OPTIMIZE`, `VACUUM` — compaction and snapshot expiration): <https://docs.aws.amazon.com/athena/latest/ug/querying-iceberg-data-optimization.html>.
 
 - Amazon S3 Tables (managed Iceberg with automatic maintenance — the AWS-native alternative to hand-rolled Iceberg buckets): <https://aws.amazon.com/s3/features/tables/>.
@@ -2313,7 +2505,15 @@
 
 - Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
+- Lake Formation and CloudTrail (read 2026-11-22, for `SUP-416`). The vended session's name, `AWSLF-<version>-<engine code>-<account id>-<suffix>` with `AT` for Athena and the account that requested the credentials, and the consumer's opt-in that gives the owner the principal's ARN: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-logging.html>. The service's CloudTrail page, whose `GetDataAccess` examples carry no audit context: <https://docs.aws.amazon.com/lake-formation/latest/dg/logging-using-cloudtrail.html>. The underlying-data page, which does not mention KMS: <https://docs.aws.amazon.com/lake-formation/latest/dg/access-control-underlying-data.html>.
+
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
+
+- The actions, resources and condition keys of AWS Lake Formation, the machine-readable copy (read
+  2026-11-22, for [Stage 6f](plan/stages/stage-06f-data-governance.md) 11.12's residue): no resource type,
+  one condition key (`lakeformation:EnabledOnlyForMetaDataAccess`), and `DeregisterResource`,
+  `RegisterResource` and `UpdateResource` with neither, so an SCP carve-out on deregistration can name a
+  principal and never a location: <https://servicereference.us-east-1.amazonaws.com/v1/lakeformation/lakeformation.json>.
 
 - Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
 
@@ -2553,6 +2753,26 @@
   <https://aws.amazon.com/sagemaker/lakehouse/pricing/>. S3 Metadata's object metadata in *"read-only, fully
   managed Apache Iceberg tables"*:
   <https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html>.
+- **Glue's data quality monitoring of a catalog or a database, SageMaker Unified Studio's *Data profile*** —
+  read 2026-11-21 for [`upstream-releases.md`](plan/upstream-releases.md) and [`PRICING.md`](PRICING.md) §5,
+  after the user found the *Data profile* menu on a database. The guide's page and the pages on getting
+  started, authorization, troubleshooting, the API, encryption and the document history:
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-getting-started.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-authorization.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-catalog-monitoring-troubleshooting.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-data-quality-api.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/data-quality-encryption.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/doc-history.html>; SageMaker Unified Studio's release notes and
+  its profiling pages: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-catalogs-databases.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/dq-profile-schedule.html>; What's New:
+  <https://aws.amazon.com/about-aws/whats-new/2026/11/glue-catalog-data-quality-monitoring/>; the price, the
+  pricing page and the `us-west-2` offer file: <https://aws.amazon.com/glue/pricing/>,
+  <https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AWSGlue/current/us-west-2/index.json>; the project
+  role's managed policy, Sid `GlueDQVetl`:
+  <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SageMakerStudioProjectUserRolePolicy.html>;
+  botocore's changelog: <https://raw.githubusercontent.com/boto/botocore/develop/CHANGELOG.rst>.
 
 ## Containers, CI/CD and orchestration
 
@@ -2581,6 +2801,17 @@
   <https://docs.aws.amazon.com/cli/latest/reference/ecr/describe-images.html>. Its waiter polls every
   5 s and exits 255 after 60 checks, shorter than the 442 s one `dev-env` scan took:
   <https://docs.aws.amazon.com/cli/latest/reference/ecr/wait/image-scan-complete.html>.
+
+- Amazon ECR basic scanning, its troubleshooting, the `ImageScanStatus` and `DescribeImageScanFindings`
+  references and the service quotas (read 2026-11-22, R1, for `SUP-437`): none names a maximum number of
+  vulnerabilities, a scan failing on one, or *"exceeds the maximum supported with Basic Scanning"*; basic
+  scanning *"uses AWS native technology"*; the quotas are 100,000 basic scans per registry per 24 hours and
+  one scan per image per 24 hours; `ImageScanStatus` lists `FAILED` and `LIMIT_EXCEEDED` without describing
+  either: <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-basic.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning-troubleshooting.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_ImageScanStatus.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_DescribeImageScanFindings.html>,
+  <https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html>.
 
 - The GitHub Actions the offline gates use (Stage 8 step 6.2, read 2026-10-12: each release's date and
   commit from the GitHub API, each `action.yml`'s inputs at that commit):
@@ -3043,7 +3274,7 @@
   - *The Python→YAML converter* — `python-to-yaml-dag-converter-mwaa-serverless` (dag-factory 1.0 target; AWS-provider operators only; no dynamic task mapping): <https://github.com/awslabs/python-to-yaml-dag-converter-mwaa-serverless>.
   - *Serverless workflows in SageMaker Unified Studio* — and the two-way sync ("create workflows in either platform and access them from both"): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-workflows.html> and <https://docs.aws.amazon.com/mwaa/latest/mwaa-serverless-userguide/workflows.html>.
   - *The OnDemand Workflows blueprint* — the provisioned-MWAA flavour of the Studio's Workflows tool, refused at Stage 10 step 0.4: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/adminguide/modify-on-demand-workflows-blueprint.html>.
-  - *Serverless visual workflows* (read 2026-10-10) — the portal's editor offers `Python Operator` and `Bash Operator` under *General Purpose*; their files are uploaded in *Settings → Storage → Python/Bash Operator Files*, zipped, stored in an "operator files S3 location" and referenced from the definition; a task's return value is read downstream as `{{<task>.output}}`; "over 80 tasks": <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>. **Re-read 2026-10-11**: one uploaded file is stored as it is and several are zipped into one archive; only `.py`, `.sh` and `.zip` are accepted, the archive under 250 MB; no folder or existing S3 path is offered as a source; the *Python Callable* is a *File* and a *Function*, with *Op arguments* and *Op kwargs*; its dependency recipe, `pip install --target ./package`, carries no platform flag.
+  - *Serverless visual workflows* (read 2026-10-10) — the portal's editor offers `Python Operator` and `Bash Operator` under *General Purpose*; their files are uploaded in *Settings → Storage → Python/Bash Operator Files*, zipped, stored in an "operator files S3 location" and referenced from the definition; a task's return value is read downstream as `{{<task>.output}}`; "over 80 tasks": <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/serverless-visual-workflows.html>. **Re-read 2026-10-11**: one uploaded file is stored as it is and several are zipped into one archive; only `.py`, `.sh` and `.zip` are accepted, the archive under 250 MB; no folder or existing S3 path is offered as a source; the *Python Callable* is a *File* and a *Function*, with *Op arguments* and *Op kwargs*; its dependency recipe, `pip install --target ./package`, carries no platform flag. **Re-read 2026-11-21**: its section *Import SageMaker Pipelines*, converting a pipeline in the account into a workflow once, in IAM domains alone (`docs/SMUS.md`, the workflow surface); the user guide's release notes date it 2026-06-04: <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
   - *A serverless visual workflow, worked* — the portal's `S3 Key Sensor` task on a file under the project's `shared/` storage, then a Glue job and a notebook task, with the trigger left on *Manual only*: <https://aws.amazon.com/blogs/big-data/orchestrating-data-processing-tasks-with-a-serverless-visual-workflow-in-amazon-sagemaker-unified-studio/>.
   - *SageMaker network isolation* (read 2026-10-10) — an isolated container makes no outbound call, S3 included, and receives no AWS credentials; SageMaker downloads inputs and uploads outputs with the execution role, through the job's subnet when a VPC is set. The page names training jobs and models; the processing API carries the same `EnableNetworkIsolation` field: <https://docs.aws.amazon.com/sagemaker/latest/dg/mkt-algo-model-internet-free.html>.
   - *Processing inputs and outputs* (read 2026-10-10) — a `ProcessingInput` downloads an S3 URI into a container path and a `ProcessingOutput` uploads a container path to an S3 URI; both container paths must begin with `/opt/ml/processing/`, the rest of the name is the caller's, and symlinks are not followed on upload: <https://docs.aws.amazon.com/sagemaker/latest/dg/byoc-input-and-output.html>.
@@ -3592,6 +3823,12 @@
   CloudTrail):
   <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events-cli.html>,
   <https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_LookupAttribute.html>.
+
+- CloudTrail record contents (read 2026-11-22, Stage 6e decision 13): `vpcEndpointId` since 1.04 and
+  `vpcEndpointAccountId`, the endpoint owner's account, since 1.09, both optional; for events AWS originates
+  through a service's VPC the page gives `AWS Internal` or the service name, and the current version is
+  1.11 (`AWS_SUPPLEMENT.md` `SUP-426`):
+  <https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html>.
 
 - A security write-up on S3 VPC endpoint policies as an oracle for a bucket's account — it reads
   `VpceAccessDenied` network activity events in the requester's trail, from an S3 endpoint that "works
@@ -4188,6 +4425,7 @@
     - *AWS Systems Manager endpoints and quotas* — the per-Region list the SageMaker guide points the laptop at (`ssm`, `ssmmessages`, `ec2messages`, each with its `amazonaws.com` and, for `ssm`, an `api.aws` spelling): <https://docs.aws.amazon.com/general/latest/gr/ssm.html>.
     - *Attributes for access control* (IAM Identity Center) — the mechanism decision due 4's `IDC_UserName` rests on: attributes selected on the instance's *Settings → Attributes for access control* page (API `CreateInstanceAccessControlAttributeConfiguration`) arrive in the account as session tags, readable as `aws:PrincipalTag/<key>` in every IAM policy type; with the Identity Center directory as the source, the values come from the user's own attributes: <https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html> and <https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-abac.html>.
     - *`session-manager-plugin`, `websocketutil.go`* — the plugin dials with gorilla's `websocket.DefaultDialer`, whose `Proxy` is `http.ProxyFromEnvironment`: the data channel honours `HTTPS_PROXY` if the variable reaches the process, which is 7.5's measurement rather than a documented claim: <https://github.com/aws/session-manager-plugin/blob/mainline/src/websocketutil/websocketutil.go>.
+  - The pages read again on 2026-11-21, for 6d 7.6 and the Toolkit's listing: *Local IDE support*, *Set up Remote IDE* and *Connect your Remote IDE*. None states that `StartSession` on a Unified Studio space refuses every client but the AWS Toolkit and the web IDEs (`SUP-397`), which domain the Toolkit lists spaces from (`SUP-398`), or the deep link's browser refresh and its 40-second limit (`SUP-399`).
 
 - Workflows in SageMaker Unified Studio — the Workflows tool is Amazon MWAA, in both a *serverless* and a *provisioned* form, and existing MWAA environments can be connected to a project. It confirms D7/D28: the `CLAUDE.md` "workflows" feature and Stage 10's orchestration comparison are the same surface (`docs/plan/open-questions.md` item 15): <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/workflow-orchestration.html>.
 

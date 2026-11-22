@@ -2523,3 +2523,103 @@ as the infrastructure user, permission set `InfrastructureAccess`, through `awsd
   before the deliverables, with every row steps 5 and 6 owe: the editor's first session, 5.2, 5.2a's owed
   half, 5.3, 5.4, 5.1, the tag on, 5.2b, the tag off unless it stands, 0.4's portal half and 6.4.
   §N.6 item 9 names 5.1, 5.2b and the editor alone.
+
+## 2026-11-20 — 5.2b's network door read in the code
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). No AWS call: `terraform-live/sandbox/warehouse/` read.*
+
+- **[Claude] The door**: `aws_vpc_security_group_ingress_rule.project_5439` (`security-group.tf`) is
+  created per entry of `var.projects`, whose default holds `eighth-experimentation` alone, and is the slice's
+  only ingress rule. The wide tag (`all_projects_tag_enabled`) writes `for-use-with-all-datazone-projects=true`
+  on the namespace and the workgroup and lets `projects` take a second entry; it opens no port. So
+  `test-experimentation`'s notebook, 5.2b's second project, opens no TCP connection to 5439 while that project
+  is out of `projects`, and 5.2b as written would read the network's timeout (Lesson 42). The user's choice,
+  in the waiting list's decision 8 row and `promotion.md` §N.12.4: `test-experimentation` in `projects`
+  within the wide tag's applies of the sitting's steps 5 and 9, or 5.2b re-specified.
+
+## 2026-11-22 — decision 8 (a)'s window taken as standing and 6.4 as keep; the standing change written and planned, not applied
+
+*Claude, in a session the orchestrating session started for Stage 6h, in a worktree of its own, on the
+laptop with the environment up for other stages and the Sandbox warehouse's compute down. The
+infrastructure user, permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+Sandbox Account 1). Reads and plans only, no apply and no AWS write. Times are UTC.*
+
+- **[Claude] The reads before the question**, 2026-11-22 before 02:30: `describe-security-groups` named
+  `test-experimentation`'s group `datazone-4gqfau9xuo6e4w-dev`, in the workgroup's VPC, beside
+  `datazone-avhvbqn37ty7m8-dev`; `iam get-role` read `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw` under
+  `awsds-sandbox-project-boundary`; `datazone list-projects` paired `4gqfau9xuo6e4w` with
+  `test-experimentation`. In the code: `./aws/warehouse.py` reads the authored map from
+  `sandbox/warehouse/variables.tf`, never from the state, so a map passed by `-var-file` reads `WH-7` fail;
+  `.amazonaws.com` is on the proxy's Sandbox plane (`production/networking/hub-anchors.tf`), so a space
+  reaches the Data API with no endpoint and without the `5439` rule.
+- **[Claude] The options presented**: per sitting with `test-experimentation` in `projects` for the
+  window (recommended), per sitting with 5.2b rewritten for the Data API, or standing. The per-sitting
+  recommendation as the waiting list wrote it, the project out of the map and 5.2b from a notebook, was
+  shown not to run: the notebook has no `5439` rule (the entry of 2026-11-20).
+- **[user] Decision 8 (a)'s window**, in this session's chat, after asking for more context: *"Peço a
+  solução C. Permanente. Um commit põe test-experimentation no mapa e deixa a tag ligada por padrão. Eu
+  escrevo o código e rodo o plan, sem apply."*
+- **[user] 6.4**, the same message: *"Pode manter o lab na 6.4."*
+- **[Claude] The code**: `sandbox/warehouse/variables.tf`'s `projects` default gains
+  `"4gqfau9xuo6e4w"` (quoted: the key begins with a digit), its role and group as read above, and
+  `all_projects_tag_enabled` defaults to `true`. The comment beside the validation now says the access role
+  gates the Data page, the `5439` rule the notebook, and the schema `GRANT` alone the Data API.
+- **[Claude] The plans** of `sandbox/warehouse/` from the branch, Terraform 1.17.2, `-input=false`, saved
+  to a scratch file and not applied:
+
+  | UTC | Variables | Plan |
+  |---|---|---|
+  | 02:30:27 | `all_projects_tag_enabled=true`, `data_transfer_role_enabled=false` | *"Plan: 7 to add, 2 to change, 0 to destroy."* |
+  | 02:31:29 | none, the new defaults | *"Plan: 7 to add, 2 to change, 0 to destroy."* |
+  | 02:31:42 | `all_projects_tag_enabled=false` | *"Error: Invalid value for variable"* on `variable "projects"` |
+  | 02:31:53 | both `true` | *"Plan: 9 to add, 2 to change, 0 to destroy."* |
+
+  The seven adds are `test-experimentation`'s: `aws_iam_policy.project_warehouse`, `project_access_portal`,
+  `aws_iam_role.project_access`, the three attachments and `aws_vpc_security_group_ingress_rule.project_5439`.
+  The two changes are `aws_redshiftserverless_namespace.this`, its tags losing `AmazonDataZoneProject` and
+  gaining `for-use-with-all-datazone-projects = "true"`, and `aws_iam_policy.project_warehouse["avhvbqn37ty7m8"]`,
+  whose document's data source is read during apply *"(depends on a resource or a module with changes
+  pending)"*: it references `aws_iam_role.project_access`, which gains an instance (`SUP-356`). The outputs
+  `all_projects_tag` (create), `projects` and `project_access_role_arns` (update) change with them.
+- **[Claude] The instrument** from the branch, `./aws/warehouse.py awsds-infra-sandbox-1`, 02:32:22 to
+  02:32:42, exit 2, no call failed: `WH-7` fail, *"the map holds 2 projects and neither object wears
+  for-use-with-all-datazone-projects"*; `WH-11` fail, `test-experimentation`'s role *"is missing
+  awsds-sandbox-warehouse-project-4gqfau9xuo6e4w"*; `WH-9` a note, that project holding no connection. Both
+  fails are the change's state before its apply, and they stand from the merge to the warehouse sitting's
+  step 7 (`AWS_STATE.md` §C).
+- **[Claude] The records**: the stage file's `Status`, decision 8 (the doors' gates restated, the window
+  taken), 6.4, and the warehouse sitting's block (step 7 the standing apply, step 9 5.1's after half from
+  `app-dbt-dev`, step 11 nothing); `waiting-on-the-user.md`, `promotion.md` §N.10 and §N.12, the runbook,
+  `docs/SMUS.md`, `docs/NETWORK.md`, `docs/AWS_STATE.md` and the slice's README.
+- **[Claude] The pull request**: [#363](https://github.com/felipenoris/AWS-DataScience/pull/363), the branch
+  synced with `origin/main` at `1980abb2` by merge before it opened; `terraform fmt -check` clean, `make
+  check` *"check: OK"*, every pre-commit hook passed or skipped, `./scripts/check-aws-supplement.py` OK on
+  the synced tree.
+
+## 2026-11-22 — pull request #363 merged, and the records it left stale
+
+*Claude, in a session the orchestrating session started to write the rows of the sessions that finished
+on 2026-11-22, in a worktree of its own. No AWS call: `git` and `gh` reads of the repository. Times are
+UTC.*
+
+- **[user] The merge** of [pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363),
+  2026-11-22 at 03:24:00, squashed as `5771d272` on `main`.
+- **[Claude] Read on `main`**: `terraform-live/sandbox/warehouse/variables.tf` holds `"4gqfau9xuo6e4w"` in
+  `projects` and `default = true` for `all_projects_tag_enabled`. The change is not applied: the warehouse
+  sitting's step 7 applies it, and until then `WH-7` and `WH-11` fail, as `AWS_STATE.md` §C records.
+- **[Claude] The records the merge left stale**, in
+  [pull request #367](https://github.com/felipenoris/AWS-DataScience/pull/367): the stage file's `Status`
+  and the sitting's "Before it" step 2; `promotion.md` §N.10.1, §N.12.1's calendar and §N.12.4; `waiting-on-the-user.md`'s row for the
+  standing change, removed, since its user part was the merge.
+
+## 2026-11-22 — step 7's plan read again after pull request #369
+
+*Claude, in the orchestrating session of `promotion.md` §N.9's day 2, with nothing up: a read-only plan
+with `-input=false`, Terraform 1.17.2, at 06:27 UTC, from a tree whose `sandbox/warehouse/` files are
+`main`'s at `82edff32`. Nothing was saved or applied.*
+
+- **[Claude] `sandbox/warehouse/`** (`awsds-infra-sandbox-1`) with its defaults, the tag true since pull
+  request #363: *"Plan: 7 to add, 2 to change, 0 to destroy."*, as step 7 expects. Created:
+  `test-experimentation`'s access role, its portal and warehouse policies, their three attachments and its
+  `5439` ingress rule. Updated in place: `eighth-experimentation`'s warehouse policy and the namespace. With
+  `data_transfer_role_enabled=true`, 9, 2 and 0 (Stage 21's log).

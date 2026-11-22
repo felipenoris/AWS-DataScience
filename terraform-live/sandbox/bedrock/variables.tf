@@ -73,7 +73,7 @@ variable "project_roles" {
 
 # ------------------------------------------------------------------------------ the scoped set
 #
-# Stage 6e's three models, as `model id => us. inference profile id`. THIS IS ONE LIST WITH FOUR
+# Stage 6e's scoped models, as `model id => us. inference profile id`. THIS IS ONE LIST WITH FOUR
 # CONSUMERS (the stage's step 3): this map, the endpoint policy of step 4, the managed-settings
 # pins of 5.2, and the retention deny of 7.5 which must not catch any of them. They drift apart
 # the moment one is edited alone.
@@ -83,16 +83,17 @@ variable "project_roles" {
 # the foundation model is exactly what the blueprint already gives the role, and 3.1 measured that
 # it is not enough.
 variable "models" {
-  description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. All three are inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
+  description = "The scoped models: foundation model id => the us. inference profile id it is invoked through. Every one is inference-profile only - the bare model id is not invocable (Stage 6e step 0.1)."
   type        = map(string)
 
-  # THE 4.5 GENERATION, AND NOT BY PREFERENCE (2026-09-12, Stage 6e decision 14). `claude-opus-5`
-  # and `claude-sonnet-5` are refused for this account by AWS - every principal,
-  # `AdministratorAccess` included - with the agreement created, the use-case form present and every
-  # availability field green (`AWS_STATE.md` EXC-08). All three below were proven by invocation the
-  # same day, and all three route to the same us-east-1, us-east-2, us-west-2. Moving back is this
-  # map plus an image release, since the pins also live in
-  # gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json.
+  # The 4.5 generation, and not by preference (Stage 6e decisions 14 and 17). AWS refuses this
+  # account the ids without a date: `claude-opus-5` and `claude-sonnet-5` for every principal on
+  # 2026-09-12, and Opus, Sonnet and Haiku 5.5 for the infrastructure user on 2026-11-22, each with
+  # its agreement `AVAILABLE`, the use-case form present and every availability field green
+  # (`AWS_STATE.md` EXC-08). The three below were proven by invocation on 2026-09-12 and route to
+  # us-east-1, us-east-2 and us-west-2. Sonnet 4.5 is LEGACY since 2026-10-08 and reaches end of
+  # life on 2027-04-08. A change here is this map plus an image release, since the pins also live
+  # in gitlab/awsds/dev-env/dev-env/claude-code/managed-settings.json.
   default = {
     "anthropic.claude-opus-4-5-20251101-v1:0"   = "us.anthropic.claude-opus-4-5-20251101-v1:0"
     "anthropic.claude-sonnet-4-5-20250929-v1:0" = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"

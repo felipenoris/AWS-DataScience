@@ -58,6 +58,19 @@
           ]
         }
       }
+    },
+    {
+      "Sid": "DenyAgentCoreBuiltInTools",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock-agentcore:*CodeInterpreterSession",
+        "bedrock-agentcore:InvokeCodeInterpreter",
+        "bedrock-agentcore:*BrowserSession",
+        "bedrock-agentcore:ConnectBrowserAutomationStream",
+        "bedrock-agentcore:InvokeWebSearch",
+        "bedrock-agentcore:InvokeWebAnswer"
+      ],
+      "Resource": "*"
     }
   ]
 }

@@ -59,7 +59,7 @@ Formation grant; a publish writes to the SageMaker Catalog alone (measured 2026-
 | Asset | a project's record of a table or another object, in the project's inventory, which only the project's members see | a source's run (measured, §A); the portal's *Publish to Catalog* before the 2026-10-20 redesign (measured, `SUP-191`); a person by hand (unmeasured) |
 | Revision | each edit of an asset's business or technical metadata, by a person, a source's run (`SYSTEM`) or an API call | DataZone (measured, Stage 19 iv) |
 | Listing | a published revision of an asset or a data product, which every domain user can find | *Publish asset* or `CreateListingChangeSet` (measured, §F) |
-| Data product | named assets published and subscribed as one listing | a member in the portal (measured, §P); Production's `publish` task (designed, release G) |
+| Data product | named assets published and subscribed as one listing | a member in the portal (measured, §P); Production's `publish` task (measured 2026-11-22, release G) |
 | Data source | the import of a Glue database's or a Redshift schema's tables into an inventory, on a schedule or on demand | the `DataLake` environment of *Create database* or of `create-environment` (measured, `SUP-184`, Stage 19 xix); a member's *Create* (read) |
 | Subscription | a project's access to a listing: a request, its approval, a grant per asset to a target | a member's request (measured, §S); an owner's Share (measured, `SUP-362`) |
 | Metadata form type | a typed set of fields attached to an asset or a column | a member of its owning project, under the domain unit's `CREATE_FORM_TYPE` (measured, `SUP-344`) |
@@ -76,7 +76,8 @@ the project's credentials, so no designation gives a person a view with no write
 Owner's: a Contributor's `DeleteProjectMembership` was refused, *"DesignationPolicy does not allow access."*
 (measured 2026-11-14, `SUP-157`). A custom designation's portal acts are unmeasured; its policy names
 action groups, never individual actions (`SUP-384`). The domain's RAM share moved to version 13 of its
-managed permission on 2026-11-19, and the associated accounts read the designations since (`SUP-360`).
+managed permission on 2026-11-19, and the associated accounts read the designations since; it moved to
+version 14 on 2026-11-21, and they read the project profiles since (`SUP-360`).
 Stage 19 decision 15 (d), a custom designation for Production's approver, was taken on 2026-11-17, and its
 designation `subscription-approver` was created on 2026-11-19, assigned to no member yet. The release notes
 of 2026-11-12 add a layout per designation, which they call presentation only (read 2026-11-17).
@@ -280,12 +281,16 @@ Iceberg table's `DROP TABLE` left its objects as noncurrent versions behind dele
 
 The curation page (read 2026-11-17): on the asset's page, the edit icons beside the business name and the
 description; on the *Overview* tab, *Summary*, *Glossary terms*, *Readme* (Markdown, up to 4,096
-characters) and *Metadata forms*; under *Asset details*, *Catalog visibility* and *Subscription approval*;
-on the *Schema* tab, each column's business name, description, glossary terms and forms.
+characters, written in a code editor with a *Side By Side Preview* switch, read 2026-11-21) and *Metadata
+forms*; under *Asset details*, *Catalog visibility* and *Subscription approval*; on the *Schema* tab, each
+column's business name, description, glossary terms and forms.
 
 Measured: the user wrote `trades_notional`'s description, README and `classification` `internal` on
 2026-11-10, and they travelled to listing revision 4 onwards and survived the source's updates (Stage 19
-iv); read again in `app-etl-dev` at revision 4 on 2026-11-15 (step 15). A table's comments in Glue are
+iv); read again in `app-etl-dev` at revision 4 on 2026-11-15 (step 15). In `app-dbt-dev` on 2026-11-21
+each save was one revision, the description's check mark, the README's *Save* and the form's *Save*:
+revisions 3 to 5 over a source's two, the README stored as `AssetCommonDetailsForm`'s `readMe`, and the
+bundle's export carrying all three (Stage 20 8.6). A table's comments in Glue are
 technical metadata: dbt writes a model's with `persist_docs`, the Athena adapter's `glue:UpdateTable`
 (read, Stage 20 0.13), and whether a source carries them to the asset is Stage 20 verification xvi,
 unmeasured.
@@ -330,7 +335,9 @@ root unit gives no Sandbox project (6f 1.1). None has been created here.
 - Measured: `classification`, valued `public` or `internal`, owned by `eighth-experimentation`. Each save
   in the portal was a `CreateFormType` answering a new revision, revision 2 at 00:44:24 UTC on
   2026-11-10, and `GetFormType` answers a non-member (`SUP-344`). Every product listing carries it (Stage
-  19 decision 4; `CT-18`).
+  19 decision 4; `CT-18`). Its model is one `String` with no list of values, the description naming
+  `public`, `internal`, `restricted` or `personal`, so *Add Form*'s *Enter field values* takes any text
+  (read 2026-11-21, Stage 20 8.6).
 - A domain unit's metadata rule can require a form at publishing (the metadata rules page, read
   2026-11-08); a required form shows *Required* on the asset and cannot be removed (the curation page). No
   rule is set here.
@@ -367,8 +374,10 @@ a product's name across the domain: `Search` with the `DATA_PRODUCT` scope needs
 non-member's search is refused (measured 2026-11-16, `SUP-371`), so the create's conflict is the only
 domain-wide answer. The stage that lists a product therefore owns it: Production's `publish` task creates
 `trades-notional` there (Stage 19 decision 26 (b)), `app-etl-dev`'s product was deleted 2026-11-16, and the
-grant for the pair of create actions was applied 2026-11-17 (§O). How DataZone authorizes that pair for a
-project role is unmeasured until release G's first run.
+grant for the pair of create actions was applied 2026-11-17 (§O). At release G's first run, on 2026-11-22,
+DataZone authorized `CreateDataProduct` against the domain's ARN, as it did the product's
+`CreateListingChangeSet` (Stage 19's log); `CreateDataProductRevision` waits for a release that revises the
+product.
 
 ### What one request gives
 
@@ -485,9 +494,10 @@ API, `create-listing-change-set --action UNPUBLISH` (measured 2026-11-14 from th
 ### The target
 
 A Glue table's subscription target is the subscriber's `DataLake` environment's,
-`<environment>-lakehouse-default-target`, whose `manageAccessRole` is the project role; a project with no
-`ACTIVE` `DataLake` environment receives none (read 2026-10-20, `SUP-193`). *Create database*'s
-environment carries no target, and one created by API with `glueDbName` carries one (§A).
+`<environment>-default-target`, whose `manageAccessRole` is the project role; a project with no
+`ACTIVE` `DataLake` environment receives none (read 2026-10-20, `SUP-193`). The project's first `ACTIVE`
+`DataLake` environment carries it, whether *Create database* or the API created it, and a later one none
+(§A, `SUP-184`).
 
 ### The fulfilment in one account
 
@@ -624,7 +634,7 @@ AWS's lineage pages (read 2026-11-16) describe five ways an event reaches the do
 | The portal's own tools: a JupyterLab notebook on a Glue or EMR Serverless Spark session, a Visual ETL flow in Glue's compatibility mode, the query editor on Redshift | SageMaker Unified Studio, nothing configured | unmeasured |
 | A data source or a connection with *Import data lineage* | DataZone, on the source's run: a Glue source captures the crawlers that fed it, under 250 tables a run; a Redshift source parses the system tables' queries daily | the Lakehouse and IAM connections carry `glueLineageSyncEnabled` true from their creation (`SUP-207`) and no project runs a crawler; the Redshift connection's daily sync fails while the workgroup is down (`EXC-17`) |
 | An engine the producer configures | the engine's OpenLineage listener: Glue 5.0 and later, Spark DataFrames only; EMR Serverless 7.5, EMR on EC2 7.11, EMR on EKS 7.12 | measured: `app-etl`'s Glue job (Stage 18 7.1, Stage 19 v and xxi) |
-| Any OpenLineage producer, through `PostLineageEvent` | the producer's client, through the `amazon_datazone_api` transport merged in OpenLineage 1.33.0 | dbt's door (Stage 20); unmeasured |
+| Any OpenLineage producer, through `PostLineageEvent` | the producer's client, through the `amazon_datazone_api` transport merged in OpenLineage 1.33.0 | dbt's door, measured on a worker and from a space on 2026-11-21 (Stage 20's sitting A) |
 | The catalog's own acts | DataZone: a node per asset (`amazon.datazone.asset/<id>`) and per listing | measured: the edges *Cataloged*, *Published* and *Access Requested* (Stage 19 v) |
 
 MWAA Serverless posts nothing of its own: of 44 events read, every one was a Glue job's (measured, Stage
@@ -649,7 +659,8 @@ with its latest run. The `sourceIdentifier` page (read 2026-11-16) names each no
 
 - a job is `<namespace>.<name>`, a job run `<namespace>.<name>/<run_id>`;
 - a dataset becomes the Glue table's ARN through its `symlinks` facet when the event carries Glue's
-  environment properties (`GLUE_VERSION` and the like);
+  environment properties (`GLUE_VERSION` and the like), and, measured, when it carries none (dbt's
+  events, 2026-11-21, `SUP-391`);
 - a namespace that begins with `redshift` becomes a Redshift ARN,
   `arn:aws:redshift-serverless:<region>:<account>:table/<workgroup>/<database>/<schema>/<table>` for a
   serverless workgroup;
@@ -692,7 +703,8 @@ was an asset (Stage 18 7.1, run B); 92 events and a graph once the table was an 
 
 ### The dbt case
 
-Read and simulated, not measured; Stage 20's passes 2 and 3 measure it on a worker.
+Read and simulated in Stage 20's pass 0, then measured on a worker and from a space on 2026-11-21, in Stage
+20's sitting A.
 
 - **The wrapper** `dbt-ol` (OpenLineage 1.55.0, read 2026-11-16, Stage 20 0.9) handles `run`, `seed`,
   `snapshot`, `test`, `build` and `retry`, and passes any other command to `dbt` untouched. It starts `dbt`
@@ -707,9 +719,10 @@ Read and simulated, not measured; Stage 20's passes 2 and 3 measure it on a work
   `sts:GetCallerIdentity`; the event carries no Glue environment properties. The job namespace is
   `OPENLINEAGE_NAMESPACE`, `dbt` by default, and a model's job is `<database>.<schema>.<project>.<model>`,
   with `.build.run` under `dbt build` and `.build.test` for its tests (0.9).
-- **The node that rule gives**: `awsathena://athena.<region>.amazonaws.com/awsdatacatalog.<database>.<table>`,
-  not the asset's ARN, so dbt's nodes would stand apart from the assets and from the Glue job's nodes.
-  Stage 20 verification vi reads what the domain does with a symlink no Glue job sent.
+- **The node it gets**: the Glue table's ARN. The page's rule gives
+  `awsathena://athena.<region>.amazonaws.com/awsdatacatalog.<database>.<table>` to an event with no Glue
+  environment properties, and the domain honoured the symlink regardless: a model's node joined its asset
+  and the Glue job's nodes in one graph (measured 2026-11-21, Stage 20 vi and vii, `SUP-391`).
 - **The renaming** (Stage 20 decision 3 (b)): OpenLineage's `transform` transport rewrites each dataset in
   the client before the post, to the namespace `arn:aws:glue:<region>:<account>:table` and the name
   `<database>/<table>`, the one form the general rule turns into the ARN, and the form a third party's
@@ -718,13 +731,19 @@ Read and simulated, not measured; Stage 20's passes 2 and 3 measure it on a work
 - **The transport** `amazon_datazone_api` takes `domainId`, `region` and `endpointOverride`, posts RunEvents
   alone and has no timeout; with `endpointOverride` its client takes the Region from the environment (0.9).
 - **The archive**: 26,119,606 bytes, 82,819,034 unzipped, 5,102 entries, against the worker's 250 MB for
-  each (0.15). The wrapper's SQL parser asks for glibc 2.28, and no reading of a worker's glibc exists yet
-  (Stage 20 2.2).
+  each (0.15). The wrapper's SQL parser asks for glibc 2.28, and a worker reads glibc 2.34 (Stage 20 2.2,
+  2026-11-21).
 - **Simulated** (0.16): a first `dbt build` ended 0 in 7.9 s and posted 6 events after dbt ended; with the
   endpoint's port closed and one attempt, exit 0 and *"Emitted 0 OpenLineage events"*; with a 403, exit 0
   and no event; each failed post's warning prints the whole event, the logs growing to 125 kB and 77 kB
   against 3.5 kB; a failing test returned dbt's exit code 1. A seed emitted no event and was no input of
   the model that read it (0.8).
+- **Measured** (Stage 20 2.3 to 3.3, 2026-11-21): a worker's `dbt build` posted six events as the project
+  role's session `AmazonMWAAServerless` through the VPC's `datazone` endpoint; a person's `dbt run` from a
+  space posted four as the person (`SUP-402`), a job of its own in the workflow's graph under the namespace
+  the person chose. Each table swap renames by a create and a delete (`SUP-400`). A refused, a rejected and
+  an unanswered post each left the task `SUCCESS`, exit code 0 and *"Emitted 0 OpenLineage events"*; the
+  unanswered one added 60 seconds per event at one attempt.
 
 ### A dbt run past the worker's hour
 
@@ -784,8 +803,10 @@ institution holds proposals to use it and nothing official (Stage 20 step 1.1). 
   `DeleteLineageEvent` (announced 2026-07-07). A node's id is in Data Governance's trail, in each
   `CreateLineageNode`'s `additionalEventData` (`SUP-191`, `SUP-347`). `list-lineage-events` read empty on
   2026-09-18 and 2026-10-18 (6f 6.1), before any engine posted.
-- Whether `DeleteLineageEvent` removes the event, its nodes and the edges the portal draws is Stage 20
-  verification xv, unmeasured.
+- `DeleteLineageEvent` is refused to the infrastructure user in Sandbox, by the domain's resource share,
+  and in Data Governance, by DataZone (2026-11-21, `SUP-401`). What it removes, Stage 20 verification xv,
+  stays unmeasured, and a posted event stays in the graph: Stage 20 3.4's foreign event is drawn into
+  `app-dbt-dev`'s `notional_by_desk`.
 
 ### Who may post and who may read
 
@@ -793,8 +814,11 @@ Every domain user reads the graph through `GetLineageNode`, `ListLineageNodeHist
 `ListLineageEvents` and `GetLineageEvent` need their own allow; posting needs `datazone:PostLineageEvent`,
 which IAM authorizes at the API Gateway layer (the permissions and authorization pages, read 2026-11-16).
 The project role holds `PostLineageEvent` through `SageMakerStudioProjectUserRolePolicy` (read 2026-10-19,
-Stage 18 7.1). A Glue job posts as the project role's `GlueJobRunnerSession` (measured, Stage 19 xxi); no
-worker task has posted (Stage 20 0.2).
+Stage 18 7.1). A Glue job posts as the project role's `GlueJobRunnerSession` (measured, Stage 19 xxi), a
+worker task as its `AmazonMWAAServerless` and a person from a space as its `SageMaker`, the person named as
+the creator (Stage 20 2.3 and 2.6, 2026-11-21, `SUP-402`). The post is checked against no dataset's owning
+project: an event from `test-experimentation`'s role joined `app-dbt-dev`'s table node and its asset's tab
+(Stage 20 3.4, xi).
 
 ### The limits, and how each failure shows
 
@@ -807,8 +831,9 @@ over 16 MB and datashares.
 |---|---|---|
 | a Glue job with no path to the `datazone` endpoint | no event; the driver's error stream alone shows it, about 33 s per attempt; the job succeeds | measured 2026-10-19, `SUP-097` |
 | events none of whose nodes is an asset | no graph in the portal, the events posted | measured 2026-10-19, Stage 18 7.1 run B |
-| dataset names that do not resolve to an asset's `sourceIdentifier` | nodes that stand apart from the asset | read (the troubleshooting page); dbt's case is Stage 20 vi |
-| the wrapper's post refused or unreachable | exit 0, a warning per event that prints the whole event | simulated 2026-11-17, Stage 20 0.16 |
+| dataset names that do not resolve to an asset's `sourceIdentifier` | nodes that stand apart from the asset | read (the troubleshooting page); dbt's names resolve through the symlink, measured 2026-11-21 (Stage 20 vi, `SUP-391`) |
+| the wrapper's post refused, rejected or unreachable | the task `SUCCESS`, exit 0, a warning per event that prints the whole event; 60 s more per event when unanswered | measured 2026-11-21, Stage 20 3.3 (ix) |
+| an event about another project's dataset | a version of that dataset's node, drawn on its asset's tab | measured 2026-11-21, Stage 20 3.4 (xi), `SUP-402` |
 | a dbt seed | no event, and no input edge into the model that reads it | simulated 2026-11-08, Stage 20 0.8 |
 | the Redshift connection's daily sync | a failed run each day the workgroup is down at 03:43 UTC | measured, `EXC-17` |
 

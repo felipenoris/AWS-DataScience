@@ -1483,6 +1483,77 @@ presence was asked, and answered nothing).
   file. 98 refusals in one session is the measured cost of that coupling, and the reason the same
   file holds the provider switch and the suppression key is worth naming when either is edited.
 
+## 2026-10-11 — Sonnet 4.5 retired by the provider, and decision 17
+
+*Written by Claude in the sitting. The trigger is an AWS Health notice the user received; the readings
+are Claude's own, read-only, from `awsds-infra-sandbox-1` (`Sandbox Account 1`, permission set
+`InfrastructureAccess`), `aws-cli/2.37.12`. The decision is the user's. No AWS write.*
+
+### The notice, and what it reaches here
+
+- **[user] AWS Health, event `AWS_BEDROCK_PLANNED_LIFECYCLE_EVENT`, `us-west-2`**: the account used
+  `anthropic.claude-sonnet-4-5-20250929-v1:0` in the past 30 days, and the model is in the Legacy state
+  from 2026-10-08, extended access from 2027-01-08, end of life 2027-04-08.
+- **[Claude] `get-foundation-model` carries the same dates**, which no instrument here read:
+
+  ```
+  "status": "LEGACY",
+  "startOfLifeTime": "2025-09-29T00:00:00+00:00",
+  "endOfLifeTime": "2027-04-08T08:00:00+00:00",
+  "legacyTime": "2026-10-08T08:00:00+00:00",
+  "publicExtendedAccessTime": "2027-01-08T08:00:00+00:00"
+  ```
+
+  Opus 4.5 and Haiku 4.5 read `ACTIVE` with no dates. `us.anthropic.claude-sonnet-4-5-20250929-v1:0`
+  still reads `ACTIVE` in `list-inference-profiles`, which is why `bedrock-scope.py` `BS-2` stayed green:
+  the lifecycle is on the foundation model, not on the profile.
+- **[Claude] The lifecycle page adds two rules the notice does not state**: public extended access comes
+  at a higher price the provider sets, and existing customers may lose access to a Legacy model after
+  15 days of inactivity.
+- **[Claude] This account has been idle on Sonnet 4.5 since 2026-09-12.** CloudTrail since 2026-09-01:
+  21 events, all `InvokeModelWithResponseStream` with no `errorCode`, all by the project role, the last
+  at **2026-09-12T22:02:32Z**. `bedrock-usage.py` over 2026-09-10 → 2026-10-11: Sonnet 4.5 21
+  invocations (USD 0.4184), Opus 4.5 23 (0.8219), Haiku 4.5 15 (0.0617). The account was 26 days idle
+  when the Legacy state began. Whether access was cut is not readable: `get-foundation-model-availability`
+  reads `AVAILABLE / AUTHORIZED / AVAILABLE / AVAILABLE`, which `EXC-08` already showed is no evidence.
+
+### The successor generation
+
+- **[Claude] The catalogue carries a 5.5 generation that `EXC-08`'s list did not have**:
+  `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5`, `anthropic.claude-haiku-5-5`, each
+  `ACTIVE`, `INFERENCE_PROFILE` only, with `us.` and `global.` profiles `ACTIVE`. Each `us.` profile
+  routes to `us-east-1`, `us-east-2`, `us-west-2`, so `EXC-07`, the Region statement and `INV-18` hold.
+  Availability: `NOT_AVAILABLE / AUTHORIZED / AVAILABLE / AVAILABLE` for all three, so no agreement
+  exists. The ids have the clean shape `EXC-08` found refused.
+- **[Claude] The rates, two sources agreeing** (agreement rate card and the Pricing API, `us-west-2`,
+  `us.` standard, USD per 1M tokens, input / output / cache read / cache write 5 min): Opus 5.5
+  4.40 / 22.00 / 0.22 / 5.50; Sonnet 5.5 2.20 / 11.00 / 0.11 / 2.75; Haiku 5.5 0.11 / 0.55 / 0.011 /
+  0.1375, plus a long-context tier at five times that. Offers `offer-7sp77cpl4rveu`,
+  `offer-5fu2rhus3byrs`, `offer-u3aih6zr7uw5u`.
+- **[Claude] The abuse-detection page, re-read**: the Claude models it names as retaining are Fable 5
+  and Fable 5.1 alone, so 7.5's `DenyInvokingModelsThatRetain` needs no change.
+
+### Decision 17, and the code it lands in
+
+- **[user] Decision 17: move the scoped set to Opus 5.5, Sonnet 5.5 and Haiku 5.5.**
+- **[Claude] The order is fixed by two facts.** The running image (`default-v0.5.0`) pins the 4.5
+  three, so removing them from the SCP before a new image is the domain default refuses every space at
+  the first prompt. And decision 15's `NotResource` denies the 5.5 ids before the commercial gate is
+  reached, so the gate cannot be measured until the SCP names them. So the SCP and the grant add the
+  5.5 six beside the 4.5 six; the pins move only after one M6 call per model answers.
+- **[Claude] Authored, not applied**: `awsds-org-scp-ou-interactive.json` `NotResource` 6 → 12 ARNs
+  (1362 characters minified, against 5120); `sandbox/bedrock/` `models` 3 → 6;
+  `bedrock-scope.py` gains `BS-8` over `modelLifecycle`; `POLICIES.md`, `PRICING.md`, `AWS_STATE.md`
+  (`EXC-07`, `EXC-08`, a section C row), the runbook's M4 and the stage's decision table follow. The
+  image pins are untouched.
+- **[Claude] `bedrock-scope.py` against the authored SCP**: `BS-1` 6 models, `BS-2` 6 profiles
+  `ACTIVE`, `BS-3`/`BS-4` the same three Regions, `BS-6` 17 Regions `none`, `BS-7` agree; **`BS-5`
+  fails** on the three 5.5 agreements, and **`BS-8` notes** Sonnet 4.5 `LEGACY` with its three dates.
+  `bedrock.py`: `BR-4` 6 of 6, exit 0.
+- **[Claude] Plans, read-only**: `identity/org-policies` `0 to add, 1 to change, 0 to destroy` (`awsds-org-scp-ou-interactive` in place, the six 5.5 ARNs and nothing else); `sandbox/bedrock` `0 to add, 1 to change, 0 to destroy` (`awsds-sandbox-bedrock-assistant`, a new policy version, the attachment untouched).
+- **Next, in order**: the three agreements (user, M4); the SCP apply; one M6 invocation per 5.5 model
+  as the infrastructure user; then, only if all three answer, the grant apply and the image release.
+
 ## 2026-10-17 — decision 13's evidence over five weeks, and the data plane silent since 2026-09-12
 
 *Written by Claude in a session with the environment down, at the user's request to advance what needs
@@ -1584,6 +1655,31 @@ with each phase's stamp and totals; the other rows are left out.*
   written and not applied ([its log](log-stage-09-deployment-targets.md)); four `note` rows are `EXC-03`'s
   Athena rows and three are the standing `no subnet in us-west-2` rows in Data Governance and Identity.
 
+## 2026-10-18 — 3.1a's simulator reading, re-measured with the Region in context
+
+*Written by Claude, read-only, from `awsds-infra-sandbox-1` (`Sandbox Account 1`, `InfrastructureAccess`),
+`aws-cli/2.37.12`. Prompted by the Stage 11 session's lessons entry of the same day.*
+
+- **[Claude] `simulate-principal-policy` on the project role**, `glue:GetDatabases` and
+  `sts:GetCallerIdentity`, resource `*`:
+
+  ```
+  without aws:RequestedRegion
+  glue:GetDatabases       explicitDeny    False
+  sts:GetCallerIdentity   allowed         True
+  with aws:RequestedRegion = us-west-2
+  glue:GetDatabases       implicitDeny    True
+  sts:GetCallerIdentity   allowed         True
+  ```
+
+  The 2026-09-11 entry's *"cannot evaluate this organization from a member account"* was Control Tower's
+  Region ceiling evaluated against a key the simulator does not invent; with the key, the organization
+  layer reads `true` and the decision falls to the identity layer. `bedrock:InvokeModel` on the Haiku 4.5
+  profile now reads `allowed / True` with or without the key, since the Region control has exempted
+  `bedrock:InvokeModel` since 2026-09-12, so it no longer separates the two shapes. Stage 6e 3.1a and its
+  row in *What the documentation changed* now say this; 3.1 stays a reading, because `simulate-custom-policy`
+  still caps each policy at 2,000 characters and `InfrastructureAccess` still cannot produce the principal.
+
 ## 2026-10-20 — `aws/bedrock.py` section 5 lists application inference profiles
 
 *Provenance. Claude, in a session of its own, as the infrastructure user with `InfrastructureAccess`
@@ -1665,3 +1761,175 @@ open decisions the user asked for at 22:01 UTC, one card per decision under the 
   taken; the ceiling's number stays Stage 12's.
 - **[user] The review stops here**, at 23:46: *"Suba as decisões aqui no PR e vamos deixar as demais para
   depois. Vamos finalizar esta sessão."* The decisions not yet put stay on the waiting list as they were.
+
+## 2026-11-20 — 6.4's baseline read with nothing up
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). As the infrastructure user with `InfrastructureAccess`, read-only, through `awsds-infra-sandbox-1`
+(account Sandbox Account 1). Times are UTC.*
+
+- **[Claude] `./aws/bedrock-usage.py`**, 2026-11-01 to 20:16: `amazon.nova-lite-v1:0` one invocation,
+  unpriced; `amazon.titan-embed-text-v2:0` four; the Claude Haiku 4.5, Opus 4.5 and Sonnet 4.5 profiles four
+  each; *"USD 0.0005 computed, not billed"*, all checks passed. `./aws/bedrock-scope.py` wrote its snapshot.
+  6.4's window, on `promotion.md` §N.9's day 3, starts from that month.
+
+## 2026-11-22 — PR #108 taken over, the 5.5 generation re-read, Fable 5.2 on the retaining list, and decision 13's evidence over ten weeks
+
+*Claude, in a session started by the session that coordinates `promotion.md` §N.9's day 2, which gave it
+Stage 6e's items: decision 17's agreements and PR #108, decisions 11 and 13, and decision 6's budget
+notification. As the infrastructure user with `InfrastructureAccess`, read-only, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1) and, for the `identity/org-policies` plan,
+`awsds-infra-identity` (account Identity). The vendor pages were read through a fetching agent. An account
+id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
+
+### PR #108, brought up to date
+
+- **[Claude] Taken over from its session**, idle since 2026-10-19 with a clean worktree. `origin/main`
+  merged into the branch, never rebased: `CLAUDE.md` and `docs/log/INDEX.md` take main's text;
+  `awsds-org-scp-ou-interactive.json` keeps the 5.5 six beside the 4.5 six and Stage 17's three admitted
+  entries; `aws/INDEX.md`, `AWS_STATE.md` and `POLICIES.md` take main's rows with the branch's edits
+  re-applied; this log keeps both sides' entries in date order.
+- **[Claude] Plans, saved outside the repository.** `identity/org-policies`: `0 to add, 1 to change, 0 to
+  destroy`, `awsds-org-scp-ou-interactive` in place, the six 5.5 ARNs and nothing else, 1551 → 1956 bytes
+  minified. `sandbox/bedrock`: `0 to add, 1 to change, 0 to destroy`, `awsds-sandbox-bedrock-assistant` in
+  place, the six 5.5 ARNs in both statements.
+
+### The catalogue and the retaining list
+
+- **[Claude] The 5.5 three, re-read**: `ACTIVE`, `INFERENCE_PROFILE` only, availability
+  `NOT_AVAILABLE / AUTHORIZED / AVAILABLE / AVAILABLE`, the offers of 2026-10-11 (`offer-7sp77cpl4rveu`,
+  `offer-5fu2rhus3byrs`, `offer-u3aih6zr7uw5u`). Sonnet 4.5 `LEGACY` with the same three dates; Opus 4.5
+  and Haiku 4.5 `ACTIVE`. Since 2026-10-11 the catalogue gained `anthropic.claude-fable-5-2`, and
+  `anthropic.claude-opus-4-1-20250805-v1:0` reads `LEGACY`.
+- **[Claude] The abuse-detection page names Claude Fable 5, 5.1 and 5.2** as models whose traffic Bedrock
+  retains for up to 30 days, and the data-retention page lists the three as requiring `aws_review`
+  (`allowed_modes ["aws_review", "provider_data_share"]`). Opus, Sonnet and Haiku 5.5 are on neither page.
+  The data-retention page says a request to a model the account's mode does not allow is blocked, with a
+  `ValidationException` on `bedrock-runtime`. **`DenyInvokingModelsThatRetain` in
+  `awsds-org-scp-baseline.json` names Fable 5 and 5.1, not 5.2.**
+
+### Decision 13's evidence, 2026-10-17 21:07 to 2026-11-22 01:56
+
+- **[Claude] 8,538 `bedrock.amazonaws.com` events in `us-west-2`, none through an endpoint of this
+  account.** The four Bedrock endpoints of the evening's raise (created 19:46 to 19:48 on 2026-11-21) carry
+  no event. The only events with a `vpcEndpointId` are 2,939 `InvokeModel` between 01:33:18 and 01:34:37 on
+  2026-11-22, invoked by `bedrock.amazonaws.com` for the project role through the application inference
+  profile `p391nstyc81c`, through three endpoint ids that `describe-vpc-endpoints` does not find in the
+  account.
+- **[Claude] The SageMaker Unified Studio Bedrock features made their control-plane calls with no
+  endpoint.** `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`: `CreateKnowledgeBase`,
+  `CreateDataSource`, `StartIngestionJob`, `CreatePrompt`, `UpdatePrompt`, `GetPrompt`, and
+  `CreateGuardrail` refused with `AccessDenied`. `AmazonSageMakerBedrockModelManagementRole-<Sandbox Account
+  1>` from `datazone.amazonaws.com`: three `CreateInferenceProfile`, the first on 2026-10-30. The project
+  role from a public address, the portal in the browser: `ListPrompts`, `GetPrompt`, `CreatePromptVersion`,
+  `GetIngestionJob`, `ListIngestionJobs`, `StartIngestionJob`, `ListEvaluationJobs`, `ConverseStream`.
+- **[Claude] No `ListInferenceProfiles` by the project role in the window**, so no Claude Code session
+  reached Bedrock. Every other call came from the infrastructure user's laptop, `AWSServiceRoleForConfig`,
+  `AWSServiceRoleForResourceExplorer` and `awsds-sandbox-bedrock-model-consumption`.
+- **So decision 13's premise is now exercised, and it does not hold**: the blueprints' control-plane calls
+  never traverse this account's endpoint. In ten weeks the only action through it was the assistant's
+  `ListInferenceProfiles`.
+
+### The user's answers, and the code they land in
+
+- **[user] Three answers on one question card, about 02:00.** Fable 5.2: *"Incluir"*, the three ARNs join
+  `DenyInvokingModelsThatRetain`. Decision 11: *"Aceitar a frase da AWS"*, the data-retention page's
+  sentence, read the same day, stands for (xiii) and no probe runs. Decision 13: *"Manter sem escopo"*, the
+  `bedrock` endpoint keeps `Action = "*"`, and the control on `PutModelInvocationLoggingConfiguration` is an
+  SCP, handed to Stage 11 decision 11.
+- **[Claude] Written, not applied**: `awsds-org-scp-baseline.json` gains
+  `foundation-model/anthropic.claude-fable-5-2` and its `us.` and `global.` profiles, both `ACTIVE`;
+  `aws/bedrock.py`'s `RETAINING`, the battery's Fable rows in `probes.py`, the runbook's copy of the
+  statement, `scp-battery.md` and `POLICIES.md` follow. The `identity/org-policies` plan, saved again:
+  `0 to add, 2 to change, 0 to destroy`, `awsds-org-scp-baseline` 3251 → 3460 bytes (the three Fable 5.2
+  ARNs) and `awsds-org-scp-ou-interactive` 1551 → 1956 (the six 5.5 ARNs).
+
+### The three agreements
+
+- **[user] Accepted the agreements for `anthropic.claude-opus-5-5`, `anthropic.claude-sonnet-5-5` and
+  `anthropic.claude-haiku-5-5`**, from the laptop's CLI as the infrastructure user through
+  `awsds-infra-sandbox-1`, one `create-foundation-model-agreement` per model, each with the offer token
+  `list-foundation-model-agreement-offers` returned. CloudTrail carries Opus 5.5's at 02:12:42.
+- **[Claude] Opus 5.5 read `AVAILABLE` at 02:13:31** in `us-west-2`, `us-east-1` and `us-east-2`, Sonnet and
+  Haiku 5.5 `PENDING` in all three; **both `AVAILABLE` by 02:14:13**, and all nine readings `AVAILABLE`
+  right after. `./aws/bedrock-scope.py` on the branch's SCP: `BS-1` to `BS-7` pass, `BS-5` with six models
+  `AVAILABLE`; `BS-8` notes Sonnet 4.5 `LEGACY`. No invocation yet: decision 15's `NotResource` in AWS
+  still refuses the 5.5 ids until the `identity/org-policies` apply.
+
+### The trail re-read for the supplement
+
+- **[Claude] The 2,939 events with a `vpcEndpointId`, re-read from the lookup saved at 02:00**: every one
+  `InvokeModel` at eventVersion 1.11, in the project role's session, with `invokedBy`, `sourceIPAddress` and
+  `userAgent` `bedrock.amazonaws.com`, and none with a `vpcEndpointAccountId`, which no event of the window
+  carries. By endpoint id and session name: `vpce-0d75040e827258f9d` 1,479 in one `EmbeddingTask-<id>`
+  session, 01:33:37 to 01:33:52; `vpce-046f1b5f53e3e98c7` 1,457 in another, 01:34:19 to 01:34:37;
+  `vpce-021c8cd79f64c2f84` three, each in a session named `BKB-CP-<knowledge base id>-<suffix>`, at 01:33:18,
+  01:33:30 and 01:34:13. Beside them: `CreateKnowledgeBase` at 01:33:19 and `StartIngestionJob` at 01:33:30,
+  both by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, and `StartIngestionJob` at
+  01:34:13 by the project role from the browser.
+- **[Claude] The portal's calls from a public address, by role and action**: the project role
+  `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
+  `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered;
+  `awsds-sandbox-bedrock-model-consumption` `ListFoundationModels` 15 and `ConverseStream` 2 answered, 4
+  `AccessDenied` (2026-10-19 to 2026-10-30).
+- **[Claude] CloudTrail's record reference read** through a fetching agent: for events AWS originates
+  through a service's VPC, `vpcEndpointId` is usually `AWS Internal` or the service name, and
+  `vpcEndpointAccountId`, the owner's account, exists since 1.09. Written: `SUP-426`; readings appended to
+  `SUP-293`, `SUP-294` and `SUP-300`; instances appended to Lessons 34, 57 and 84.
+
+### Decision 17's step 3: the SCP applied, and the gate refuses the 5.5 three
+
+- **[user] *"Autorizo os três"*, about 02:36**, answering a question that named the three acts: the
+  `identity/org-policies` apply from the saved plan, one invocation per 5.5 model, and the `sandbox/bedrock`
+  apply only if all three answered.
+- **[Claude] The running sessions told before the write**: `n9-dia2`, the hub coordinator, and the sessions
+  on 6h, 6f, 6g, Stage 21 and the MLflow analysis, each message queued behind a turn in progress.
+- **[Claude] `identity/org-policies` applied from the saved plan at 02:37:30**, from PR #108's branch:
+  `awsds-org-scp-ou-interactive` (`p-tgda7n58`) and `awsds-org-scp-baseline` (`p-1fp032g8`) modified in 3 s
+  each, `0 added, 2 changed, 0 destroyed`, 1956 and 3460 bytes. The re-plan read `No changes`.
+- **[Claude] One `InvokeModel` per model** as the infrastructure user through `awsds-infra-sandbox-1`, on
+  `us.anthropic.claude-opus-5-5`, `-sonnet-5-5` and `-haiku-5-5`, `max_tokens` 16, at 02:37:50, 02:37:51
+  and 02:37:52. Each was refused with the same `AccessDeniedException`, naming its model: *"anthropic.claude-opus-5-5
+  is not available for this account. You can explore other available models on Amazon Bedrock. For
+  additional access options, contact AWS Sales at https://aws.amazon.com/contact-us/sales-support/"*. The
+  refusal is the commercial gate's: before the apply the SCP refused these ids with an explicit deny, and the
+  wording here names no policy. The negative control is the night's own trail: Haiku 4.5 answered the project
+  role's `ConverseStream` at 01:48:24 through the application inference profile `ljl42zoh6e4v`.
+- **[Claude] The three again at 02:44:04, 02:44:05 and 02:44:06**, six minutes after the apply and thirty
+  after the agreements read `AVAILABLE`: the same refusal, word for word.
+- **[Claude] The `sandbox/bedrock` apply did not run**, its condition unmet. With the 5.5 three taken out of
+  the `models` map, the plan reads `No changes`: the grant in AWS never named them.
+- **[Claude] Step 1's revert planned**, decision 17's rule when the gate refuses: `awsds-org-scp-ou-interactive`
+  loses the six 5.5 ARNs, 1956 → 1551 bytes, `0 to add, 1 to change, 0 to destroy`, the plan saved outside
+  the repository. `awsds-org-scp-baseline` keeps Fable 5.2's three ARNs.
+
+### Decision 17's step 1 reverted, and the gate's refusal read in the trail
+
+- **[user] *"Autorizo a reversão"*, 03:22:52**, answering a question that named the revert apply of
+  `identity/org-policies` and the six 5.5 ARNs it removes.
+- **[Claude] The hub coordinator and `n9-dia2` told before the write**, at 03:23:25 and 03:23:28, the
+  coordinator asked to hold the production gate until the end notice.
+- **[Claude] `identity/org-policies` applied from the saved plan at 03:23:52**:
+  `awsds-org-scp-ou-interactive` (`p-tgda7n58`) modified in 2 s, `0 added, 1 changed, 0 destroyed`, 1551
+  bytes; `awsds-org-scp-baseline` stays at 3460 with Fable 5.2's deny. The re-plan read `No changes`.
+- **[Claude] `./aws/bedrock-scope.py` after the apply**: `BS-1` to `BS-7` pass, `BS-1` three models in three
+  Regions with Nova Lite, Titan Embed v2 and the application inference profiles admitted beside them, `BS-5`
+  three models `AVAILABLE`, `BS-7` *"SCP, sandbox/bedrock and the image pins"* agreeing; `BS-8` notes Sonnet
+  4.5 `LEGACY` (extended access 2027-01-08, end of life 2027-04-08). The two sessions were told the revert
+  had ended.
+- **[Claude] The six refusals looked for in the trail and the metric, at 03:25.** Event history held no
+  `InvokeModel` between 02:30 and 03:00 in `us-west-2`, `us-east-1` or `us-east-2`. The lookups at 02:42,
+  02:45 and 02:47 had been read as delivery lag, but Bedrock's `ListIngestionJobs` and `GetIngestionJob` of
+  02:42:07 and 02:42:08 were there. `InvocationClientErrors` in `us-west-2`, 2026-11-08 to 04:00: one
+  datapoint, one error at 02:07 on the application inference profile `ljl42zoh6e4v`, in the dimensionless
+  series and that profile's `ModelId` series, the only two `ListMetrics` returns. `Invocations`, dimensionless:
+  1, 8 and 12 at 02:52, 02:54 and 02:55.
+- **[Claude] 2026-09-12's trail re-read in `us-west-2` for the same question.** `InvokeModel`: 6 answered, all
+  the infrastructure user's (Nova Lite at 06:32:23, Sonnet 4.5 at 06:35:57, Opus 4.5 at 06:38:53, Haiku 4.5
+  three times), and 20 `AccessDenied`: the infrastructure user's one SCP refusal, the project role's 18 IAM
+  refusals and one SCP refusal. `InvokeModelWithResponseStream`: 108 answered and 22 `AccessDenied`, all the
+  project role's SCP refusals. None of the 42 is the gate's, met that day twice by the project role from a
+  space and once by the infrastructure user beside its recorded Nova Lite.
+- **[Claude] Bedrock's CloudTrail page read through a fetching agent**: CloudTrail *"captures all API calls"*,
+  and the page says nothing of a refused call. Written: `SUP-427`; a reading appended to `SUP-295`, whose
+  `InvocationClientErrors` is no longer dimensionless only; Lesson 62's fourth instance; the Bedrock entry in
+  `REFERENCES.md`; a sentence in the runbook's M6.

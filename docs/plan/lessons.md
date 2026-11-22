@@ -140,6 +140,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    opinion about. The unnamed ones do not stay unanswered; they get answered by whoever is executing, at
    the moment they least want to be designing identity. The tell is a step whose verb is "create X
    **using** Y" — `using` almost always hides a form.
+   A later instance, 2026-11-22 (Stage 17 7.4, `SUP-418`): the step named an automatic evaluation of Haiku 4.5
+   by its task, metric and dataset, and not the form's *Inference configurations*. That panel always sends
+   Temperature and Top P, a cleared Top P returns to 0.5, and Claude Haiku 4.5 refuses the two together, so
+   the unnamed field made the named model impossible. The same step named a PII filter for the guardrail, a
+   field the IDE's form does not have. SMUS's guardrail page lists two policies, content filters and denied
+   topics. Both were readable before the sitting.
 17. **A service that "sets itself up" creates principals nobody chose — enumerate them before the next
    step depends on one.** Lesson 16 is about fields a wizard *asks* about; this is the class it does not
    cover, because the wizard never asks. Enabling Control Tower created an Identity Center user,
@@ -526,6 +532,18 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    than its exit code, because that field is a positive proof of a grant that no failure elsewhere
    would have attributed correctly.
 
+   Amended 2026-11-22 (Stage 6h decision 8 (a)), because a database reached over a port adds a fourth
+   term, the network. The decision said that under the wide tag `for-use-with-all-datazone-projects=true`
+   the schema `GRANT` is the only per-project gate on the notebook and Data API doors, and the
+   per-sitting recommendation kept the second project out of `projects` while its 5.2b connected from
+   that project's notebook. The tag widens IAM alone: AWS's project policy admits every project role to
+   `GetCredentials`, and the workgroup's security group still admits `5439` from the map's projects
+   only, so the step would have read a timeout and measured the network instead of the grant (Lesson
+   42). Read in the code on 2026-11-20, before any sitting ran it. The Data API reaches the workgroup
+   from AWS's side and is the one door where the grant stands alone. The fourth discriminator: for each
+   door, name the IAM grant, the database grant and the rule that admits the packet. A switch that
+   widens one of them opens no door, and gates keyed off one map widen only where the switch reaches.
+
 29. **An attribute assigned to describe a thing becomes a selector the moment somebody writes a rule
    over it — and the rule inherits every resource that wears the attribute for an unrelated
    reason.** Stage 5a pass 3 was one expression away from sharing the drop-box. The classification
@@ -695,6 +713,12 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
    VPC, shows binding only through a negative that needs a quota the decision kept at 0. An option that
    promises a policy control names the condition key it writes, read from the service reference, before
    the card is offered.
+   Stage 6e's decision 13, taken on 2026-09-12, left the `bedrock` endpoint's policy unscoped on the premise
+   that SageMaker Unified Studio's blueprints call Bedrock's control plane through it, and wrote the premise
+   down as unexercised. Once Stage 17 had used the features, ten weeks of trail read on 2026-11-22 showed
+   none of their calls through the endpoint (`SUP-426`), and the user kept the decision on another ground,
+   the layer an endpoint policy binds. A decision that names its premise as unexercised can be re-read
+   against it; this one was, three times.
 
 35. **Adopting an object into infrastructure-as-code silently invalidates every *procedure* written
    about it — and the adoption touches none of the files that carry those procedures.** Stage 2 step
@@ -1265,7 +1289,14 @@ found with `grep -n -E '^47\. |^## Lesson 47 ' docs/plan/lessons.md` and read fr
     specification is a fork of it. A vendor's sentence forks the same way. ECR's page says the
     creation role *"must be provided when using repository tags and/or KMS in the template"*;
     `registry/cache.tf` carried it as *"a CMK in a creation template needs a custom role"*, kept the
-    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12).
+    tags, and every first pull through the cache read `not found` (Stage 7, 2026-10-12). A session's
+    brief forks the same way: the brief for Stage 21's 4.5 asked for *"the stage's recommendation"*, and
+    the stage file held none; its one sentence on the item framed the narrower option as a reading in
+    itself, while the user's rule for that stage's recommendations pointed at the wider one (2026-11-22).
+    A lesson forks too. On 2026-11-22 a peer session carried Lesson 79 as a rule that applies come from
+    `main`, which would have merged PR #108 before decision 17's SCP apply and its invocations, putting
+    model ARNs no invocation had proven on `main` for another session to apply (Lesson 69). The lesson
+    says to plan from the tree that applied, or after the merge; its text settled it (Stage 6e).
 
 58. **Data and code can share a delivery path and still have different costs, and the one that
     reports success is the cheap one.** Stage 6c, 2026-09-07. The proxy's allow-lists are `[P]` data
@@ -1379,6 +1410,14 @@ printed the seven variables, 2026-10-11) and `serverless-workflows.md` §O repea
 control was one word away, the same grep for a name known to be in the file. The design change the
 false absence motivated stood on another ground found afterwards, a CLI-created workflow's injection
 being unmeasured and the CLI's code passing no variable, and the claim was corrected the same day.
+
+**A fourth instance, 2026-11-22** (Stage 6e decision 17). The commercial gate refused six invocations of
+the 5.5 models, and CloudTrail lookups at 02:42, 02:45 and 02:47 found no event for any of them; the empty
+answers were read as delivery lag. At 03:25 the same history held Bedrock's `ListIngestionJobs` and
+`GetIngestionJob` of 02:42, so the instrument was seeing the account in that window: the gate's refusal
+writes no event and no CloudWatch datapoint (`SUP-427`). The trail of 2026-09-12 had held the same absence
+beside the recorded successes of the same sitting, and no reading had asked whether the refusal was there.
+A count of gated attempts built on the trail would read zero while sessions were being refused.
 
 ## Lesson 63 — a default is read once, when the consumer is created, and the copy outlives it
 
@@ -1846,6 +1885,16 @@ asked, before anything is applied.
 **What makes it expensive.** An apply from the older tree removes another session's applied work without an
 error, and that session learns it from its next reading.
 
+**A second instance, 2026-11-22** (Stage 12 2.2, in R1). The tree that applied a slice also holds the inputs
+Git does not carry. `production/tooling/` was last applied with
+`-var-file=<project folder>/secrets/saml.auto.tfvars`, as `CLAUDE.md` asks. Planned read-only from a worktree
+at `main`'s `030a3625` without that file, the slice read *0 to add, 2 to change, 0 to destroy*, where
+2026-11-21's plan had read *0 to add, 1 to change*: beside the alarm, `aws_s3_object.gitlab_rb` was to be
+updated in place, its SAML block, GitLab's sign-in through Identity Center, leaving the rendered
+`gitlab.rb`. With the var-file the plan read *0 to add, 1 to change*, and that plan was applied
+(`PutMetricAlarm` at 02:12:56 UTC). The count that grew against the slice's last recorded plan stopped it;
+the tree was `main`'s, and nothing in the plan named the missing file.
+
 ## Lesson 80 — a revocation that removes a name reads as "not found", never as "denied", and it lands with the last of its asynchronous writes, not with the call
 
 **What happened.** On 2026-11-14 Stage 19's Sandbox sitting revoked `test-experimentation`'s subscription
@@ -1966,7 +2015,9 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 - `"$M:examples/app-etl"` applied zsh's `:e` modifier, and `git ls-tree` received `xamples/app-etl`
   (2026-11-16);
-- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15);
+- an unquoted `$s` was not split into words, so `set -- $s` set one argument (2026-11-15), and `aws … $P`
+  received `--region us-west-2 --profile …` as one word and answered *"Unknown options"* (Stage 6e,
+  2026-11-22);
 - `echo ======` failed with *"===== not found"*, since `=word` expands to the path of the command `word`
   (2026-11-16);
 - a glob that matched nothing refused the whole line: `terraform-modules/sagemaker-app*` (2026-11-16), and
@@ -1975,8 +2026,15 @@ Four bash habits read differently there, each met in Stage 19's sittings:
 
 The Bash tool's `grep` is a shell function that runs ugrep 7.8.4. On 2026-11-16 it refused
 `(verification |\b)xxvi\b` with *"empty (sub)expression"* and exit 2, and inside `$(…)` behind
-`2>/dev/null` the count read empty, the same silence from another cause. A search whose absence is evidence
-runs as `grep -F` or in Python, with its exit code read.
+`2>/dev/null` the count read empty, the same silence from another cause. On 2026-11-22 it refused two
+bounded repeats, `[^"]{0,40}` and `[^"]{0,80}`, in one pattern over a session transcript with *"exceeds
+complexity limits"* (Stage 6e). A search whose absence is evidence runs as `grep -F` or in Python, with its
+exit code read.
+
+Both recurred on 2026-11-22, in Stage 6g's trail reads. An unquoted `$ids` reached
+`batch-get-query-execution` as one argument, refused with *"Member must satisfy regular expression pattern:
+\S+"*, a message about the parameter's shape that never names the shell. Ugrep refused
+`.{0,80}6g 2\.4.{0,90}` with *"exceeds complexity limits"* and exit 2.
 
 **Why it is a class rather than a slip.** The differences are in expansion, which happens before the
 command runs, so the command receives another string and nothing reports the substitution. A modifier such
@@ -2060,6 +2118,38 @@ count taken in the language that reads it).
 **What makes it expensive.** The gates ship as a tagged image, so the fix is a new tag and a pin moved in every
 application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
 assumption from the next one.
+
+## Lesson 88 — a key handed to a platform is handed to every service it creates through, and each brings a key contract the platform's page does not list
+
+**What happened.** The project key reaches SMUS once, as the Tooling configuration's `KmsKeyArn`, and its
+policy was written to SMUS's key-permissions page (Stage 6 step 2.1). On 2026-11-22 the Bedrock IDE created
+two components under it, and each was refused on a contract that page does not name. The knowledge base's
+vector bucket was admitted and its index refused until the key let `indexing.s3vectors.amazonaws.com`
+decrypt (`SUP-410`, `sagemaker-prereqs-v0.13.0`). The guardrail was refused until the provisioning role could
+`kms:CreateGrant` on the key (`SUP-417`, v0.14.0). S3 Vectors' encryption page and Bedrock's guardrail
+encryption page each state its statement, and neither was read before its component's first create. The
+estate paid one rung at a time: two refusals, two tags, two applies and two failed components to delete
+(Stage 17's log).
+
+**Why it is a class.** A platform that provisions through other services passes its key down, and each
+downstream service uses the key with its own principals and operations: a service principal that decrypts
+asynchronously, a grant the creating role must be allowed to make. The platform documents its own use of the
+key, so a policy written to its page is complete for the platform and incomplete for every service beneath
+it. Lesson 17's service creates principals nobody chose; here the principals are documented, on pages the
+platform does not link. Lesson 82's grants are written from the refusals that ran and stay open for the
+members not yet run, and these refusals arrived the same way, one first run at a time. This lesson names
+what to read in advance: the key contract of each service the platform creates through.
+
+**The rule.** Before the first create of a platform component that encrypts, list the services it provisions
+through (the component's stack, its blueprint's template or its first trail) and read each one's key page.
+Every statement they state goes into the key's policy in one change, on the component's switch (Lesson 14).
+A refusal naming KMS on a component's create is read as a missing downstream contract before it is read as
+a missing platform permission.
+
+**What makes it expensive.** The key's policy lives in a tagged module, so each missing statement costs a
+tag, a pin and an apply. A failed component leaves a blueprint deployment and a definition, deleted in two
+portal acts before the component can be created again (`SUP-410`'s later reading). Staging and Production
+pin older tags, so a statement found in Sandbox reaches them only at their next apply.
 
 ## What AWS does that its documentation does not say
 

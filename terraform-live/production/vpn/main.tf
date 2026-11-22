@@ -42,7 +42,7 @@ data "aws_subnet" "public" {
 
 module "wireguard" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.6.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/wireguard?ref=wireguard-v0.9.0"
 
   env          = var.env
   zone_ids     = var.zone_ids
@@ -88,6 +88,10 @@ module "wireguard" {
   # the route below. Without the check off, EC2 drops both legs before any kernel rule sees them;
   # without the route, the proxy's reply has nowhere to go.
   no_masquerade_cidrs = [for s in data.aws_subnet.public : s.cidr_block]
+
+  # The health alarm notifies production/foundation/'s awsds-<env>-alerts, which admits this account's
+  # alarms (Stage 12 step 2.2).
+  alarm_actions = [data.terraform_remote_state.foundation.outputs.alerts_topic_arn]
 
   peers = var.peers
 }

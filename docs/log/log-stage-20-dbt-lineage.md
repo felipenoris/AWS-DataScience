@@ -1455,3 +1455,710 @@ call; the plan revised.*
 - **[Claude] Pass 8** follows pull request #321's merge in R1 (§N.11.1 step 6). Its release sitting is R1
   when N.9's day 1 has run and 8.5 and 8.6 are done, otherwise R2, before 2026-12-18, with the build runner
   (`make gitlab-up BUILD=1`). 8.7's `awsds/app-dbt` and its job-token allowlist entry are R1's step 3.
+
+## 2026-11-20 — Pull request #321's branch synced with `main`
+
+*Claude, in the session that applied 6d decision 6 and Stage 17 decision 7 the same day, on the user's request to prepare every pending sitting before raising anything and to minimise the plan's running time (*"otimize o plano e faça todas as preparações necessárias para que o tempo necessário para executar o plano seja minimizado"*). The merge in a temporary worktree of this session, detached at the pull request's branch,
+`190b2424`; the one AWS read as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1).*
+
+- **[Claude] The merge** of `origin/main` at `5dfff219` (#344): one conflict, in
+  `docs/plan/runbooks/sagemaker-application.md` §S's table, resolved by keeping this branch's row for the
+  scripts and `main`'s row for `sandbox/workflows/` and `sandbox/bedrock/` (`application_roles`,
+  `model_applications`).
+- **[Claude] The checks** on the merged tree: `./scripts/deploy-application.py --self-check` exit 0, every
+  stage of `app-etl`, `app-ml`, `app-genai` and `app-dbt` `ok`, `app-etl`'s nine variables per stage as on
+  `main` and `app-dbt`'s twelve; `make check` OK; pre-commit's hooks passed on the merge commit.
+- **[Claude] The push**: `00113780` to `claude/plano-estagios-execucao-5f64d8-n6-item10`
+  (`190b2424..00113780`). R1's step 6 merges it after Production's leg, synced again with what `main` gained.
+- **[Claude] 5.0's target**: `list-environments` on `app-dbt-dev` reads `Tooling` and `SageMakerAIDomain`
+  alone, both `ACTIVE` since 2026-11-19, so 2.1's *Create database* makes the project's first `DataLake`
+  environment, which carries the subscription target (`SUP-184`), and 5.0's link lands in `app_dbt`.
+- **[Claude] 8.8's gate, dry**: `pip-audit` 2.10.1 over each lock's runtime set (`uv export --frozen --no-dev`), an approximation of
+  the gates' job, which `awsds/ci-gates` holds: *"No known vulnerabilities found"* for `app-etl` (one
+  package), `app-ml`'s `code` (48) and `app-dbt` (78), at 20:36 UTC. The gate itself runs on the laptop
+  the day of each tag, before the tag (Lesson 77).
+
+## 2026-11-21 — 2.1: `app_dbt` created in `app-dbt-dev`, and the editor's baseline
+
+*The user acted in the portal as the Data Scientist User, with nothing up. Claude, in the session that
+prepared every pending sitting (#345), read it as the infrastructure user through `awsds-infra-sandbox-1`
+and `awsds-infra-data`, reads only. Times are UTC.*
+
+- **[user] The first attempt**, refused by the portal, pasted verbatim:
+
+  ```
+  [Error] Insufficient permissions to create a new database. Please add a LakeHouseDatabase blueprint deployment setting with On Demand mode to the project profile.
+  ```
+
+  then *"Eu entrei novamente e agora funcionou..."*.
+- **[Claude] The refusal read**: the profile `experimentation` (`dh60xbal05q64w`, last updated 2026-11-18
+  18:45:34) carries `DataLake` (`d8w7c3fmbsz5cg`, the console's `LakeHouseDatabase`) as `ON_DEMAND`; the
+  domain's `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on that blueprint in Sandbox names `CONTRIBUTOR`
+  projects of the domain unit `awsds-studio` (`bzq0cbh2gd0f4g`), created 2026-08-22. Data Governance's trail
+  places the refused attempts in `app-genai-dev` (`b8fz4ovppjijv4`): the portal's `GetProjectProfile` and
+  `ListDeployableEnvironmentBlueprints` on it at 02:36:30, 02:37:52 and 02:39:52, each answered, in the
+  Data Scientist User's session on `awsds-data-studio-domain-execution`. The portal opened `app-dbt-dev` at
+  02:41:01. `app-genai-dev` has the same profile, domain unit and two environments, and the user as its
+  owner, so the refusal is unattributed (`SUP-390`).
+- **[user] The act**, on `app-dbt-dev`: *Data → Catalogs → AwsDataCatalog → Create database* `app_dbt`,
+  then the query editor's create of `editor_probe` and its drop; *"2.1 feito"*.
+- **[Claude] 2.1's reads**, at 02:49:36, each as expected (`SUP-184`, 0.7):
+  - the environment `au9oegx70xvyts`, `create-datalake-database-env-app_dbt-1795228956827`, `ACTIVE`,
+    created 02:42:38, beside `Tooling` and `SageMakerAIDomain`; its subscription target `algy8t6358fits`,
+    `<environment>-default-target`, created 02:43:05. The project's first `DataLake` environment carries
+    it, and 5.0's link lands in `app_dbt`;
+  - the database, created 02:42:55 by the provisioning role's `AmazonDataZoneEnvironmentDeployer` session:
+    *"Created by DataZone for project app-dbt-dev"*, at
+    `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/dnl3l158mbhrio/dev/data/catalogs/`, with no default
+    table permission;
+  - Lake Formation: `IAMPrincipals` under the project's condition holding `CREATE_TABLE`, `DESCRIBE` and
+    `DROP` on the database and `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT` on its tables;
+    `awsds-sandbox-smus-manage-access` `CREATE_TABLE` and grantable `DESCRIBE` on the database, grantable
+    `DESCRIBE` and `SELECT` on its tables; the provisioning role every permission, grantable;
+  - the source `3uof8bs4x693f4`, `READY`, `cron(43 2 * * ? *)`, created 02:43:06, `publishOnImport` false,
+    its filter `app_dbt`, on `project.default_lakehouse` (`6h4cpmm4m2g74g`), `LAKEHOUSE`,
+    `glueLineageSyncEnabled` `true`. The sittings' runs keep clear of 02:43 UTC;
+  - the workgroup's statements: the `CREATE TABLE` at 02:46:01, a `SELECT * FROM app_dbt.editor_probe LIMIT
+    100` at 02:46:25 and the `DROP TABLE` at 02:47:54, each `SUCCEEDED`;
+  - under the dropped table's folder, no current object: four versions and seven delete markers;
+  - the trail: `CreateTable` at 02:46:02 and `DeleteTable` at 02:47:57 as the project role, invoked by
+    `athena.amazonaws.com`, the session's `sourceIdentity` the Data Scientist User's Identity Center id, no
+    VPC endpoint, `insufficientLakeFormationPermissions` empty and the project role the Lake Formation
+    principal: the conditioned grant admitted both (iii's baseline, the editor's half).
+- **[user] Seen, not clicked**: the database's page now offers *"Change asset ownership across projects"*,
+  *"Transfer metadata and subscription management to another project while retaining your AWS Lake
+  Formation permissions, if applicable."* (`docs/plan/upstream-releases.md`).
+- **Left**: sitting A from row 3 of its order, on §N.9's day 1.
+
+## 2026-11-21 — Sitting A: 2.2, the space, the deploy and the probe
+
+*Claude, in the session running `promotion.md` §N.9's day 1 on the user's *"Começar agora"*: the raise,
+the render and decision 6's reading are 6d's log's entry of the same day. The space's acts are the
+user's, as the Data Scientist User; the space's terminal runs as `app-dbt-dev`'s project role. Claude's
+reads as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account
+Sandbox Account 1). Times are UTC.*
+
+- **[user] The space**: `jup` in `app-dbt-dev`'s blueprint domain, JupyterLab on `ml.t3.medium`,
+  `awsds-sandbox-dev-env` version 11, created 03:28:04 and `InService` at 03:40:39, its app at 10.20.28.126.
+- **[user] The tar**, dropped on the file browser: `sha256sum -c` read *"app-dbt.tar: FAILED"* three
+  times while the upload ran, then *"app-dbt.tar: OK"*, and the tar extracted. The clone's head `4613ddc`,
+  the pin; the values by `space_values.py` and the exports as written.
+- **[user] The deploy**, *"aws-smus-cicd-cli 1.0.9 on /opt/awsds/venv/bin/python"*: the five files synced
+  to `shared/app-dbt/` from 04:03:56; *"No managed Tooling.GA/Tooling.Lightning blueprint found; will try
+  the IAM connection fallback"*, then the Tooling configuration resolved to the project's two subnets, its
+  security group `sg-040ed6781b8c4449e` and Sandbox's project key, with no *"No custom VPC config"* line;
+  the operator code uploaded once per `workflow.create` action, two copies for this deploy; both workflows
+  created `READY` at 04:04:35 and 04:04:47; *"Deployment completed successfully!"*
+- **[user] The probe's run**, `VulTqaEATnNLvZa` at 04:05:05. Before it, the CLI's `run` listed every
+  workflow in the account and read `ListTagsForResource` refused on the nine of other projects, *"because
+  no identity-based policy allows the airflow-serverless:ListTagsForResource action"*, as the project
+  role's session `SageMaker`.
+- **[Claude] The copies and the workflows**: under `shared/app-dbt/`, `code/app-dbt.zip` 26,129,224 bytes,
+  `glue/load.py` 2,859, `inbox/trades.csv` 362, `workflows/app-dbt.yaml` 3,794 and
+  `workflows/app-dbt-probe.yaml` 7,390, the two definitions larger than the tar's 3,508 and 7,389 by the
+  values the CLI resolved; under `shared/operatorFiles/`, two copies of 26,129,224 bytes, the size of the
+  laptop's archive. Both workflows `READY`, `manual_only`, in the project's two subnets and its security
+  group, `CUSTOMER_MANAGED_KEY`, each logging under `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-dnl3l158mbhrio/`.
+- **[Claude] The probe's run**: `SUCCESS` from 04:05:08 to 04:05:54, its one task `probe`, `BashOperator`,
+  `SUCCESS` in 10 seconds, the worker's interface at 10.20.71.155 (04:05:14). Its log: the folder
+  `/var/tmp/airflowtmp…`; `python3` at `/opt/mwaa-serverless-venv/bin/python3`, `bash`, `mktemp`, `cp`,
+  `chmod` and `dirname` under `/usr/bin`; the script ran in the task's folder and in `mktemp -d`'s, the
+  latter under `/usr/local/airflow/dags/`; Python 3.12.16 on *"Linux-6.1.190-x86_64-with-glibc2.34"*,
+  glibc 2.34; Amazon Linux 2023.12.20261119; 2 CPUs, `MemTotal` 7,952,724 kB, no cgroup limit file; `/tmp`
+  9,963 MiB free; 166 distributions, among them `apache-airflow` 3.0.6, `apache-airflow-providers-amazon`
+  9.38.0, `boto3` 1.43.1, `sagemaker_studio` 1.0.28, `PyAthena` 3.17.1, `redshift-connector` 2.1.8,
+  `duckdb` 2.0.0 and `dag-factory` 1.0.0; 36 variable names, `PYTHONPATH`, `TMPDIR` and three
+  `OVERDRIVE__CMK__*` among them; the caller the project role's session `AmazonMWAAServerless`; the
+  workgroup `workgroup-dnl3l158mbhrio-55hp9teamegf4g` `ENABLED`, enforced, Athena engine version 3, its
+  output under the project's `dev/sys/athena/`; the database `app_dbt` at the project's
+  `dev/data/catalogs/`; `SELECT 1` `SUCCEEDED`; the count of `trades` `FAILED` *"TABLE_NOT_FOUND"*, expected
+  before 2.3; `ListLineageEvents` 10 events, each `SUCCESS`.
+- **[Claude] The trail**, after its delay, each call from 10.20.71.155 as `AmazonMWAAServerless`:
+  `GetCallerIdentity` through `sts`'s endpoint, `GetDatabase` through `glue`'s, `GetWorkGroup` and two
+  `StartQueryExecution` through `athena`'s, `ListLineageEvents` through `datazone`'s; one `GetDatabase`
+  invoked by `athena.amazonaws.com`. AWS Config's `GetDatabase` was refused twice at 04:06:48.
+- **[Claude] 2.2 passes**: i's worker half, glibc 2.34; ii's first half, `SELECT 1`; the endpoint's answer
+  to `ListLineageEvents`. A script runs in `mktemp`'s folder, so `run-dbt.sh` keeps its form. The
+  expected *"one copy of the archive for each deploy"* reads one copy per workflow the deploy creates.
+- **[user] 2.3**, `app-dbt`'s run `SzzngX9q8O3hZ7k` at 04:14:33, from the same terminal, the same nine
+  `ListTagsForResource` refusals before it.
+- **[Claude] 2.3's run**: `SUCCESS` from 04:14:39 to 04:18:21; `load`, `GlueJobOperator`, `SUCCESS` in 103
+  seconds, which created the Glue job `app-dbt-dnl3l158mbhrio`, its run `SUCCEEDED` from 04:15:23 to
+  04:16:55 (76 seconds of execution); `transform`, `BashOperator`, `SUCCESS` in 48 seconds. The task log
+  reads the step's criteria: *"run-dbt.sh: dbt from /usr/local/airflow/dags/app_dbt/bin, this script
+  executable"*; *"Running OpenLineage dbt wrapper version 1.55.0"*; *"Running with dbt=1.11.16"* and
+  *"Registered adapter: athena=1.11.1"*, the lock's `dbt-core` and `dbt-athena`; the model *"OK 3 in
+  5.38s"*, the test *"PASS in 2.65s"*, *"Done. PASS=2 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*; six
+  *"Successfully posted a LineageEvent: … in Domain: dzd-d8yrvx1ko7im6o"*, the transport's *"does not
+  support timeout"*, *"Emitted 6 OpenLineage events"*, *"Underlying dbt execution returned 0"*; *"run-dbt.sh:
+  peak memory 290516 kB, exit code 0"*.
+- **[Claude] The tables**: `trades`, `EXTERNAL_TABLE`, `table_type` `ICEBERG`, registered with Lake
+  Formation, at the project's `dev/data/catalogs/trades`, created 04:16:42 by the project role's session
+  `GlueJobRunnerSession`, version 0; `notional_by_desk`, the same type, at
+  `dev/data/catalogs/app_dbt/notional_by_desk/d37c35ec-…`, created 04:18:11 by `AmazonMWAAServerless`,
+  version 1, its description *"The notional each desk traded, quantity times price summed over the desk's
+  trades."* The model's location holds one Parquet file of 402 bytes, its metadata JSON and two Avro
+  files. Lake Formation registers each project's `dev/` prefix with the project's role, `app-dbt-dev`'s
+  among them, which covers both locations.
+- **[Claude] The statements**, each under the workgroup's enforced output: the create at 04:18:09
+  (`DDL`, 296 bytes scanned), the constant `SELECT '{"rowcount":3,"data_scanned_in_bytes":296}'` at
+  04:18:12 and the test at 04:18:14, each `SUCCEEDED`, each carrying dbt's comment with `dbt_version`
+  1.11.16.
+- **[Claude] The events**, each `SUCCESS`, each created by `8af0750c-…`: the six dbt events under the job
+  namespace `app-dbt-dev` (decision 16 (c)), the parent `dbt-run-app_dbt` and the nodes
+  `awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run` and `….build.test`; the Glue job's 14 under
+  `default`, from `app_dbt_dnl3l158mbhrio`. Saved to `$HOME/tmp/stage20/events-2.3/`. dbt's datasets are
+  `awsathena://athena.us-west-2.amazonaws.com` `awsdatacatalog.app_dbt.trades` and
+  `….notional_by_desk`, each with a `symlinks` facet naming the Glue table (`table/app_dbt/<table>`,
+  `TABLE`), the output with `columnLineage` on `desk` and `notional`; the Glue job's output is
+  `s3://awsds-sandbox-smus-projects` `…/dev/data/catalogs/trades`, its `symlinks` naming
+  `table/app_dbt/trades`, its input the project's `shared/app-dbt/inbox`.
+- **[Claude] The trail**: the Glue job from 10.20.1.240 as `GlueJobRunnerSession`, `CreateTable` `trades`
+  through `glue`'s endpoint and 14 `PostLineageEvent` through `datazone`'s; the dbt task from 10.20.47.7 as
+  `AmazonMWAAServerless`, `GetWorkGroup` and three `StartQueryExecution` through `athena`'s, `CreateTable`
+  `notional_by_desk` and two `GetDataAccess` invoked by `athena.amazonaws.com`, `UpdateTable` through
+  `glue`'s (`persist_docs`), six `PostLineageEvent` through `datazone`'s. No refusal.
+- **[Claude] 2.3 passes**: i's modes, ii, iii's worker half, iv and v.
+
+## 2026-11-21 — Sitting A: 2.4, the source's run and one graph
+
+*Claude, in the same session. The portal's acts are the user's, as the Data Scientist User; Claude's reads
+as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1)
+and `awsds-infra-data` (Data Governance) for the trail. Times are UTC.*
+
+- **[user] 2.4**: the source `app_dbt` run in the portal, *Manage → Data sources*, after 2.3's run.
+- **[Claude] The run**: `d2cehnogthh2c0`, `PRIORITIZED`, created 04:34:56, `SUCCESS`, `added` 2, `updated`
+  0, `unchanged` 0, `failed` 0, `lineageSummary.importStatus` `SUCCESS`. The activities: `trades`
+  `SUCCEEDED_CREATED`, asset `bra0895x5fjzww`; `notional_by_desk` `SUCCEEDED_CREATED`, asset `daefcycb3hhhn4`,
+  its technical description the model's. Each activity's `lineageSummary.eventStatus` reads `None`.
+- **[Claude] The assets**: `GlueTableAssetType`, revision 1, created by `SYSTEM` at 04:34:58, unlisted, their
+  external identifiers `table/app_dbt/trades.dnl3l158mbhrio` and `table/app_dbt/notional_by_desk.dnl3l158mbhrio`
+  (`SUP-343`), each `DataSourceReferenceForm` naming the run. `notional_by_desk`'s `GlueTableForm` carries
+  `tableDescription`, *"The notional each desk traded, quantity times price summed over the desk's trades."*,
+  and each column's `columnDescription`: `desk` *"The desk."*, `notional` *"The sum of quantity times price
+  over the desk's trades, rounded to cents."*, the Glue table's comments `persist_docs` wrote. The asset's
+  own `description` is empty and it holds no time-series form. `trades` carries no description: its table
+  has no comments, `persist_docs` writing a model's alone, and `sources.yml`'s descriptions reach only the
+  lineage node's `DatasetSchemaForm`.
+- **[Claude] The graph**, from the asset back, by `get-lineage-node`, `list-lineage-node-history` and the
+  node's version at each event (`--event-timestamp`): `notional_by_desk`'s asset node `6ljn21swt4l0y8` hangs
+  from `6w7hp2vvi8kscw`, the dataset node `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk`;
+  its version at 04:18:14 has upstream the job run `5cqirhi3wi3lw0`,
+  `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run/01a1fc53-9635-…`, whose upstream is
+  `3s0gk0eg2o68pc`, `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/trades`, the node `trades`' asset node
+  `avyjoalaki4cy8` hangs from. That node's versions at 04:16:41 and 04:16:42 have upstream the Glue job's runs
+  `b8r5wfvogmhmds` (`default.app_dbt_dnl3l158mbhrio.overwrite_by_expression.glue_catalog_app_dbt_trades/…`)
+  and `514rsn88f19h5c` (`….atomic_replace_table_as_select.app_dbt_trades/…`), each from `cvurzd3gyts5qo`,
+  the project's `shared/app-dbt/inbox`. The test's run `by4b2cm6q5sas0` (`….build.test/01a1fc53-9637-…`,
+  04:18:18) hangs from the model's node. A node read at its latest version shows that event's edges alone:
+  `6w7hp2vvi8kscw`'s latest, the test's, reads no upstream.
+- **[Claude] vi passes**: the model's output node is the Glue table's ARN, the symlink honoured in an event
+  with no Glue environment properties, and dbt's input is the node the Spark job wrote (`SUP-391`). Data
+  Governance's trail since 04:14 holds 13 `CreateLineageNode`, 4 dataset nodes and 9 job nodes, none with an
+  `awsathena://` identifier; no job run's node and no asset's node is among them. The graph is one, so
+  decision 3 (b)'s transformer and 3.1 are not needed.
+- **[Claude] The nodes' facets**: the job nodes, `….build.run` (`JobForm` `BATCH`, `DBT`, `MODEL`; `QueryForm`,
+  the compiled SQL with the model's comment), `….build.test` (`JobForm` `TEST`) and the parent
+  `app-dbt-dev.dbt-run-app_dbt`, carry no edges; the runs carry them, each `JobRunForm` naming the parent run
+  `01a1fc53-46be-…`, the model's from 04:18:09 to 04:18:14, `COMPLETE`. The model's output node at 04:18:14
+  holds `DatasetSchemaForm` with both columns' descriptions and `ColumnLineageForm`: `desk` from `trades`'
+  `desk`, `notional` from `price` and `quantity`, each source table named
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.trades`. The test left
+  `DataQualityResultForm` on the node, `{"evaluations":[{"types":["not_null"],"details":{"COLUMN_NAME":"desk"},"status":"PASS"}]}`,
+  and nothing on the asset.
+- **[Claude] xvi passes**: the model's and its columns' descriptions reach the asset through the Glue table's
+  comments. vii's portal half, what the *Lineage* tab draws, is the user's look.
+- **[Claude] vii, the portal's half**, at the user's request, in the user's Chrome session through Claude in
+  Chrome, the portal signed in as the Data Scientist User, from 04:46 to 04:52; reads and view toggles only.
+  The project's *Manage → Assets*, `notional_by_desk`, *Lineage*, graph depth 5: one graph, left to right, the
+  inbox (*Table / Amazon S3*, 5 columns, 01:16 UTC-03:00), the two Spark runs (*Job Run / Apache Spark*,
+  `COMPLETE`), `awsdatacatalog.app_dbt.trades` (*Table / AWS Glue*, 5 columns), the dbt model's run (*Job
+  Run*, `COMPLETE`, 01:18), `awsdatacatalog.app_dbt.notional_by_desk` (*Table / AWS Glue*), and an edge
+  labelled *Cataloged* to the asset (*Asset / Inventory*, *Base*, 2 columns, 01:34). The portal names the two
+  tables by dbt's names, each node's latest version. The model's node at its latest version, the test's,
+  shows no columns, and selecting `price` on `trades` lights `price` on the inbox and nothing downstream.
+  The node's panel reads *Source Type* `GlueTableDatasetSourceType`, the table's ARN as *Source
+  Identifier*, *Created By* the project's role, and under *Additional Properties* the test's
+  `dataQualityAssertions` facet (`"assertion": "not_null"`, `"actual": "0"`). Its *History* lists two
+  versions at 01:18; *View Lineage* on the model run's opens the graph based on that version, the test's run
+  drawn beside the asset under the node, and the node's *Schema* tab: `desk` from 1 column, `notional` from
+  2, each *Type: unknown* with *View transformation*, the sources `price` and `quantity` under *Table:
+  awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.trades*. *Highlight* on `price` lights
+  `price` on `trades` and on the inbox: the column lineage crosses from dbt's step into the Glue job's, the
+  Athena name resolved to the Glue table's node. The asset's *Data quality* tab reads *Rulesets (0)*,
+  *Rule results (0)*, *Run history (0)*. The project's overview shows the banner *"Project profile
+  blueprints have been changed for your project"* with *Update project*, not clicked.
+- **[Claude] vii passes**: the portal draws one graph from the S3 input through the Glue job, `trades` and
+  the dbt job to `notional_by_desk`, with column lineage at the model run's version; the test leaves its
+  assertion on the model's node, as a facet and as the node's latest version, and nothing on the asset.
+
+## 2026-11-21 — Sitting A: 2.5, the second run's swap
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User; Claude's reads as
+the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1).
+Times are UTC.*
+
+- **[user] 2.5**, `app-dbt`'s run `JCrmBgSmNqRrTXg` at 04:57:25, by 2.3's command from the same terminal,
+  its variables read first (`echo "$DOMAIN_ID $LINEAGE_NAMESPACE"`), the same nine `ListTagsForResource`
+  refusals before it.
+- **[Claude] The run**: `StartedOn` 04:57:30, `CompletedOn` 05:03:13; `load`, `GlueJobOperator`, `SUCCESS` in
+  219 seconds, the Glue job's run `jr_cebf2ded…` `SUCCEEDED` from 04:58:18 to 05:01:40 (173 seconds of
+  execution, the first run's 76); `transform`, `BashOperator`, `SUCCESS` in 54 seconds. The task log: *"OK
+  created sql table model app_dbt.notional_by_desk … OK 3 in 12.66s"*, *"PASS not_null_notional_by_desk_desk
+  … PASS in 3.70s"*, *"Done. PASS=2 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=2"*, six posted events, *"Emitted 6
+  OpenLineage events"*, *"Underlying dbt execution returned 0"*, *"run-dbt.sh: peak memory 293544 kB, exit
+  code 0"*.
+- **[Claude] The reads lag the run at both ends**, polled every 22 seconds: `get-workflow-run` read `QUEUED`
+  and `list-task-instances` nothing through 04:59:28, `load` first listed at 04:59:50, while
+  `list-workflow-runs` read `RUNNING` from 04:57:30 and the Glue job had started at 04:58:18; at the end
+  `transform` and the run read `RUNNING` through 05:05:22, `SUCCESS` at 05:05:44, while dbt's log ended at
+  05:03:11. The task instances lag as the run's
+  state does, by about two and a half minutes (`serverless-workflows.md`'s *"The run's state lags its
+  tasks"*, 2026-10-11).
+- **[Claude] The statements**, each `SUCCEEDED` with no `StateChangeReason`: 05:02:52 `create table
+  "awsdatacatalog"."app_dbt"."notional_by_desk__ha" with ( table_type='iceberg', is_external=false,
+  location=…`; 05:02:56 `alter table app_dbt.notional_by_desk rename to app_dbt.notional_by_desk__bkp`;
+  05:02:57 `alter table app_dbt.notional_by_desk__ha rename to app_dbt.notional_by_desk`; 05:03:00 `drop
+  table if exists app_dbt.notional_by_desk__bkp`; 05:03:03 the constant `SELECT`, rowcount 3; 05:03:05 the
+  test. The swap of 0.13, as 0.16 ran it.
+- **[Claude] The trail**, every call as the project role's session `AmazonMWAAServerless`, invoked by
+  `athena.amazonaws.com`: 05:02:54 `CreateTable` `notional_by_desk__ha`. Each rename is first an
+  `UpdateTable` refused `UnsupportedOperationResponse`, *"RenameTable endpoint is not supported for Glue
+  Catalog."*, `additionalEventData` `{"IcebergRestOperation":"renameTable"}`, its parameters the prefix
+  `catalogs/<Sandbox>` and the source and destination names (05:02:56, 05:02:57), then a `CreateTable` of
+  the new name and a `DeleteTable` of the old: `notional_by_desk__bkp` created at 05:02:56 and
+  `notional_by_desk` deleted at 05:02:57; `notional_by_desk` created and `notional_by_desk__ha` deleted at
+  05:02:58. The drop is `DeleteTable` `notional_by_desk__bkp` at 05:03:02; `persist_docs` the `UpdateTable`
+  of `notional_by_desk` at 05:03:04 from 10.20.56.170 through `glue`'s endpoint. The Glue job's write is an
+  `UpdateTable` of `trades` at 05:01:27 as `GlueJobRunnerSession` from 10.20.37.237 through the same
+  endpoint, `trades` now at version 1 with its creation time of 04:16:42.
+- **[Claude] The table**: `notional_by_desk` created 05:02:58 (the first run's 04:18:11), updated 05:03:04,
+  `VersionId` 1 as the first run's, one version in `get-table-versions`, its description kept, at
+  `…/app_dbt/notional_by_desk/378cf5f7-04a0-4d83-b7f1-083b293f390e` (the first run's `d37c35ec-…`).
+  `notional_by_desk__ha` and `notional_by_desk__bkp` read `EntityNotFoundException`.
+- **[Claude] The objects**: under the new location four current objects written at 05:02:55, one Parquet of
+  399 bytes, the metadata JSON and two Avro files; under the first location no current object, its four
+  versions noncurrent beside seven delete markers of 05:03:02, the drop's second: two each on the
+  Parquet file, the manifest and the manifest list, one on the metadata JSON. The bucket's versioning keeps
+  the first run's files as noncurrent versions.
+- **[Claude] The grants**: Lake Formation lists on the table the project role's `ALL`, `ALTER`, `DELETE`,
+  `DESCRIBE`, `DROP`, `INSERT` and its `SELECT`, the two rows the first run's table read at 04:43.
+- **[Claude] The events**, each `SUCCESS`: dbt's six under `app-dbt-dev`, from the parent's `START` at
+  05:02:41 to its `COMPLETE` at 05:03:10; the Glue job's 14 under `default`, from 05:00:38 to 05:01:29.
+- **[Claude] x's half passes**: the swap ran, no rename or drop refused, the grants unchanged; the asset and
+  the graph wait on the source's second run.
+- **[user] 2.5's source**: `app_dbt` run again in the portal, *Manage → Data sources*, after the run.
+- **[Claude] The source's run**: `6fipr3qxr7for4`, `PRIORITIZED`, created 05:09:58, `SUCCESS`, `added` 0,
+  `updated` 2, `unchanged` 0, `failed` 0, `lineageSummary.importStatus` `SUCCESS`. The activities: `trades`
+  and `notional_by_desk` `SUCCEEDED_UPDATED`, on the assets `bra0895x5fjzww` and `daefcycb3hhhn4`.
+- **[Claude] The assets keep their ids**, each at revision 2, created by `SYSTEM` at 05:10:00 beside revision
+  1 of 04:34:58, each `DataSourceReferenceForm` naming the run. `notional_by_desk`'s `GlueTableForm` names
+  the new location, `…/notional_by_desk/378cf5f7-…`, and `updateTime` 05:03:04, where revision 1 named
+  `d37c35ec-…` and 04:18:14; the table's description and both columns' descriptions are kept, `persist_docs`
+  having written them on the new table. `trades`' form names `updateTime` 05:01:27, its location unchanged.
+- **[Claude] The graph keeps its nodes**: Data Governance's trail, read through `awsds-infra-data` at
+  05:14:46, holds no `CreateLineageNode` since 04:57, beside 20 `PostLineageEvent`, the Glue job's 14 from
+  05:00:53 to 05:01:29 and dbt's six at 05:03:10 and 05:03:11. Every node gained versions under its own id:
+  the table nodes `6w7hp2vvi8kscw` (`notional_by_desk`) at 05:03:04 and 05:03:10, beside 04:18:14 and
+  04:18:18, and `3s0gk0eg2o68pc` (`trades`) at 05:01:24, 05:01:27 and 05:03:04, beside 04:16:41, 04:16:42
+  and 04:18:14; the job nodes `….build.run` (`6eael36d03lyfk`) at 05:03:04, `….build.test`
+  (`dpv0jnpy6a2ln4`) and the parent (`6fbpvdjy84hq4w`) at 05:03:10; the asset nodes `avyjoalaki4cy8` and
+  `6ljn21swt4l0y8` at 05:10:00, the source's run, beside 04:34:58.
+- **[Claude] The second run's job runs**: `6w7hp2vvi8kscw`'s version at 05:03:04 hangs from the model's run
+  `c5hbxzn5im6lcg` (`….notional_by_desk.build.run/01a1fc7c-a7a7-…`, from 05:02:52 to 05:03:04, upstream
+  `3s0gk0eg2o68pc`), its `JobRunForm` naming the first run's job,
+  `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run`, and the parent run
+  `01a1fc7c-38ff-…`. The test's run `c8e2sp3c5j8f4g` (`….build.test/01a1fc7c-a7a9-…`, 05:03:10) hangs from
+  the node, whose latest version, the test's, reads downstream that run and the asset node and no upstream.
+  `3s0gk0eg2o68pc`'s versions at 05:01:24 and 05:01:27 hang from the Glue job's runs `4rt71px23p3ksw`
+  (`….overwrite_by_expression.glue_catalog_app_dbt_trades/01a1fc7b-0898-…`) and `3uv1vzb973rh1s`
+  (`….atomic_replace_table_as_select.app_dbt_trades/01a1fc7b-0745-…`), each from the inbox
+  `cvurzd3gyts5qo`.
+- **[Claude] x passes**: the swap leaves `notional_by_desk` a new table at a new location, created 05:02:58,
+  with the first table's grants; the asset keeps its id and takes revision 2 at the new location; the graph
+  keeps its nodes, a dataset node being the table's ARN, which names the table and not its location, and
+  each run adds its job runs under the same jobs and a version to each node.
+
+## 2026-11-21 — Sitting A: 3.3, the posts that fail
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from `jup`'s
+terminal as `app-dbt-dev`'s project role; Claude's reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and, for the proxy's log,
+`awsds-infra-prod` (Production). Times are UTC.*
+
+- **[user] 3.3**, as one chain Claude wrote: each of the step's `export`s, then `scripts/dev-cli.sh run
+  --manifest manifest.yaml --targets dev --workflow app-dbt`, then a boto3 poll of the run's state before
+  the next. The runs, each run's `OverrideParameters` carrying the switches as exported:
+  `y0LYsay860ExnUB` at 05:25:34 (`LINEAGE_DOMAIN=dzd_canaryprobe0000`), `2n9VT4BUgGDzjEI` at 05:35:59
+  (`LINEAGE_ENDPOINT=http://127.0.0.1:9`, `LINEAGE_ATTEMPTS=1`) and `W79iKwIMko7AROp` at 05:42:06
+  (`https://datazone.us-west-2.api.aws:8443`, one attempt). The chain ended *"em repouso:
+  dzd-d8yrvx1ko7im6o default default"*.
+- **[Claude] The poll stopped the chain after the first run**: `boto3.client("mwaa-serverless")` failed
+  `GetWorkflowRun` with `ProxyConnectionError`, *"Tunnel connection failed: 403 Forbidden"*, and the
+  proxy's log reads five `CONNECT airflow-serverless.us-west-2.api.aws:443 403 … TCP_DENIED` from `jup`'s
+  10.20.28.126 from 05:25:35 to 05:25:40, with that host in both of the image's `NO_PROXY` variables. A
+  second attempt was refused the same way. The CLI's `run`, from the same terminal at 05:25:34, left no
+  `airflow-serverless` line in that log. Measured on the laptop at 05:33: botocore decides the proxy
+  against `airflow-serverless.us-west-2.amazonaws.com`, the host it composes from the service's endpoint
+  prefix, and not against the `.api.aws` host the request goes to (`SUP-395`). With that host added to
+  `NO_PROXY` and an explicit `endpoint_url`, the poll read `y0LYsay860ExnUB` `SUCCESS` at 05:35:55 and the
+  chain went on.
+- **[Claude] The runs**, each `SUCCESS` with `load` and `transform` `SUCCESS`, beside 2.3's and 2.5's. The
+  emit phase runs from dbt's *"Done. PASS=2 …"* to the wrapper's *"Emitted … OpenLineage events"*; the log
+  is the `transform` task's, counted in its messages' bytes:
+
+  | Run | The post | `transform` | Emit phase | The log |
+  |---|---|---|---|---|
+  | 2.3's `SzzngX9q8O3hZ7k` | six events posted | 48 s | 2.6 s | 64 events, 17,653 bytes |
+  | 2.5's `JCrmBgSmNqRrTXg` | six events posted | 54 s | 2.5 s | 64 events, 17,652 bytes |
+  | `y0LYsay860ExnUB`, refused | `AccessDeniedException` | 67 s | 2.4 s | 352 events, 211,566 bytes |
+  | `2n9VT4BUgGDzjEI`, rejected | `ConnectionRefusedError`, then `EndpointConnectionError` | 50 s | 2.6 s | 1,540 events, 466,887 bytes |
+  | `W79iKwIMko7AROp`, unanswered | `ConnectTimeoutError` | 426 s | 362.4 s | 1,420 events, 441,139 bytes |
+
+- **[Claude] The wrapper's lines are the same in all three**: each of the six events' failures is printed
+  twice, in the wrapper's two log formats, as *"OpenLineage client failed to emit event …"* with its
+  traceback and a `RuntimeError: Failed to send lineage event to DataZone Domain …` line of 2,134 to 9,155
+  bytes that carries the event, the compiled SQL included; then *"Emitted 0 OpenLineage events"*,
+  *"Underlying dbt execution returned 0"*, *"run-dbt.sh: peak memory … kB, exit code 0"* and *"Command
+  exited with return code 0"*. The refusal is IAM's: *"…
+  assumed-role/datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g/AmazonMWAAServerless is not authorized to
+  perform: datazone:PostLineageEvent on resource: arn:aws:datazone:us-west-2:<Sandbox>:domain/* because no
+  identity-based policy allows the datazone:PostLineageEvent action"*, the resource in the caller's
+  account, where the step expected the service's error for a domain it does not hold. The closed port
+  reads *"Could not connect to the endpoint URL:
+  "http://127.0.0.1:9/v2/domains/dzd-d8yrvx1ko7im6o/lineage/events""*; the unanswered port *"Connect
+  timeout on endpoint URL:
+  "https://datazone.us-west-2.api.aws:8443/v2/domains/dzd-d8yrvx1ko7im6o/lineage/events""*, the first at
+  05:48:01, 62 seconds after *"Done."*, botocore's 60-second connect timeout once per event.
+- **[Claude] ix**: a refused, a rejected and an unanswered post each leave the task `SUCCESS`, the
+  script's exit code 0 and *"Emitted 0 OpenLineage events"*, as in 0.16. The refused and the rejected add
+  nothing to the 2.5 seconds the posts take; the unanswered adds six minutes, 60 seconds for each of the six
+  events at one attempt, as the step computed. Each multiplies the log by 12 to 26. Nothing outside the
+  task's log reports a failed post: decision 5's input, which goes back to the user.
+
+## 2026-11-21 — Sitting A: 3.4, another project's event on `notional_by_desk`
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from the
+terminal of a space of `test-experimentation` (`4gqfau9xuo6e4w`) as that project's role; Claude's reads
+and the delete as the infrastructure user with `InfrastructureAccess`, through `awsds-infra-sandbox-1`
+(Sandbox Account 1) and `awsds-infra-data` (Data Governance); the portal in the user's Chrome session
+through Claude in Chrome. Times are UTC.*
+
+- **[user] 3.4**, aws-cli 2.37.0 in the space: the step's event, its output the pair under which 2.4 read
+  the model's node, `arn:aws:glue:us-west-2:<Sandbox>:table` and `app_dbt/notional_by_desk`, the job
+  `stage-20-foreign` `foreign-writer`, the run `791b1044-…`; the post answered the id `bbmyjshqm00c5s`.
+  Then `get-lineage-node` on `app-dbt-dev.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run`
+  answered `6eael36d03lyfk` with the forms `QueryForm`, `JobForm` and `AdditionalPropertiesLineageForm`.
+- **[Claude] The domain accepted the event**: `processingStatus` `SUCCESS`, `eventTime` 05:42:00,
+  `createdAt` 05:42:10. Data Governance's trail holds the `PostLineageEvent` at 05:42:10 from
+  10.20.104.205 through `vpce-03abb012f13500645` with no error, and a `CreateLineageNode` by
+  `datazone.amazonaws.com` at 05:42:17. The table's node `6w7hp2vvi8kscw` took a version at 05:42:00, its
+  upstream the run `bdgva1yjktix3k` (`amazon.datazone.JobRunLineageNodeType`,
+  `stage-20-foreign.foreign-writer/791b1044-…`, `JobForm` and `JobRunForm`), its downstream the asset's
+  node `6ljn21swt4l0y8`; the job's node is `bgib8sahkbeets` (`stage-20-foreign.foreign-writer`,
+  `JobForm`). Both new nodes name as creator the Data Scientist User's id, where the workflow's events name
+  the project role: a post from a space's terminal carries the person.
+- **[Claude] The portal**, read from 05:44 to 05:46, signed in as the Data Scientist User; reads and view
+  toggles only. `app-dbt-dev`'s `notional_by_desk`, *Lineage*: `foreign-writer` as a *Job Run*,
+  `COMPLETE`, 02:42 UTC-03:00, beside the dbt model's run of 02:03 (2.5's), both drawn into the table; the
+  table's node labelled `app_dbt/notional_by_desk`, the foreign event's name, where vii read
+  `awsdatacatalog.app_dbt.notional_by_desk`; the foreign run's panel, *Source Identifier*
+  `stage-20-foreign.foreign-writer` and *Created By* the Data Scientist User. The portal draws the latest
+  run of each job upstream of a node, and names a node by its latest version.
+- **[Claude] xi: yes to both, with a limit.** The domain accepts from one project's role an event about
+  another project's table, adds it as a version of that table's node and draws the foreign job on the
+  table's tab; a role outside the project reads the project's job node, the compiled SQL in its
+  `QueryForm` included (`TM-29`'s shape, on lineage). The Data Scientist User is `PROJECT_OWNER` of both
+  projects, so the reading does not separate the project from the person.
+- **[user] The delete**, in chat: *"Autorizo o delete"*, answering Claude's question that named
+  `delete-lineage-event` of `bbmyjshqm00c5s`, as Sandbox and then as Data Governance. The other sessions
+  on this machine told at 05:50.
+- **[Claude⚡] Both refused**, from the laptop, aws-cli 2.37.12. As Sandbox at 05:50:51: *"… is not
+  authorized to perform: datazone:DeleteLineageEvent on resource: …:domain/dzd-d8yrvx1ko7im6o because no
+  resource-based policy allows the datazone:DeleteLineageEvent action"*. As Data Governance, the domain's
+  account, at 05:50:54: *"User is not permitted to perform operation: DeleteLineageEvent"*, DataZone's own
+  wording, IAM having let the call through. A member account reaches the domain through the RAM share's
+  managed permission `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`: versions 13 and 14, the
+  second the share's since 05:45:59 (pull request #347), each carry `PostLineageEvent` and the lineage
+  reads and neither carries `DeleteLineageEvent`. The root domain unit's one owner is an Identity Center
+  group (`7ee243ab-…`), and no IAM principal.
+- **[user] The event stays**: *"Deixe e registre"*. The step's fallback, the posting space's role, is a
+  Sandbox principal under the same resource policy, and was not run.
+- **[Claude] xv is not answered**: no identity this session holds may call `DeleteLineageEvent`, so what
+  it removes stays unmeasured. AWS's lineage authorization and API pages name neither who may call it nor
+  what it removes (read 2026-11-21). `bbmyjshqm00c5s` stays in the graph, the portal drawing
+  `foreign-writer` into `notional_by_desk`; 7.1 and Rollback's step 6, which delete the events by what xv
+  reads, wait on an identity the root domain unit's owners would have to admit.
+
+## 2026-11-21 — Sitting A: 2.6, the same project by hand
+
+*Claude, in the same session. The space's acts are the user's, as the Data Scientist User, from `jup`'s
+terminal as `app-dbt-dev`'s project role; Claude's reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data
+Governance). Times are UTC.*
+
+- **[user] 2.6**, the step's commands from `~/app-dbt`, the variables read first (*"dzd-d8yrvx1ko7im6o |
+  as-built | conta definida"*): the archive unpacked to `/tmp/app-dbt-hand`, then `run-dbt.sh …
+  --namespace app-dbt-by-hand` with `-- debug` and with `-- run`. Both print *"dbt from /tmp/tmp.…/bin,
+  this script not executable"* and *"/opt/conda/bin/python3 3.12.14
+  Linux-6.12.115-140.210.amzn2023.x86_64-x86_64-with-glibc2.39"*, where the worker reads 3.12.16 on Linux
+  6.1.190 with glibc 2.34. `debug`: *"This dbt command produces no lineage; running it without OpenLineage
+  events"*, *"Connection test: [OK connection ok]"*, *"All checks passed!"*, peak memory 159,304 kB, exit
+  code 0. `run`: *"OK created sql table model app_dbt.notional_by_desk … [OK 3 in 13.98s]"*, *"Done. PASS=1
+  …"*, four events posted at 06:18:13 (`ckenjo1twzcqds`, `61luuzkqhux72o`, `dnwj5sxhkowff4`,
+  `6qldbu4jy3iz68`), *"Emitted 4 OpenLineage events"*, peak memory 194,416 kB, exit code 0. As 0.16 read.
+- **[Claude] The statements and the table**: 2.5's swap, each statement `SUCCEEDED`: the create at
+  06:17:58; the renames at 06:18:02 and 06:18:04, each an `UpdateTable` refused
+  `UnsupportedOperationResponse` and then a `CreateTable` and a `DeleteTable`; the drop at 06:18:07; the
+  model's second statement at 06:18:10. `notional_by_desk` created 06:18:05 and updated 06:18:11,
+  `VersionId` 1, one version, its description kept, at
+  `…/app_dbt/notional_by_desk/4e686f34-677c-45e5-8678-7d4c31a7c5f6`; `notional_by_desk__ha` and
+  `notional_by_desk__bkp` read `EntityNotFoundException`; the project role's two grant rows unchanged. The
+  asset `daefcycb3hhhn4` stays at revision 2, its `GlueTableForm` naming 2.5's location `378cf5f7-…`,
+  until the source's next run.
+- **[Claude] The space's session against the worker's**: in Sandbox's trail every call is the project
+  role's session `SageMaker` from `jup`'s 10.20.28.126, user agent `Boto3/1.43.75 …
+  os/linux#6.12.115…`: Athena's `StartQueryExecution` through `vpce-0150fe6c7648118a7`; the client's Glue
+  calls through `vpce-015a9ee19ec1b45af`, `persist_docs`' `UpdateTable` at 06:18:11 among them; the four
+  `PostLineageEvent` at 06:18:13 through `vpce-03abb012f13500645`; Athena's own Glue calls from
+  `athena.amazonaws.com`. 2.5's worker called as the session `AmazonMWAAServerless` from 10.20.56.170.
+  Data Governance's trail records the four posts as `AWSAccount`, with the same address and endpoint, so
+  the domain's account does not tell the two apart; it adds two `CreateLineageNode` by
+  `datazone.amazonaws.com` at 06:18:25. Two `GetDatabase` calls Glue made itself under the client's
+  `GetDatabases`, at 06:17:57, read *"Insufficient Lake Formation permission(s): Required Describe on
+  curated"* and *"… on raw"*.
+- **[Claude] The graph keeps its dataset nodes and adds a job**: the four events' and the new nodes'
+  creator is `28f1b390-…`, the Data Scientist User's profile (type `SSO`), where the workflow's events
+  carry `8af0750c-…`, the profile of `datazone_usr_role_dnl3l158mbhrio_55hp9teamegf4g` (type `IAM`). The
+  jobs `app-dbt-by-hand.awsdatacatalog.app_dbt.app_dbt.notional_by_desk` (`dm0hfd9w4k7ehc`, `QueryForm`,
+  `JobForm`, `AdditionalPropertiesLineageForm`) and `app-dbt-by-hand.dbt-run-app_dbt` (`bhng3gchuguzyo`)
+  were created at 06:18:25. `6w7hp2vvi8kscw` took a version at 06:18:11, named
+  `awsdatacatalog.app_dbt.notional_by_desk` again, its upstream the run `axu3omqltim74g`
+  (`…notional_by_desk/01a1fcc1-5bb4-…`) from `3s0gk0eg2o68pc`, which took a version at the same second, its
+  downstream the asset's node `6ljn21swt4l0y8`.
+- **[Claude] The development loop, read**: a person's run joins the workflow's graph as a job of its own
+  between the same dataset nodes. The graph tells it by the job's namespace, which the person chooses
+  (`app-dbt` when `--namespace` is left out), and by each version's creator, which DataZone sets: the
+  person's profile from a space, the role's from the workflow. The job's name follows the dbt command,
+  `run` against the workflow's `build`, not the person. A run by hand moves the table to a new location,
+  and the asset follows at the source's next run.
+
+## 2026-11-21 — Decision 5 looked at again after 3.3
+
+*Claude, in the same session; the decision is the user's, in chat.*
+
+- **[user] Decision 5 keeps (a)**: *"Manter (a)"*, answering Claude's question on 3.3's readings (ix).
+  dbt's exit code decides the task, and a failed post stays a warning in the task's log. The stage file's
+  decision 5 carries the date.
+
+## 2026-11-21 — Sitting A: 4.5, a processing job without isolation
+
+*Claude, in the same session. The tar, the deploy and the run are the user's, in `jup`'s terminal as
+`app-dbt-dev`'s project role; Claude's reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (account Sandbox Account 1) and `awsds-infra-prod` (account Production). Times are
+UTC.*
+
+- **[user] The tar and the exports**: *"app-dbt-job.tar: OK"*, the tree extracted to `job/app-dbt`; 2.2's
+  values, then `DEV_PROJECT_SG`, `DEV_PROJECT_KEY_ARN` and `JOB_IMAGE_URI`, the house image by digest in
+  Production's registry (`sha256:658c05d1…`).
+- **[user] The deploy**: seven files synced to `shared/app-dbt/`; `app_dbt_app_dbt_dev_app_dbt` and
+  `app_dbt_app_dbt_dev_app_dbt_probe` updated, `app_dbt_app_dbt_dev_app_dbt_job` created `READY`. The
+  CLI's S3 Access Grants plugin asked `GetDataAccess` for `shared/` and for each definition: eight refusals
+  from 06:45:31 to 06:46:05, from the proxy host's address through Production's S3 gateway endpoint
+  (`SUP-042`, `SUP-093`), as 2.2's deploy read six from 04:04:24. The copies ran on the role's own
+  credentials.
+- **[user] The run**: 2.2's nine `ListTagsForResource` refusals, then *"Successfully started workflow run:
+  yNcXniA0X0rn8G1"*.
+- **[Claude] The copies and the workflow**: under `shared/app-dbt/`, seven objects: `code/app-dbt.zip`
+  26,129,645 bytes, `job/probe.py` 6,103, `workflows/app-dbt-job.yaml` 2,342, `workflows/app-dbt-probe.yaml`
+  7,390 and `workflows/app-dbt.yaml` 3,794, with `glue/load.py` and `inbox/trades.csv` unchanged. Under
+  `shared/operatorFiles/`, three copies, at 06:45:33, 06:45:46 and 06:45:58. The job's workflow `READY`,
+  `manual_only`, created 06:46:06, in the project's two subnets and `sg-040ed6781b8c4449e`, under
+  `CUSTOMER_MANAGED_KEY`.
+- **[Claude] The create**: `CreateProcessingJob` at 06:47:20 as the project role's session
+  `AmazonMWAAServerless`, `Boto3/1.43.1`. It came from the worker's interface `eni-09bca8eafcf24448b` at
+  10.20.102.138 (created 06:46:42 by `AWSServiceRoleForAmazonMWAAServerless`), through
+  `vpce-042889be2db64615e` (`sagemaker.api`). Its `networkConfig`: `enableNetworkIsolation` `false`,
+  `enableInterContainerTrafficEncryption` `true`, the project's two subnets and its group; `ml.t3.medium`,
+  10 GB under the project's key.
+  - SageMaker's checks around the create, as the project role: five `CreateNetworkInterface` answered
+    `DryRunOperation` at 06:47:20 and 06:47:21 (sessions `AnalyticsValidation`, `SageMaker`, and
+    `AmazonMWAAServerless` invoked by `sagemaker.amazonaws.com`), and two `BatchGetImage` from Amazon
+    public addresses.
+  - A `kms:CreateGrant` on the project's key at 06:47:22, as the session `SageMaker` from 32.184.5.219,
+    refused *"because no identity-based policy allows the kms:CreateGrant action"*. The same grant invoked
+    by `sagemaker.amazonaws.com` answered in the same second, and so did the volume's grant by
+    `ec2-frontend-api.amazonaws.com` at 06:47:26. The job ran past the refusal.
+- **[Claude] The job's interfaces**, created by SageMaker as the project role's session `SageMaker` from
+  34.214.211.121, both in `subnet-09d3399d6b0fec93a`: `eni-0d5e959e28a522ec7` at 10.20.127.40 (06:47:53)
+  and `eni-085f0964023533252` at 10.20.72.88 (06:47:55), described
+  `pipeline-<Sandbox>-215bb7e6615b3de8c510cdf43d4c8a59-1` and `-2`. Every call of the container came from
+  the second.
+- **[Claude] The image's pull**: `GetAuthorizationToken` at 06:48:06 from 52.39.237.48, an Amazon public
+  address, `aws-sdk-go`. Then `BatchGetImage` and 42 `GetDownloadUrlForLayer` invoked by
+  `ecr.amazonaws.com`, to 06:49:02, as the project role's session `SageMaker`, and one `BatchGetImage` from
+  52.39.237.48 refused `InvalidParameterException` on `repositoryName`. No call of the pull came through a
+  Sandbox endpoint or from the job's interfaces.
+- **[Claude] The job**: `Completed`, no `FailureReason`; created 06:47:20, `ProcessingStartTime` 06:48:06,
+  `ProcessingEndTime` 06:55:11, the container's lines at 06:54:52 and 06:54:53. The run `SUCCESS` from
+  06:46:36 to 06:57:24, 647 seconds; `job_1`, `SageMakerProcessingOperator`, `SUCCESS` in 612. The polls
+  read the job `Completed` at 06:57:27, and the run `SUCCESS` only at 06:59:00.
+- **[Claude] The job's log**, `/aws/sagemaker/ProcessingJobs`, one line per reading:
+  - Python 3.12.14 as user 1000;
+  - the image's proxy `http://proxy.awsds.internal:3128` and its file, *"no_proxy entries: 73; no_proxy
+    sha256 : 61f1e1646df12c14"*;
+  - `boto3 1.43.75`, and the caller, the project role's session `SageMaker`;
+  - `SELECT 1` `SUCCEEDED` through the project's workgroup, its output under `dev/sys/athena/`, rows
+    `[['_col0'], ['1']]`;
+  - `app_dbt` at `…/dev/data/catalogs/`;
+  - `ListLineageEvents`: 10 events, each `SUCCESS`;
+  - *"on the plane: https://pypi.org/ HTTP 200"* and *"on no plane: http://example.com/ HTTP 403
+    Forbidden"*.
+- **[Claude] The job's calls**, in Sandbox's event history, each from 10.20.72.88 as the project role's
+  session `SageMaker`, `Boto3/1.43.75`, each answered:
+  - `GetCallerIdentity` at 06:54:51 through `vpce-01faaff304e0184b0` (`sts`);
+  - `StartQueryExecution`, two `GetQueryExecution` and `GetQueryResults` from 06:54:51 to 06:54:52 through
+    `vpce-0150fe6c7648118a7` (`athena`);
+  - `GetDatabase` at 06:54:52 through `vpce-015a9ee19ec1b45af` (`glue`);
+  - `ListLineageEvents` at 06:54:52 through `vpce-03abb012f13500645` (`datazone`).
+
+  The job's own log calls came from 52.39.237.48 at 06:54:58: `CreateLogGroup` answered
+  `ResourceAlreadyExistsException`, then `CreateLogStream`.
+- **[Claude] The proxy**, `/awsds/prod/proxy`, both lines stamped 06:54:53: `10.20.72.88 CONNECT
+  pypi.org:443 200 30324 1783 TCP_TUNNEL` and `10.20.72.88 GET http://example.com/ 403 3391 133
+  TCP_DENIED`.
+- **[Claude] 4.5 passes**: the job was created, ended `Completed` and had each call answered, with the
+  proxy at 200 for `pypi.org` and 403 for `example.com`, as `sandbox/probes/` expects them.
+  - xii: yes. A project role in Sandbox creates a job without isolation; 4.4's battery of 2026-11-17 read
+    the processing job `ALLOWED` in Production and the training job `DENY-SCP`.
+  - xiii's Sandbox half: yes. STS, Athena, Glue and the domain answered through their interface
+    endpoints, the proxy passed its allow-list and no name off it. The target's half stays the step's
+    reading of 2026-11-11.
+  - Rows 1 to 16 of sitting A are done. Row 17 joins 6d's lowering at the day's end (`promotion.md`
+    §N.9.3 step 10).
+
+## 2026-11-21 — Sitting A: 2.7, the downs
+
+*Claude, in the same session. The portal's acts are the user's as the Data Scientist User, the downs the
+user's as the infrastructure user with `InfrastructureAccess`; Claude's reads through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `make status`. Times are UTC.*
+
+- **[user] The space**: `jup`'s app deleted at 07:09:24 and the space itself at 07:46:59, through the
+  portal.
+- **[user] The downs**: `make down ENV=sandbox`, its interface endpoints deleted from 07:50:30 to 07:53:47,
+  and `make hub-down`, the hosts stopped at 07:56:33 and 07:56:35.
+- **[Claude] `make status` and §R's readings**, from 08:00: 0.0000 USD/h, no interface endpoint, no NAT
+  gateway and no Studio app in Sandbox (6d's log carries the readings).
+- **[Claude] `$HOME/tmp/stage20`** moved to the Trash as `stage20-2026-11-21`, 102 MB: 2.0's `source.tar`
+  and `app-dbt.tar`, the job's tar in `job/`, the extracted tree and the nine event files of 2.3, whose
+  readings the 2.3 entry holds. 2.0's commands rebuild the folder from `rm -rf`.
+- **[Claude] Sitting A is done**, rows 1 to 17. Left: pass 5 after Stage 19's 4.12, on §N.10's day 1; 7.1
+  and Rollback's step 6, which wait on an identity that may call `DeleteLineageEvent` (xv); pass 8's
+  remainder in R1 or R2, before 2026-12-18.
+
+## 2026-11-21 — 8.6: the tree to be tagged, and the bundle rehearsed before the curation
+
+*Claude, in a session the orchestrating session started for 8.6, with the hub and Sandbox up for N.9's day
+2, which this work does not use. Reads as the infrastructure user with `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data Governance); the portal read in
+Claude's own tab group of the user's Chrome, signed in as the Data Scientist User, reads only. Account ids
+in pasted output became `<Sandbox Account 1>`. Times are UTC.*
+
+- **[Claude] The portal's identity**, about 20:20: the account menu reads *Data Scientist User*; the project's
+  *Members* page lists that user as *Owner* of `app-dbt-dev`, and `awsds-deploy-sandbox-test`, the
+  infrastructure user's `AWSReservedSSO_InfrastructureAccess_…` and the project role as *Contributor*, as
+  `list-project-memberships` reads them.
+- **[Claude] The assets before the curation**: `trades` (`bra0895x5fjzww`) and `notional_by_desk`
+  (`daefcycb3hhhn4`), each at revision 2 by `SYSTEM`, no description, `AssetCommonDetailsForm` holding the
+  table's ARN alone, no `classification`; the project owns no data product and no glossary. The form type
+  `classification` is at revision 2, `ENABLED`, owned by `eighth-experimentation`. The texts were proposed to
+  the user in chat, each README under 1,500 of the 4,096 characters.
+- **[Claude] The tree**, on pull request #349: `git restore --source=c11a9829` over `examples/app-dbt/`, whose
+  tree `ec837c34` is `103b4acc`'s, the one 2.0 built the archive and the tar from; `399f3365`'s six files for
+  4.5 are off it. Then the lint pin moved from `4613ddc` to `awsds-workflows` `4401f91` in `.gitlab-ci.yml`,
+  the README and the simulation; between the two commits only `src/awsds_workflows/lint.py` changed in the
+  package. `uv sync --locked`, ruff check and format clean, `pytest` *"86 passed"*; the lint with the
+  pipeline's instance types *"ok: 4 arquivo(s)"* at `4613ddc` and at `4401f91`. #321's
+  `deploy-application.py --self-check`, run in a copy of its branch holding this tree: *"ok    staging: 9
+  variable(s); app_dbt_deploy_staging_app_dbt, app_dbt_deploy_staging_app_dbt_probe"*, *"ok    prod: 9
+  variable(s); app_dbt_deploy_production_app_dbt"*, every other application `ok`, *"OK"*.
+- **[Claude] `build-task-code`'s script**, by `bash` at 20:26 in the tag's tree, extracted from `git archive`
+  of the branch's head (36 files): exit 0, *"code/app-dbt.zip: 5102 entries, 26129234 bytes, 82844337
+  unzipped, modes {'run-dbt.sh': '0o100755', 'app_dbt/bin/dbt': '0o100755'}"*. Against 2.0's archive, read in
+  the Trash where 2.7 left it: the same 5,102 members, and only four differ, all in
+  `app_dbt-0.1.0.dist-info/`: `METADATA`, which embeds the README (`readme = "README.md"`), `RECORD`,
+  `direct_url.json`, which names the build's temporary folder, and `uv_cache.json`. The archive's digest
+  thus moves with the README and the build folder, never with the code alone.
+- **[Claude] The pipeline's `pip-audit`**, by the gates' commands at 20:29: 78 pins exported, 78 audited, *"No
+  known vulnerabilities found"*. The gate reads a feed, so it runs again on the day of the tag (Lesson 77).
+- **[Claude] The bundle before the curation**, `bundle`'s script by `bash` in the same tree, as
+  `awsds-infra-sandbox-1` with `DOMAIN_ID`, `DOMAIN_REGION` and `DEV_PROJECT_NAME` exported, from 20:27:34 to
+  20:28:01: exit 0, `artifacts/app-dbt.zip` 25,501,926 bytes, six files (the catalog export, `code/app-dbt.zip`,
+  `glue/load.py`, `samples/trades.csv` and the two workflows); no *"Pattern not found"* and no *"Failed to get
+  project connections"*. The guard: *"assets: 2 (notional_by_desk, trades)"*, every other section 0, *"OK"*.
+  Each asset carries `GlueTableForm` 13, `DataSourceReferenceForm` 5, `SubscriptionTermsForm` 2 and
+  `AssetCommonDetailsForm` 8, no description, no README.
+- **[Claude] Sandbox's trail** for that minute: 32 calls by the session from 20:27:35 to 20:28:00, each a read:
+  `DescribeStacks` refused `ValidationException`, `ListDomains`, `ListProjects`, `GetProject`,
+  `ListProjectMemberships`, two `GetUserProfile`, two `GetGroupProfile` answered (`SUP-360`), four
+  `ListConnections`, nine `GetConnection`, `ListEnvironments`, four `Search`, two `SearchTypes`, two `GetAsset`
+  and `GetCallerIdentity`. CloudTrail records `Search` and `SearchTypes` with `readOnly` false.
+- **[Claude] Read against R1**: 5.0's subscription writes its resource link in `app_dbt`, and the project's
+  source `3uof8bs4x693f4` (`cron(43 2 * * ? *)`) imports a link as an inventory asset (`SUP-197`), which the
+  bundle exports and the guard fails. `promotion.md` §N.11.1 step 5 now has 5.0's request wait for step 7's
+  `bundle` job.
+
+## 2026-11-21 — 8.6: the curation saved through the portal, and the bundle rehearsed after it
+
+*Claude, in the same session. The portal in Claude's own tab group of the user's Chrome, signed in as the
+Data Scientist User, the group closed after the saves. Reads as the infrastructure user with
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (Sandbox Account 1) and `awsds-infra-data` (Data
+Governance, the domain's account). Times are UTC.*
+
+- **[Claude] The word**: the user's *"Autorizo a curadoria"* in this session's chat, answering the
+  question that named saving the two assets' curation with the texts shown in full. The orchestrating
+  session had relayed the same authorization from its own chat; this session did not act on the relay.
+  The four other sessions on the laptop were told before the first save.
+- **[Claude] The identity**, read again before the first save: the account menu reads *Data Scientist
+  User*, project `dnl3l158mbhrio`.
+- **[Claude] The saves**, each one revision by the Data Scientist User, read back by `get-asset` after
+  each:
+
+  | Asset | Revision | At | The portal's act |
+  |---|---|---|---|
+  | `trades` | 3 | 20:38:26 | the description, by the edit icon beside *No description* and its check mark: *"Description updated successfully"* |
+  | `trades` | 4 | 20:39:56 | the README, by *Create Readme* and the editor's *Save* |
+  | `trades` | 5 | 20:40:47 | the form, by *Add Form*, *Classification*, *Next*, `internal` and *Save*: *"Form added successfully"* |
+  | `notional_by_desk` | 3 | 20:41:47 | the description, the same way |
+  | `notional_by_desk` | 4 | 20:42:29 | the README |
+  | `notional_by_desk` | 5 | 20:43:12 | the form, `internal` |
+
+  Each description reads as shown; `AssetCommonDetailsForm` holds `readMe` beside `sourceIdentifier`,
+  equal to the text shown (1,282 and 1,484 characters, the file's final newline dropped); `classification`
+  is at type revision 2 holding `{"classification":"internal"}`. Revisions 1 and 2 stay `SYSTEM`'s. Neither
+  asset was published: *Generate suggestions* and *Publish* were never clicked.
+- **[Claude] What the portal showed beyond `catalog.md`**: the README is a Monaco code editor with a
+  *Side By Side Preview* switch. Each text went in through the editor's own API (`executeEdits` over the
+  whole model) rather than typed, read back equal and rendered by the preview before *Save*. *Add Form*
+  opens a panel in two steps: *Select a form*, which offered `Classification` alone, with its description
+  and *1 fields*, and *Enter field values*, one optional text field. `get-form-type` reads its model as one
+  `String` with no list of values, its description naming `public`, `internal`, `restricted` or
+  `personal`, so the field takes any text.
+- **[Claude] Data Governance's trail** from 20:37:30 to 20:43:40: six `CreateAssetRevision`, at the six
+  times above on `bra0895x5fjzww` and `daefcycb3hhhn4`, by the role `awsds-data-studio-domain-execution`
+  in the user's session; every other call with `readOnly` false a `Search` or a `SearchTypes`, and no
+  `CreateListingChangeSet`. Sandbox's trail holds none of the six.
+- **[Claude] The bundle after the curation**, the script and tree of 20:27, from 20:44:32 to 20:44:57:
+  exit 0, `artifacts/app-dbt.zip` 25,503,094 bytes,
+  `BUNDLE_SHA256=4ca00173830a4c390c507a8e32e744a4b9afad5d2b16df805a8c2fce5bba41f3`, the same six files. The
+  guard: *"formTypes: 0"*, *"assets: 2 (notional_by_desk, trades)"*, every other section 0, *"OK"*. Each
+  asset carries its description, the `readMe` equal to the text saved and `classification` at revision 2
+  with `{"classification":"internal"}`, beside the four forms of 20:27; the form type travels in no
+  `formTypes`, its owner being `eighth-experimentation` (Stage 19 item 22).
+- **[Claude] Sandbox's trail** for that minute, read at 20:47: 32 calls by the session from 20:44:33 to
+  20:44:57, the set of 20:27: `DescribeStacks` refused `ValidationException`, `ListDomains`,
+  `ListProjects`, `GetProject`, `ListProjectMemberships`, two `GetUserProfile`, two `GetGroupProfile`
+  answered, four `ListConnections`, nine `GetConnection`, `ListEnvironments`, four `Search`, two
+  `SearchTypes`, two `GetAsset` and `GetCallerIdentity`, each a read. A read at 20:45:39 had found the
+  window empty.

@@ -59,17 +59,17 @@ entry is still true is the reading.
 | [CloudTrail](#cloudtrail) | What an event names and omits; `lookup-events`' blind spots; the door a call took; cross-account and global-endpoint records; network activity events; CloudTrail Lake |
 | [CloudWatch and Service Quotas](#cloudwatch-and-service-quotas) | Aggregates and their windows; `AWS/Usage`; log groups under a customer key; log groups the services create; quotas applied, raised and refused |
 | [EventBridge](#eventbridge) | EventBridge Scheduler's context attributes under `jsonencode` |
-| [EC2](#ec2) | Elastic IP transfers; descriptions EC2 refuses; instance type changes and first boot; an instance profile at boot |
+| [EC2](#ec2) | Elastic IP transfers; descriptions EC2 refuses; instance type changes and first boot; an instance profile at boot; AL2023's zram and a first boot's dnf memory |
 | [Systems Manager](#systems-manager) | State Manager associations; the agent's registration; Parameter Store's reserved and public names |
 | [VPC and Route 53 Resolver](#vpc-and-route-53-resolver) | Interface endpoints' DNS names, private zones and readiness; gateway endpoints and S3's names; DNS Firewall's CNAME chains; the Resolver query log |
 | [ECR](#ecr) | A pull through endpoints; the pull-through cache; ECR Public's redirect |
 | [S3](#s3) | S3 Access Grants: the request charge, the lag of a delete, the instance and the plugin SageMaker Unified Studio brings; the wording of a refused read |
 | [Glue](#glue) | Resource policies; crawlers under a security configuration; a job's sessions; lineage without an endpoint; federated databases |
 | [Lake Formation](#lake-formation) | Data lake settings and who writes them; listings that omit grants; cross-account shares, vends and their flags; the creator's permissions; Athena writes through vended sessions; RAM |
-| [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network |
+| [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network; an Iceberg table's rename |
 | [Redshift Serverless](#redshift-serverless) | Namespace, workgroup and usage limits; SQL, users and privileges; the Data API; datashares through Lake Formation; billing, metrics, the free trial and the audit export |
-| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections |
-| [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE and Amazon Q |
+| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections; the Bedrock IDE's knowledge bases, guardrails, evaluations, chat agents and flows |
+| [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE, its clients and Amazon Q |
 | [SageMaker AI jobs and models](#sagemaker-ai-jobs-and-models) | Processing jobs: status, mounts, keys and image pulls; condition keys on the job creates; models and model packages |
 | [MWAA](#mwaa) | MWAA Serverless workflows, their API and KMS use; workers, templates, tasks and the Airflow operators; provisioned MWAA |
 | [The SMUS CI/CD CLI](#the-smus-cicd-cli) | `aws-smus-cicd-cli` 1.0.9: manifests and their variables, bundles, workflow names, the pre-deployment validation, what `deploy` reads and creates |
@@ -231,6 +231,17 @@ entry is still true is the reading.
   organization and the boundary read `true` and the four `implicitDeny`, a statement on the domain matching
   no `*`. `StartDataSourceRun` runs under the same form of statement (`SUP-346`), so a grant of such an
   action on the domain is read from its call (`log-stage-19-smus-native-data-product.md`, 2026-11-17).
+  Read again 2026-11-20 on `eighth-experimentation`'s project role: `datazone:StartNotebookRun`,
+  `ListNotebooks`, `GetNotebook` and `CreateNotebook` read `implicitDeny` with the domain's ARN in either
+  account and `allowed` with no resource named, through `SageMakerStudioProjectRoleMachineLearningPolicy`'s
+  `datazone:*Notebook*` (`log-stage-06d-unified-studio-remainder.md`, 2026-11-20). A key policy is evaluated
+  once each statement's `Resource` is rewritten from `*` to the key's ARN, and refused as written (measured
+  2026-11-21 in Sandbox, Stage 6a): passed as `--resource-policy` with `Resource` `*`, the call answered
+  `InvalidInput`, *"ResourceNames are not in a valid ARN format: *."*; rewritten, a project role's
+  `kms:GenerateDataKey` and `kms:Decrypt` through S3 read `allowed`, `ResourcePolicy` among the matched
+  statements beside AWS's two project-role policies, the context carrying the Region, the organization,
+  `kms:ViaService`, the encryption context and the role's `KmsKeyId` tag
+  (`log-stage-06a-unified-studio.md`, 2026-11-21).
 
 - `SUP-009` **`iam simulate-custom-policy` ignores `sagemaker:VolumeKmsKey` and `sagemaker:OutputKmsKey`
   when the resource is a job's ARN** (measured 2026-10-18, 6d step 1.3). A `Deny` on `Null` of either key
@@ -906,6 +917,47 @@ entry is still true is the reading.
   itself was not timed. Where: `log-stage-08-cicd-pipelines.md`, 2026-10-16;
   `terraform-live/production/runners/test-user-data.sh.tftpl`; Lesson 68.
 
+- `SUP-405` **AL2023 makes its zram swap only on a host with less than 800 MB of memory, so every EC2 size
+  above a nano boots with no swap at all** (read 2026-11-21 on three hosts of
+  `al2023-ami-2023.12.20261120.0-kernel-6.18-x86_64`, in the console and through SSM). The t3.nano's OOM
+  report counted 415 MiB of memory and 415 MiB of zram swap, both spent when its `dnf` was killed
+  (`SUP-406`). The t3.small's boot logged `zram_generator::config: zram0: system has too much memory
+  (1909MB), limit is 800MB, ignoring.`, and the t3.medium read `MemTotal` 3835 MiB and no swap. A t3.micro
+  read 913 MiB total on 2026-09-06 (Stage 6c's log), above the limit too. AWS gives the limit on the AL2023
+  user guide's system-requirements page, where zram is on by default since AL2023.3 for instance types
+  under 800 MB, the nano sizes named as examples. The page does not say that the step up loses the swap,
+  and on the host the generator's console line is the only sign. The consequence: above a nano a size is
+  chosen against `MemTotal` alone, with nothing to absorb a peak past it, so a t3.micro adds less headroom
+  over a t3.nano than its memory suggests (inferred). Where: `log-stage-12-observability-finops.md`,
+  2026-11-22; `terraform-live/production/proxy/variables.tf`.
+
+- `SUP-406` **On AL2023 2023.12.20261120 a dnf with a cold cache peaks at about 620 MiB of resident
+  memory, and update-motd runs a dnf of its own in the first minute of a boot** (measured 2026-11-21). The
+  repository's metadata is 91 MB, downloaded at 74 MB/s in the t3.nano's console. On a t3.medium of the
+  same image (`MemTotal` 3835 MiB, no swap, 257 MiB used at rest), through SSM with throwaway cache
+  directories under `/var/tmp` and nothing installed, `dnf install --downloadonly squid jq
+  amazon-cloudwatch-agent` exited 0 after 26 s at a `VmHWM` of 617 MiB, and `dnf check-update` exited 0
+  after 25 s at 623 MiB. On the t3.nano, 415 MiB with 415 MiB of zram (`SUP-405`), the first boot's
+  `dnf -y install wireguard-tools iptables-nft amazon-cloudwatch-agent` was killed 25 s into the user
+  data, `Out of memory: Killed process 1962 (dnf)`, its `anon-rss` 165,736 kB with about 348 MB swapped and
+  no other dnf running. systemd then stopped `cloud-final.service` (`Cloud-init 22.2.2 received SIGTERM,
+  exiting`), and at 48 s update-motd's `70-available-updates` lost its own dnf to the same killer. The host
+  came up with no WireGuard, no `wg0` and no CloudWatch agent while every describe-level check passed.
+  AWS's system-requirements page says that a `dnf upgrade` between some releases can need more than
+  512 MB, and nothing about an install or a check on a cold cache. Its page on package updates does not
+  name update-motd; an issue on AWS's AL2023 tracker (441, opened 2023-09-09) has `update-motd.service`
+  run at a reboot or once a day. The consequence: a first boot that installs packages needs about 620 MiB
+  for its dnf above the system's own use, which a t3.micro's 913 MiB hold with little to spare, and about
+  twice that if update-motd's dnf parses the cold cache at the same time (inferred: on the nano the two
+  were killed 23 s apart, and did not run together - the first kill's task table lists one `dnf` and no
+  update-motd, which appears with its own `dnf` only in the second, after cloud-init's SIGTERM). A host
+  that lost its first boot is repaired by a replacement, not a resize (`SUP-061`). A 1 GiB swap file
+  written before the first dnf, with update-motd masked, carries the install on a nano: on 2026-11-22 a
+  t3.nano of the same image finished it in 65 s, `/swapfile` at priority -2 beside the zram at 100, and
+  logged no OOM line (`wireguard-v0.8.1`). Where: `log-stage-12-observability-finops.md`, 2026-11-22;
+  `terraform-modules/wireguard/main.tf`; `terraform-live/production/proxy/variables.tf`;
+  `terraform-live/production/vpn/instance_type.auto.tfvars`.
+
 ## Systems Manager
 
 - `SUP-067` **Parameter Store reserves every name beginning with `aws` or `ssm`, case-insensitively.**
@@ -1112,6 +1164,33 @@ entry is still true is the reading.
   `log-stage-07-gitlab-runners-ecr.md`, 2026-10-12; `terraform-live/production/registry/cache.tf`;
   `AWS_STATE.md`.
 
+- `SUP-437` **ECR's basic scanning has failed every image of this estate pushed since 2026-11-15 with
+  *"Number of vulnerabilities for this image exceeds the maximum supported with Basic Scanning"*, where
+  images of the same base pushed until 2026-10-26 completed with up to 1,365 findings** (read 2026-11-22,
+  R1, `describe-image-scan-findings` as `awsds-infra-prod` on every image of Production's five scan-on-push
+  repositories). The registry's scanning configuration is `BASIC` with no rule. `awsds-prod-ecr-app-etl`'s
+  sixteen images pushed from 2026-10-12 to 2026-10-25 read `COMPLETE`, the 3.80 GB ones with 1,317 to 1,365
+  findings (from `v0.3.0` on, 113 `CRITICAL`, 612 `HIGH`, 158 `MEDIUM`, 16 `LOW` and 466 `UNDEFINED`); its six
+  pushed from 2026-11-15 20:25 to 2026-11-22 04:06 UTC, the same size, read `FAILED` with *"Number of
+  vulnerabilities for this image exceeds the maximum supported with Basic Scanning. Please upgrade to
+  Enhanced Scanning to cover all vulnerabilities in the image."*, no completion time and no finding.
+  `awsds-prod-ecr-base` and `awsds-prod-ecr-dev-env` split the same way: `default-v0.10.0`, pushed on
+  2026-10-26 at 21:51 and 22:02, `COMPLETE` with 1,337 findings each; `default-v0.10.1`, pushed on 2026-11-22
+  at 04:09 and 04:20 with ten packages' findings fixed in its lock (#365), `FAILED` with the same text.
+  `awsds-prod-ecr-deploy`'s three images of 0.21 to 0.26 GB, the last pushed 2026-10-25, read `COMPLETE` with
+  18 to 24 findings. The status is `FAILED`, not the `LIMIT_EXCEEDED` the API also lists. None of the pages
+  read on 2026-11-22 (basic scanning, scanning troubleshooting, image scanning, the `ImageScanStatus` and
+  `DescribeImageScanFindings` references, the service quotas) names a maximum number of vulnerabilities, a
+  scan failing on one, or this text; the quotas they give are 100,000 basic scans per registry per 24 hours
+  and one scan per image per 24 hours. So the service changed between 2026-10-26 22:07 and 2026-11-15 20:25
+  UTC. Whether an image with few findings pushed since completes is unread, no such image having been
+  pushed. Consequence: the release pipelines' `scan-gate` (Stage 8 1.4, informative by decision 1) has read
+  `FAILED` and no finding on every tag since `app-etl`'s `v0.4.7` of 2026-11-15, release G's pipeline #138 and
+  dev-env's #139 among them, so the gate's OS half reports nothing on these images and `pip-audit` is the
+  only scan that reads them; an earlier image's findings are no measure of a later one. The message's remedy
+  is enhanced scanning (Inspector), a cost the user decides. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-15 (`v0.5.0`'s `scan-gate`) and 2026-11-22; `stages/stage-08-cicd-pipelines.md` 1.4.
+
 ## S3
 
 - `SUP-088` **A denied `GetObject` on a key that does not exist names `s3:ListBucket` on the bucket in its
@@ -1155,6 +1234,15 @@ entry is still true is the reading.
   the gateway endpoint for them. `GetDataAccess` is also an event name of `lakeformation.amazonaws.com`, so
   a trail lookup filters on `eventSource`. Where: `log-stage-06a-unified-studio.md`, 2026-08-24;
   `docs/AWS_STATE.md`, the persona vending row.
+  **Read again 2026-11-21** (Stage 17 1.6, from a SageMaker Unified Studio space behind the egress proxy):
+  the S3 Access Grants plugin's `GetAccessGrantsInstanceForPrefix` and `GetDataAccess` went to
+  `<account>.s3-control.us-west-2.amazonaws.com` through the proxy, one tunnel (*"CONNECT
+  <account>.s3-control.us-west-2.amazonaws.com:443 200 7313 6347 TCP_TUNNEL"*, 23:08:35Z), while the STS
+  call and the `PutObject` that followed left with no proxy line. The account-prefixed host matches no
+  `NO_PROXY` entry naming `s3.<region>.amazonaws.com`, so a proxied client reaches S3 Control through the
+  proxy, the path `SUP-042` records with the hub's gateway endpoint, not the spoke's. Verification iii's ranged read on
+  2026-11-22 showed the same tunnel at 00:12:57Z. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-21 and 2026-11-22.
 
 - `SUP-092` **Deleting an S3 Access Grants grant leaves `GetDataAccess` answering for up to about 19
   seconds, and credentials already vended work until their own expiry** (measured 2026-08-26 in Sandbox,
@@ -1178,6 +1266,14 @@ entry is still true is the reading.
   grant the error is the register's, *"You do not have READWRITE permissions to the requested S3 Prefix"*. A
   direct-refusal test runs only where no plugin sits. Where: `log-stage-16-sandbox-lake.md`, 2026-08-26,
   sitting 3; `runbooks/sandbox-lake.md`.
+  **Read again 2026-11-21** (Stage 17 1.6, from `eighth-experimentation`'s space `jup` on the house image):
+  before a `PutObject` under the project's `shared/` prefix, `GetAccessGrantsInstanceForPrefix` answered 200
+  and `GetDataAccess` for `WRITE` 403, and the write then succeeded under the project role's own
+  credentials, the plugin's fallback: the object `ml-demo-1-6.txt` exists, under the bucket's default key.
+  Where the reading above surfaced the register's refusal, the notebook here saw a successful write, so a
+  grant's refusal tested from a space is read in the trail's `GetDataAccess`, not in the call's result. The
+  plugin's version and fallback setting in either
+  interpreter were not read. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
 
 - `SUP-094` **An S3 gateway endpoint policy's refusal of another owner's bucket reaches the client as a bare
   `AccessDenied - Access Denied`, with no mention of the endpoint policy** (measured 2026-10-11 from a MWAA
@@ -1462,7 +1558,37 @@ entry is still true is the reading.
   on the link and on the lake's table, in both accounts. No `UpdateTable`, no `GenerateDataKey` and no
   manifest object existed, although the console message said one may need cleaning. The editor appended `
   LIMIT 100` to every statement, the insert included. Where: `log-stage-09-deployment-targets.md`,
-  2026-10-30.
+  2026-10-30. A statement carrying its own limit gains none (read 2026-11-22, Stage 6g 2.4): `SELECT * FROM
+  "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10;` ran as `… LIMIT 10`, with no semicolon. The statement is
+  read with `athena get-query-execution`, since the trail's `StartQueryExecution` shows `queryString` as
+  `***OMITTED***`. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22.
+
+- `SUP-416` **A cross-account Athena read through Lake Formation leaves `Decrypt` events in the owner's
+  trail by the registration role, invoked by `glue.amazonaws.com`, and names the query only in the
+  consumer's `GetDataAccess` on the resource link** (read 2026-11-22 in Sandbox's and Data Governance's
+  trails, Stage 6g 2.4). The project role's query `c9f604ea-50f8-47b3-b171-caf3985b6692`, from the portal's
+  query editor through the link `glue_db_blerpkhn9nj7o0.trades` to `curated.trades`, left two
+  `GetDataAccess` in Sandbox at 02:15:34Z. The one invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string rather than JSON, and the project role's ARN as `lakeFormationPrincipal`. The one invoked by
+  `glue.amazonaws.com` on the lake's table carries `callType` `EXTERNAL` and no audit context. Both carry
+  `requesterService` `ATHENA` and one `lakeFormationRoleSessionName`,
+  `AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`. Data Governance received the second alone, as a shared
+  event of type `AWSAccount` whose `principalId` is the project role's unique id and its session,
+  `<Identity Center user id>@<environment id>`. The nine `Decrypt` in Data Governance at 02:15:35Z name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`, a session created
+  at 02:15:34Z, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, encryption context
+  `aws:s3:arn` the bucket's ARN, no source identity and no VPC endpoint. AWS's *Cross-account CloudTrail
+  logging* page gives the session name's format, `AT` for Athena and the account id of the account that
+  requested the credentials, with a Glue job's S3 event as its example; neither it nor the service's
+  CloudTrail page mentions KMS events, an Athena read's `invokedBy` or the audit context (read 2026-11-22).
+  In the owner's account the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names Athena,
+  the consumer account and the role's session, never the query. The query comes from the consumer's trail:
+  the session name finds the `GetDataAccess` on the link, its audit context names the query, and the
+  query's `StartQueryExecution` carries the source identity. Whether the consumer's opt-in, *Resource
+  owners* under *Default permissions for AWS CloudTrail*, adds the principal's ARN to the owner's copy was
+  not measured. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22 (2.4's Athena read, and the
+  attribution read after it).
 
 ## Athena
 
@@ -1489,7 +1615,12 @@ entry is still true is the reading.
   the same shape the next day. A classifier that files a policy-less refusal as an IAM deny misfiles these,
   so attribution needs a contrast call from an account the statement does not reach. Where:
   `log-stage-05a-data-foundation.md`, 2026-08-20 (4e); `log-stage-06a-unified-studio.md`, 2026-08-21;
-  `aws/probes/probes.py`.
+  `aws/probes/probes.py`. The portal's query editor shows the same text (read 2026-11-22, Stage 6f 4.3):
+  `governed-lake`'s editor in Data Governance, as the project role in the Governance Manager's session,
+  answered *"…on the resource. After your AWS administrator or you have updated your permissions, please
+  try again. (Service: Athena, Status Code: 400, …)"*, CloudTrail's `errorCode` `AccessDenied`, the
+  workgroup existing and its `GetWorkGroup` answered 3 s earlier (`log-stage-06f-data-governance.md`,
+  2026-11-22).
 
 - `SUP-119` **`athena:UpdateSession`, which AWS's sample statement for disabling Athena Spark denies, is in
   no Athena API model** (read 2026-08-21 in the CLI's service model, Stage 6 step 1.6). AWS's SageMaker
@@ -1510,6 +1641,20 @@ entry is still true is the reading.
   and a destroy runs from the attributes in state, so the flag has to be set in the configuration before the
   resource is removed from it. Deleting the block and the flag in one version leaves the destroy unarmed,
   which surfaces only at destroy time.
+
+- `SUP-400` **Athena renames an Iceberg table in the Glue Data Catalog by a create and a delete, after the
+  Glue Iceberg REST endpoint refuses `renameTable`** (measured 2026-11-21 in Sandbox, Stage 20 2.5).
+  dbt-athena's table swap on `notional_by_desk`, every statement `SUCCEEDED`. For each of its two
+  `alter table … rename to …` (05:02:56 and 05:02:57 UTC) the trail holds first an `UpdateTable` refused
+  `UnsupportedOperationResponse`, *"RenameTable endpoint is not supported for Glue Catalog."*,
+  `additionalEventData` `{"IcebergRestOperation":"renameTable"}`, with the prefix `catalogs/<account id>`
+  and both names, then a `CreateTable` of the new name and a `DeleteTable` of the old, all as the caller's
+  session invoked by `athena.amazonaws.com`. The table under the new name is a new Glue object, created at
+  the rename at `VersionId` 1. Each rename therefore leaves a refused call in the trail beside a statement
+  that succeeded, and exercises `glue:CreateTable` and `glue:DeleteTable` rather than the update its
+  statement names. Glue's Iceberg REST connection page lists the endpoint's operations without
+  `RenameTable`, and Athena's *ALTER TABLE RENAME* page names no permission; neither says how a rename is
+  carried out (read 2026-11-21). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21, 2.5's run half.
 
 ## Redshift Serverless
 
@@ -1627,8 +1772,8 @@ entry is still true is the reading.
   container's NAT and not a VPC address. Where: `log-stage-06h-redshift-connection.md`, 2026-10-10 (3.3
   attempted) and the entry headed 2026-10-11; `runbooks/redshift-connection.md` §V.
 
-- `SUP-129` **Redshift Serverless rotated a managed admin secret with no workgroup** (measured 2026-10-20,
-  Stage 5b). AWS's page *Managing Amazon Redshift admin passwords using AWS Secrets Manager* says such a
+- `SUP-129` **Redshift Serverless rotates a managed admin secret with no workgroup, and the database follows**
+  (measured 2026-10-20, Stage 5b; read again in Production 2026-11-22). AWS's page *Managing Amazon Redshift admin passwords using AWS Secrets Manager* says such a
   rotation fails and is never retried. Sandbox's first scheduled rotation ran on 2026-10-20 with no
   workgroup since 2026-10-16: Redshift's service-linked role wrote and promoted the new version, and
   `CompleteRotation` reported `Succeeded`. Whether the database followed is unread; the next
@@ -1637,16 +1782,31 @@ entry is still true is the reading.
   workgroup up, the Data API authenticated as `dbadmin` through the secret at 02:38 (`CREATE DATABASE
   governed_trades`) and at 06:04 (`GRANT TEMP`), a password user on the password the rotation of 2026-10-20
   wrote, and again twice on 2026-10-26. Where: `AWS_STATE.md` `EXC-13`;
-  `log-stage-09-deployment-targets.md`, 2026-10-25 and 2026-10-26.
+  `log-stage-09-deployment-targets.md`, 2026-10-25 and 2026-10-26. **Read again 2026-11-22 in Production**
+  (R1): `redshift!awsds-prod-warehouse-dbadmin`'s first scheduled rotation, with no workgroup since
+  2026-11-16 05:33 UTC, started at 01:11:55 and succeeded at 01:17:08, Redshift's service-linked role
+  writing `AWSPENDING` at 01:13:08 and promoting it to `AWSCURRENT` at 01:17:08; it started 48 minutes
+  before the `NextRotationDate` it replaced, 01:59:59. With a workgroup up from 05:41:41,
+  `./aws/warehouse.py awsds-infra-prod --sql` authenticated as `dbadmin` through the rotated secret eight
+  times from 05:42:19 to 05:42:43, no error. Where: `AWS_STATE.md` `EXC-13`;
+  `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
-- `SUP-130` **`DeleteWorkgroup` answers `ConflictException` for about ten seconds before it accepts, and the
-  Terraform provider retries through it** (read 2026-10-26 in Production's and Sandbox's trails, Stage 9).
+- `SUP-130` **`DeleteWorkgroup` answers `ConflictException` for up to seventeen seconds after the workgroup's
+  usage limit is deleted, and the Terraform provider retries through it** (read 2026-10-26 in Production's and Sandbox's trails, Stage 9).
   On three teardowns that day the trail shows `DeleteWorkgroup` refused four or five times with *"There is
   an operation running on the workgroup. Try to delete it later."*: in Production from 01:10:38 to 01:10:47,
   accepted at 01:10:55; in Sandbox from 01:37:26 to 01:37:30, accepted at 01:37:34, and from 22:10:35 to
   22:10:44, accepted at 22:10:52. Terraform 1.16.6's provider retried each time and the destroy completed. A
   trail read after a successful teardown therefore carries these refusals; the source does not identify the
-  running operation. Where: `log-stage-09-deployment-targets.md`, 2026-10-26 (three entries).
+  running operation. Where: `log-stage-09-deployment-targets.md`, 2026-10-26 (three entries). **Read again
+  2026-11-22** (R1, Production's and Sandbox's trails) with the two teardowns since, in Production: refused
+  at 05:33:18 and 05:33:19 and accepted at 05:33:20 on 2026-11-16, refused from 05:47:52 to 05:47:56 and
+  accepted at 05:48:01 on 2026-11-22, with the same message (Terraform 1.17.2; provider 6.68.0 in all five).
+  In each of the five, an accepted `DeleteUsageLimit` on the workgroup's limit came in the same second as
+  the first refusal or in the second before it, the provider destroying the limit first as the workgroup's
+  dependent, and `DeleteWorkgroup` was accepted 3 to 17 seconds after it. The running operation is
+  therefore probably the limit's deletion; the teardown of a workgroup with no usage limit, which would
+  settle it, has not been read. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 ### SQL, users and privileges
 
@@ -2056,7 +2216,16 @@ entry is still true is the reading.
   again 2026-11-19 (Stage 19), after the share's move to version 13 (`SUP-360`): `GetGroupProfile` answered
   from Sandbox, Staging and Production as each account's `InfrastructureAccess`, and `GetProjectProfile` was
   refused in all three, *"because no resource-based policy allows the datazone:GetProjectProfile action"*.
-  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-19. Read again 2026-11-21 (Stage 6a): the layer
+  confines `GetEnvironment` where it lists environments to anyone. Production's `InfrastructureAccess`, no
+  member of `test-experimentation`, read its five environments with `ListEnvironments` and was answered
+  `GetEnvironment` on one of them, `ACTIVE` in that listing, *"ResourceNotFoundException ... Environment not
+  found"*; Sandbox's, no member of `deploy-production`, read that project's pair the same way. A deleted
+  environment and an id that never existed receive the same wording (read the same hour), so a non-member
+  cannot tell a deleted environment from one it may not read; `./aws/studio.py` `US-15` reads the
+  environment's stack in the resource's account instead. Version 14 of the share's permission names
+  `GetProjectProfile`, which answers from the three member accounts since the share's move to it that day
+  (`SUP-360`). Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-158` **An IAM role in a DataZone domain is a group and one user profile per session name, and a
   policy grant takes the group.** Its ARN resolves as a user identifier to one session's user profile, and
@@ -2199,7 +2368,27 @@ entry is still true is the reading.
   refusals, though no deploy has run since. RAM's user guide states what this entry measured, where a
   DataZone reader does not look: a share is never moved to a new version by itself, and an AWS managed
   permission's move cannot be reverted once saved. Where: `log-stage-19-smus-native-data-product.md`,
-  2026-11-19.
+  2026-11-19. Read again 2026-11-21 (Stage 6a): version 14 is the default and the only `ATTACHABLE` version,
+  versions 12 and 13 `UNATTACHABLE`, and the share still holds 13, `ASSOCIATED`. `list-permission-versions`
+  dates version 14 2026-11-18T20:03:32Z, earlier than the move of 2026-11-19 at 02:20:31Z that took version
+  13 as the default; `get-permission` answers `creationTime` and `lastUpdatedTime` as the moment of each
+  call, for every version, so a version's date is read from the listing. Version 14 adds nine actions to
+  version 13's 164 in an otherwise identical statement: `GetProjectProfile`, `ListProjectProfiles`,
+  `ListGroupsForUser`, `GetAssetType`, `GetSubscriptionEligibility`, `GetUpdateEligibility`,
+  `StartMetadataGenerationRun`, `GetAccountPool` and `ListAccountsInAccountPool`. Neither version names
+  `ListEntityOwners`: Sandbox's `InfrastructureAccess` was refused it on the root domain unit, *"because no
+  resource-based policy allows the datazone:ListEntityOwners action"*, and Data Governance's read the unit's
+  one owner. The share moved to version 14 at 05:45:59Z on the user's word, `associate-resource-share-permission
+  --permission-version 14 --replace` answering `{"returnValue": true}`; the association read
+  `lastUpdatedTime` 05:46:02Z and the share's own stayed at 2026-08-21. At 05:46:17Z the domain's
+  org-principals statement held version 14's 173 actions and no other, beside the unchanged statement of 20
+  actions for `sagemaker.amazonaws.com`. At 05:46:23Z `GetProjectProfile` answered from Sandbox, Staging and
+  Production as `InfrastructureAccess`, refused at 05:45:20Z *"because no resource-based policy allows the
+  datazone:GetProjectProfile action"*, and `ListEntityOwners` stayed refused in all three. Where:
+  `log-stage-06a-unified-studio.md`, 2026-11-21. Read again the same day (Stage 20 8.6), on version 14: the
+  CI/CD CLI's `bundle` from Sandbox as `InfrastructureAccess` made two `GetGroupProfile` calls at 20:27Z,
+  both answered, where Stage 19 step 17's run of 2026-11-15, on version 10, read both refused. Where:
+  `log-stage-20-dbt-lineage.md`, 2026-11-21.
 
 - `SUP-361` **`list-environment-blueprints` and `get-environment-blueprint` date one managed blueprint
   differently** (measured 2026-11-14 on `awsds-studio`, `upstream-releases.md`'s re-read). `datazone
@@ -2208,7 +2397,13 @@ entry is still true is the reading.
   identifier read `createdAt` 2026-08-21T00:49:55Z and `updatedAt` 2026-10-22T22:46:51Z, the dates the reading
   of 2026-10-30 recorded, with the template `DataZone-SageMakerAIDomain-prod-20260905` and its 17 user
   parameters. A roster listing does not show that a blueprint's template moved; the get does. Where:
-  `upstream-releases.md`, the `SageMakerAIDomain` row.
+  `upstream-releases.md`, the `SageMakerAIDomain` row. Read again 2026-11-22 on `RedshiftServerless`
+  (Stage 21): the get reads `createdAt` and `updatedAt` both 2026-05-13T21:31:31Z, while the template object
+  behind its `templateUrl` read `LastModified` 2026-11-13T19:43:40Z on 2026-11-18 (`SUP-378`) and
+  2026-11-21T01:19:23Z on 2026-11-22, 10,532 bytes both times. The object is rewritten in place with no
+  change to the blueprint's dates, so its `LastModified` dates a rewrite, not a release; a change of content
+  under the same name is read from the object's `ETag` (`"d516acd3183d361cf3b92a12ec19dd95"` on 2026-11-22).
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 - `SUP-378` **The `RedshiftServerless` blueprint's template treats a base capacity of 128 and a maximum of 0 as
   sentinels, and the blueprint's user parameters default the maximum to 512 RPU** (read 2026-11-18, Stage 21
@@ -2417,7 +2612,13 @@ entry is still true is the reading.
   leaves v0.6.0. Where: `log-stage-18-staging-deployment-project.md`, the 7.2 entries of 2026-10-20.
 
 - `SUP-174` **Deleting a `Tooling` environment leaves its log group** (measured 2026-10-22, Stage 18 8.1):
-  the stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed.
+  the stack reached `DELETE_COMPLETE` and `datazone-<project>-dev`, at 731 days, stayed. Read again
+  2026-11-21 in Sandbox (Stage 6a): five such groups of five deleted projects, four created on 2026-08-22
+  and 23 and one on 2026-11-18, 0 bytes each at 3, 30 or 731 days, keep their environment's
+  `AmazonDataZone*` tags and CloudFormation's three, `aws:cloudformation:stack-id` naming a stack
+  `describe-stacks` no longer finds by that id; an `S3Bucket` bucket loses CloudFormation's (`SUP-394`). The
+  tagging API lists them by `AmazonDataZoneEnvironment` while no live stack carries their environment, which
+  is how `./aws/studio.py` `US-15` notes them. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
 
 - `SUP-175` **DataZone takes the `SageMakerAIDomain` blueprint's `customImages*` as JSON and reports nothing
   when they are not** (measured 2026-10-30). The template declares the parameter as comma-separated
@@ -2481,9 +2682,10 @@ entry is still true is the reading.
   `Tooling` domain mounts. A space's `shared` mount is therefore inside the project role's object grant;
   only the tag names the root. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
 
-- `SUP-380` **An *Update project* does not carry a profile's changed override of a non-editable parameter
-  into a living environment: the environment keeps the value resolved at its creation** (measured
-  2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
+- `SUP-380` **An *Update project* did not carry a profile's new override of `enableSpaces` into an environment
+  created before the override, and carried a changed override of the image pin into every environment created
+  with it**
+  (measured 2026-11-18 in Sandbox, Stage 6d 2.7 step 4). `test-experimentation`'s `Tooling` environment
   `bi356s1sacz0cw`, created 2026-10-15 when `experimentation` overrode no `enableSpaces`, stores it in its
   `userParameters` as `defaultValue` `"true"`, `isEditable` false. At 18:45:34 the profile locked
   `enableSpaces` `"false"`, and `get-project-profile` read it in both `parameterOverrides` and
@@ -2496,6 +2698,19 @@ entry is still true is the reading.
   keeps its copy. Only `enableSpaces` was measured: whether a locked override in another element, the
   `SageMakerAIDomain` image pin among them, stops at the same copy is unmeasured. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-18.
+  **Read again 2026-11-22** (Stage 6d 2.7 step 8, read by the coordinating session): the image pin moved in
+  every environment. `experimentation` has overridden the pin since 2026-10-30 (#277), and Sandbox's six
+  `SageMakerAIDomain` environments were created after it, from 2026-11-18 18:16:05Z to 2026-11-19 00:19:40Z, each
+  storing `/11` in its `userParameters`, `isEditable` false. The profile's pin went to 12 at 05:07Z. The owner's
+  *Update project* on the six projects, `UpdateProject` from 05:14:42Z to 05:21:06Z with `projectProfileVersion`
+  `latest`, re-deployed each through the provisioning role: `Tooling`'s `UpdateStack`, 57 parameters, with no
+  resource event, and `SageMakerAIDomain`'s, 29 parameters, passing `SageMakerDomain` through an update whose
+  `UpdateDomain` (05:16:14Z to 05:28:53Z) rewrote the whole `DefaultUserSettings`. Each environment then stored
+  `/12`, and each domain read JupyterLab and Code Editor at version 12, custom images and default alike: the
+  parameters the profile overrode at creation were re-resolved from its latest version. The readings differ in
+  the parameter as well as in the creation condition, and no living environment holds the image pin from the
+  blueprint's default, so which of the two decides is unmeasured. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
   just created, which the provisioning role's managed policy does not grant, and the environment goes
@@ -2545,12 +2760,41 @@ entry is still true is the reading.
   designation's reach is read from `get-designation`, never from the page. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-19.
 
+- `SUP-392` **DataZone passes a project's `Tooling` outputs to an `S3Bucket` environment, so its bucket
+  encrypts under the project CMK though neither the blueprint configuration nor the profile names a key**
+  (measured 2026-11-21 in Sandbox, Stage 6a). `create-environment` in `test-experimentation`, with the
+  `experimentation` profile's `S3Bucket` configuration and one user parameter, `bucketName`, made a stack with
+  six parameters: `bucketName`, `datazoneEnvironmentEnvironmentId`, `datazoneEnvironmentProjectId`,
+  `datazoneScopeName` `dev`, `executionRoleArn` and `kmsKeyArn`. The last two equal the values the project's
+  `Tooling` environment answers as `userRoleArn` and `kmsKeyArn` (`SUP-359`): the project's user role and the
+  key `alias/awsds-sandbox-project` names. The `S3Bucket` configuration's regional parameters are `VpcId`,
+  `Subnets` and `AZs`, and the profile overrides `bucketName` alone. The template
+  (`DataZone-Amazon-SageMaker-S3Bucket-prod-20250923`) describes the key as *"optional. If not provided,
+  uses S3 managed encryption"*, and no page read for `docs/SMUS.md` §Resource blueprints names where the value
+  comes from. The bucket read SSE-KMS under that key, `BucketKeyEnabled` false and `SSE-C` blocked, and
+  carried the stack's tags `AmazonDataZoneDomain`, `AmazonDataZoneProject`, `AmazonDataZoneEnvironment` and
+  `AmazonDataZoneBlueprint`. Which key such a bucket uses is AWS's composition, not a parameter this
+  repository writes. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+
+- `SUP-394` **Deleting an `S3Bucket` environment deletes the bucket's policy and keeps the bucket, which no
+  project role then reaches** (measured 2026-11-21 in `test-experimentation`, Sandbox, Stage 6a).
+  `delete-environment` ran at 04:58:36 UTC. The stack read `DELETE_COMPLETE` at 04:58:55, `ProjectBucketPolicy`
+  `DELETE_COMPLETE` and `ProjectBucket` `DELETE_SKIPPED` under the template's `DeletionPolicy: Retain`, and the
+  environment answered *"Environment not found"* by 04:59:15. The bucket kept its default encryption under the
+  project CMK and the four `AmazonDataZone*` tags, lost CloudFormation's three, and `get-bucket-policy`
+  answered `NoSuchBucketPolicy`. The simulator gave `s3:GetObject`, `s3:PutObject` and `s3:ListBucket`
+  `implicitDeny` to the owning project's user role and to another project's. The provisioning role cannot
+  delete the bucket: `SageMakerStudioProjectProvisioningRolePolicy` v86 grants `DeleteBucketPolicy` on
+  `sagemaker-*` in Sid `S3Create` and no `DeleteBucket`. A bucket therefore outlives its environment with
+  whatever the project wrote in it, reachable only by an identity whose own IAM policy covers it; the probe's
+  empty bucket was deleted by hand at 05:00:15 UTC. Where: `log-stage-06a-unified-studio.md`, 2026-11-21.
+
 ### The managed policies of a project role
 
 - `SUP-176` **`SageMakerStudioProjectRoleMachineLearningPolicy` grants every SMUS project role `datazone:`
   actions on `*` with no domain scope and, since v47, Bedrock AgentCore's managed browser and code
-  interpreter** (read in Sandbox's policy documents on 2026-08-26, 2026-10-30 and 2026-11-08; not
-  exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
+  interpreter, joined in v48 by its web search and the Agent Registry** (read in Sandbox's policy documents
+  on 2026-08-26, 2026-10-30, 2026-11-08 and 2026-11-22; not exercised). Read 2026-08-26: `datazone:*Compute*`, `CreateAsset*`, `List*` and `Search*` on `Resource:
   "*"`, where the user-role policy beside it is scoped to the role's domain, and S3 reach keyed on principal
   tags,
   `${aws:PrincipalTag/DomainBucketName}/${aws:PrincipalTag/AmazonDataZoneDomain}/${aws:PrincipalTag/AmazonDataZoneProject}/*`.
@@ -2562,6 +2806,36 @@ entry is still true is the reading.
   `RevokeSubscription` on `*`, and no managed policy on the role grants `StartDataSourceRun` (2026-11-08).
   Where: `log-stage-06a-unified-studio.md`, 2026-08-26; `upstream-releases.md`, the project role's managed
   policies; `threat-model.md` `TM-28`; `log-stage-19-smus-native-data-product.md`, 2026-11-08.
+  v48 (2026-11-13 20:47:08 UTC, the default version) was read 2026-11-22 in Sandbox by the infrastructure
+  user (`InfrastructureAccess`) against v47: 96 statements where v47 held 90, 339 distinct actions where it
+  held 312, nothing removed. Six statements are new. `ACApiKeySecret` allows `secretsmanager:CreateSecret`,
+  `PutSecretValue`, `DeleteSecret` and `GetSecretValue` on `secret:bedrock-agentcore-identity!*` when
+  `aws:CalledVia` names `bedrock-agentcore.amazonaws.com`. `ARConsumerPublisher` allows the Agent Registry's
+  `agent-registry:List*`, `GetRegistry`, `GetRegistryRecord`, `GetDiscoverableRegistryRecord` and
+  `SearchDiscoverableRegistryRecords` on `*` with no condition; `ARCreate` allows `CreateRegistryRecord`
+  under the request's `AmazonDataZoneProject` tag; `ARPublisher` allows `UpdateRegistryRecord`,
+  `UpdateRegistryRecordStatus`, `DeleteRegistryRecord`, `SubmitRegistryRecordForApproval` and
+  `TagResource` on records carrying the role's project tag. `IdCKmsDecrypt` and `IdCKmsDescribe` allow
+  `kms:Decrypt` and `DescribeKey` through `sso` and `identitystore`. Seven statements gain actions:
+  `ACManagedBuiltInTools` `bedrock-agentcore:InvokeWebSearch` on AWS's `tool/web-search.v1`, with no
+  condition; `ACProjectResources` `*ApiKeyCredentialProvider` and `GetResourceApiKey` on project-tagged
+  resources; `ACIdentityDirectory` the same two, `*TokenVault` and `ListTagsForResource` on the account's
+  `token-vault/default`; `ACUnscopedMetadata` `ListApiKeyCredentialProviders`; `DataZoneUserPermissions`
+  `datazone:UpdateAssetOwner` on `*`; `SSOReadOnlyPermissions` `identitystore:GetUserId`, `GetGroupId`,
+  `sso-directory:DescribeUser`, `DescribeGroup` and `sso:ListInstances` under `aws:ViaAWSService`;
+  `CreateSLR` the Agent Registry's service-linked role. No statement grants `agent-registry:CreateRegistry`
+  or `InvokeRegistryMcp`. Simulated the same day as `eighth-experimentation`'s project role, with the
+  Region, the project tag and the account in the context (`SUP-008`): `InvokeWebSearch`, a browser and a
+  code interpreter session, the registry's search, create, submit and status calls,
+  `CreateApiKeyCredentialProvider`, `GetResourceApiKey` and `UpdateAssetOwner` each `allowed` by this
+  policy, `AllowedByOrganizations` and `AllowedByPermissionsBoundary` true; the secret's create `allowed`
+  through AgentCore and `implicitDeny` without `aws:CalledVia`. The negative controls: `athena:StartSession`
+  `explicitDeny` by the organization, `s3:GetObject` on `awsds-data-curated` `explicitDeny` by the boundary.
+  As Staging's and Production's deployment project roles the same day, `InvokeWebSearch`, a browser session
+  and `CreateApiKeyCredentialProvider` read `explicitDeny` by the boundary's
+  `DenyServicesNoProjectUsesHere`, and the registry's search, create, submit and status calls and
+  `UpdateAssetOwner` read `allowed`: `agent-registry` is a service prefix of its own, which the fence does
+  not name. Where: `upstream-releases.md`, the project role's managed policies; `threat-model.md` `TM-28`.
 
 - `SUP-177` **`SageMakerStudioProjectUserRolePolicy` lets every SMUS project role send to other accounts'
   queues, invoke other accounts' functions, regrant Lake Formation permissions with no condition and, since
@@ -2744,7 +3018,12 @@ entry is still true is the reading.
   nine staying the `Tooling` environment's, and provisions that environment's `userRoleArn`. Where:
   `log-stage-06f-data-governance.md`, 2026-09-12/13; `log-stage-19-smus-native-data-product.md`, 2026-10-28,
   2026-11-08, 2026-11-11 and 2026-11-14; `log-stage-20-dbt-lineage.md`, 2026-11-19; `docs/SMUS.md`, the
-  *Create database* item.
+  *Create database* item. A name the account's catalog already holds is refused before any stack: the
+  portal's `mydatabase` in `test-experimentation` (`60j5234reuos9c`, created 2026-11-09 19:53:53Z by the
+  Data Scientist User, `eighth-experimentation`'s `mydatabase` existing) read `VALIDATION_FAILED` 11 s
+  later, `failureReason` *"Failed to validate environment 60j5234reuos9c: Glue database with name
+  mydatabase already exists"*, `provisionedResources` null, and the record stays in the project (read
+  2026-11-22, `log-stage-06f-data-governance.md`).
 
 - `SUP-185` **The portal's MLflow entries look their blueprint up in the domain account, so a domain whose
   configurations live in associated accounts greys them out whatever the profile carries** (read 2026-10-19,
@@ -2832,6 +3111,22 @@ entry is still true is the reading.
   nor a Bedrock SCP's model list is on its path. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-10-30; `docs/plan/threat-model.md` `TM-23`.
 
+- `SUP-393` **The portal's *S3 Bucket* form prefills the prefix `amazon-sagemaker-`, and the managed
+  provisioning policy creates only `sagemaker-*` buckets, so a deployment that keeps the prefix fails on
+  `s3:CreateBucket`** (read 2026-11-21 in `app-ml-dev`'s gallery and measured the same day in
+  `test-experimentation`, Sandbox, Stage 6a). The form's one field, *Bucket name*, an editable text box,
+  opens holding `amazon-sagemaker-` over the hint *"Prefilled with the recommended prefix amazon-sagemaker.
+  Must be 3 to 33 characters."*; the profile's default for the parameter, `changeme-project-bucket`, is not
+  shown. `create-environment` with the same configuration and the name `amazon-sagemaker-probe-<suffix>` read
+  `CREATE_FAILED` 33 seconds later: *"User: arn:aws:sts::<account>:assumed-role/awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>
+  is not authorized to perform: s3:CreateBucket on resource: "arn:aws:s3:::amazon-sagemaker-probe-<suffix>"
+  because no identity-based policy allows the s3:CreateBucket action"*, and no stack remained.
+  `SageMakerStudioProjectProvisioningRolePolicy` v86 (2026-11-17), the provisioning role's one policy, grants
+  `CreateBucket` and the bucket's configuration calls in Sid `S3Create` on `arn:aws:s3:::sagemaker-*` alone;
+  with the name `sagemaker-awsds-probe-<suffix>` the environment was `ACTIVE` in about 70 seconds. A member
+  replaces the prefix with `sagemaker-`, and the refusal names a permission where the cause is the name.
+  Where: `log-stage-06a-unified-studio.md`, 2026-11-21; `docs/SMUS.md` §Resource blueprints.
+
 ### Catalog, data sources and subscriptions
 
 - `SUP-191` **The portal's *Publish to Catalog* on a Glue table writes a data source with business-name
@@ -2914,7 +3209,15 @@ entry is still true is the reading.
   session, at 01:07:09Z, 39 s after `revoke-subscription`. The *"Policy not found"* Stage 18 read after the
   revocation came from `glue get-resource-policy`, which lists none of these (`SUP-099`): the trail's three
   deletes are what show them gone, and `glue get-resource-policies` read an empty list on 2026-11-17
-  (`log-stage-18-staging-deployment-project.md`, 2026-11-17).
+  (`log-stage-18-staging-deployment-project.md`, 2026-11-17). A second subscriber project in an account
+  the producer already shares to (measured 2026-11-22, Stage 6f 4.3, `test-experimentation` on
+  `curated.trades` beside `eighth-experimentation`) costs one grant: the producer's role made one
+  `BatchGrantPermissions` (`SELECT` to Sandbox's `IAMPrincipals` under the new project's condition,
+  `CROSS_ACCOUNT_VERSION` 5) 5 s after the approval and no RAM or Glue policy call, the share
+  `LakeFormation-V5-ZKUYXYESG4` and the five per-resource policies keeping their update times and hashes, and
+  the grant read `COMPLETED` 16 s after the approval, against 63 s for the first. The same night inside one
+  account (`house-price` into `test-experimentation`): the owner's grant 32 s after the request, the link 11 s
+  later, `COMPLETED` at 54 s (`log-stage-06f-data-governance.md`, 2026-11-22).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3115,6 +3418,68 @@ entry is still true is the reading.
   type's revisions and required forms are read from the domain's account. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-18.
 
+- `SUP-391` **A dataset's `symlinks` facet naming a Glue table makes its lineage node the table's ARN in an
+  event with no Glue environment properties, which the `sourceIdentifier` page reserves to Glue's events**
+  (measured 2026-11-21, Stage 20 2.4). dbt 1.11.16's events, built by OpenLineage's dbt wrapper 1.55.0 and
+  posted with `PostLineageEvent` as `app-dbt-dev`'s role, name each dataset
+  `awsathena://athena.us-west-2.amazonaws.com` `awsdatacatalog.app_dbt.<table>` with one `symlinks`
+  identifier, namespace `arn:aws:glue:us-west-2:<Sandbox>`, name `table/app_dbt/<table>`, type `TABLE`; their
+  run facets are `dbt_run`, `dbt_version`, `parent`, `processing_engine` and `tags`, with no
+  `environment-properties`. The domain created the output's node `6w7hp2vvi8kscw` with the `sourceIdentifier`
+  `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk`, and the input took `3s0gk0eg2o68pc`, the
+  node the Glue job's events had created for `trades`: Data Governance's trail holds no `CreateLineageNode`
+  with an `awsathena://` identifier. Each node's `DatasetForm` keeps both names as `alternateIdentifiers`, the
+  Athena one and the symlink joined by a slash (`arn:aws:glue:us-west-2:<Sandbox>/table/app_dbt/trades`), and
+  the `ColumnLineageForm` names its source table by the Athena name. The page reads the symlink for an event
+  whose `environment-properties` carries `GLUE_VERSION`, and *"In all other cases, dataset nodes'
+  sourceIdentifier is populated using <namespace>/<name>"*, which would have made the node
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, apart from its asset.
+  A dbt project's events join the Glue assets' graph as the wrapper builds them, with no transformer in the
+  client (Stage 20 decision 3). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
+- `SUP-401` **`DeleteLineageEvent` is refused to a member account by the domain's resource share, whose
+  managed permission carries `PostLineageEvent` and not the delete, and to the domain's own account by
+  DataZone itself** (measured 2026-11-21, Stage 20 3.4). `delete-lineage-event` on one posted event as
+  `InfrastructureAccess`, aws-cli 2.37.12. From Sandbox at 05:50:51 UTC: *"… is not authorized to perform:
+  datazone:DeleteLineageEvent on resource: …:domain/dzd-… because no resource-based policy allows the
+  datazone:DeleteLineageEvent action"*. From Data Governance, the domain's account, at 05:50:54: *"User is
+  not permitted to perform operation: DeleteLineageEvent"*, DataZone's own wording after IAM let the call
+  through. `AWSRAMPermissionsAmazonDatazoneDomainExtendedServiceAccess`, versions 13 and 14, carries
+  `PostLineageEvent` and the lineage reads and no `DeleteLineageEvent`; the root domain unit's one owner is
+  an Identity Center group, with no IAM principal. AWS's lineage authorization and API pages name neither
+  who may call the delete nor what it removes (read 2026-11-21). A posted event stays in the graph until an
+  identity the domain admits deletes it; the infrastructure user is none in either account, and the posting
+  role was not tried. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (3.4).
+
+- `SUP-402` **The domain adds a posted lineage event about any project's dataset to that dataset's node,
+  whoever posts it, and names as its creator the person a session carries, else the role** (measured
+  2026-11-21, Stage 20 2.6 and 3.4). From a space of `test-experimentation` as that project's role, an
+  event whose output named `app-dbt-dev`'s table by its Glue ARN answered `processingStatus` `SUCCESS`: the
+  table's node took a version at the event's time with the foreign job's run upstream, and the portal drew
+  that job on `app-dbt-dev`'s asset's *Lineage* tab, naming the node by its latest version's dataset name.
+  Posts from a space, the role's session `SageMaker` whose `sourceIdentity` is the user, name as creator of
+  the events and of the nodes they add the person's profile (type `SSO`); a workflow's posts, the session
+  `AmazonMWAAServerless` with no `sourceIdentity`, name the role's profile (type `IAM`). Data Governance's
+  trail records both as `AWSAccount`, so the domain's account cannot tell them apart. The pages read for
+  this project say posting needs `datazone:PostLineageEvent` and name no check against the dataset's
+  owning project. A role holding `PostLineageEvent` writes into every project's graph, and a node's history
+  is the instrument that shows who did. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21 (2.6, 3.4).
+
+- `SUP-415` **A subscription's fulfilment writes a lineage node for the subscriber's resource link, keyed by
+  the link's Glue ARN, and a later link of the same name inherits that node with every upstream it had**
+  (measured 2026-11-22, Stage 6f 2.2 and 4.3). After each grant read `COMPLETED`, Data Governance's trail
+  holds `datazone.amazonaws.com` writing a `DatasetLineageNodeType` node whose `sourceIdentifier` is the
+  link's ARN (`arn:aws:glue:us-west-2:<Sandbox>:table/glue_db_4zojr4rr6bmnww/<table>`), named after the
+  subscription target and carrying `SubscriptionTargetLineageForm`, `DatasetSchemaForm`, `DatasetForm` and
+  `ColumnLineageForm`, with the listing's node as its upstream and both versions dated at the grant's
+  completion: `house-price`'s link a new node 6 s after its grant completed, `trades`' link a new version
+  14 s after. That `trades` node, `3juvtmem73n1g0`, dates from 2026-10-22, when Stage 18 7.2's subscription
+  to Staging's `trades` created a link of the same name; its revocation added a version and kept the edge.
+  The node now lists two upstreams, the lake listing's node and that of Staging's listing
+  `bx8v3rafykv3ww`, which `get-listing` answers `ResourceNotFoundException`. A subscriber's graph keeps a
+  revoked producer as an input of every link that reuses the name. Where:
+  `log-stage-06f-data-governance.md`, 2026-11-22.
+
 ### Connections
 
 - `SUP-199` **A portal S3 connection over an already registered Access Grants location needs none of the
@@ -3267,6 +3632,228 @@ entry is still true is the reading.
   the call as *"Updates a connection"* and says nothing of validation. A connection's database and lineage
   sync are changed with no warehouse up, and `READY` says nothing about the compute. Where:
   `log-stage-06h-redshift-connection.md`, 2026-11-19; `runbooks/redshift-connection.md` §P step 4a.
+
+- `SUP-390` **The portal's *Create database* refusal names a project-profile setting the profile
+  carries** (measured 2026-11-21, Stage 20 2.1). In `app-genai-dev` the portal answered *"Insufficient
+  permissions to create a new database. Please add a LakeHouseDatabase blueprint deployment setting with
+  On Demand mode to the project profile."* The profile `experimentation` carried `DataLake`, the console's
+  `LakeHouseDatabase`, as `ON_DEMAND`; the domain's `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant on it named
+  the contributor projects of the project's domain unit; the user owned the project. No call failed: the
+  trail holds `GetProjectProfile` and `ListDeployableEnvironmentBlueprints`, a call the CLI does not
+  offer, on `app-genai-dev` at each attempt, each answered. The same act then created the database in
+  `app-dbt-dev`, with the same profile, unit, environments and owner, after the page was opened on it.
+  The page and the project changed together, so the refusal is unattributed, and the message is no
+  evidence about the profile: the trail's `projectIdentifier` says which project the portal had open.
+  Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+
+- `SUP-396` **A native notebook run accepts and records `networkAccessType` `PUBLIC_INTERNET_ONLY`, and its
+  compute runs in the domain's VPC regardless** (measured 2026-11-21 in Sandbox, Stage 6d 4.7). From a
+  space's terminal as `eighth-experimentation`'s project role, `datazone:StartNotebookRun` with
+  `--network-configuration networkAccessType=PUBLIC_INTERNET_ONLY` and no compute answered `QUEUED`; the
+  request, the response and every later `GetNotebookRun` carried `PUBLIC_INTERNET_ONLY`. Seventeen seconds
+  after the call, `AWSServiceRoleForAmazonSageMakerNotebooks` created the compute's interface through
+  `global.workflows.looseleaf.im.amazonaws.com` in the project's private subnet, with its
+  `datazone-<project>-dev` group. The kernel called DataZone through the VPC's interface endpoint, and a
+  cell opening `https://checkip.amazonaws.com` with no proxy timed out on each of its 8 addresses: `FAILED`,
+  *"URLError: <urlopen error timed out>"*. Three runs sent the same day with no network, from the portal's
+  *Run in background*, a schedule and a workflow's `SageMakerUnifiedStudioNotebookOperator`, took the same
+  subnets and group, and the portal sent the editor's own compute `VPC_ONLY`. The VPC, its subnets and its
+  zones are the domain's blueprint configuration's (`sandbox/sagemaker/`). No AWS page read for this
+  project states a run's default network or that the domain's VPC overrides the request, so a run's record
+  is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
+  2026-11-21 (two entries); `threat-model.md`, `TM-34`.
+
+### The Bedrock IDE
+
+- `SUP-410` **The Bedrock IDE creates a knowledge base's S3 Vectors bucket under the project key the Tooling
+  configuration carries, and the index is refused unless that key grants `indexing.s3vectors.amazonaws.com`
+  `kms:Decrypt`, a statement SMUS's key-permissions page does not name** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The knowledge base was created from the portal's *My components* with Titan Text Embeddings
+  V2 at 1024 dimensions and Amazon S3 Vectors. At 01:03:10Z the provisioning role, from
+  `datazone.amazonaws.com`, called `CreateVectorBucket` `amazon-bedrock-ide-<project id>-<environment id>`
+  with `sseType` `aws:kms` and the key the Tooling configuration alone carries as `KmsKeyArn`; the
+  knowledge-base configuration carries no key parameter. The bucket was admitted. `CreateIndex`
+  `amazon-bedrock-ide` (1024, `float32`, `euclidean`) was refused: *"AccessDeniedException: Insufficient
+  access to perform asynchronous indexing. Ensure that the key used to encrypt the index still exists, is
+  active, and has a resource policy granting access to the S3 service principal
+  'indexing.s3vectors.amazonaws.com'."* The portal showed it inside *"Amazon Bedrock couldn't deploy the
+  Knowledge Base. Delete this component, and then create a new one."* The environment's stack, holding its
+  wait handles alone (`SUP-169`), was created and deleted within 35 s. The vector bucket stayed, empty, with
+  no index and no tag. Before the stack, `AmazonSageMakerBedrockModelManagementRole` had created an
+  application inference profile copied from the embeddings model, which stayed too. The S3 Vectors encryption
+  page documents the indexing principal's statement: `kms:Decrypt` under `aws:SourceArn`,
+  `aws:SourceAccount` and `kms:EncryptionContextKeys` (`aws:s3vectors:arn`, `aws:s3vectors:resource-id`).
+  SMUS's key-permissions page lists ten statements and none for S3 Vectors, a knowledge base or OpenSearch
+  Serverless. Bedrock's knowledge-base setup page names no key policy. All three pages were read 2026-11-22.
+  A project key written to SMUS's page therefore refuses every IDE knowledge base on S3 Vectors. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 01:33Z): with the statement in the key's policy (`sagemaker-prereqs-v0.13.0`),
+  the second create's `CreateIndex` was admitted. The failed component's row in *My components* carried an
+  error icon and no menu; once its blueprint deployment was deleted from *Resource blueprints*, the row
+  offered *Delete*. The first vector bucket survived both deletes, empty.
+
+- `SUP-411` **The Bedrock IDE's S3 Vectors index declares `AMAZON_BEDROCK_TEXT` alone non-filterable, where
+  Bedrock's pages add `AMAZON_BEDROCK_METADATA`, and ingestion then fails on S3 Vectors' 2 KB cap on a
+  filterable string with a per-document reason that names no metadata** (measured 2026-11-22 in Sandbox,
+  Stage 17 7.4a). The index `amazon-bedrock-ide` the provisioning role created at 01:33:17Z read
+  `nonFilterableMetadataKeys` `AMAZON_BEDROCK_TEXT` and `indexMode` `ENHANCED`; the knowledge-base form
+  exposes no index setting. Bedrock's knowledge-base setup page (its S3 Vectors tab) and its chunking page
+  say to add `AMAZON_BEDROCK_TEXT` and `AMAZON_BEDROCK_METADATA` as non-filterable keys. S3 Vectors' limits
+  page caps each filterable string value at 2 KB, and its metadata-filtering page says non-filterable keys
+  are configured when the index is created. Over 20 Markdown runbooks with the form's default chunking
+  (fixed size, 300 tokens, 15 % overlap), the sync the create started indexed 2 and failed 18. A second
+  sync scanned 20, indexed none and failed 18, counting the other 2 in no statistic. Both jobs' reason
+  read *"Invalid record for key '<uuid>': Metadata value is invalid: exceeds 2048 byte string limit
+  (Service: S3Vectors, Status Code: 400 …)"*, and each failed document's `statusReason` read *"The document
+  was not indexed. No content could be extracted from it, or processing ended before it completed."*
+  Neither reading names the key that exceeded. The two indexed runbooks hold one Markdown table each and
+  the 18 others two or more, a correlation read from the files, not a cause. A knowledge base the IDE
+  creates on S3 Vectors keeps this index for its life. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+
+- `SUP-417` **The Bedrock IDE's guardrail is created by DataZone as the provisioning role under the project
+  key, and Bedrock refuses it unless that role may `kms:CreateGrant` on the key, which SMUS's key-permissions
+  page does not name** (measured 2026-11-22 in Sandbox, Stage 17 7.4). The guardrail was created from the
+  portal's *My components* → *Create component* → *Guardrail* with one denied topic. At 01:56:24Z
+  `CreateGuardrail`, called from `datazone.amazonaws.com` as `awsds-sandbox-smus-provisioning` (session
+  `AmazonDataZoneEnvironmentDeployer-<account>`), was refused with *"You don't have sufficient permissions
+  for this KMS key."*, and in the same second `kms:CreateGrant` on the project key was refused: *"… is not
+  authorized to perform: kms:CreateGrant on resource: arn:aws:kms:us-west-2:<account>:key/<project key> because
+  no identity-based policy allows the kms:CreateGrant action"*. Both events carry `datazone.amazonaws.com` as
+  source and user agent, and the grant's event no request parameters. The role's managed policy allows
+  `kms:CreateGrant` through `airflow`, `neptune-graph` and `s3vectors` alone, and the key's policy allowed it
+  to the role through `redshift-serverless` alone. The environment's stack, created at 01:56:20Z, was rolled
+  back to `DELETE_COMPLETE`, and the environment read `CREATE_FAILED` with *"Access denied for operation
+  'AWS::Bedrock::Guardrail'."* (`HandlerErrorCode: AccessDenied`): CloudFormation's handler made the call, and
+  the trail attributes it to DataZone. Bedrock's guardrail encryption page lists, for the creating identity,
+  `kms:Decrypt`, `kms:GenerateDataKey`, `kms:DescribeKey` and `kms:CreateGrant` with no condition (read
+  2026-11-22); SMUS's key-permissions page names no guardrail statement. A project key written to SMUS's page
+  therefore refuses every IDE guardrail. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
+  `terraform-modules/sagemaker-prereqs/kms.tf`.
+  A later reading (2026-11-22, 02:45Z): with the statement in the key's policy (`sagemaker-prereqs-v0.14.0`),
+  `CreateGuardrail` was admitted as the same role, and in the same second three `kms:CreateGrant` on the key,
+  each naming `bedrock.us-west-2.amazonaws.com` as grantee and retiring principal. Two are bound to the
+  encryption context `aws:bedrock:guardrail-id`; the third carries no constraint and allows `Decrypt`,
+  `Encrypt`, `GenerateDataKey`, `CreateGrant`, `RetireGrant` and `DescribeKey`. The guardrail therefore left on
+  the project key a grant to Bedrock that no guardrail id bounds.
+
+- `SUP-418` **The Bedrock IDE's evaluation form sends `temperature` and `top_p` together, which Claude Haiku
+  4.5 refuses, so the IDE did not evaluate it; the portal reports an unknown error** (measured 2026-11-22 in
+  Sandbox, Stage 17 7.4). The form's *Inference configurations* panel holds Max tokens 500, Temperature 0.5,
+  Top P 0.5 and Top K 50 by default, and a cleared Top P returns to 0.5. Its model list offered Nova Lite,
+  Claude Haiku 4.5, Claude Opus 4.5 and Claude Sonnet 4.5; Opus 4.5 and Sonnet 4.5 were not submitted. With
+  Haiku 4.5, Question and answer and Toxicity over a 20-line custom dataset, DataZone created the evaluation
+  environment, whose stack holds an output and no resource. At 02:07:54Z Bedrock's pre-flight `Converse`, as
+  the project's `AmazonBedrockServiceRole-*` on the application inference profile, was refused: *"The model
+  returned the following errors: `temperature` and `top_p` cannot both be specified for this model. Please use
+  only one."*, and `CreateEvaluationJob`, as the project role, with *"There was a validation exception when
+  running inference for model identifier
+  arn:aws:bedrock:us-west-2:<account>:application-inference-profile/<id>. Please review the error and retry:
+  …"* and the same reason. The trail's `Converse` event shows `inferenceConfig` holding `maxTokens` 1 alone,
+  and the job's `inferenceParams` read `HIDDEN_DUE_TO_SECURITY_REASONS`. The portal read *"An error occurred
+  while creating the evaluation job: Unknown error. Potentially invalid input"*, and no evaluation job exists.
+  The environment stayed `ACTIVE`.
+  The prompt editor drops Top P instead: its form at Temperature 1 and Top P 0 stored, in both versions of the
+  prompt, `inferenceConfiguration` `temperature` 1.0, `maxTokens` 4096 and `stopSequences` `Human:`, with no
+  `topP`, and its test of Haiku 4.5 was admitted (`ConverseStream` at 01:48:24Z as the project role). The trail
+  shows `maxTokens` alone for every call, so the stored prompt is what tells the two forms apart. SMUS's
+  job-creation page says *"You can change Max tokens, temperature, and Top P inference parameters"* and names
+  no model they exclude (read 2026-11-22). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  A later reading (2026-11-22, 02:52Z): with Nova Lite and the same task, metric and dataset,
+  `CreateEvaluationJob` was admitted. Nova Lite's panel held Max tokens 500, Temperature 0.5 and Top P 0.5,
+  with no Top K, and was closed with no change. `GetEvaluationJob` reads the job's `inferenceParams` as
+  `maxTokens` 2048, `temperature` 0, `topP` 0 and no stop sequence: the form's *Default* sends values its panel
+  does not show, both sampling parameters among them, and `GetEvaluationJob` shows what the trail hides.
+
+- `SUP-419` **The Bedrock IDE's evaluation form refuses a custom dataset for Accuracy and Robustness under
+  Question and answer, where SMUS's pages say every metric takes one** (measured 2026-11-22 in Sandbox, Stage 17
+  7.4). With the task *Question and answer* and the metric Accuracy or Robustness, the form greys out *Upload a
+  dataset to S3* and *Choose a dataset from S3*, reads *"Custom datasets are not supported for Q&A task type with
+  robustness or accuracy metrics"*, and leaves the built-in BoolQ, Natural Questions and Trivia QA checked.
+  Toxicity takes the upload. SMUS's custom-dataset page says *"you can use a custom prompt dataset for each
+  metric you select in the model evaluation job"* and requires `referenceResponse` *"for all accuracy, and
+  robustness evaluations"*; its job-creation page offers, *"For each metric"*, the built-in or an S3 dataset
+  (both read 2026-11-22). A question-and-answer dataset of one's own is therefore scored for toxicity alone.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-445` **The Bedrock IDE keeps a component's portal name in its DataZone environment's description, and
+  names the environment and the Bedrock resource after ids** (read 2026-11-22 in Sandbox, Stage 17 7.4). Each
+  component is an environment whose description is JSON, `{"resourceId":"<component uuid>","resourceName":"<the
+  portal's name>","resourceDescription":"<the form's description>"}`, and whose name is `<component uuid>-dev`;
+  the portal's URL carries the uuid (`/bedrock/prompts/<uuid>`, `/bedrock/promptFlows/<uuid>`). The Bedrock
+  resource's name is `Bedrock-Prompt-<environment id>` or `Bedrock-Flow-<environment id>`, its description names
+  the project and the domain, and the flow carries the tags `AmazonDataZoneProject`, `AmazonDataZoneEnvironment`,
+  `AmazonDataZoneBlueprint`, `AmazonDataZoneDomain` and `AmazonBedrockManaged`. A knowledge base is named
+  `<project id>-<portal name>`. An evaluation's environment and job are both named `<project id><portal name>`,
+  with no separator and no description. No SMUS page describes the mapping, so a reader that lists Bedrock's
+  objects finds none under the name the portal shows. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+  A later reading (2026-11-22, 02:45Z to 02:52Z): the guardrail is named after its environment,
+  `<component uuid>-dev`, and carries the flow's five tags, `AmazonDataZoneBlueprint` reading
+  `AmazonBedrockGuardrail`. The project holds one application inference profile per model its components
+  used, each created by `AmazonSageMakerBedrockModelManagementRole-<account>` at the model's first use and
+  named `<domain id> <project id>`: its four, for an embeddings model, Claude Opus 4.5, Claude Haiku 4.5 and
+  Nova Lite, share that name, and the domain's two from the playground share `<domain id>` (`SUP-187`). Nova
+  Lite's was created at the evaluation's submit, 4 s before its environment.
+
+- `SUP-446` **The Bedrock IDE's chat agent app is an Agents Classic agent: its preview calls `InvokeInlineAgent`
+  and its deploy `CreateAgent`, both refused for an account with no prior agent use, and the portal shows
+  neither refusal's wording** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). *Save* writes the app's
+  definition to the project's bucket, `amazon-bedrock/builder/apps/chatApp/<uuid>-definition.json`, and creates
+  no environment and no agent. The definition names the model by a catalog listing revision, `<listing id>:2`,
+  whose `BedrockModelAssetType` asset has the `us.` system profile as its base, names the knowledge base and the
+  guardrail by component uuid, and holds `temperature`, `topK` and `maxTokens` with no `topP`. Each *Preview*
+  message sent `POST bedrock-agent-runtime.us-west-2.amazonaws.com/agents/<session id>` from the browser,
+  answered 403 with *"Bedrock Agents is in Maintenance Mode. New agent creation is not available for accounts
+  without prior service usage."*; the portal read *"Failed to run application Amazon Bedrock encountered an
+  error when invoking the Bedrock runtime API. Try again later."* and *"Something went wrong."*. *Deploy*
+  created a DataZone environment `<uuid>-shared` of the `AmazonBedrockChatAgent` blueprint, and its stack's
+  `CreateAgent`, as the provisioning role from `datazone.amazonaws.com`, on the project's application inference
+  profile with the project key and the guardrail's `DRAFT`, was refused `AccessDenied` with no error message
+  in the trail and no KMS call; the environment read `CREATE_FAILED` with *"Access denied for operation
+  'AWS::Bedrock::Agent'."*. The IAM simulator, with resource `*`, reads `bedrock:CreateAgent` allowed for that
+  role by `SageMakerStudioProjectProvisioningRolePolicy` and the SCPs under the request's tags, so the refusal
+  is Bedrock's own, and its wording reaches the browser on `InvokeInlineAgent` alone. The builder's banner
+  dates Agents Classic's closing to new customers, July 30, 2026, and names no refusal of its own calls.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-447` **The Bedrock IDE's flow environment always creates a role of its own, and creates it with no
+  permissions boundary: the blueprint configuration's `environmentRolePermissionBoundary` does not reach it,
+  and the flow runs as the project's service role instead** (read 2026-11-22 in Sandbox, Stage 17 7.5). The
+  stack of a flow app's environment declares `AWS::IAM::Role` with no condition, named
+  `AmazonBedrockFlowServiceRole-<environment id>`. The environment passed the stack parameter
+  `useAwsManagedPoliciesWithoutBoundary` `true`, which gives the role AWS's
+  `SageMakerStudioBedrockFlowServiceRolePolicy` and no boundary; `false` gives it inline policies under AWS's
+  `SageMakerStudioProjectUserRolePermissionsBoundary`. Neither branch reads the boundary the
+  `AmazonBedrockFlow` blueprint configuration names, `awsds-sandbox-project-boundary` here, and the template
+  takes no parameter for it. The provisioning role's `CreateRole`, from `datazone.amazonaws.com`, named no
+  `permissionsBoundary`. The flow's `ExecutionRoleArn` is the new role only when `bedrockServiceRoleArn` is
+  empty; the environment passed the project's `AmazonBedrockServiceRole-*`, so the flow ran as that bounded
+  role and the new one reads no `RoleLastUsed`. Its trust admits `bedrock.amazonaws.com` for this account's
+  flows alone, its policy names only the project's Bedrock objects by tag, models through an inference
+  profile, `RetrieveAndGenerate` on `*` and the project key through Bedrock, and the project role may not pass
+  it (`iam:PassRole` `implicitDeny` in the simulator). No SMUS page read for this project describes the role,
+  the flow app pages read on 2026-11-22 included. A check that every blueprint-authored role carries the
+  boundary fails on each flow app's environment. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
+
+- `SUP-448` **The Bedrock IDE's flow builder deploys a flow on each test message and never on *Save*, and
+  offers a flow app no *Share*** (measured 2026-11-22 in Sandbox, Stage 17 7.4b). `ml-demo-flow` was edited to
+  carry a knowledge base node. *Save* read *"Saved"* and wrote the four-node definition to the project's
+  bucket, `amazon-bedrock/builder/apps/flowApp/<uuid>-definition.json`, and `GetFlow` still read the two-node
+  flow prepared two hours before. The first test message ran a PUT of the asset `genAI/assets/flows/<uuid>`,
+  DataZone's `UpdateEnvironment`, a PUT of the environment's `definition.json` and the update of the stack
+  `DataZone-Env-<environment id>` (04:25:26Z to 04:25:36Z), whose `UpdateFlow` and `PrepareFlow` ran as the
+  provisioning role from `datazone.amazonaws.com`, before the browser's `InvokeFlow` on `TSTALIASID`
+  (04:25:49Z). Each of the three later messages, with no edit between them, updated the stack again (the stack
+  from 04:26:50Z to 04:27:01Z, then `UpdateFlow` at 04:28:33Z and at 04:30:29Z), and a message took 70 to
+  80 s from the send to the answer. The
+  stack updated `BedrockFlow` alone. *My apps* lists the flow *"Not shared"*, with a delete icon alone. AWS's
+  flow app pages say *Save* saves the app and the run button tests it, and its share page describes chat agent
+  apps alone (`build-flow.html`, `app-share.html`, read 2026-11-22). A flow saved and never tested therefore
+  runs its previous definition, a `GetFlow` after *Save* reads the edit as lost, and every test is a stack
+  update as the provisioning role. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22;
+  `runbooks/bedrock-generative-ai.md` §B.
 
 ## SageMaker AI spaces and images
 
@@ -3444,10 +4031,20 @@ entry is still true is the reading.
   `etc/conda/activate.d/*.sh` run after the activation exports `PATH`. Where:
   `log-stage-08-cicd-pipelines.md`, 2026-10-26.
 
-- `SUP-229` **`list-apps` reports an app's first creation, not its latest start** (measured 2026-10-26).
+- `SUP-229` **An app's `CreationTime` is the first `CreateApp` under its name, kept across a restart and
+  across its space deleted and made again under the same name** (measured 2026-10-26 and 2026-11-21).
   Both `default` spaces' apps read `CreationTime` 2026-10-25 05:40 UTC while CloudTrail's `CreateApp`
   started them at 04:45 and 05:31 UTC on 2026-10-26: an app's age is read from `CreateApp`. Where:
-  `log-stage-10-orchestration-promotion.md`, 2026-10-26.
+  `log-stage-10-orchestration-promotion.md`, 2026-10-26. **2026-11-21**: `code` in `d-m8m0uefej9kb` was
+  created at 03:54:10, shut down idle at 05:04:31, its space deleted at 18:34:05 and made again at 20:08:41,
+  and its `CreateApp` ran at 20:08:46; `describe-app` and `list-apps` still read 03:54:10. Three restarts
+  inside one space read their first `CreateApp` too. The DescribeApp reference states the rule on
+  `CreationTime` (an application restarted within 24 hours of its last shutdown is an update and keeps its
+  metadata); ListApps's `AppDetails`, the shape of each app `list-apps` returns, says only *"The creation time."*, and
+  neither page names a space made again. `scripts/slices.py status` billed `code` *"about 1.74 USD so far
+  since 2026-11-21 03:54 UTC"* for a run of about 0.12 USD; it now bills from the later of the app's and
+  the space's `CreationTime` and prints an upper bound, since a restart inside one space keeps the first
+  time. Where: `log-stage-12-observability-finops.md`, 2026-11-21.
 
 - `SUP-230` **An open portal page starts its project's space app again after `make down` deleted it**
   (measured 2026-10-26). The Studio-apps hook deleted both projects' apps at 06:10 UTC; the persona's open
@@ -3462,6 +4059,21 @@ entry is still true is the reading.
   *"You cannot delete the default JupyterLab space"*. Opening that project's *Code spaces* page recreated
   the space (`CreateSpace` by the project role from a browser, 06:44:45 UTC) and the service started its
   app. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-10-30.
+
+- `SUP-450` **A SageMaker Unified Studio JupyterLab app calls `cognito-identity.us-east-1.amazonaws.com`
+  and `client-telemetry.us-east-1.amazonaws.com` every few seconds while it runs, and the idle shutdown does
+  not count the calls as activity** (measured 2026-11-21 in Sandbox's proxy log, Stage 17 sitting B). From
+  the space `jup`, JupyterLab on `ml.t3.medium`, the proxy logged a pair of tunnels every 2.5 to 2.6 s, each
+  pair the same sizes: *"CONNECT cognito-identity.us-east-1.amazonaws.com:443 200 8072 2932 TCP_TUNNEL"* and
+  *"CONNECT client-telemetry.us-east-1.amazonaws.com:443 200 5605 3637 TCP_TUNNEL"*. The app's address sent
+  1,529 pairs from 20:17:53Z to 21:23:15Z, from its UI's first minutes to its idle delete at 21:23:14Z
+  (`SUP-221`, the domain's `IdleTimeoutInMinutes` 60), and the restarted app's new address sent them again
+  from 23:07:53Z. About 6.6 KB leave per pair, 9.2 MB an hour per running JupyterLab app, and 19 MB arrive.
+  The pair passes the compute plane's `.amazonaws.com` allowance. A Code Editor space sent it once per app
+  start (6d's log; `SUP-233`), and `app-etl-dev`'s JupyterLab space `default` about 300 of each in 20
+  minutes on 2026-11-15. The sending component was not identified. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21; `log-stage-12-observability-finops.md`,
+  2026-11-21; `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
 ### The Code Editor and the remote IDE
 
@@ -3529,6 +4141,55 @@ entry is still true is the reading.
   *available only in `us-east-1`*. `/amazon/datazone/q/<domain-id>` and `.../q-enabled` answer
   `ParameterNotFound`. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-09-12, 2026-09-18,
   2026-10-17 and 2026-10-18; `docs/SMUS.md`.
+
+- `SUP-397` **`sagemaker:StartSession` on a space of a domain SageMaker Unified Studio created refuses any
+  client but the AWS Toolkit and the Unified Studio web IDEs, and checks the client only after IAM allows
+  the call** (measured 2026-11-21 in Sandbox, Stage 6d 7.6). From a space's terminal as
+  `eighth-experimentation`'s project role, `aws-cli/2.37.0` through the `sagemaker.api` interface endpoint,
+  three calls a second apart: the caller's own space in the blueprint's domain answered
+  `ValidationException`, *"StartSession for SageMaker Unified Studio Domain is supported only from Unified
+  Studio clients - AWS Toolkit and SageMaker Unified Studio Web IDEs. Retry your request from a supported
+  client."*; another project's space and another user's space answered `AccessDenied`, *"… because no
+  identity-based policy allows the sagemaker:StartSession action"*. The portal's deep link on the caller's
+  own space, 9 minutes earlier, was answered. A call IAM refuses reads the refusal, and only an allowed call
+  meets the client check. Which mark of the request the service reads is unread; the user agent is the
+  visible difference. The SageMaker AI guide's third connection method runs `aws sagemaker start-session`
+  in a `ProxyCommand` script, and neither its pages nor the Unified Studio admin guide's *Local IDE
+  support*, read 2026-11-21, state the restriction: that method cannot reach a Unified Studio space, and a
+  CLI `start-session` measures the identity half only on a space the caller holds no Allow for. Where:
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-21; `runbooks/remote-ide.md` §I and §F.
+
+- `SUP-398` **The AWS Toolkit lists a Unified Studio project's spaces from the domain its `Tooling`
+  environment names, so a space in the project's `SageMakerAIDomain` blueprint domain is invisible to it**
+  (measured 2026-11-21 in Sandbox, Stage 6d 7.6; read from the Toolkit 4.20.0 bundle the same day). Signed
+  in to the domain with `eighth-experimentation` open, the Toolkit listed no space. Its six `ListSpaces`
+  and `ListApps` pairs from 07:23:08 to 07:31:27 UTC, `aws-sdk-js` from the laptop's address as the
+  project role, each named `domainIdEquals` the `Tooling` domain alone, empty since 6d 2.7 moved the spaces;
+  the portal's listings in the same minutes named the blueprint's domain as well, where the owner's space
+  ran. The bundle (`dist/src/extensionNode.js`) takes the domain id from the `Tooling` environment's
+  provisioned resource `sageMakerDomainId` and filters the spaces to the signed-in user's profile; a
+  project whose environment has no such resource, as one created since 2026-11-18 under the profile, reads
+  *"Spaces are unavailable — this project's tooling environment has no SageMaker domain"* (the code, not
+  run). No AWS page read 2026-11-21 (*Local IDE support*, *Set up Remote IDE*, *Connect your Remote IDE*)
+  says which domain the Toolkit reads. A space in the blueprint's domain is reached by the portal's deep
+  link alone. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-21; `runbooks/remote-ide.md` §W.
+
+- `SUP-399` **A portal deep link hands the Toolkit one session, and every later SSH connection to the space
+  waits on the browser for another, for 40 seconds** (measured 2026-11-21 on macOS, Stage 6d 7.6; read
+  from the Toolkit 4.20.0 bundle the same day). The link's session, from the portal's `StartSession`, is
+  stored in `~/.aws/.sagemaker-space-profiles` as the request `initial-connection`. The connect script asks
+  the Toolkit's local server (`/get_session_async`) for a session per SSH connection, and the server hands
+  `initial-connection` to the first and marks it `consumed`. For a later connection it opens the portal's
+  refresh URL in the default browser, with `remote_access_token_refresh=true` and a callback to its own
+  `localhost` port, answers 202 and marks the request `pending`, then answers 204 until the callback
+  delivers a session; the script polls 8 times at 5 seconds and gives up. Remote-SSH's
+  `remote.SSH.localServerDownload` `always` copies the VS Code Server with `scp`, a second connection: it
+  read 202 once and 204 seven times from 07:33:37 UTC and failed at 07:34:18 with *"Error: Timed out after
+  8 attempts waiting for session to be ready."*, and the trail holds no second `StartSession`. No AWS page
+  read 2026-11-21 mentions the refresh or its limit. A first connection to a space that does not hold the
+  server yet, and every reconnection, needs the browser to finish the portal's refresh, signed in as the
+  space's owner, within 40 seconds. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-21;
+  `runbooks/remote-ide.md` §W.
 
 ## SageMaker AI jobs and models
 
@@ -3648,6 +4309,47 @@ entry is still true is the reading.
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
 
+- `SUP-408` **A `CreateTrainingJob` sent with no tags from a notebook in a SageMaker Unified Studio space
+  is recorded with the space's `sagemaker:*-arn` and `AmazonDataZone*` tags and admitted without the
+  caller's `sagemaker:AddTags`, while the same request naming `AmazonDataZoneProject` is refused as
+  `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
+  17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
+  `requestParameters.tags` with `sagemaker:user-profile-arn`, `sagemaker:domain-arn`, `sagemaker:space-arn`,
+  `AmazonDataZoneProject`, `AmazonDataZoneScopeName`, `AmazonDataZoneUser` and `AmazonDataZoneDomain`, and
+  the job `ml-demo-xgb-untagged-20261121-231933` carried the same seven, though no policy on the project
+  role allowed `AddTags`. Eight seconds later the request whose `Tags` named `AmazonDataZoneProject` read
+  *"not authorized to perform: sagemaker:AddTags ... because no identity-based policy allows the
+  sagemaker:AddTags action"* (`SUP-267`'s exclusion). The composer of the seven is not read: the space's
+  `BOTOCORE_EXPERIMENTAL__PLUGINS` names the S3 Access Grants plugin alone, the blueprint domain's
+  `TagPropagation` reads `None`, and the four `AmazonDataZone*` keys are four of the nine the space and its
+  user profile carry. A notebook in a space creates a training job without the training pair by naming no
+  tag; a workflow's operator names it and needs the pair (`sandbox/workflows/`). Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-21.
+  **Read again 2026-11-22** (Stage 17 3.2): `CreateModelPackageGroup` from the same space, its `Tags`
+  naming `AmazonDataZoneProject` alone, was recorded at 00:18:45 with the same seven keys and admitted
+  through `sandbox/ml/`'s statement, whose `aws:TagKeys` condition admits that key alone, so the six others
+  were not in the authorization. A versioned `CreateModelPackage` with no tag argument was recorded at
+  00:34:10 with no `tags` key (`SUP-409`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-409` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
+  refused as `sagemaker:AddTags` on `model-package/<group>/new`, and the same request with no tag argument
+  is authorized against the group's tags** (measured 2026-11-22 in Sandbox, Stage 17 3.2, as
+  `eighth-experimentation`'s role from a space). CreateModelPackage's API reference says a package created
+  in a group uses the group's tags and *"you cannot supply a tag argument"*. With `Tags` naming
+  `AmazonDataZoneProject`, the request at 00:18:46 read *"not authorized to perform: sagemaker:AddTags on
+  resource: arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/ml-demo-xgboost/new because no
+  identity-based policy allows the sagemaker:AddTags action"*, `requestParameters` null: the authorization
+  answers before any validation of the tag argument, and names a permission. Without
+  `Tags`, the request at 00:34:10 created version 1, `PendingManualApproval`, recorded with no `tags` key.
+  The one statement on the role allowing `CreateModelPackage` on that resource is the blueprint's
+  `SageMakerCreatePermissions` (`SageMakerStudioProjectRoleMachineLearningPolicy` v48), conditioned on
+  `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag, so the version's resource tag
+  at the create is its group's. `ListTags` on the version answers *"ValidationException: Tag operations are
+  supported only on ModelPackage Group not on ModelPackage Versions."* An `AddTags` grant on `model-package/*`
+  would authorize a request the API reference excludes; a registration names no tag, into a group tagged
+  with the project.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API
@@ -3683,12 +4385,17 @@ entry is still true is the reading.
   2026-09-10; `log-stage-10-orchestration-promotion.md`, 2026-10-22; `docs/SMUS.md`; `upstream-releases.md`,
   the MWAA Serverless table.
 
-- `SUP-251` **`list-workflow-runs` returns `RunType` null for every run, and `get-workflow-run` carries it**
-  (measured 2026-10-10, on Sandbox's two portal-authored workflows). The service model declares `RunType`
-  (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all six listed runs read `null`, and each read
-  `ON_DEMAND` one at a time. A check that takes the type from the list sees no `SCHEDULED` run whether one
-  fired or not, and that is Stage 10 verification (v)'s evidence. Where: `aws/orchestration.py` section 7,
-  `log-stage-06d`'s sixteenth sitting.
+- `SUP-251` **`list-workflow-runs` returned `RunType` null for every run on 2026-10-10 and carried it on
+  2026-11-22; `get-workflow-run` carries it** (measured 2026-10-10, on Sandbox's two portal-authored
+  workflows). The service model declares `RunType` (`ON_DEMAND` | `SCHEDULED`) in `WorkflowRunSummary`; all
+  six listed runs read `null`, and each read `ON_DEMAND` one at a time. A check that takes the type from the
+  list sees no `SCHEDULED` run whether one fired or not, and that is Stage 10 verification (v)'s evidence.
+  Where: `aws/orchestration.py` section 7, `log-stage-06d`'s sixteenth sitting.
+  **Read again 2026-11-22** (R1): the list carried `RunType` on every run, 36 runs of 15 workflows in
+  Sandbox, Staging and Production, each `ON_DEMAND`, the portal-created `wfk-notebook`'s run among them.
+  `simple-s3-copy`, one of the workflows read on 2026-10-10, is no longer listed, so whether the service
+  changed or those runs differed is unread, and no `SCHEDULED` run was listed to show the list carries that
+  value. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 - `SUP-252` **The portal's save sends a code location the editor pre-fills, and an import cannot replace a
   saved workflow** (measured 2026-10-10/11, Stage 6i). A new workflow's *Settings → Storage* carries
@@ -3843,6 +4550,24 @@ entry is still true is the reading.
   and that `kms:ViaService` value admits it. `GetTaskInstance` was not called in the window. Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-26.
 
+- `SUP-436` **`list-workflow-runs` fills each page with the newest runs not yet listed and orders the runs
+  inside a page by no time, so only a page of one run is ordered** (measured 2026-11-22, R1, as
+  `awsds-infra-prod` and `awsds-infra-sandbox-1`, aws-cli 2.37.12). Production's
+  `app_etl_deploy_production_app_etl` holds three runs of 2026-11-16, created 02:32:15, 02:51:21 and 03:19:11
+  UTC. One page listed them 02:32:15, 03:19:11, 02:51:21, the same on two calls; pages of one run answered
+  03:19:11, 02:51:21 and 02:32:15, in that order; a page of two answered 03:19:11, 02:51:21. Sandbox's
+  `houseprice_etl_eighth_experimentation_houseprice_etl` holds seven runs of 2026-10-16: one page listed
+  02:13:11, 02:03:59, 15:21:53, 15:18:35, 03:28:31, 03:11:05, 02:25:55; pages of three answered the three
+  newest, then 02:13:11, 03:11:05, 02:25:55, then 02:03:59; pages of one answered all seven newest first. Of
+  the 15 workflows with runs in Sandbox, Staging and Production, a full list read in descending order for
+  six, ascending for one and in neither for three; five hold one run. The CLI's reference page says only
+  that the call lists all runs for a workflow, with optional pagination and filtering. Consequence:
+  `WorkflowRuns[0]` of a page holding more than one run is not the newest run, and `--max-results 1
+  --no-paginate --query 'WorkflowRuns[0].RunId'`, the runbooks' form, is. A reader of several runs sorts by
+  `RunDetailSummary.CreatedOn`, as `aws/sandbox-orchestration.py` does; `aws/orchestration.py`'s
+  `--max-results` returns the newest runs in no order. Where: `log-stage-19-smus-native-data-product.md`,
+  2026-11-22.
+
 ### MWAA Serverless: workers, tasks and operators
 
 - `SUP-265` **The portal workflow's notebook task runs as a SageMaker training job, and
@@ -3960,8 +4685,8 @@ entry is still true is the reading.
   `OSError(16, 'Device or resource busy')`, pip `[Errno 16]`, rather than a name error. A worker failing at
   resolution with "Device or resource busy" is a blocked name. Where: `runbooks/serverless-workflows.md` §O.
 
-- `SUP-273` **A run's state lags its task instances, and the workflow's log group exists from its first
-  save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
+- `SUP-273` **A run's state and its task instances lag the work they report, and the workflow's log group
+  exists from its first save** (measured 2026-10-11, Stage 6i step 3.8). `get-workflow-run` read `QUEUED` until 23:06:16Z while
   the sensor had finished at 23:05:23Z, and `/aws/mwaa-serverless/<domain>-<project>/<workflow>` existed,
   empty and with no retention, before any run. Where: `runbooks/serverless-workflows.md` §V and §O.
   Read again 2026-11-16 in Staging through the chain machines' `getWorkflowRun`, one poll a minute (Stage
@@ -3971,6 +4696,12 @@ entry is still true is the reading.
   `QUEUED` at 00:59:15 and 01:00:15 and `FAILED` at 01:01:16, with a `ModifiedAt` of 01:00:23; it never read
   `RUNNING`. A run shorter than the lag goes from `QUEUED` to its end, and the end is written about a
   minute after `CompletedOn`. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-21 in Sandbox, polled every 22 seconds (Stage 20 2.5). `get-workflow-run` read `QUEUED`
+  and `list-task-instances` listed nothing through 04:59:28, `load` first at 04:59:50, while
+  `list-workflow-runs` read `RUNNING` from 04:57:30 and the task's Glue job had started at 04:58:18. At the
+  end `transform` and the run read `RUNNING` through 05:05:22 and `SUCCESS` at 05:05:44, dbt's log having
+  ended at 05:03:11. The task instances lag as the run does, about two and a half minutes at each end, and
+  `list-workflow-runs` reads the start first. Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
 
 - `SUP-274` **On an MWAA Serverless worker a Python task imports a pre-installed package before the code
   archive's copy, while a Bash task's `python3` imports the archive's copy first** (measured 2026-10-11,
@@ -4387,6 +5118,14 @@ entry is still true is the reading.
 
 ## Bedrock
 
+The Bedrock IDE, SageMaker Unified Studio's builder of Bedrock components, is recorded under
+[DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio), *The Bedrock IDE*: `SUP-410`
+and `SUP-411` (a knowledge base on S3 Vectors: the key statement its index needs, and the index's filterable
+metadata), `SUP-417` (a guardrail: `kms:CreateGrant` on the project key), `SUP-418` and `SUP-419` (an
+evaluation: the sampling parameters Claude Haiku 4.5 refuses, and its datasets), `SUP-445` (the names),
+`SUP-446` (the chat agent on Agents Classic), `SUP-447` (a flow's role with no boundary) and `SUP-448` (a flow
+deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base's calls carry.
+
 - `SUP-288` **The Bedrock use-case form is stored as double base64 over a flat JSON object, and one
   submission covers every model** (measured 2026-09-11, Stage 6e M2). `PutUseCaseForModelAccess` and
   `GetUseCaseForModelAccess` declare `formData` an opaque blob, and the CLI prints its outer layer; `base64
@@ -4443,7 +5182,13 @@ entry is still true is the reading.
   `agreementAvailability.status: NOT_AVAILABLE` means no agreement has been created, not *no agreement is
   needed*, and reading it the second way is what hid the omission through three separate readings. The
   agreement is account-wide: created in one Region it reads `AVAILABLE` in the others before the creating
-  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4.
+  Region leaves `PENDING`. Amazon's own models need none. Where: `claude-code-sagemaker.md` M4. Read again
+  2026-11-22 (Stage 6e decision 17): the agreements for Opus, Sonnet and Haiku 5.5, created through
+  `us-west-2`, read one status in all three routed Regions at each reading. Opus 5.5 read `AVAILABLE`
+  everywhere at the first reading, 02:13:31, 49 seconds after its CloudTrail event; Sonnet and Haiku 5.5 read
+  `PENDING` everywhere at 02:13:31 and `AVAILABLE` everywhere by 02:14:13. The other Regions leading the
+  creating one did not recur, so the order of the Regions is not a property. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-294` **A Bedrock model can be gated commercially with every readable instrument reporting it
   available** (measured 2026-09-12). `anthropic.claude-sonnet-5`: agreement `AVAILABLE`,
@@ -4457,9 +5202,16 @@ entry is still true is the reading.
   `claude-fable-5`, `claude-fable-5-1`) did not. `agreementAvailability: NOT_AVAILABLE` means no agreement
   has been created, not that none is needed: a live offer existed for each model. An agreement is per model
   and account-wide: Sonnet 5's went `PENDING` to `AVAILABLE` within seconds, `us-east-1` and `us-east-2`
-  reading `AVAILABLE` before the creating Region left `PENDING`, while Sonnet 4.5's took minutes;
+  reading `AVAILABLE` before the creating Region left `PENDING` (not repeated on 2026-11-22, `SUP-293`),
+  while Sonnet 4.5's took minutes;
   `amazon.nova-lite-v1:0` needed none. The grant, the endpoint policy, the SCP and the use-case form were
-  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12.
+  each eliminated by measurement. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-09-12. Read again
+  2026-11-22 (Stage 6e decision 17): Opus, Sonnet and Haiku 5.5, ids without a date, were refused to the
+  infrastructure user at 02:37:50 to 02:37:52 and again at 02:44:04 to 02:44:06 with the same
+  `AccessDeniedException`, *"anthropic.claude-opus-5-5 is not available for this account …"*, the
+  agreements `AVAILABLE` in all three routed Regions since 02:14 and the SCP naming the ids since 02:37:30.
+  Haiku 4.5 answered the same night. The shape rule holds for a third generation. Where:
+  `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
 
 - `SUP-295` **A streaming Bedrock invocation writes two CloudTrail events; a non-streaming one writes one**
   (measured 2026-09-12). `InvokeModelWithResponseStream` records one event carrying
@@ -4478,7 +5230,9 @@ entry is still true is the reading.
   `foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0` and host
   `bedrock-runtime.us-west-2.amazonaws.com`; the service event named the same model. A count keyed on
   `modelId` sees a profile ARN there, not a model id. Where: `log-stage-17-sandbox-machine-learning.md`,
-  2026-10-19.
+  2026-10-19. Read again 2026-11-22 (Stage 6e decision 17): `InvocationClientErrors` carries a `ModelId`
+  series for an application inference profile, `ljl42zoh6e4v`, beside the dimensionless one, with one error
+  at 02:07 in both; a refusal by the commercial gate writes neither an event nor a datapoint (`SUP-427`).
 
 - `SUP-296` **CloudWatch carries a cross-region profile's tokens in the source Region, with invocation
   logging off** (measured 2026-09-12). `AWS/Bedrock` publishes `Invocations` and four token counts per
@@ -4531,7 +5285,13 @@ entry is still true is the reading.
   policy. A ceiling that refuses the profile pass therefore hides whether the model pass holds. The browser
   called `bedrock-runtime` directly, with no `vpcEndpointId`, as the consumption role in a session named
   `<DataZone user>@<environment>`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-10-19;
-  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`.
+  `POLICIES.md`, `DenyBedrockInvocationOutsideTheScopedModels`. Read again over 2026-10-17 21:07 to
+  2026-11-22 01:56 in Sandbox's trail (Stage 6e decision 13): the portal's Bedrock pages call the control
+  plane from the browser too, as the project role from a public address with no `vpcEndpointId`:
+  `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
+  `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered. The consumption
+  role's 15 `ListFoundationModels` came the same way. Where: `log-stage-06e-claude-code-bedrock.md`,
+  2026-11-22.
 
 - `SUP-301` **CloudWatch publishes a Bedrock call through an application inference profile under the
   profile's id, which names no model** (measured 2026-10-19 in Sandbox, Stage 17 7.3). Haiku 4.5's
@@ -4543,6 +5303,73 @@ entry is still true is the reading.
   returned 96 profiles, all `SYSTEM_DEFINED`. In the console's code a playground disable deletes the
   profile, so a later enable gives a new id and an old series no longer resolves to a model. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-10-19; `aws/bedrock-usage.py`.
+
+- `SUP-426` **A knowledge base's model calls, at ingestion and from a flow's knowledge base node, are recorded
+  with the `vpcEndpointId` of an endpoint this account does not own, and with no `vpcEndpointAccountId`** (read 2026-11-22 in Sandbox's
+  trail, Stage 6e decision 13). A SageMaker Unified Studio knowledge base, created at 01:33:19 on 2026-11-22
+  by `awsds-sandbox-smus-provisioning` from `datazone.amazonaws.com`, ran two ingestion jobs. Its 2,939
+  `InvokeModel` calls on the application inference profile `p391nstyc81c`, 01:33:18 to 01:34:37, are the
+  only Bedrock events from 2026-10-17 21:07 to 2026-11-22 01:56 that carry a `vpcEndpointId`. Each is
+  recorded in the project role's session, with `invokedBy`, `sourceIPAddress` and `userAgent`
+  `bedrock.amazonaws.com`. Each ingestion job's calls came in one session named `EmbeddingTask-<id>` through
+  one endpoint id: 1,479 through `vpce-0d75040e827258f9d` and 1,457 through `vpce-046f1b5f53e3e98c7`. One
+  call at the knowledge base's creation and one at each `StartIngestionJob`, in sessions named
+  `BKB-CP-<knowledge base id>-<suffix>`, came through a third, `vpce-021c8cd79f64c2f84`.
+  `describe-vpc-endpoints` finds none of the three in the account, whose four Bedrock endpoints carried no
+  event. CloudTrail's record reference, at eventVersion 1.11, says that for events AWS originates through a
+  service's VPC the field is *"usually `AWS Internal` or the service name"*, and it defines
+  `vpcEndpointAccountId` (since 1.09) as the endpoint owner's account. These 1.11 records carried a `vpce-`
+  id and no owner, as did every other event of the window. A count of calls through the account's endpoints
+  therefore matches its own endpoint ids, never a non-null `vpcEndpointId`. With the portal's calls from the
+  browser (`SUP-300`) and the blueprint's creates from `datazone.amazonaws.com`, no Unified Studio Bedrock
+  feature reached Bedrock through this account's endpoints in those ten weeks, and an endpoint policy binds
+  none of them. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22; Stage 6e decision 13.
+  **Read again 2026-11-22** (Stage 17 7.4b, Sandbox's trail): inside a flow whose knowledge base node
+  answers from the same knowledge base, each question wrote `InvokeModel` on `p391nstyc81c` as the project
+  role, the knowledge base's role, and `Converse` on the response model's application inference profile as
+  the flow's execution role, the project's `AmazonBedrockServiceRole-*`, both invoked by
+  `bedrock.amazonaws.com` through `vpce-0cf920938fc4d8fc6`, a fourth id the account does not hold
+  (*"The Vpc Endpoint Id 'vpce-0cf920938fc4d8fc6' does not exist"*, `InvalidVpcEndpointId.NotFound`). The
+  flow's prompt node, calling `Converse` as the same role on the same profile, carried no `vpcEndpointId`.
+  `InvokeFlow`, `Retrieve` and `RetrieveAndGenerate` are data events, as Bedrock's CloudTrail page says, and
+  `lookup-events` returns none. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
+- `SUP-427` **A Bedrock invocation refused by the commercial gate writes no CloudTrail event and no
+  CloudWatch datapoint** (read 2026-11-22 in Sandbox, Stage 6e decision 17). The infrastructure user's six
+  `InvokeModel` calls on `us.anthropic.claude-opus-5-5`, `-sonnet-5-5` and `-haiku-5-5`, at 02:37:50 to
+  02:37:52 and 02:44:04 to 02:44:06, each answered `AccessDeniedException`, *"… is not available for this
+  account …"* (`SUP-294`). Read at 03:25, event history held no `InvokeModel` between 02:30 and 03:00 in
+  `us-west-2`, `us-east-1` or `us-east-2`, while it held Bedrock's `ListIngestionJobs` and `GetIngestionJob`
+  of 02:42:07 and 02:42:08.
+  `AWS/Bedrock` `InvocationClientErrors` in `us-west-2` held one datapoint from 2026-11-08 to 04:00, one
+  error at 02:07 on the application inference profile `ljl42zoh6e4v`, and no series names a 5.5 id. The
+  trail of 2026-09-12 agrees: the infrastructure user's Nova Lite at 06:32:23 and Sonnet 4.5 at 06:35:57
+  are recorded, and the gate's refusal of `us.anthropic.claude-sonnet-5` in the same sitting is not. That
+  day's 42 `AccessDenied` events on the two invocation APIs are 18 IAM refusals (*"no identity-based policy
+  allows"*) and 24 SCP refusals (*"explicit deny in a service control policy"*), none of them the gate's,
+  which the project role met twice from a space. Bedrock's CloudTrail page says CloudTrail *"captures all
+  API calls for Amazon Bedrock as events"* and says nothing of a refused call. The client's error is the
+  only record of the gate's refusal, so an absence of refusals in the trail or the metric does not show
+  that nobody tried a gated model. Where: `log-stage-06e-claude-code-bedrock.md`, 2026-11-22.
+
+- `SUP-451` **AWS's service reference and the project role's managed policy disagree on the resources of
+  two AgentCore tool actions, and the AWS CLI 2.37.12 carries no web search call** (read 2026-11-22,
+  `TM-28`). The service reference (`bedrock-agentcore.json`, version `v1.5`) writes the web search's
+  resource as `arn:${Partition}:bedrock-agentcore:${Region}:${Account}:tool/web-search.v1`, the caller's
+  account, where `SageMakerStudioProjectRoleMachineLearningPolicy` v48 grants `InvokeWebSearch` on
+  `arn:*:bedrock-agentcore:*:aws:tool/web-search.v1` and the Web Search API's guide gives the `aws`
+  spelling too ([`REFERENCES.md`](REFERENCES.md), 2026-11-22). It lists `ConnectBrowserAutomationStream` with no
+  resource type, which IAM authorizes on `*`, where the policy grants it on `arn:*:bedrock-agentcore:*:aws:browser/*`.
+  Simulated as `eighth-experimentation`'s project role, with the Region and the project tag in the context
+  (`SUP-008`): `InvokeWebSearch` `allowed` on the `aws` spelling and `implicitDeny` on the account's;
+  `ConnectBrowserAutomationStream` `implicitDeny` on `*`, and on the browser's ARN the simulator returns no
+  organizations or boundary verdict at all. Which ARN the service builds is unmeasured: the CLI has no call,
+  and a call would run a search. So whether a project role can search today turns on an ARN no page
+  settles, and a deny written on the grant's ARNs could match nothing; `DenyAgentCoreBuiltInTools` is on
+  `*` for that reason. The CLI 2.37.12 (botocore model `2024-02-28`, 67 operations) has no
+  `invoke-web-search` and no `invoke-web-answer`, and drops `invoke-code-interpreter`, an event stream, so
+  the SCP battery cannot attempt those three. Where: `log-stage-11-dlp.md`, 2026-11-22; `scp-battery.md`,
+  the `TM-28` amendment.
 
 ## Terraform
 
@@ -4626,6 +5453,23 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   The complement, 2026-11-12, release F's applies in the same two slices: the same policy planned the
   same way with a document that did change, each plan *"2 to add, 2 to change"* and each apply *"2
   added, 2 changed"*.
+  Read again 2026-11-22 in `sandbox/warehouse/` (Stage 6h decision 8 (a)'s standing change, Terraform
+  1.17.2), with no `depends_on`: `data.aws_iam_policy_document.project_warehouse["avhvbqn37ty7m8"]`
+  references `aws_iam_role.project_access[each.key]`, its own instance unchanged, and was planned *"will be
+  read during apply"*, *"(depends on a resource or a module with changes pending)"*, because the resource
+  gains the instance `4gqfau9xuo6e4w`. The plan read *"7 to add, 2 to change"*, the existing project's
+  policy the second change: the deferral follows the resource, not the instance. The apply half is read at
+  the Sandbox warehouse sitting. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+
+- `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
+  2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on
+  2026-11-20, read with `terraform show` under 1.17.2: exit 1, *"Plan read error: plan file was created by
+  Terraform 1.16.6, but this is 1.17.2; plan files cannot be transferred between different Terraform
+  versions"*. The pages of `plan` and `apply` (read 2026-11-21) call `-out`'s file opaque and name no
+  version. A plan saved for a later sitting does not survive a binary change, and the sitting plans again.
+  `state pull` is the documented opposite: its output carries the running binary's version, 1.17.2 against
+  the 1.15.8 the S3 object of `sandbox/foundation` holds (serial 18 in both). Where:
+  `log-stage-08-cicd-pipelines.md`, 2026-11-21; `runbooks/promotion.md` §N.12.3.
 
 ### The `aws` provider
 
@@ -4810,6 +5654,21 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   share and its authorization read `AUTHORIZED`. Where: `log-stage-09-deployment-targets.md`, 2026-10-26;
   `terraform-live/data-governance/data/warehouse-share.tf`; `runbooks/promotion.md` §N.4a.
 
+- `SUP-407` **`aws_instance` refuses a `user_data` over 16,384 bytes at plan, counts bytes rather than
+  characters, and prints the whole value in its error** (measured 2026-11-22, `hashicorp/aws` 6.60.0).
+  The schema check reads *"expected length of user_data to be in the range (0 - 16384), got "* followed
+  by the user data itself: `production/proxy/` padded to 16,385 bytes printed 303 lines, 17,975 bytes of
+  plan output. Offline, a literal of 8,193 characters and 16,385 bytes failed `terraform validate`, and
+  one of 16,384 ASCII bytes passed. `validate` runs the check only on a value it knows: a user data
+  rendered from a variable or a data source is unknown there and passes, and the same value fails at
+  plan. An over-limit user data therefore stops a replacement at plan, before the destroy. A `lifecycle`
+  precondition on the instance is evaluated before the check: with one, the padded plan stopped on
+  *"Resource precondition failed"* alone. The provider's page for `aws_instance` states no limit on
+  `user_data`; EC2's page states 16 KB before base64. The same refusal stopped `wireguard-v0.8.0`'s plan
+  at about 16,432 bytes that day. Where: `log-stage-06c-networking-hub.md` and
+  `log-stage-12-observability-finops.md`, 2026-11-22; `terraform-live/production/proxy/main.tf`;
+  `terraform-modules/wireguard/main.tf`.
+
 ### The `awscc` provider and Cloud Control
 
 - `SUP-324` **`awscc_datazone_environment_blueprint_configuration` takes the blueprint's name in
@@ -4879,6 +5738,24 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `PolicyInputList.1`. The parameter is a list of strings, and the file's content reaches it as one string
   the CLI iterates (inferred from the error). Where: `log-stage-19-smus-native-data-product.md`, 2026-11-15.
 
+- `SUP-435` **The AWS CLI v2 prints a JSON-protocol service's timestamps in the machine's time zone and EC2's
+  in UTC, so a date read from its output is not always a UTC date** (measured 2026-11-22 with aws-cli 2.37.12
+  on a laptop at UTC-3, default configuration, R1). `aws secretsmanager describe-secret --query
+  LastRotatedDate --output text` printed `2026-11-21T22:17:08.980000-03:00`, and with `TZ=UTC` on the command
+  `2026-11-22T01:17:08.980000+00:00`; `cloudtrail lookup-events` printed every `EventTime` at `-03:00`; `ec2
+  describe-instances --query 'Reservations[0].Instances[0].LaunchTime'` printed `2026-11-22T01:15:54+00:00`
+  with and without `TZ=UTC`. The CLI's service models name the protocols: `json` for Secrets Manager and
+  CloudTrail, whose timestamps travel as epoch seconds, and `ec2` for EC2, which sends ISO 8601 text.
+  botocore's `parse_timestamp` turns a number into a `datetime` with `tzlocal()` and keeps a text's own offset
+  (read in botocore 1.43.114; the CLI v2's own copy is frozen into its binary and was not read). AWS's
+  configuration page gives `iso8601`'s form as `YYYY-MM-DDThh:mm:ssZ`, "including a `Z` after the time", and
+  names no zone; the v2 migration guide names none either; neither output carried a `Z`. Consequence: R1's
+  poll waiting for the warehouse admin secret's `LastRotatedDate` to contain `2026-11-22` read six times from
+  02:00:15Z to 02:05:27Z and never matched a rotation that had finished at 01:17:08Z, and `NextRotationDate`
+  read `2026-12-21T22:59:59-03:00`, a date one day before UTC's. A date that is compared or written down is
+  read with `TZ=UTC` on the command. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22;
+  `runbooks/promotion.md` §N.8.3.
+
 ## Clients and the egress proxy
 
 - `SUP-329` **`wg-quick` with no `MTU` line takes the uplink's MTU minus 80, so a WireGuard host on a
@@ -4913,7 +5790,9 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   while an HTTP redirect to another host is a new request that needs its own entry. `github.com` covered
   neither `api.github.com` nor `codeload.github.com`, and the latter was refused `403 TCP_DENIED` in the
   same second the first tunnelled. Where: `log-stage-06c-networking-hub.md`, 2026-09-06; `runbooks/vpn.md`;
-  `runbooks/log-debugging.md` §P.
+  `runbooks/log-debugging.md` §P. A later reading, 2026-11-21 (Stage 11, `TM-01`): a `CONNECT` target that
+  is an IP address is matched by the name its reverse lookup returns, as Squid's `acl` page states for a
+  `dstdomain` without `-n`; `SUP-404` holds the reading.
 
 - `SUP-332` **`AllowedIPs` is inert for an address family the interface has no address in** (measured
   2026-09-07, macOS, App Store client). `wg-quick` installs routes only for the families present on
@@ -5027,3 +5906,44 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   constraints the client checks. A test over `Stubber` therefore passes a request the service refuses, so
   `examples/app-genai/tests/test_definition.py` walks the model's constraints itself. Where:
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-17.
+
+- `SUP-395` **botocore decides a client's proxy against the host it composes from the service's endpoint
+  prefix, not the host the endpoint ruleset resolves, so a `NO_PROXY` naming only
+  `airflow-serverless.<region>.api.aws` sends MWAA Serverless's calls to the proxy** (measured 2026-11-21 in
+  a space on `awsds-sandbox-dev-env` version 11 and on the laptop with aws-cli 2.37.12, Stage 20 3.3). In
+  `app-dbt-dev`'s space, `boto3.client("mwaa-serverless", region_name="us-west-2")` failed `GetWorkflowRun`
+  with `ProxyConnectionError`, *"Tunnel connection failed: 403 Forbidden"*, and the proxy logged five
+  `CONNECT airflow-serverless.us-west-2.api.aws:443 403 … TCP_DENIED` from the space, both `NO_PROXY`
+  variables carrying that host. On the laptop, with `HTTPS_PROXY=http://127.0.0.1:9` standing for a proxy
+  that refuses every connection, `aws mwaa-serverless list-workflows` with `NO_PROXY` naming the `.api.aws`
+  host logged *"Endpoint provider result: https://airflow-serverless.us-west-2.api.aws"*, then
+  `ProxyConnectionError: Failed to connect to proxy URL: "http://127.0.0.1:9"`. The call answered with
+  `NO_PROXY` naming `airflow-serverless.us-west-2.amazonaws.com`, a host that does not resolve (the `mwaa`
+  group in `terraform-modules/vpc-egress/endpoints.tf`), and with `--endpoint-url
+  https://airflow-serverless.us-west-2.api.aws` beside the `.api.aws` host in `NO_PROXY`; `sts
+  get-caller-identity` with `NO_PROXY` naming `sts.us-west-2.amazonaws.com` answered, the control. The
+  service's `endpointPrefix` is `airflow-serverless`. The proxy is chosen once, for
+  `<endpointPrefix>.<region>.amazonaws.com`, when the client is created, and each request then goes to the
+  ruleset's host (inferred from the readings). Every other `.api.aws` host in version 11's list has its
+  composed twin beside it, ECR's being `api.ecr.us-west-2.amazonaws.com`, so MWAA Serverless is the one
+  service in that list the rule reaches. A client in a space reaches the service with the composed host
+  added to `NO_PROXY` or with an explicit endpoint URL. The CI/CD CLI's `run`, from the same terminal, left
+  no `airflow-serverless` line in the proxy's log (cause unmeasured). Where: `log-stage-20-dbt-lineage.md`,
+  2026-11-21; `runbooks/sagemaker-application.md` §D.
+
+- `SUP-404` **An AWS service endpoint named under `.api.aws` can answer a reverse lookup with an EC2
+  hostname under `.amazonaws.com`, so a proxy that matches reverse names admits by address a service it
+  refuses by name** (measured 2026-11-21, Stage 11 `TM-01`). Read with `dig -x` from the laptop:
+  the four addresses of `airflow-serverless.us-west-2.api.aws` and the three of
+  `sagemaker-unified-studio-mcp.us-west-2.api.aws` answered `ec2-<a>-<b>-<c>-<d>.us-west-2.compute.amazonaws.com`,
+  the form of the public hostname EC2 documents for an instance, and so did the front-ends of `sts`, `ec2`,
+  `ssm`, `logs`, `sqs`, `sns`, `kms`, `monitoring`, `glue` and `athena` in `us-west-2`; S3's answered
+  `s3-us-west-2.amazonaws.com` and DynamoDB's `dynamodb.us-west-2.amazonaws.com`. Names CloudFront serves
+  answered `server-<ip>.<pop>.r.cloudfront.net` (`datazone.us-west-2.api.aws`,
+  `idetoolkits.amazonwebservices.com`), and `public.ecr.aws`, on Global Accelerator,
+  `<id>.awsglobalaccelerator.com`. No page this project read gives a service endpoint's reverse record.
+  Squid's `dstdomain` without `-n` matches an address by that name (`SUP-331`): from a Sandbox space at
+  20:29:25Z, `CONNECT 54.213.164.60:443`, an `airflow-serverless` address, read `200 TCP_TUNNEL` through the
+  compute plane's `.amazonaws.com` entry, the plane refusing that host by name the same day (`SUP-395`),
+  and `CONNECT 108.158.137.46:443`, a `datazone` address, read `403 TCP_DENIED`. Where:
+  `log-stage-11-dlp.md`, 2026-11-21; `threat-model.md` `TM-01`.
