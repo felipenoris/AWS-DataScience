@@ -4614,3 +4614,22 @@ apply, on the user's word naming it. The user's acts are named. Times are UTC.*
   free-trial balance after the last half-hour interval and again the next day. `production-register`,
   `-approve`, `-transform` and `-warehouse-ddl` stay `manual` in #138, the model half being R2's (§N.11.2
   step 3). Who ran the 02:41:40 apply stays unread.
+
+## 2026-11-22 — 4.12's request: `eighth-experimentation` on release G's listing, pending
+
+*Claude, on the user's request of the session to run every step that needs nothing up, made the request
+as the Data Scientist User, `eighth-experimentation`'s owner, in the user's own Chrome session, which the
+user offered for SMUS acts; AWS read as the infrastructure user with `InfrastructureAccess` in `Data
+Governance Account` (`awsds-infra-data`) and `Sandbox Account 1` (`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] The listing**: `trades-notional` (`dr8t27tte8ezdc`), release G's product, owned by
+  `deploy-production` (`d7qcazihvr3s7k`), one item, no subscriber before the request.
+- **[Claude] The portal's form**: *Subscribe* asks a reason and offers no project selector; the request goes
+  in the name of the project the portal is in. A form opened from `app-genai-dev` was cancelled, and the
+  listing reopened under `eighth-experimentation`'s URL.
+- **[Claude] The request**, at 08:27:36Z: `CreateSubscriptionRequest` in Data Governance's trail as
+  `awsds-data-studio-domain-execution`, for `avhvbqn37ty7m8` on `dr8t27tte8ezdc`; the request
+  `6gtjmvdzma9n9s` reads `PENDING`, the listing requiring approval. N.6 item 6 orders xxvi's portal half
+  before the request; only the approval has to follow it. Left: xxvi's portal half, then the
+  approval by the Governance Manager as `subscription-approver`, then [Claude]'s reads of the fulfilment on
+  both sides.

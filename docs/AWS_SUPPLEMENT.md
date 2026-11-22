@@ -3795,6 +3795,12 @@ entry is still true is the reading.
   named `<domain id> <project id>`: its four, for an embeddings model, Claude Opus 4.5, Claude Haiku 4.5 and
   Nova Lite, share that name, and the domain's two from the playground share `<domain id>` (`SUP-187`). Nova
   Lite's was created at the evaluation's submit, 4 s before its environment.
+  A later reading (2026-11-22, 08:21Z to 08:25Z, `app-genai-dev`): a project's first use of a model is its
+  subscription to the model's listing. A playground call went through the domain's profile and wrote nothing
+  in the project; an unsaved *Run* in the prompt builder sent `CreateSubscriptionRequest` as the domain
+  execution role, accepted at creation, and the role above created the project's profile 4 s later in an
+  `AWSDataZone-Subscriptions` session, with no environment. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-22.
 
 - `SUP-446` **The Bedrock IDE's chat agent app is an Agents Classic agent: its preview calls `InvokeInlineAgent`
   and its deploy `CreateAgent`, both refused for an account with no prior agent use, and the portal shows

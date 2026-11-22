@@ -4760,3 +4760,55 @@ plans with `-input=false`, Terraform 1.17.2, from 06:26 to 06:32 UTC, and the st
   verification xxiv's `Retrieve`, which day 2 left on the user's choice, rides day 3 after 6e 6.4's window
   (`promotion.md` §N.9.5 step 4). Row 12 carries it, and day 3 bills about 0.28 USD an hour before the
   spaces, as day 2 did since the VPN host's return.
+
+## 2026-11-22 — Day 3's prerequisites, with nothing up: `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova Lite profile and the two tars
+
+*Claude, on the user's request of the session to run every step that needs nothing up, made the portal acts
+as the Data Scientist User in the user's own Chrome session, which the user offered for SMUS acts; AWS read
+as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and
+`Data Governance Account` (`awsds-infra-data`). Times UTC.*
+
+- **[Claude] 9.6, `app-ml-dev`'s MLflow App**, from the project's *Resource blueprints* gallery, *MLflow App*:
+  the form asked a name, a description and `mlflowAppName`, whose default reads `serverless-app`, given
+  `app-ml-dev-mlflow`. The environment `c7pal0653hk0i8` (`app-ml-mlflow`), created at 08:20:09Z by the Data
+  Scientist User, reads `ACTIVE` with the profile's `MLflowApp` configuration
+  `3342d20e-001b-4b95-9053-fbbc04b5c303`, so the gallery's deployment uses the profile's configuration.
+  `CreateMlflowApp` at 08:20:34Z by `awsds-sandbox-smus-provisioning` in an
+  `AmazonDataZoneEnvironmentDeployer-<account>` session, no `vpcEndpointId` (`ML-2`). The app
+  `app-ml-dev-mlflow` (`app-KWESNF34TWGW`), created 08:20:33Z, reads `Created`, MLflow 3.16.0, the role
+  `datazone_usr_role_5rzplmk81vma34_5ae0dd6m1suvbk`, `AutoModelRegistrationDisabled`, no key, maintenance
+  Thu:07:57. Verification lx reads under that mode, as 3.2 read `ml-demo-mlflow`'s: MLflow's registry alone.
+- **[Claude] 10.4, `app-genai-dev`'s first use of Nova Lite.** A call in the portal's playground at about
+  08:21Z, 7 tokens in and 28 out in 355 ms, went through the domain's profile `csu817ovl4kz`, named
+  `dzd-d8yrvx1ko7im6o`, and created no subscription and no profile in the project (`SUP-187`). An unsaved
+  *Run* in the Bedrock IDE's prompt builder at about 08:24:50Z did both: `CreateSubscriptionRequest` at
+  08:24:51Z in Data Governance's trail as the domain execution role, for `b8fz4ovppjijv4` on the model's
+  listing `cp58jn8lqdoknk`, the subscription `5hosg2jcucw8i8` `APPROVED` at creation; `CreateInferenceProfile`
+  at 08:24:55Z by `AmazonSageMakerBedrockModelManagementRole-<account>` in an `AWSDataZone-Subscriptions`
+  session, invoked by `datazone.amazonaws.com`, named `dzd-d8yrvx1ko7im6o b8fz4ovppjijv4` (`SUP-445`). The
+  profile `ciceumyodl7y` lists Nova Lite in `us-west-2` alone and carries `AmazonDataZoneProject`
+  `b8fz4ovppjijv4`, `AmazonDataZoneDomain` and `AmazonBedrockManaged` `true`; no environment was created. Its
+  ARN is 10.4's `DEV_MODEL_ID`. `./aws/bedrock-usage.py` to 08:30Z reads one invocation of 7 in and 28 out on
+  each of the two profiles.
+- **[Claude] 9.6 and 10.4, the tars**, built as Stage 20 2.0 built `app-dbt`'s, from `origin/main` at
+  `77fc285a` (`git archive` of each application's folder), under `$HOME/tmp/stage17-day3/`:
+  - `app-ml.tar`, 16,252,928 bytes, SHA256 `bbb1399bd528d40a01049a2121b7f9c6ee4f2c97f1b10a568a45b8722eaa96f5`:
+    `code/app-ml-train.zip` (15,910,638 bytes) by `awsds-workflows package-task code` at the application's
+    pin `37cb5a6`, and `code/app-ml-register.zip` and `code/app-ml-score.zip` (12,030 bytes each, one content)
+    by `python -m zipfile -c` over `code/app_ml_tasks`, the pipeline's `build-task-code` commands.
+  - `app-genai.tar`, 242,176 bytes, SHA256 `c63204d2d7b2d137484aae5ff057d7230b103a823a72d114db62db6d7d440e19`:
+    `code/app-genai.zip` (15,715 bytes) by `scripts/build_archive.py`.
+  - Each tar holds no AppleDouble member (`COPYFILE_DISABLE=1`, `--no-xattrs --no-acls --no-mac-metadata`,
+    `SUP-348`). The train archive holds x86_64 Linux wheels, which the laptop's arm64 interpreter cannot load,
+    so its contents were read instead (`testzip` clean, the compiled modules' platform tags), as 2.0 did.
+  - `app-ml.env` and `app-genai.env` beside them export what each manifest reads: `DOMAIN_ID`,
+    `DOMAIN_REGION`, `DEV_PROJECT_NAME`, and for `app-ml` `MLFLOW_APP_ARN`, `JOB_IMAGE_URI` (the house image
+    version 12 by digest), `TRAINING_IMAGE_URI`, `SUBNET_AZ1`, `SUBNET_AZ2`, `DEV_PROJECT_SG` and
+    `DEV_PROJECT_KEY_ARN`, for `app-genai` `DEV_MODEL_ID`. The sitting uploads each tar and its file into
+    the project's space and sources the file before the deploy.
+- **[Claude] The lint** from `main`, each pipeline's options: `app-ml` *"ok: 6 arquivo(s)"* and `app-genai`
+  *"ok: 3 arquivo(s)"*, at the pin `37cb5a6` and at `awsds-workflows` `4401f91`, whose rule `operador` each
+  application's next tag takes.
+- **[Claude] The instruments**: `./aws/sandbox-ml.py` at 08:50Z, `ML-2` reading the new app as above,
+  `ML-10` and `ML-11` noting 9.6's and 10.4's objects absent, and `ML-8` failing on the flow's role,
+  `AWS_STATE.md`'s expected reading.
