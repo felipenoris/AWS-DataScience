@@ -12,7 +12,7 @@
 #
 # A second host rather than a second service on the WireGuard one: that host receives untrusted UDP
 # from the open internet and this one parses untrusted internet responses. Separating them keeps a
-# compromise of either off the other, for one more t3.nano.
+# compromise of either off the other, for one more host.
 #
 # It is not a TLS-terminating inspector. It relays CONNECT, so it sees the host name and the byte
 # counts and never the content; an interception proxy would need a CA that every client trusts,
@@ -161,7 +161,7 @@ resource "aws_iam_instance_profile" "this" {
 # ------------------------------------------------------------------------------- the host
 resource "aws_instance" "this" {
   # checkov:skip=CKV_AWS_126:detailed monitoring is 5x the metric volume for a one-host proxy whose alarm is on the free basic status checks - CloudWatch spend is Stage 12's subject
-  # checkov:skip=CKV_AWS_135:t3.nano is not EBS-optimized-capable; the shape is the measured baseline of docs/PRICING.md 3
+  # checkov:skip=CKV_AWS_135:every t3 size var.instance_type admits is EBS-optimized by default (describe-instance-types EbsOptimizedSupport, read 2026-11-21)
   # checkov:skip=CKV_AWS_88:a public address is what this host is for - it is the estate's internet exit. What bounds it is the security group: TCP/3128 from the peered spokes and the tunnel, and nothing else
   ami           = data.aws_ssm_parameter.al2023.value
   instance_type = var.instance_type

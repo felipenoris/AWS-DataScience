@@ -172,7 +172,7 @@ Three paths, and reading them apart is what makes a failure diagnosable.
 |---|---|---|
 | **AWS APIs with an endpoint** | this VPC's interface endpoints, private DNS on | 0.010/h each + 0.010/GB |
 | **S3 and DynamoDB** | the `[P]` **gateway** endpoints, by prefix-list route | **free**, and this is where an ECR pull's layers come from |
-| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.micro`; **no per-GB processing charge at all** |
+| **the internet** | **as a client of the proxy**, by name, over the peering | the proxy's `t3.small`; **no per-GB processing charge at all** |
 
 **There is no fourth path.** With no default route, a name the app resolves and then tries to reach
 directly has nowhere to go — which is why `NO_PROXY` is **generated per VPC** from that VPC's own
