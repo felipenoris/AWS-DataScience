@@ -333,7 +333,8 @@ in each account; `data/`'s states then hold 9 `aws_lakeformation_permissions` in
 of each in the consumer module, each read back by the re-plan's refresh. The catalog
 road's fulfilments are one row by class since 6f decision 2 (2026-10-27), DataZone's subscription being
 each grant's record and `./aws/catalog.py` `CT-10` the join; the RAM share and the catalog policies a
-fulfilment writes are rows too, marked DataZone's.*
+fulfilment writes are rows too, marked DataZone's. Production's fulfilments of a deployment project's listing are rows by class
+since Stage 19 decision 11 (b), `CT-17` the join.*
 
 | Date | Principal | Expression / resource | Permissions | Why (log entry) |
 |---|---|---|---|---|
@@ -366,6 +367,9 @@ fulfilment writes are rows too, marked DataZone's.*
 | 2026-10-26 | **DataZone's**: per-resource Data Catalog policies, `enableHybrid` `TRUE` | the lake's `catalog`, `database/*` and `table/*/*` | Glue table and partition reads and writes to Sandbox's account, under `aws:PrincipalOrgID` | written through RAM at 6f 11.9 (`glue get-resource-policies`; five on 2026-10-27 with Production's two on `curated` of 2026-10-22). The account's policy stays absent, `shares.tf`'s premise; Lake Formation still refuses every write, no Sandbox principal holding `ALTER` or `DROP` on a lake table (`TM-27`) |
 | 2026-11-12 | `awsds-deploy-staging`, in Staging | database `app_etl`, named, and every table in it (`ALL_TABLES`) — **2 triples** | `DESCRIBE`, no grant option | Stage 19 decision 14 (d), step 4.9: the Staging leg's `staging-test` finds the product table in the catalog (`staging/studio/staging-test.tf`; Stage 19's log of 2026-11-12); read back by `list-permissions` on 2026-11-19 |
 | 2026-11-19 | idem | database `app_dbt`, named, and every table in it (`ALL_TABLES`) — **2 triples** | `DESCRIBE`, no grant option | Stage 20 8.4: `product_databases` gains `app_dbt` once 8.3's environment created the database (Stage 20's log). Production's deploy role holds none: its leg reads no table |
+| 2026-11-22 | **DataZone's, one per approved subscription to a deployment project's listing in Production** (Stage 19 decision 11 (b)): Sandbox's `IAMPrincipals` under the subscribing project's `context.datazone.projectId`; the first two `eighth-experimentation`'s `avhvbqn37ty7m8` and `app-dbt-dev`'s `dnl3l158mbhrio` | table `app_etl.trades_notional`, named, in Production | `SELECT`, no grant option; `CROSS_ACCOUNT_VERSION` 5 in the grant | registered by reading, DataZone's subscription each grant's record and `catalog.py` `CT-17` the join: Stage 19 4.12 and Stage 20 5.0, written by `deploy-production`'s project role at 14:04:46 and 14:05:19 UTC (both logs of 2026-11-22) |
+| 2026-11-22 | **DataZone's**: the RAM share `LakeFormation-V5-2Y5MBO5ADP`, Production's, to Sandbox's account, closed to external principals | Production's `catalog`, `database/*` and `table/*/*` | three RAM permissions, a ceiling: Lake Formation's grants scope the read | written by 4.12's fulfilment at 14:04:45 UTC, `ACTIVE` in both accounts the same day; the second subscription added no share |
+| 2026-11-22 | **DataZone's**: per-resource Data Catalog policies in Production, `enableHybrid` `TRUE` | Production's `catalog`, `database/*` and `table/*/*` | Glue table and partition reads and writes to Sandbox's account, under `aws:PrincipalOrgID` | written through RAM by 4.12's fulfilment, three at 14:04:46 UTC (`glue get-resource-policies`); the account's policy stays absent (`SUP-195`) |
 
 Not a row, but visible in `list-permissions` and expected in the consumer accounts and in Data Governance since pass 4: each consumer
 account's `InfrastructureAccess` holds `ALL, DESCRIBE, DROP` **with grant option** on the two resource

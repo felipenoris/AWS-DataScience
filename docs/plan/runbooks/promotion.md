@@ -1216,9 +1216,12 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
    model, its archive and its tar. Since R1 carried no `app-dbt` bundle, 5.0 waits on none: its link asset
    and pass 5's table asset leave `app-dbt-dev` before R2's `app-dbt` tag (Stage 20 8.6). Both
-   subscriptions stay until N.10's day 2 ends, since both of its days read through them. **The two requests
-   made 2026-11-22** with nothing up, `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC,
-   both `PENDING`: left, xxvi's portal half, then the Governance Manager's two approvals.
+   subscriptions stay until N.10's day 2 ends, since both of its days read through them. **Run 2026-11-22**
+   with nothing up: the requests `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC;
+   xxvi's portal half from 13:35 to 13:50 UTC, yes; the Governance Manager's approvals at 14:04:10 and
+   14:05:14 UTC, each fulfilment `COMPLETED` within 61 s and read on both sides (Stage 19's and Stage 20's
+   logs). Left: Stage 20 5.1's model, its archive and its tar; 4.12's consumer read from the query editor,
+   for xxiv.
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; 6e 6.4's window, Stage 17's sitting C and its
    pass 5 on day 3. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
@@ -2766,9 +2769,9 @@ bound it stay N.6's.
 | 2026-11-21, ran | N.9's day 1, run to 6d 7.6 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa` | the user's acts of N.12.4 |
 | 2026-11-21 and 22, ran | N.9's day 2, 6d's remainder left to day 3 | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | Stage 17 0.9 |
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
-| 2026-11-22 on | N.6 item 6, with nothing up, its two requests made 2026-11-22 | — | Stage 19's xxvi portal half, then the two approvals (N.12.4) |
+| 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments; Stage 20 5.1 left | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-23 | N.9's day 3 with 6d's remainder, then Stage 17 10.5 with nothing up (N.6 item 8) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent` | nothing: its prerequisites done 2026-11-22 (N.12.5) |
-| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | item 6's two approvals and Stage 20 5.1's tar |
+| 2026-11-24 | N.10's day 1 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift,mwaa` | Stage 20 5.1's tar; item 6's two approvals done 2026-11-22 |
 | 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
 | 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
 
@@ -2888,8 +2891,8 @@ The waiting list holds each as a row. In the calendar's order:
   2026-11-22 (N.12.5): the first use is the project's subscription to the model's listing, which an unsaved
   *Run* in the Bedrock IDE's prompt builder made and a playground call does not make (`SUP-445`).
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
-- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half, then the approvals of the two
-  requests made 2026-11-22; N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
+- **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half and the approvals of the two
+  requests, done 2026-11-22 (N.12.5); N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
@@ -2921,7 +2924,10 @@ Each reading is in the log of the stage that owns it.
   7 to add, 2 to change, 0 to destroy."* at 08:48 UTC, as 6h's step 7 expects; nothing saved. N.6 item 6's
   two requests made at 08:27:36 and 08:28:16 UTC, both `PENDING` (Stage 19's and Stage 20's logs). 6f's 2.3
   to 2.5 run: `test-experimentation`'s subscription to `house-price` queried and revoked, and
-  `my-data-product` granted to it by its owner (6f's log).
+  `my-data-product` granted to it by its owner (6f's log). In the afternoon, Stage 19's xxvi portal half
+  (13:35 to 13:50 UTC) and both approvals as the Governance Manager (14:04:10 and 14:05:14 UTC), each
+  fulfilment read on both sides with `catalog.py`, `datalake.py` and `deploytargets.py` passing (Stage 19's
+  and Stage 20's logs).
 - **R2**: #321's branch took `origin/main` at `77fc285a` by merge (`e6538fb0`, 29 commits, no conflict), its
   `--self-check` printing every stage of the four applications `ok` and `make check` passing (Stage 20's
   log). `awsds-workflows lint` at `4401f91`, the pin each application's next tag takes, reads `ok` for

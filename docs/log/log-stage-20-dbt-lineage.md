@@ -2196,3 +2196,38 @@ object and the tree with nothing up, no AWS call. Times UTC.*
   name"*, and *"OK"*.
 - **Left of 8.1**: the mirror's push at R2's opening, `git pull` and `git push gitlab main` with GitLab up
   (`promotion.md` §N.11.2 step 1), before `app-dbt`'s first push.
+
+## 2026-11-22 — 5.0's approval, and the link in `app_dbt`
+
+*The approval was clicked by the side session that guides the Governance Manager's acts, in the Governance
+Manager's Chrome profile the user opened for it, on the user's word in that session's chat (Stage 19's log,
+the same day). This session read the fulfilment as the infrastructure user with `InfrastructureAccess` in
+Data Governance (`awsds-infra-data`), Production (`awsds-infra-prod`) and Sandbox Account 1
+(`awsds-infra-sandbox-1`), nothing up. Times UTC.*
+
+- **[user] The word**: *"Autorizo aprovar ambos"*, Stage 19 4.12's request and this one.
+- **[Claude, side session] The approval**: `6oy7kvmszacaa8`, comment *"Approved for Stage 20 5.0 by the
+  Governance Manager (subscription-approver)."*, saved at 14:05:14; the portal's toast *"Subscription request
+  has successfully been approved."*, and no request left pending.
+- **[Claude] The request and its subscription**: `ACCEPTED`, `reviewerId` the Governance Manager's profile
+  `e8a1f320-…`, updated 14:05:14.630; `AcceptSubscriptionRequest` at 14:05:14 in Data Governance's trail as
+  the domain execution role in the Governance Manager's session. Subscription `6n3yg1rsytsemo` `APPROVED`;
+  grant `5c4l81od6jm3o0` created 14:05:16.530 and `COMPLETED` at 14:05:21.061, 4.5 s, target
+  `algy8t6358fits` (environment `au9oegx70xvyts`), its entity the asset listing `5hpftif3nnoj2o`, the asset
+  `da1fycta6l71n4` at revision 6 `GRANTED`.
+- **[Claude] Production**: one `BatchGrantPermissions` at 14:05:19 by `deploy-production`'s project role,
+  `SELECT` on `app_etl.trades_notional` to Sandbox's `IAMPrincipals` under
+  `context.datazone.projectId=="dnl3l158mbhrio"`, `CROSS_ACCOUNT_VERSION` `5`, no grant option, listed at
+  14:05:19.048. No RAM or Glue policy call: 4.12's share `LakeFormation-V5-2Y5MBO5ADP` and its three
+  per-resource policies of 14:04:46 serve it (`SUP-195`).
+- **[Claude] The link in `app_dbt`**: `glue:CreateTable` at 14:05:20 by `app-dbt-dev`'s project role in an
+  `AWSDataZone-Subscriptions` session: `trades_notional`, to Production's `app_etl.trades_notional`, beside
+  `notional_by_desk` and `trades`. `BatchGrantPermissions` at 14:05:20, `DESCRIBE` on it to `IAMPrincipals`
+  and to `arn:aws:identitystore:::user/*` under the project's condition, no failure; `list-permissions`
+  shows the first and the project role's `ALL`, `DESCRIBE`, `DROP` with grant option (`SUP-109`). This is
+  5.1's first reading: the link is `trades_notional`, its target `app_etl.trades_notional` in Production.
+- **[Claude] The asset to come**: the project's source over `app_dbt`, `3uof8bs4x693f4` on
+  `cron(43 2 * * ? *)`, last run 02:54:41 `SUCCESS` with two assets, imports the link as an inventory asset
+  at its next run, 2026-11-23 at 02:43 (`SUP-197`); 8.6 deletes it before R2's tag.
+- **Left of 5.0**: the revocation, with 4.12's, after `promotion.md` §N.10's day 2. 5.1's model, its archive
+  and its tar follow with nothing up.
