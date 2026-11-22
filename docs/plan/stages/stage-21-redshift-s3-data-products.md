@@ -229,7 +229,7 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 | D13 | execution roles hold no S3 on the lake's registered prefixes | **keep**: pass 5's prefix is in the producer's project path, which Lake Formation does not register |
 | D26 | one domain, in Data Governance | **keep** |
 | 6h decision 3 | the connection's `lineageSync`, off since 2026-11-19; its 39 daily runs at 03:43 UTC before it all failed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
-| 6h decision 8 | how a second project is admitted to the warehouse; taken 2026-11-17 as (a), the tag `for-use-with-all-datazone-projects=true`, its switch written 2026-11-18 and off | **keep** as taken: decision 1 (b) admits no second project to the warehouse, so this stage turns the switch on nowhere |
+| 6h decision 8 | how a second project is admitted to the warehouse; taken 2026-11-17 as (a), the tag `for-use-with-all-datazone-projects=true`, its switch written 2026-11-18 and off | **keep** as taken, standing since 2026-11-22 ([pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363)): 6h's apply on §N.10's day 1 puts `test-experimentation` in the map under the tag, with no schema. Decision 1 (b) admits no project of its own, and every plan of `sandbox/warehouse/` here names the tag true |
 | Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there |
 | Stage 19 decision 9 | (a), taken 2026-10-31: the read in place through `awsdatacatalog`, 5.3's Redshift asset published and never subscribed; (b), the subscription with a target, *"read as a second half once a target's shape is priced"* | **keep** (a) for Stage 19; pass 2 here is (b)'s second half, under decision 1 |
 | [`catalog.md`](../runbooks/catalog.md) | §A: a Redshift source unmeasured; §P: a product of several items unread; §S: no Redshift target, fulfilment from the pages; no S3 Object Collection | **amend**: the 2026-11-17 readings at 1.1, the measurements at 6.1 |
@@ -263,7 +263,9 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
   project wrote `lab.hello` from the Query editor on 2026-10-10. The connection names `sandbox` since
   2026-11-19 (6h decision 3). The namespace holds `dev`, `sandbox` and `warehouse`. Its `lineageSync` is
   off since the same day; every run before it failed while the workgroup was down (`EXC-17`).
-  `test-experimentation` is in no map: not admitted.
+  `test-experimentation` is in no map: not admitted until 6h's standing apply on §N.10's day 1 ([pull
+  request #363](https://github.com/felipenoris/AWS-DataScience/pull/363)), which puts it in the map under
+  the wide tag, with no schema.
 - **0.3 The catalog road for a Glue table** (Stage 19 verifications vi to viii, 2026-11-14; `SUP-195`): a
   project's source imports a table of its database, the asset is published and packaged in a product of
   one item, the consumer's request is approved, the owner's role grants `SELECT` under the consumer's
@@ -663,7 +665,9 @@ object created alone and read back for `IAMAllowedPrincipals` before anything is
 - **4.5 [Claude⚡] Data lake access**, under decision 3 (b): the data transfer role written in
   `sandbox/warehouse/` on 2026-11-18 ([pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323)): `data_transfer_role_enabled`,
   off by default, creates `awsds-sandbox-warehouse-data-transfer`, whose ARN is the output
-  `data_transfer_role_arn`; applied for the sitting from a `main` that holds it; the switch on. Two readings
+  `data_transfer_role_arn`; applied for the sitting from a `main` that holds it and 6h's standing tag
+  ([pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363)), the tag named true and
+  the switch on. Two readings
   the code could not take: the data key's policy delegates to IAM only through Redshift Serverless, so a write
   through S3 needs the key policy to name the role, AWS's `GenerateDataKeyDecryptDataTransferRole`, a D31
   widening for the sitting (decision 4 (b)): `sandbox/data/`'s `data_transfer_key_statement_enabled`, applied
@@ -709,11 +713,13 @@ aws lakeformation grant-permissions --principal \
 q "select user_id, query_id, start_time, query_text from sys_query_history
    where start_time > '<the read>' order by start_time"
 # 4.5 ⚡ the transfer role, sandbox/warehouse/'s data_transfer_role_enabled, applied for the sitting from a
-# main that holds pull request #323: the page's trust (glue, redshift) and policy (glue:GetCatalog,
+# main that holds pull requests #323 and #363: the page's trust (glue, redshift) and policy (glue:GetCatalog,
 # glue:GetDatabase, kms:GenerateDataKey, kms:Decrypt); its ARN is the output data_transfer_role_arn.
-# Every plan of the slice names both switches, the tag at the value 6h's sitting left (Lessons 51, 69):
-# false when 6h decision 8 (a)'s wide tag is per sitting, true when it stands.
-TAG=false
+# Every plan of the slice names both switches (Lessons 51, 69). 6h decision 8 (a)'s wide tag stands since
+# 2026-11-22 (pull request #363), applied at 6h's step 7 on day 1, and false fails the `projects`
+# validation, a map of two since that pull request. A plan reading 9 to add, 2 to change, 6h's reading
+# before its apply (2026-11-22), means step 7 has not run: stop. The 2 to add below is unmeasured.
+TAG=true
 AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
   -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=true \
   -out="$HOME/tmp/s21-warehouse-transfer.tfplan"                                        # 2 to add
@@ -844,12 +850,15 @@ Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orches
 GROUPS=redshift`, which raises `sandbox/egress/`, the warehouse's compute and `sandbox/probes/` in one
 apply; a JupyterLab space in each project on `ml.t3.medium`. Passes 2 to 4 follow Stage 19's pass 5 to its
 5.3 (Stage 19's "The Sandbox warehouse sitting: pass 5 in order"), so 2.1 finds Stage 19's copy and 2.2 is
-5.3's source, and 6h's wide tag is off. Pass 5 follows passes 2 to 4 on the sitting's day 2
+5.3's source, and 6h's wide tag stands, applied on day 1 (6h decision 8 (a), pull request #363). Pass 5
+follows passes 2 to 4 on the sitting's day 2
 (`promotion.md` §N.10.4), with a space in each project. Its
 values, read that day (the log): from `main`, `sandbox/sagemaker/` plans `No changes`, and `3 to add, 1 to
 change` with `redshift_serverless_enabled=true`; `data-governance/governance/` `No changes`, and `0 to add,
 1 to change` (the profile `experimentation`) with it; `sandbox/warehouse/` `2 to add` with
-`data_transfer_role_enabled=true` and the tag off, the counts this file's commands carry. These
+`data_transfer_role_enabled=true` and the tag off, the counts this file's commands carry; pass 4's
+commands name the tag true since 6h's standing answer, and carry the same count for a plan after 6h's step
+7, unmeasured. These
 `sandbox/warehouse/` counts hold since Stage 19's access-role statement (PR #339, pass 5's before it item 3)
 was applied from `main` on 2026-11-20 at 15:57 UTC; before it each plan of the slice also showed
 `aws_iam_policy.project_access_portal["avhvbqn37ty7m8"]` updated in place (Lesson 69). The profile
@@ -953,7 +962,7 @@ to 4.
    `test-experimentation` for one sitting through 1.5's code, its base capacity locked at 4 RPU before the
    create, and removed at 2.9; between the warehouse and that workgroup the fulfilment is the
    datashare-and-view shape. It amends D40 and D12 for the sitting, admits no second project to the
-   warehouse, and leaves 6h decision 8 (a)'s switch off. If the blueprint will not hold the floor, decision 1 returns
+   warehouse, and turns 6h decision 8 (a)'s switch on nowhere. If the blueprint will not hold the floor, decision 1 returns
    to the user. Not taken: (a) `test-experimentation` admitted to the Sandbox warehouse under 6h decision 8
    (a), the tag `for-use-with-all-datazone-projects=true`, and a target written with
    `CreateSubscriptionTarget` if none appeared: the institution's own shape, a project that adds an
@@ -1045,9 +1054,14 @@ Each write is on the user's word, in this order, each object read before its del
 
 - **Stage 19**: its pass 5 shares the warehouse sitting. Its 5.3 asset is the one 2.2 reads when it ran
   first, and its 5.4 revocation waits for pass 2's end.
-- **6h**: decision 1 (b) admits no second project to the warehouse, so its decision 8 (a), taken
-  2026-11-17 with its switch written and off, is turned on nowhere here, and `WH-7` stays as it is. Pass 3 reads a lineage run;
-  6h decision 3 was done 2026-11-19, the project connection's `lineageSync` off and its database `sandbox`.
+- **6h**: its decision 8 (a) stands since 2026-11-22 ([pull request
+  #363](https://github.com/felipenoris/AWS-DataScience/pull/363)). From its step 7 on §N.10's day 1,
+  `test-experimentation`, this stage's consumer, is in the warehouse's map under the wide tag, with no
+  schema there and no portal connection to it (6h's 5.2b uses the notebook's direct door), and every plan
+  of `sandbox/warehouse/` here names the tag true. Pass 2's subscription lands on the consumer's own
+  workgroup; decision 1's open case, a project that adds the existing workgroup in the portal, needs no
+  further admission from day 1 and stays unmeasured. Pass 3 reads a lineage run; 6h decision 3 was done
+  2026-11-19, the project connection's `lineageSync` off and its database `sandbox`.
 - **6d, 17, 19 and 20**: 1.5's variables ride `sagemaker-prereqs`, `sandbox/sagemaker/` and
   `data-governance/governance/`, which their applies plan too. Off by default, they plan `No changes` in
   another stage's tree; the sitting's apply is announced to the other sessions first, and `US-3` reads red

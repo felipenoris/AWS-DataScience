@@ -658,3 +658,25 @@ the user's answer is quoted as given. Account ids are replaced by `<Sandbox Acco
 - **[Claude] The text that follows**: the stage file's `Status`, step 1.3 and the sitting's block;
   `docs/SMUS.md`'s `RedshiftServerless` row; `promotion.md` §N.10.1; the 1.3 row in `waiting-on-the-user.md`
   removed, with its mention in the Warehouse row.
+
+## 2026-11-22 — pass 4's plans name 6h's standing tag
+
+*Claude, in the same session, with no AWS call: 6h's session's readings relayed by its message, and its
+branch, [pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363), read with `git`.*
+
+- **[6h's session, by message] 6h decision 8 (a)'s window taken standing on 2026-11-22**, open and not
+  applied: `test-experimentation` joins `sandbox/warehouse/`'s `projects`, and `all_projects_tag_enabled`
+  is true by default. Its plans from its branch: `all_projects_tag_enabled=false` stops with `Error: Invalid
+  value for variable`; both switches true, `9 to add, 2 to change, 0 to destroy`; the tag true and the
+  transfer off, `7 to add, 2 to change, 0 to destroy`. After its apply the transfer plan would read `2 to
+  add`, unmeasured.
+- **[Claude] Read from the branch**: the apply is the warehouse sitting's 6h step 7 on `promotion.md`
+  §N.10's day 1, from `main` after the merge, following 5.1's before half. 6h's 5.2b reads
+  `test-experimentation`'s notebook through the direct door of `redshift-connection.md` §J and creates no
+  portal connection, so pass 2's consumer holds no Redshift connection to the warehouse and its
+  subscription target is unchanged.
+- **[Claude] The text that follows**: pass 4's `TAG=true`, with a stop on a plan reading 6h's `9 to add, 2
+  to change`; step 4.5 and its commands from a `main` that holds pull requests #323 and #363; 0.2, the
+  premise row of 6h decision 8, decision 1's wording (it turns the switch on nowhere) and the 6h bullet.
+  Decision 1's open case, a project that adds the existing workgroup in the portal, needs no further
+  admission from day 1 and stays unmeasured.
