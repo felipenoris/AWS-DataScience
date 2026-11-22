@@ -557,8 +557,10 @@ and this one is not. **Explanation:** the checks are cheap because the facts are
    thinly, and with update-motd's cold dnf beside it they do not. (b) `t3.small`, 0.0208/h, about 1.9 GiB,
    outside the sizes the slice's variable and `runbooks/vpn.md` §S6 name (`t3.nano`, `t3.medium`, and
    `t3.micro` as §S5's fallback). (c) `t3.medium`, 0.0416/h, whose first-boot dnf took 37 s on 2026-11-21.
-   (d) A module change that keeps `t3.nano`: a swap file before the first dnf, or update-motd's dnf kept
-   off the first boot. **Open**: the user's, not decided.
+   (d) A module change that keeps `t3.nano`: `wireguard-v0.8.1` (#356), whose user data's step (0) writes a
+   1 GiB swap file and masks update-motd before the first dnf, the proxy's user data carrying the same
+   step. It changes no size, and no first boot has run with it: the first apply at the small size is the
+   proof. With it, (a) builds too. **Open**: the user's, not decided.
 
 ## Cost
 
