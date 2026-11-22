@@ -4096,7 +4096,7 @@ words in this session's chat, *"Autorizo o apply do par"*. Times UTC.
   `AmazonDataZoneDomainRegion`. The job: `Stopped` at 23:19:39, no `TrainingStartTime`, no billable time;
   isolation and inter-container encryption on, `ml.m5.xlarge`, the project key on the volume, two subnets.
   The step's expectation for (a) was wrong for a notebook in a space: there the request that names no tag
-  is admitted. `SUP-405`.
+  is admitted. `SUP-407`.
 - **[Claude] (b), refused as expected.** CloudTrail's event at 23:19:44, `errorCode` `AccessDenied`, the
   message above, the same endpoint and source; `DescribeTrainingJob` of the name reads *"Requested resource
   not found"*: nothing was created. It is `SUP-267`'s exclusion of the `AmazonDataZone*` keys, met by a key
@@ -4235,7 +4235,7 @@ UTC.
 - **[Claude] 3.2's first attempt.** CloudTrail, every call from 10.20.54.175 through
   `vpce-02feedaa4ad58acf4`:
   - `CreateModelPackageGroup` at 00:18:45 admitted, the group `Completed`. Its recorded request carries seven
-    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-405`): the two
+    tags where `register.py` sends one, the same seven keys as 2.2's training jobs (`SUP-407`): the two
     `sagemaker:` ARNs of the profile and the domain, `sagemaker:space-arn` naming `jup`, and
     `AmazonDataZoneProject`, `AmazonDataZoneScopeName` `dev`, `AmazonDataZoneUser` and
     `AmazonDataZoneDomain`. The group's `AddTags` statement admits the key `AmazonDataZoneProject` alone, so
@@ -4269,7 +4269,7 @@ UTC.
   v48), conditioned on `aws:ResourceTag/AmazonDataZoneProject` equal to the caller's principal tag and on
   `aws:PrincipalTag/EnableSageMakerMLWorkloadsPermissions`; `awsds-sandbox-workflows` v7's
   `RegisterAPendingVersionForAppMl` names `app-ml-dev`'s project and group alone. The version's resource tag
-  at the create is therefore its group's (`SUP-406`), the half of verification lviii the simulation of
+  at the create is therefore its group's (`SUP-408`), the half of verification lviii the simulation of
   2026-11-17 left open, read here from a space. The refusal of 00:18:46 was of a request the API reference
   excludes, so decision 7 (a) writes no `sandbox/ml/` statement for a version, and `register.py package`
   sends no tag on the version (this sitting's commit).
@@ -4293,3 +4293,22 @@ UTC.
   version 1 selected, *Create endpoint using JupyterLab* is enabled and *Create endpoint using Notebook* is
   disabled, labelled *"Notebooks are currently not supported for cross-region and …"*. The dialog was
   cancelled: the portal's endpoint path is a notebook, and 4.1's is `serve.py endpoint`.
+
+## 2026-11-22 — Day 2's sitting B: pass 7's dataset and documents copied
+
+- **[user] 7.4's dataset and 7.4a's documents**, from `jup`, the clone at `b3b900b4`:
+
+  ```
+  20 prompts, 2951 bytes -> s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/ml-demo/bedrock/evaluation-dataset.jsonl
+  commit b3b900b4a95b526f4d78dcdd3559aa9ca299fdac
+  ...
+  20 documents, 1212570 bytes
+  ```
+
+  The twenty runbooks went to `shared/ml-demo/bedrock/kb/`, from `break-glass.md` (19,464 bytes) to
+  `vpn.md` (85,083), the largest `promotion.md` (217,158).
+- **[Claude] The Bedrock IDE's entry**, read through Chrome: Generative AI → *AI apps* opens the IDE on an
+  unsaved *Untitled App* chat agent, with an inner panel *Amazon Bedrock*: *Models*; *Build* (*Chat agent*,
+  *Flow*, *Prompt*, *Model evaluations*); *Asset gallery* (*My apps*, *My prompts*, *My components*). The
+  interface endpoints `bedrock`, `bedrock-runtime`, `bedrock-agent` and `bedrock-agent-runtime` read
+  `available` in Sandbox.

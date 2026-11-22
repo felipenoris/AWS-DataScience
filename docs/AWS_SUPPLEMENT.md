@@ -3876,7 +3876,7 @@ entry is still true is the reading.
   account data key in Staging (2026-10-25 23:37 UTC) and Production (2026-10-26 00:27:20 UTC). Where:
   `log-stage-10-orchestration-promotion.md`, 2026-10-25; `AWS_STATE.md` `EXC-22`.
 
-- `SUP-405` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
+- `SUP-407` **A `CreateTrainingJob` sent from a notebook in a SageMaker Unified Studio space with no tags
   is recorded with seven and admitted without the caller's `sagemaker:AddTags`, while the same request
   naming `AmazonDataZoneProject` is refused as `sagemaker:AddTags`** (measured 2026-11-21 in Sandbox, Stage
   17 2.2). `train.py untagged` deleted `Tags` from its boto3 request; CloudTrail's event at 23:19:36 recorded
@@ -3895,9 +3895,9 @@ entry is still true is the reading.
   naming `AmazonDataZoneProject` alone, was recorded at 00:18:45 with the same seven keys and admitted
   through `sandbox/ml/`'s statement, whose `aws:TagKeys` condition admits that key alone, so the six others
   were not in the authorization. A versioned `CreateModelPackage` with no tag argument was recorded at
-  00:34:10 with no `tags` key (`SUP-406`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+  00:34:10 with no `tags` key (`SUP-408`). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
-- `SUP-406` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
+- `SUP-408` **A model package version takes no tag: a versioned `CreateModelPackage` that names `Tags` is
   refused as `sagemaker:AddTags` on `model-package/<group>/new`, and the same request with no tag argument
   is authorized against the group's tags** (measured 2026-11-22 in Sandbox, Stage 17 3.2, as
   `eighth-experimentation`'s role from a space). CreateModelPackage's API reference says a package created

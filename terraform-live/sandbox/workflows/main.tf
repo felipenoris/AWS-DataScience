@@ -195,7 +195,7 @@ data "aws_iam_policy_document" "workflows" {
   }
 
   # A versioned model package takes no tag argument and is authorized against its group's tags
-  # (SUP-406, measured from a space): the blueprint's SageMakerCreatePermissions admits a version, of
+  # (SUP-408, measured from a space): the blueprint's SageMakerCreatePermissions admits a version, of
   # any status, in a group carrying the caller's project tag. This statement admits the register task's
   # request in its application's `dev` group (model_applications) whatever the group carries: that
   # group's versions, from the role of the project that owns it, with the status PendingManualApproval
