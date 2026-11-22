@@ -239,3 +239,35 @@ Claude's reads ran as the infrastructure user with `InfrastructureAccess` in `us
   - A space would add only the Athena API call through Sandbox's `athena` interface endpoint.
   - Stage 9 8.1 measured the same path on 2026-10-30 (its log).
   - With decision 1's replacement (the entry above), nothing in this stage is owed.
+
+## 2026-11-22 — the vend's attribution in both trails, read for the supplement
+
+*Claude's reading, with no AWS call, of the events the entry above looked up, as saved from that night's
+`cloudtrail lookup-events`: Sandbox's `StartQueryExecution` and `GetDataAccess`, Data Governance's
+`GetDataAccess` and `Decrypt`. AWS's Lake Formation pages on CloudTrail were read the same night. Times are
+UTC.*
+
+- **[Claude] Sandbox.** The `GetDataAccess` invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` = `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string, and `cellLevelSecurityEnforced` `true`. Its `additionalEventData` reads `requesterService`
+  `ATHENA`, `lakeFormationPrincipal` the project role's ARN and `lakeFormationRoleSessionName`
+  `AWSLF-00-AT-<Sandbox Account 1>-CRWz3tDXZ4`. The one invoked by `glue.amazonaws.com` on `curated/trades`
+  reads `callType` `EXTERNAL`, `requesterService` `ATHENA` and the same session name, with no audit context.
+  `StartQueryExecution` shows `queryString` as `***OMITTED***`, so the statement above is
+  `get-query-execution`'s. The project role's session is `<Identity Center user id>@5hkjdsy3umpi1c`, the
+  user id being the source identity.
+- **[Claude] Data Governance.** The shared copy is of the glue-invoked event alone: `userIdentity` of type
+  `AWSAccount`, `accountId` Sandbox's, `principalId` the project role's unique id and that session, and
+  `additionalEventData` as in Sandbox, the session name included. The nine `Decrypt` name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox Account 1>-CRWz3tDXZ4`, a session created at
+  02:15:34, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, no source identity and
+  no `vpcEndpointId`.
+- **[Claude] AWS's pages.** *Cross-account CloudTrail logging* gives the session name as
+  `AWSLF-<version>-<engine code>-<account id>-<suffix>`, `AT` for Athena and the account id of the account
+  that requested the credentials, with a Glue job's S3 event as its example, and names the consumer's opt-in,
+  *Resource owners* under *Default permissions for AWS CloudTrail*. Neither it, the service's CloudTrail page
+  nor the underlying-data page mentions KMS events, the audit context or an Athena read's `invokedBy`.
+- **Verdict**: in Data Governance the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names
+  Athena, Sandbox and the role's session, never the query, which only Sandbox's trail joins through the
+  session name. Written as `SUP-416`; `SUP-116` gains that a statement with its own `LIMIT` gets none
+  appended.

@@ -1514,7 +1514,37 @@ entry is still true is the reading.
   on the link and on the lake's table, in both accounts. No `UpdateTable`, no `GenerateDataKey` and no
   manifest object existed, although the console message said one may need cleaning. The editor appended `
   LIMIT 100` to every statement, the insert included. Where: `log-stage-09-deployment-targets.md`,
-  2026-10-30.
+  2026-10-30. A statement carrying its own limit gains none (read 2026-11-22, Stage 6g 2.4): `SELECT * FROM
+  "glue_db_blerpkhn9nj7o0"."trades" LIMIT 10;` ran as `… LIMIT 10`, with no semicolon. The statement is
+  read with `athena get-query-execution`, since the trail's `StartQueryExecution` shows `queryString` as
+  `***OMITTED***`. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22.
+
+- `SUP-416` **A cross-account Athena read through Lake Formation leaves `Decrypt` events in the owner's
+  trail by the registration role, invoked by `glue.amazonaws.com`, and names the query only in the
+  consumer's `GetDataAccess` on the resource link** (read 2026-11-22 in Sandbox's and Data Governance's
+  trails, Stage 6g 2.4). The project role's query `c9f604ea-50f8-47b3-b171-caf3985b6692`, from the portal's
+  query editor through the link `glue_db_blerpkhn9nj7o0.trades` to `curated.trades`, left two
+  `GetDataAccess` in Sandbox at 02:15:34Z. The one invoked by `athena.amazonaws.com` on the link carries
+  `requestParameters.auditContext.additionalAuditContext` `{queryId: c9f604ea-50f8-47b3-b171-caf3985b6692}`,
+  a string rather than JSON, and the project role's ARN as `lakeFormationPrincipal`. The one invoked by
+  `glue.amazonaws.com` on the lake's table carries `callType` `EXTERNAL` and no audit context. Both carry
+  `requesterService` `ATHENA` and one `lakeFormationRoleSessionName`,
+  `AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`. Data Governance received the second alone, as a shared
+  event of type `AWSAccount` whose `principalId` is the project role's unique id and its session,
+  `<Identity Center user id>@<environment id>`. The nine `Decrypt` in Data Governance at 02:15:35Z name
+  `assumed-role/awsds-data-lf-registration/AWSLF-00-AT-<Sandbox account id>-CRWz3tDXZ4`, a session created
+  at 02:15:34Z, with `invokedBy`, `sourceIPAddress` and `userAgent` `glue.amazonaws.com`, encryption context
+  `aws:s3:arn` the bucket's ARN, no source identity and no VPC endpoint. AWS's *Cross-account CloudTrail
+  logging* page gives the session name's format, `AT` for Athena and the account id of the account that
+  requested the credentials, with a Glue job's S3 event as its example; neither it nor the service's
+  CloudTrail page mentions KMS events, an Athena read's `invokedBy` or the audit context (read 2026-11-22).
+  In the owner's account the `Decrypt` events read as Glue's, and the shared `GetDataAccess` names Athena,
+  the consumer account and the role's session, never the query. The query comes from the consumer's trail:
+  the session name finds the `GetDataAccess` on the link, its audit context names the query, and the
+  query's `StartQueryExecution` carries the source identity. Whether the consumer's opt-in, *Resource
+  owners* under *Default permissions for AWS CloudTrail*, adds the principal's ARN to the owner's copy was
+  not measured. Where: `log-stage-06g-access-by-identity.md`, 2026-11-22 (2.4's Athena read, and the
+  attribution read after it).
 
 ## Athena
 

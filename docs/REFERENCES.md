@@ -2395,6 +2395,8 @@
 
 - Lake Formation cross-account data sharing best practices and considerations: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-notes.html>.
 
+- Lake Formation and CloudTrail (read 2026-11-22, for `SUP-416`). The vended session's name, `AWSLF-<version>-<engine code>-<account id>-<suffix>` with `AT` for Athena and the account that requested the credentials, and the consumer's opt-in that gives the owner the principal's ARN: <https://docs.aws.amazon.com/lake-formation/latest/dg/cross-account-logging.html>. The service's CloudTrail page, whose `GetDataAccess` examples carry no audit context: <https://docs.aws.amazon.com/lake-formation/latest/dg/logging-using-cloudtrail.html>. The underlying-data page, which does not mention KMS: <https://docs.aws.amazon.com/lake-formation/latest/dg/access-control-underlying-data.html>.
+
 - Lake Formation hybrid access mode (the documented exception in D13): <https://docs.aws.amazon.com/lake-formation/latest/dg/hybrid-access-mode.html>.
 
 - Lake Formation tag-based access control — best practices and considerations (LF-Tag creators and delegation, expression grants, cross-account LF-TBAC prerequisites, the limits; read 2026-08-17 for the Stage 5a governance review): <https://docs.aws.amazon.com/lake-formation/latest/dg/lf-tag-considerations.html>.
