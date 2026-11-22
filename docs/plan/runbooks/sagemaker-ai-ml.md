@@ -177,7 +177,7 @@ what the lab's portal has shown, read in `eighth-experimentation` and `app-etl-d
 | **Training Jobs** | the *Training jobs* page, reached after a JumpStart model's *Train* | *Training Jobs* | the project's training jobs: status, metrics, output | *Training jobs*, empty; no job created from a space (pass 2) |
 | **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | the entry opens *Compute → MLflow*, `ml-demo-mlflow` in `eighth-experimentation`; on 2026-10-19 it was the legacy experiments page |
 | **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | *Inference endpoints*, with *Create new endpoint*; none created (pass 4) |
-| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; none created (pass 5) |
+| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; a pipeline from the SDK that ran, and one from the editor whose training job the boundary refused (pass 5, 2026-11-22) |
 | **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group (6.4) |
 
 The Identity Center chapter also documents *HyperPod clusters* and *Partner AI apps*. Both provision
@@ -271,9 +271,12 @@ SageMaker AI Pipelines: *"A pipeline defines a series of interconnected steps in
 graph (DAG)."* The portal offers a visual editor (*"Choose Create in visual editor."*) and exports a
 definition (*"Download pipeline definition (JSON)"*); a tag of the user's takes a prefix: *"To add a
 custom tag to a pipeline, add the prefix `ProjectUserTag` to the tag name."* Each step is a SageMaker
-job created as the pipeline's role, so each step's arguments carry the boundary's settings, and the
-editor's forms are unread against them (5.3). `examples/sandbox-ml/pipeline/definition.json` is written
-with the settings and has not run.
+job created as the pipeline's role, in the session `sagemaker-pipeline-<execution id>-<step name>`, so
+each step's arguments carry the boundary's settings. The visual editor writes none of them: it shows
+the project's network and key greyed, writes the key into the output alone, and the boundary refuses
+its training job (5.3, 2026-11-22). A step's arguments name no `AmazonDataZone*` tag, and each job takes
+the pipeline's tags (`SUP-467`). `examples/sandbox-ml/pipeline/definition.json` carries the settings and
+ran on 2026-11-22 to the registry's second version.
 
 A release promotes no ML pipeline as an object: the workflow is the promoted orchestrator (D41), and the
 bundle has no content type for a pipeline. The definition travels as a file. One release after its
@@ -366,9 +369,10 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
   training job and takes no network, isolation or key parameter (`SUP-265`, measured 2026-08-27 and
   2026-09-10).
-- **A portal form is only as specified as its fields** (Lesson 16). JumpStart's *Train*, *Create
-  endpoint* and the pipeline editor are unread against the settings (0.7, 2.4, 4.2, 5.3). The paths
-  known to carry them are an API call from a notebook and a workflow task's `config`.
+- **A portal form is only as specified as its fields** (Lesson 16). JumpStart's *Train* and *Create
+  endpoint* are unread against the settings (0.7, 2.4, 4.2). The pipeline editor writes none of them,
+  and the boundary refuses its training job (5.3, 2026-11-22). The paths known to carry them are an API
+  call from a notebook and a workflow task's `config`.
 - **Serverless inference is refused.** A serverless endpoint's model takes no `VpcConfig`, so
   `DenySageMakerJobsOffVpc` is expected to refuse its `CreateModel` in Sandbox (4.4, unmeasured).
 
@@ -1312,12 +1316,11 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **The Sandbox registry's first version**, and what it does to `EXC-11` (3.3).
 - **An endpoint**: its create, its invocation and its deletion (pass 4), the serverless negative
   (4.4) and the default instance type of a JumpStart deploy (4.5).
-- **An ML pipeline**, and the visual editor's forms (pass 5).
 - **Feature Store**: the entry, the project role's grant, the runtime endpoint, the offline store's
   table under Lake Formation (6.4, verification xxxiii).
-- **The Bedrock IDE's remainder**: `Retrieve` from a space (7.4b, verification xxiv). No shared snapshot
-  reaches the catalog and no answer cites a chunk, the chat agent app being refused and a flow app having
-  no *Share* ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
+- **The Bedrock IDE's remainder**: no shared snapshot reaches the catalog and no answer cites a chunk,
+  the chat agent app being refused and a flow app having no *Share*
+  ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
 - **A worker's `CreateModel` and `CreateTransformJob` as a project role**, in any account (verifications
   xxix and xxx).
 - **The provider's calls at 9.38.0 on a worker**: read in the code and not seen in a trail (`SUP-372`,
@@ -1325,36 +1328,30 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **A second application in one deployment project**: what the CLI's deploy of one does to the other
   (verification xxviii), and [`sagemaker-application.md`](sagemaker-application.md) §S.
 - **The CLI's storage item that names a connection**, read in the wheel of 1.0.9 and never run: what
-  `bundle` reads as a project role and as the bundle role, what it prints and returns where a read is
-  refused, what the zip holds, whether `deploy` stops without a bundle, and as which principal, under
-  which key and to which path a target's deploy writes the model (verification lxii).
+  `bundle` reads as the bundle role, and as which principal, under which key and to which path a target's
+  deploy writes the model (verification lxii; the project role's `bundle` and `deploy` read 2026-11-22).
 - **A version proposed by a task and approved by a deploy role**: `CreateModelPackage` as a project role
   on its stage's group, `UpdateModelPackage` refused to it, no second version after a second run, and
   whom the registry's events name (verification lviii).
-- **`CreateModel` from a version's ARN** as a project role, with `VpcConfig` and network isolation, and
-  whether the service compares the version's `ModelDataETag` with the object it loads (verification
-  lix).
+- **Whether `CreateModel` from a version compares its `ModelDataETag` with the object it loads**, the
+  create itself read as a project role on 2026-11-22 (verification lix).
 - **The loader the `3.0-5` XGBoost image runs on a model file**, read in the image and never probed with
   a crafted archive (verification lxiii).
-- **A model logged to the MLflow App reaching the Model Registry**, as AWS's `ml/training` example
-  asserts (verification lx).
 - **A target's scoring chain around the approval**: `FAILED` at `resolve` while the release's version is
   pending, and that version served once approved (verification xxxi).
 - **An endpoint created and deleted inside one run** (decision 18 (b), verification xxxv).
-- **An ML pipeline started by a task**: who creates each step's job, whether the pipeline's tags reach
-  it, and whether a definition takes a parameter inside `VpcConfig` and `Tags` (decision 19 (b),
-  verification lxi).
+- **An ML pipeline started by a task**, and whether a definition takes a parameter inside `VpcConfig`
+  and `Tags` (decision 19 (b), verification lxi); the step's job and its tags were read from the SDK's
+  pipeline on 2026-11-22 (`SUP-467`).
 - **The retirement of `app-etl`'s model half** (decision 28 (a), step 9.11, verification lxiv).
-- **Any Bedrock call from a workflow task**, in any account: the models that answer inside `us-west-2`
-  and what each account owes one (verification xxxvi), the condition key on every pass of a call through
-  a profile (xxxvii), who must hold `bedrock:ApplyGuardrail` (xxxviii), the variants under the deny
-  (xxxix), the operator's call and its log (xl), the managed policies on a profile Terraform created
-  (xli), a target's trail (xlii), the guardrail's trace of the planted messages (xliii) and the quotas
-  (xlv).
-- **The `guardrail` task**: its calls and the tag its create needs, a second run that writes nothing,
-  the description a version gives back, how long a new version takes to answer, and a second guardrail
-  of the role's own admitted by the boundary (verifications xlvi to xlviii).
-- **The account-level guardrail**: the IAM actions of its configuration, whether Terraform carries it,
+- **Any Bedrock call from a workflow task** beyond Sandbox's of 2026-11-22 (verifications xxxvii to xl
+  and xliii): the models that answer inside `us-west-2` and what each account owes one (xxxvi), the
+  managed policies on a profile Terraform created (xli), a target's trail (xlii) and the quotas (xlv).
+- **The `guardrail` task**: the tag its create needs and the description a version gives back
+  (verification xlvi). Its calls, a second run that writes nothing, a new version's delay and a second
+  guardrail of the role's own were read on 2026-11-22 (xlvi to xlviii).
+- **The account-level guardrail**: the IAM actions of its configuration, which configuration Terraform
+  can write (`awscc` 1.106.0 refuses named models alone, `SUP-466`),
   what it does to a call that names no guardrail and to a model outside its list, and what the second
   assessment bills (verifications xlix and l).
 - **The export of an app**, opened and not deployed (verification xliv).
