@@ -698,6 +698,59 @@ probe("ou", "sandbox1", "allow", None, "ro",
       "interactive (inherited): bedrock:GetUseCaseForModelAccess in us-east-2 still works",
       _use_case("us-east-2"))
 
+# --- TM-28 - DenyAgentCoreBuiltInTools, on every resource. The reads ask AWS's own code interpreter
+#     and browser for a session that does not exist; the starts name a tool that does not exist, so an
+#     authorized call cannot open a session. Authorized, both reads answered ResourceNotFoundException,
+#     "Session not found", and a read on the missing tool "Code Interpreter not found" (2026-11-22,
+#     Sandbox Account 1, InfrastructureAccess, before the statement existed). A deny row reading
+#     ResourceNotFoundException is the deny absent or AgentCore looking the session up before it
+#     authorizes; the canary's rows, which no Interactive document reaches, tell the two apart.
+#
+#     InvokeCodeInterpreter (an event stream, which the CLI removes), ConnectBrowserAutomationStream (a
+#     WebSocket), InvokeWebSearch and InvokeWebAnswer (absent from CLI 2.37.12's model) have no row:
+#     simulate-principal-policy as a project role reads them (POLICIES.md).
+_NO_SESSION = "00000000000000000000000000"
+_NO_TOOL = "awsds_canary_probe-0000000000"
+probe("ou", "sandbox1", "deny", "ResourceNotFoundException", "ro",
+      "interactive (inherited): bedrock-agentcore:GetCodeInterpreterSession on AWS's tool (TM-28)",
+      ["bedrock-agentcore", "get-code-interpreter-session",
+       "--code-interpreter-identifier", "aws.codeinterpreter.v1",
+       "--session-id", _NO_SESSION, "--region", "us-west-2"])
+probe("ou", "sandbox1", "deny", "ResourceNotFoundException", "ro",
+      "interactive (inherited): bedrock-agentcore:GetBrowserSession on AWS's tool (TM-28)",
+      ["bedrock-agentcore", "get-browser-session",
+       "--browser-identifier", "aws.browser.v1",
+       "--session-id", _NO_SESSION, "--region", "us-west-2"])
+probe("ou", "sandbox1", "deny", "ResourceNotFoundException", "blocked",
+      "interactive (inherited): bedrock-agentcore:StartCodeInterpreterSession (TM-28)",
+      ["bedrock-agentcore", "start-code-interpreter-session",
+       "--code-interpreter-identifier", _NO_TOOL, "--region", "us-west-2"])
+probe("ou", "sandbox1", "deny", "ResourceNotFoundException", "blocked",
+      "interactive (inherited): bedrock-agentcore:StartBrowserSession (TM-28)",
+      ["bedrock-agentcore", "start-browser-session",
+       "--browser-identifier", _NO_TOOL, "--region", "us-west-2"])
+probe("ou", "canary", "allow", "ResourceNotFoundException", "blocked",
+      "policy test: bedrock-agentcore:StartCodeInterpreterSession still authorized (TM-28 contrast)",
+      ["bedrock-agentcore", "start-code-interpreter-session",
+       "--code-interpreter-identifier", _NO_TOOL, "--region", "us-west-2"])
+probe("ou", "canary", "allow", "ResourceNotFoundException", "blocked",
+      "policy test: bedrock-agentcore:StartBrowserSession still authorized (TM-28 contrast)",
+      ["bedrock-agentcore", "start-browser-session",
+       "--browser-identifier", _NO_TOOL, "--region", "us-west-2"])
+
+# The runtime stays open (Stage 17 10.11, decision 26 (a)): the control plane's read and the data plane's
+# invocation, on a runtime that does not exist. GetAgentRuntime answered ResourceNotFoundException
+# authorized on 2026-11-22; InvokeAgentRuntime's answer is unmeasured. Its response goes to /dev/null.
+probe("ou", "sandbox1", "allow", "ResourceNotFoundException", "ro",
+      "interactive (inherited): bedrock-agentcore:GetAgentRuntime still works (TM-28, 10.11)",
+      ["bedrock-agentcore-control", "get-agent-runtime",
+       "--agent-runtime-id", _NO_TOOL, "--region", "us-west-2"])
+probe("ou", "sandbox1", "allow", "ResourceNotFoundException", "blocked",
+      "interactive (inherited): bedrock-agentcore:InvokeAgentRuntime still works (TM-28, 10.11)",
+      ["bedrock-agentcore", "invoke-agent-runtime",
+       "--agent-runtime-arn", f"arn:aws:bedrock-agentcore:us-west-2:@ACCT@:runtime/{_NO_TOOL}",
+       "--payload", "e30=", "/dev/null", "--region", "us-west-2"])
+
 # --- Data: nothing runs in the lake account
 probe("ou", "data", "deny", None, "dryrun", "data: ec2:RunInstances",
       ["ec2", "run-instances", "--dry-run", "--image-id", "@AMI@",

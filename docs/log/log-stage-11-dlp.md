@@ -478,3 +478,72 @@ session: EC2, Route 53 and CloudWatch reads in Production as the infrastructure 
 - **[Claude] Records**: `threat-model.md`'s `TM-01` row and its channel row read controlled, and the
   paragraph naming the plane edits no longer lists it; `NETWORK.md` §5's paragraph says the flag is
   applied; the Stage 11 `Status` row.
+
+## 2026-11-22 — `TM-28`'s controls written and planned: the `Interactive` OU's SCP and the targets' fence
+
+*Claude, in a session of its own on the branch `claude/tm28-agentcore-controls-6e013a`, at the request of
+the session coordinating 2026-11-22's batch, from about 06:30 UTC. The layer of the Sandbox deny is the
+user's, answered on a card in this session. AWS calls by this session, all reads: IAM, Access Analyzer's
+`validate-policy`, `simulate-principal-policy` and AgentCore reads in Sandbox Account 1
+(`awsds-infra-sandbox-1`); IAM reads and the plans in Staging and Production; the plan in Identity. Each
+ran as the infrastructure user (`InfrastructureAccess`). No apply. Times are UTC.*
+
+- **[The user] The layer**: *"SCP da OU Interactive"*. The deny goes in `awsds-org-scp-ou-interactive`,
+  which binds every principal of the `Interactive` accounts, rather than in Sandbox's project boundary.
+- **[Claude] The service reference**, read 06:39, `bedrock-agentcore` and `agent-registry` at `v1.5`:
+  `*CodeInterpreterSession` matches Start, Get and Stop, and `*BrowserSession` the same three.
+  `InvokeWebAnswer` acts on `tool/web-answer.v1`, which v48 does not grant; the statement names it too.
+  The reference and v48 disagree on the resources of `InvokeWebSearch` and
+  `ConnectBrowserAutomationStream` (`SUP-451`), so the statement is on `Resource: "*"`. `agent-registry` is
+  a prefix of its own, 32 actions on `publisher`, `registry` and `registry-record`, which
+  `bedrock-agentcore:*` does not cover.
+- **[Claude] The validation**, 06:46: `validate-policy --policy-type SERVICE_CONTROL_POLICY` returned no
+  finding on the statement, its mid-action wildcards included. The negative control,
+  `InvokeWebSearchNoSuchAction` and `*NoSuchSessionKind`, returned `ERROR INVALID_ACTION` each. The amended
+  document returns one finding, `athena:UpdateSession does not exist`, the hedge `POLICIES.md` records.
+- **[Claude] The allowed answers**, Sandbox Account 1, about 06:43, with no deny in place: a get on a
+  session that does not exist answered `ResourceNotFoundException` *"Session not found"* on both managed
+  tools, a get on a tool that does not exist *"Code Interpreter not found"* and *"Browser not found"*, and
+  `get-agent-runtime` `ResourceNotFoundException`; `list-agent-runtimes` listed no runtime.
+- **[Claude] The simulation**, 06:52, as `eighth-experimentation`'s project role under its boundary
+  `awsds-sandbox-project-boundary` v3, with `aws:RequestedRegion` `us-west-2` and the project tag in the
+  context (`SUP-008`):
+  - Run A, today: the code interpreter's Start, Get, Stop and Invoke and the browser's Start, Get and Stop
+    read `allowed`, each by `SageMakerStudioProjectRoleMachineLearningPolicy`. `InvokeWebSearch` reads
+    `allowed` on the grant's `aws:tool/web-search.v1` and `implicitDeny` on the reference's spelling with
+    the account. `InvokeWebAnswer` reads `implicitDeny`. `ConnectBrowserAutomationStream` reads
+    `implicitDeny` on `*`, Organizations and the boundary allowing, and on `aws:browser/*`, where the
+    simulator returns neither verdict. The eight runtime actions read `allowed`.
+  - Run B, the boundary's v3 document with the statement appended, passed as
+    `--permissions-boundary-policy-input-list` in the SCP's place: `explicitDeny` on every tool action,
+    both web search spellings and the stream on `*` included (on `aws:browser/*` the simulator still
+    returns no verdict), and `allowed` on the eight runtime actions.
+- **[Claude] The plans**, from this branch at `main`'s `82edff32` with the edits, Terraform 1.17.2,
+  `-input=false -detailed-exitcode`, exit 2 each:
+  - `identity/org-policies/`, ended 06:55:49: `0 to add, 1 to change, 0 to destroy`,
+    `aws_organizations_policy.this["awsds-org-scp-ou-interactive"]`, its content gaining
+    `DenyAgentCoreBuiltInTools` and its description the `TM-28` sentence.
+  - `staging/studio/` and `production/studio/`, ended 06:56:33: `0 to add, 2 to change, 0 to destroy`
+    each. `module.sagemaker_prereqs.aws_iam_policy.project_boundary` gains `"agent-registry:*"` in
+    `DenyServicesNoProjectUsesHere`, 6d decision 17's fence, and `aws_iam_policy.person_session` reads its
+    document `(known after apply)` (`SUP-356`), so each apply is expected to read `0 added, 1 changed` and
+    its re-plan `No changes`. Both boundaries read `v4` today.
+- **[Claude] The plans again**, after `main` at `65401691` (#370) was merged into this branch, a merge that
+  touches none of the three slices: the same actions line for line, exit 2 each, `identity/org-policies/`
+  ended 07:09:04, `production/studio/` 07:09:10 and `staging/studio/` 07:09:15.
+- **[Claude] The sizes**: the amended document is 1874 characters minified, five statements, under the
+  5120 its precondition enforces; the description is 508 characters, under Organizations' 512, which no
+  plan reads.
+- **[Claude] The battery's rows**, eight in `aws/probes/probes.py`'s `ou` phase, 67 rows from 59: four
+  denies in Sandbox Account 1 (the two gets `ro`, the two starts `blocked`), the two starts in
+  `Policy Canary` as the contrast, and two runtime allows in Sandbox Account 1 (`get-agent-runtime` `ro`,
+  `invoke-agent-runtime` `blocked`). Each argv parsed against a closed local port; none reached AWS.
+  `InvokeCodeInterpreter`, `InvokeWebSearch`, `InvokeWebAnswer` and `ConnectBrowserAutomationStream` have
+  no row (`SUP-451`); the simulation in `scp-battery.md`'s `TM-28` amendment reads them after the apply.
+- **[Claude] Records**: `POLICIES.md`'s row; `threat-model.md`'s `TM-28` row and its channel row;
+  `AWS_STATE.md` §C; `scp-battery.md`'s `TM-28` amendment under phase 4b; `SUP-451`; `REFERENCES.md`;
+  Stage 17's 10.5 and its AgentCore paragraph; the comment in `aws/deploytargets.py`; the Stage 11
+  `Status` row.
+- **[Claude] Owed**, each apply on the user's word naming it: `identity/org-policies/`, `staging/studio/`
+  and `production/studio/`; then the battery's `--phase ou` and the simulation, and `agent-registry` in
+  `deploytargets.py`'s `FENCED_SERVICES` in the commit after the two studio applies (Lesson 50).
