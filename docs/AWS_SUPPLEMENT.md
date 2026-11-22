@@ -5494,6 +5494,11 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
   `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered. The consumption
   role's 15 `ListFoundationModels` came the same way. Where: `log-stage-06e-claude-code-bedrock.md`,
+  2026-11-22. Read again 2026-11-22 (Stage 17 10.4 reading 5): with `awsds-sandbox-bedrock-application`'s
+  deny on `app-genai-dev`'s project role, a chat on Nova Lite in that project's playground answered
+  *"Ready."*. Its `ConverseStream` at 20:52:48 ran as the consumption role, from the browser, through the
+  domain's profile `csu817ovl4kz` (tagged with the domain alone), with no `guardrailConfig`. An identity
+  deny on a project role does not reach the playground. Where: `log-stage-17-sandbox-machine-learning.md`,
   2026-11-22.
 
 - `SUP-301` **CloudWatch publishes a Bedrock call through an application inference profile under the

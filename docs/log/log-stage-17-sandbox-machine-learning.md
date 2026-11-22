@@ -5490,3 +5490,14 @@ Times UTC.*
   - Verification lx reads no. With the app's `AutoModelRegistrationDisabled`, a model logged under a
     registered name stays in MLflow's registry and creates no SageMaker group or version, as step 3.2 read in
     `ml-demo-mlflow`. AWS's `ml/training` example asserts the version.
+- **[user] Reading 5's portal half**: the chat playground of `app-genai-dev` on Nova Lite, *"Reply with the
+  single word: ready."*, answered *"Ready."*. **[Claude]** The trail:
+  - `ListFoundationModels` at 20:52:20, 20:52:21 and 20:52:44, and `ConverseStream` at 20:52:48, as
+    `awsds-sandbox-bedrock-model-consumption` in sessions `28f1b390-…@cty232yk8f2zyo` and
+    `28f1b390-…@d747chsyrc379s`, the second created at 20:52:47;
+  - from the browser, with no `vpcEndpointId` and the host header `bedrock-runtime.us-west-2.amazonaws.com`;
+  - `modelId` the domain's profile `csu817ovl4kz`, Nova Lite, tagged `AmazonDataZoneDomain` alone and created
+    2026-10-19; `maxTokens` 5120; no `guardrailConfig`; 8 tokens in and 3 out on the stream's service event.
+  - The deny binds the application's role. The playground calls as the domain's consumption role, which the
+    deny does not bind, so the playground answers under it with no guardrail (`SUP-300`). The account's
+    guardrail of reading 6, enforced on the model for every caller, is the layer that reaches this path.
