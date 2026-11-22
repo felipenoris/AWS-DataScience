@@ -988,8 +988,9 @@ is read after day 2, once Cost Explorer shows its day (8.2).
   agent's environment and definition, the Haiku 4.5 evaluation's environment and the first knowledge base's
   empty vector bucket. **Decided 2026-11-22 by the user** (the log): those four deleted, with a chat app
   definition of 2026-10-30 no log recorded, each on the user's word in the session that runs it and read
-  back after (`waiting-on-the-user.md`); the evaluation's environment leaves the project's Bedrock service
-  role, which its stack names and did not create.
+  back after (`waiting-on-the-user.md`). The evaluation's environment and the vector bucket were deleted by the
+  CLI at 13:40 and 13:41 UTC, the project's Bedrock service role, which the environment named and the
+  `Tooling` environment created, standing after; the two definitions and the failed record are left.
 
 ### 8. Close
 

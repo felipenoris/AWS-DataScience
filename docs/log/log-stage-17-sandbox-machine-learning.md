@@ -4870,3 +4870,29 @@ alone. Times UTC.*
   deletion leaves it; the evaluation's environment from the portal or by `datazone delete-environment`; the
   vector bucket by `s3vectors delete-vector-bucket` alone. The second environment's deletion must leave
   the project's Bedrock service role, which its stack did not create.
+
+## 2026-11-22 — 7.6's deletions by the CLI: the evaluation's environment and the empty vector bucket
+
+*Claude's writes on the user's word in this session's chat, *"autorizo os dois"*, answering a question that
+named both deletions; as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), a contributor of `eighth-experimentation`. The sessions "Guia do Governance
+Manager no portal (item 6)", "Decisões pendentes, uma de cada vez" and "Preparação de infraestrutura SSO"
+were told before the writes. Times UTC.*
+
+- **[Claude] Before**, 13:40:33: `6fl52xzq3yt768` `ACTIVE`; the vector bucket
+  `amazon-bedrock-ide-avhvbqn37ty7m8-cie8747bea6mxc` with `aws:kms` encryption and no index. The project's
+  Bedrock service role `AmazonBedrockServiceRole-avhvbqn37ty7m8-5hkjdsy3umpi1c`, the environment's listed
+  resource, carries `AmazonDataZoneEnvironment` `5hkjdsy3umpi1c`, the project's `Tooling` environment, and was
+  created 2026-08-23 under `awsds-sandbox-project-boundary`.
+- **[Claude] The environment**: `datazone delete-environment` on `6fl52xzq3yt768` at 13:40:48, exit 0, the
+  record `DELETING` at 13:40:50; its stack `DataZone-Env-6fl52xzq3yt768` `DELETE_COMPLETE` at 13:41:02, and
+  `get-environment` answering *"Environment not found"* at 13:41:14. A contributor's call was admitted.
+- **[Claude] The vector bucket**: `s3vectors delete-vector-bucket` at 13:41:02, exit 0; `list-vector-buckets`
+  at 13:41:03 lists the knowledge base's store `…-46cr0woe7670gg` alone.
+- **[Claude] After**: the service role stands, as before; `list-evaluation-jobs` lists
+  `avhvbqn37ty7m8ml-demo-eval-nova-lite` `Completed`; the 0-byte
+  `…/evaluations/output/avhvbqn37ty7m8ml-demo-eval-haiku45/amazon-bedrock-evaluations-permission-check` of
+  02:07:54 stays, the environment's deletion leaving its output prefix.
+- **Left of 7.6**: the two chat app definitions, `502a9c64-…` and `043850fa-…`, from the Bedrock IDE's *My
+  apps* by the project's owner, and the failed environment `b343orq3qka5n4` from the project's blueprint
+  deployments if the app's deletion leaves it, each on the user's word.
