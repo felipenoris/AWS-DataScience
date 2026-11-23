@@ -1252,8 +1252,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    creation for want of the access role's `redshift-data:ListDatabases` (`SUP-460`), runs again on day 2;
    the four metadata reads were applied the same evening.
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
-    orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
-    mirror: `app-dbt`'s first release,
+    orders before pass 8, and the revocation of Stage 20 5.0's subscription that ends item 9's day 2, which
+    8.6 waits on (N.10.7 item 1); #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening
+    pushes the mirror: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
@@ -2668,8 +2669,11 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and this sitting's day 1 (N.6 items 7 to 10), #321
-   merged on 2026-11-22: Stage 20 orders its pass 8 after pass 5.
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 (N.6 items 7 to 10) and the
+   revocation of Stage 20 5.0's subscription that ends its day 2 (N.10.4 step 3), #321 merged on
+   2026-11-22: Stage 20 orders its pass 8 after pass 5, and 8.6's deletion of 5.0's link asset holds only
+   once the revocation has deleted the link, which `app-dbt-dev`'s source imports again at each daily run
+   while it stands (`SUP-197`, `SUP-365`).
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2728,10 +2732,11 @@ so step 4 now reads it before the tag.
    `app-genai` and `app-dbt` (Stage 20 8.1): `--self-check` printed every stage of every application `ok`,
    `app-etl`'s lines as on `main`. The pins read against the lint's release on 2026-11-18, `app-etl`
    (`196acee`), `app-ml` and `app-genai` (`37cb5a6`), each pass at `4613ddc` with their pipelines'
-   options, so each moves to it at the application's next tag, `app-etl`'s after release G. Its successor
-   `4401f91` ([pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29), merged
-   2026-11-21) adds the rule `operador`'s refusal of the native notebook operator (Stage 8 5.6, `TM-34`), and
-   the lint at it read `ok` for `app-etl`, `app-ml` and `app-genai` on 2026-11-22 (N.12.5). **Merged
+   options. Its successor `4401f91`
+   ([pull request #29](https://github.com/felipenoris/awsds-workflows/pull/29), merged 2026-11-21) adds the
+   rule `operador`'s refusal of the native notebook operator (Stage 8 5.6, `TM-34`), and the lint at it read
+   `ok` for `app-etl`, `app-ml` and `app-genai` on 2026-11-22 (N.12.5), so each application's pin moves to
+   `4401f91` at its next tag, `app-etl`'s after release G. **Merged
    2026-11-22 at 13:28:54 UTC** by the user as `81d70158`, after R1, so the mirror's push moves to R2's
    opening (N.11.2 step 1).
 7. When N.9's day 1 read Stage 20's passes 2 and 3, 8.5's verdict is written and 8.6's bundle rehearsed:
@@ -2747,7 +2752,9 @@ so step 4 now reads it before the tag.
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
 After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
-whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 2026-12-18, since it carries
+whose pass 5 Stage 20 orders before pass 8, and the revocation of Stage 20 5.0's subscription that ends
+N.10's day 2, which step 2's deletion of the link asset waits on (N.10.7 item 1), #321 merged on
+2026-11-22; before 2026-12-18, since it carries
 `app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
@@ -2766,10 +2773,14 @@ whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 20
    `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's through the `optional_service_groups` variable
    Stage 17 10.5 gives `staging/egress/` (written 2026-11-23). [Claude] the
    readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
-   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, between two of its source's
-   daily runs (02:43 UTC), so the bundle carries neither.
+   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, after 5.0's revocation and
+   between two of its source's daily runs (02:43 UTC), so the bundle carries neither. The pins of
+   `app-ml` and `app-genai` moved to `awsds-workflows` `4401f91` with nothing up on 2026-11-23 (Stage
+   17's log), so each first push carries the pin `app-dbt` already holds.
 3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
-   the model in both targets; `app-etl`'s lint pin moves to `4613ddc` with it.
+   the model in both targets; `app-etl`'s lint pin moves to `4401f91` with it. 9.11's merge request is
+   Claude's to write with nothing up before the sitting, unwritten at `b89b5a0f`: `app-etl-train` is
+   still in `examples/app-etl/workflows/` and the four model jobs in its `.gitlab-ci.yml`.
 4. [user] `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
    `make hub-down`. [Claude] `make status`, §R, and 9.11's estate pull request, planned from a `main` that
    holds the release (N.6 item 11).

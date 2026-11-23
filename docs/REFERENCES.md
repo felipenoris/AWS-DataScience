@@ -50,7 +50,10 @@
   `ff25eae`, writes Stage 10 2.3's rules (2c), `lint-plan`, and (6), and the `manifest` rule's refusal of
   a glob include: <https://github.com/felipenoris/awsds-workflows/pull/23>. Its PR #25, merged
   2026-11-12 as `196acee`, makes the `manifest` rule admit `content.catalog` with `skipPublish` true and no
-  `assets.access` (Stage 19 item 23): <https://github.com/felipenoris/awsds-workflows/pull/25>.
+  `assets.access` (Stage 19 item 23): <https://github.com/felipenoris/awsds-workflows/pull/25>. Its PR #29,
+  merged 2026-11-21 as `4401f91`, `main`'s head on 2026-11-23, makes the rule `operador` refuse the native
+  notebook operator (Stage 8 5.6); `app-dbt`, `app-ml` and `app-genai` pin it:
+  <https://github.com/felipenoris/awsds-workflows/pull/29>.
 
 ## Organization and identity
 

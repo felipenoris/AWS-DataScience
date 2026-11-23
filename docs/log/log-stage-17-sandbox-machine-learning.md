@@ -5861,3 +5861,42 @@ No AWS call. Times are UTC.*
 - **[Claude] Records**: `TM-36` and its channel row accepted in `threat-model.md`, its waiting bullet narrowed
   to the applies; this stage's `Status` row and step 10.5; `promotion.md` §N.6 item 8; the waiting list's 10.5
   row; CLAUDE.md's Stage 11 and Stage 17 rows. #388 merged at 01:51:14 with its head before this record.
+
+## 2026-11-23 — R2's pre-flight for `app-ml` and `app-genai`, their pins moved to `4401f91`, and 9.11 unwritten
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94` from `main` at `b89b5a0f`. No AWS call: each job ran on the laptop
+over the applications' trees at `b89b5a0f`, copied outside the worktree, on CPython 3.12.13 and uv
+0.12.13. Times UTC.*
+
+- **[Claude] The `test` jobs**, at 02:14: `app-ml` `uv sync --locked`, `uv lock --check --project code`,
+  ruff clean, 100 passed; `app-genai` ruff clean, 95 passed; the lint with each pipeline's options *"ok: 6
+  arquivo(s)"* and *"ok: 3 arquivo(s)"*, at the pin `37cb5a6` and at `4401f91` alike. `app-etl`, 9.11's
+  application: 100 passed and 1 skipped (the parametrized case its publish gate admits), the lint *"ok: 9
+  arquivo(s)"* at `196acee` and at `4401f91`.
+- **[Claude] The pins**: `awsds-workflows`' `main` reads `4401f91` (#29, 2026-11-21) as its head. Between
+  `37cb5a6` and it the package changed `lint.py` and `render.py` alone, so `package-task` builds the same
+  archive. `examples/app-ml/` and `examples/app-genai/` moved to `4401f91` (`.gitlab-ci.yml`, the README,
+  and `probes/operator.yaml`'s comment), the pin `app-dbt` holds since 2026-11-21, so the first tags of 9.7
+  and 10.6 carry it (`promotion.md` §N.11.1 step 6). `lint probes/operator.yaml` is refused by `operador`
+  with the same line at both commits.
+- **[Claude] The `pip-audit` job**, its script read from this repository's `ci-gates/gates.gitlab-ci.yml`
+  and run verbatim, at 02:17: `app-ml` with `GATES_UV_PROJECTS=code`, *"48 of 48 pinned package(s)
+  audited, 0 blocking vulnerability(ies)"*, exit 0. `app-genai`'s empty case (Lesson 87), with
+  `GATES_UV_PROJECTS=.`: the export holds no pin, `grep -c` exits 1 under `set -eu`, and the job ends with
+  exit 1 and no line after *"the runtime set its lock pins"*, as on 2026-11-17. The pipeline sets no
+  `GATES_UV_PROJECTS`, so R2 runs no `pip-audit` for `app-genai`.
+- **[Claude] The `build-task-code` jobs**, at 02:23, as written but on macOS: `code/app-genai.zip` 8 files,
+  15,715 bytes, imported on 3.12.13; `code/app-ml-train.zip` 15,910,587 bytes, 58,159,344 unzipped, 42
+  distributions, and the register and score zips each importing `app_ml_tasks`. Not run: the worker's
+  import of `mlflow` and `sagemaker_mlflow` from the Linux wheels, the laptop having no container runtime.
+- **[Claude] `./scripts/deploy-application.py --self-check`**: `app-ml` 12 variables per stage, `app-genai`
+  3, every stage `ok`.
+- **[Claude] `scan-gate`**: `app-ml`'s extends `.gates-ecr-scan`, `allow_failure: true`, so its `FAILED`
+  under `SUP-437` leaves the pipeline going. `app-genai` and `app-dbt` build no image and run no
+  `scan-gate`.
+- **[Claude] 9.11**: its merge request is unwritten at `b89b5a0f`. `workflows/app-etl-train.yaml`, its
+  manifest lines and the jobs `staging-model`, `production-register`, `production-approve` and
+  `production-transform` stay in `examples/app-etl/`, and `scripts/model-chain.py` still holds `register`
+  and `transform`. `promotion.md` §N.11.2 step 3 says so, and `app-etl`'s pin there reads `4401f91`, as
+  §N.11.1 step 6 and §N.12.5 do; it read `4613ddc`.

@@ -362,8 +362,9 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
   Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
   `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` leaves
-  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), in `app-dbt`'s pin `4613ddc`; at
-  `app-ml`'s pin `37cb5a6` it still refuses a processing request without it.
+  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), in `4401f91`, the pin of
+  `app-dbt`, `app-ml` and `app-genai`; at `app-etl`'s `196acee` it still refuses a processing request
+  without it.
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on the first two lists.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
@@ -719,9 +720,9 @@ The rules behind that shape:
 
 **The lint** (`awsds-workflows`) reads a processing request (rule `job`) and a training request (rule
 `treino`) against the boundary's settings, and refuses `SageMakerNotebookOperator` by name, at every pin
-in use. Steps 9.3's and 10.3's rules merged on 2026-11-17 as `37cb5a6`, which `app-ml` and `app-genai`
-pin and the template's `196acee` lacks: the rule `transformacao` reads the transform operator's request
-(a listed instance type, the volume's and the output's keys, `action_if_job_exists: fail`); the rule
+in use. Steps 9.3's and 10.3's rules merged on 2026-11-17 as `37cb5a6`, which `4401f91`, the pin of
+`app-ml`, `app-genai` and `app-dbt`, carries and the template's `196acee` lacks: the rule `transformacao`
+reads the transform operator's request (a listed instance type, the volume's and the output's keys, `action_if_job_exists: fail`); the rule
 `modelo` reads a model's request, the model operator's `config` or the transform operator's `Model`, for
 a `VpcConfig` and `EnableNetworkIsolation: true`; the rule `operador` refuses by name
 `SageMakerRegisterModelVersionOperator`, `SageMakerEndpointOperator`, `SageMakerEndpointConfigOperator`
@@ -733,7 +734,8 @@ still pass unread (Lesson 71): a model's `Image` by tag or from any repository; 
 a `Model` and no `Transform`, on which the operator 9.32.0 fails with a `KeyError` before it creates the
 model while `check_if_model_exists` keeps its default; and `action_if_model_exists` at its default,
 `timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, in
-`app-dbt`'s pin `4613ddc`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4). The
+`4401f91`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4), and the
+rule `operador` refuses the native notebook operator by name since `4401f91` (Stage 8 5.6). The
 endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
 that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
 (verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.
