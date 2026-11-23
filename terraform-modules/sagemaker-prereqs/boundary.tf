@@ -31,6 +31,9 @@
 #      decision   secrets, roles and repositories a project role never touches, and the services
 #      21         its projects have no use for. AWS's policies on the role reach each of them
 #                 by IAM (TM-30), and the boundary binds whatever version the role carries.
+#   6. Stage 17    the Bedrock exception, where a caller sets var.bedrock_exception: the ceiling
+#      decision   becomes every action but bedrock:*, and three sets of Bedrock calls are allowed
+#      22 (a)     back by name (TM-36).
 #
 # Absent: an Athena Spark clause. Decided 2026-08-19 by the user - an OU SCP reaches every IAM
 # principal in this account, project roles included, so the clause would deny nothing the SCP
@@ -75,11 +78,15 @@ data "aws_iam_policy_document" "project_boundary" {
   source_policy_documents = [module.denies.json]
 
   # ---------------------------------------------------------------- the ceiling itself
+  #
+  # With the Bedrock exception set, the ceiling is every action but Bedrock's, and the exception's
+  # statements at the end of the document allow its calls back by name.
   statement {
-    sid       = "CeilingIsEverythingTheIdentityPolicyGrants"
-    effect    = "Allow"
-    actions   = ["*"]
-    resources = ["*"]
+    sid         = "CeilingIsEverythingTheIdentityPolicyGrants"
+    effect      = "Allow"
+    actions     = var.bedrock_exception == null ? ["*"] : null
+    not_actions = var.bedrock_exception == null ? null : ["bedrock:*"]
+    resources   = ["*"]
   }
 
   # ------------------------------------------------------------------------------- D13
@@ -227,4 +234,93 @@ data "aws_iam_policy_document" "project_boundary" {
       resources = ["*"]
     }
   }
+
+  # ------------------------------ the Bedrock exception (Stage 17 decision 22 (a), TM-36)
+  #
+  # What the ceiling's NotAction left out, allowed back by name. Each statement exists only where
+  # var.bedrock_exception is set.
+
+  # The model call, on the named profile and on each model behind it: a call through a profile is
+  # authorized on both (SUP-300), and a guarded Converse carries bedrock:GuardrailIdentifier on both
+  # passes (SUP-463). ArnLike on guardrail/*:* matches a numbered version of any guardrail of this
+  # account; the DRAFT's ARN carries no version and an absent key matches nothing, so neither is
+  # admitted. The guardrail's id is left open because a task creates it (decision 24 (b)).
+  dynamic "statement" {
+    for_each = var.bedrock_exception == null ? [] : [var.bedrock_exception]
+
+    content {
+      sid       = "AllowTheApplicationsModelUnderAPublishedGuardrail"
+      effect    = "Allow"
+      actions   = ["bedrock:InvokeModel"]
+      resources = concat([statement.value.inference_profile_arn], statement.value.foundation_model_arns)
+
+      condition {
+        test     = "ArnLike"
+        variable = "bedrock:GuardrailIdentifier"
+        values   = ["${local.guardrails_of_the_account}:*"]
+      }
+    }
+  }
+
+  # ApplyGuardrail on every guardrail of the account. A guarded Converse asked no ApplyGuardrail of
+  # the caller (verification xxxviii); whether an enforced account guardrail does is verification l.
+  dynamic "statement" {
+    for_each = var.bedrock_exception == null ? [] : [var.bedrock_exception]
+
+    content {
+      sid       = "AllowApplyingTheAccountsGuardrails"
+      effect    = "Allow"
+      actions   = ["bedrock:ApplyGuardrail"]
+      resources = [local.guardrails_of_the_account]
+    }
+  }
+
+  # The calls an application's guardrail task makes (decision 24 (b)), as Sandbox's trail recorded
+  # them on 2026-11-22. ListGuardrails without an identifier and CreateGuardrail take no guardrail
+  # ARN, so only "*" matches them; the identity statements carry the project-tag conditions.
+  dynamic "statement" {
+    for_each = var.bedrock_exception == null ? [] : [var.bedrock_exception]
+
+    content {
+      sid       = "AllowListingAndCreatingAGuardrail"
+      effect    = "Allow"
+      actions   = ["bedrock:CreateGuardrail", "bedrock:ListGuardrails"]
+      resources = ["*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.bedrock_exception == null ? [] : [var.bedrock_exception]
+
+    content {
+      sid    = "AllowKeepingAGuardrailOfTheAccount"
+      effect = "Allow"
+      actions = [
+        "bedrock:CreateGuardrailVersion",
+        "bedrock:GetGuardrail",
+        "bedrock:ListTagsForResource",
+        "bedrock:TagResource",
+        "bedrock:UpdateGuardrail",
+      ]
+      resources = [local.guardrails_of_the_account, "${local.guardrails_of_the_account}:*"]
+    }
+  }
+
+  # The account's own guardrail, which the account-level configuration enforces, takes none of the
+  # three writes (decision 27 (a)). Its versions are named beside it.
+  dynamic "statement" {
+    for_each = var.bedrock_exception == null ? [] : [var.bedrock_exception]
+
+    content {
+      sid       = "DenyWritingTheAccountsGuardrail"
+      effect    = "Deny"
+      actions   = ["bedrock:CreateGuardrailVersion", "bedrock:TagResource", "bedrock:UpdateGuardrail"]
+      resources = [statement.value.account_guardrail_arn, "${statement.value.account_guardrail_arn}:*"]
+    }
+  }
+}
+
+locals {
+  # Every guardrail of this account; a numbered version's ARN is the guardrail's with `:<version>`.
+  guardrails_of_the_account = "arn:${data.aws_partition.current.partition}:bedrock:${var.region}:${data.aws_caller_identity.current.account_id}:guardrail/*"
 }
