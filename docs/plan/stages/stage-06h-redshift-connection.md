@@ -21,10 +21,10 @@ is attributable to one of them.
 **Everything here is a sandbox-class mechanism.** `objectives.md` (2026-09-20) makes the per database ×
 project grant *"the sandbox databases' rule… the only new rule here"*, and says the controls over governed
 data do not change. So the connection, its tag, its database user and its `GRANT` **never apply to a governed
-database**: that class is read through the federated catalog Lake Formation governs
-([Stage 9](stage-09-deployment-targets.md) 9.5) and written by a pipeline, and reusing this stage's wiring
-there would put a Redshift `GRANT` beside a Lake Formation grant over governed data — the fork the brief
-forbids.
+database**: that class is read through the Lake Formation-managed datashare Data Governance maps to the
+federated database `governed_trades` ([Stage 9](stage-09-deployment-targets.md) 9.5) and written by a
+pipeline, and reusing this stage's wiring there would put a Redshift `GRANT` beside a Lake Formation grant
+over governed data — the fork the brief forbids.
 
 ## The layers a grant passes through, and why no one of them is sufficient
 

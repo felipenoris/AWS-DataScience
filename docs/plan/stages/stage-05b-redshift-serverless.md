@@ -104,7 +104,7 @@ flowchart LR
         PRJ["SMUS project roles<br/>write per schema x project, many-to-many · Stage 6h"]
     end
     subgraph PRD["Production · Stage 9"]
-        GOV["namespace awsds-prod-warehouse<br/>database governed · written by awsds-prod-job-exec<br/>federated catalog under Lake Formation"]
+        GOV["namespace awsds-prod-warehouse<br/>database governed · written by awsds-prod-job-exec<br/>datashare trades_lf · federated database governed_trades<br/>under Data Governance's Lake Formation"]
     end
     WG --> NS
     UL -.->|"refuses queries at the ceiling"| WG
@@ -668,7 +668,7 @@ and the deploy credential, so the governed class costs it one slice rather than 
 | The class container | the database `sandbox`, holding themed schemas | the database `governed` |
 | Written by | SMUS project roles, per database × project | **`awsds-prod-job-exec` alone** — no project, no connection, no tag |
 | Read from Sandbox | directly, same VPC | **not over the network**: Sandbox↔`VPC-Workloads` has no peering, and its absence is the control (`docs/NETWORK.md` §3) |
-| Under Lake Formation | no | **yes** — the namespace registered to the Glue Data Catalog as a **federated catalog** (`aws_glue_catalog`'s `federated_catalog` block), which is how a governed schema gets the same permission layer as the lake |
+| Under Lake Formation | no | **yes** — the Lake Formation-managed datashare `trades_lf`, mapped to the **federated database** `governed_trades` in Data Governance (Stage 9 decisions 5 and 14), which is how a governed schema gets the same permission layer as the lake |
 | Encryption | `alias/awsds-sandbox-data` | `alias/awsds-prod-data`, created by Stage 9 1.1 |
 
 - **7.1 — [Claude] Write the specification into [Stage 9](stage-09-deployment-targets.md)** as its own step
