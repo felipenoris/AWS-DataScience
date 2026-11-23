@@ -5786,6 +5786,9 @@ entry is still true is the reading.
   removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
   workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,
   by a chain or by hand, until it is deleted outside the CLI, and its archive stays in the workflow scan's root.
+  Read again 2026-11-23 at 21:42 UTC, Stage 17 9.11's hand acts: `delete-workflow` removed
+  `app_etl_deploy_staging_app_etl_train` and `app_etl_deploy_production_app_etl_train`, and each workflow's log group
+  under `/aws/mwaa-serverless/` stayed, Staging's with 34,965 bytes.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23 (9.11).
 
 ## Bedrock

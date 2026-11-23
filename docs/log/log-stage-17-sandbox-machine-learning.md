@@ -6426,3 +6426,31 @@ Times UTC.*
 
   Between the replaced policy's destroy and its create, the deployment project's role lacks the grant; every
   schedule is `DISABLED` and no workflow runs at an apply with nothing up.
+
+## 2026-11-23 — 9.11's estate: the hand acts
+
+*Claude's hand, 9.11's estate session, on the user's words in its chat, *"Autorizo os três atos"*, answering a
+question that listed the three deletions; as `awsds-infra-staging` and `awsds-infra-prod`, `InfrastructureAccess`.
+The orchestrating session, `r2-releases` and `n10-stage21-pass5`, running at 21:41, were told first. Times UTC.*
+
+- **[Claude] `awsds-prod-model-app-etl/1` deleted** at 21:41:47 (`delete-model-package`, exit 0). Afterwards
+  `list-model-packages` on the group reads `[]` and `describe-model-package` on the version answers *"does not
+  exist"*; `describe-model-package-group` reads the group `Completed`, which `production/sagemaker/`'s apply
+  removes.
+- **[Claude] The retired workflows deleted**: `app_etl_deploy_staging_app_etl_train` (`…-c5HHr2Hhpi`) at
+  21:42:08 and `app_etl_deploy_production_app_etl_train` (`…-Diktm0kSnx`) at 21:42:10, `delete-workflow` answering
+  each ARN. `list-workflows` then reads seven workflows in Staging and six in Production, none named `*_train`.
+- **[Claude] Their files deleted** under each deployment project's `shared/app-etl/`, the bucket versioned, so each
+  delete wrote a delete marker over the version read before it: Staging's `code/app-etl-train.zip` (7,043 bytes,
+  version `8L8Ve5Hs…`) at 21:42:24 and `workflows/app-etl-train.yaml` (2,717 bytes, `4XVn0vHG…`) at 21:42:28;
+  Production's `code/app-etl-train.zip` (7,043 bytes, `o5fyVWsO…`) at 21:42:31 and `workflows/app-etl-train.yaml`
+  (2,702 bytes, `lQ5IChPR…`) at 21:42:33.
+- **[Claude] Staging's `shared/app-etl/models/` deleted** at 21:42:47 to 21:42:49 (`s3 rm --recursive`, exit 0):
+  the six objects read before, two training outputs (`app-etl-train-20261116T020100`, `-20261122T043108`, each
+  `evaluation.json` and `output/model.tar.gz`) and two transform outputs (`transform/app-etl-v0-5-2-…`,
+  `-v0-6-0-…`, each `batch.csv.out`). The prefix then lists nothing; `shared/app-etl/` holds `code`, `glue`,
+  `inbox`, `outbox`, `src`, `tables`, `work` and `workflows`.
+- **[Claude] What `DeleteWorkflow` leaves**: each workflow's log group stays,
+  `/aws/mwaa-serverless/<domain>-<project>/app_etl_deploy_staging_app_etl_train` with 34,965 bytes and Production's
+  with 0, neither with a retention (`EXC-25`). Their deletion is the user's to decide. `work/train/` stays in
+  both targets until `app-etl`'s next release, as recommended: each `v0.7.0` run writes it again.

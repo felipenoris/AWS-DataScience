@@ -1275,9 +1275,11 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
     (Lesson 79), option (a) taken by the user on 2026-11-23: `awsds-prod-model-app-etl/1` deleted by hand on the
     user's word, then the apply removes Production's group, Staging having none (`SUP-485`); the retired workflow
     `app_etl_deploy_<target>_app_etl_train` and its two files deleted in each target (`SUP-484`), each an act the
-    user names. The pull request was written and planned from its branch on 2026-11-23 (Stage 17's log): seven
-    slices change, `staging/sagemaker/` reads `No changes`. After its merge, a session from `main` plans, applies
-    on the user's words and re-plans each slice `No changes` (lxiv's third half).
+    user names. The pull request, #397, was written and planned from its branch on 2026-11-23 (Stage 17's log):
+    seven slices change, `staging/sagemaker/` reads `No changes`. The hand acts ran the same evening on the
+    user's words: version 1, both retired workflows and their files, and Staging's `models/`. After the merge, a
+    session from `main` plans, applies on the user's words and re-plans each slice `No changes` (lxiv's third
+    half); `work/train/` is deleted after `app-etl`'s next release.
 12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
     xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
     can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
