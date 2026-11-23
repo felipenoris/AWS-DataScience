@@ -33,8 +33,8 @@ AWS; that one photographs the public DNS the proxy's allow-lists depend on, read
 two identity columns below therefore read *none*.
 
 Every script here and in `probes/` answers `-h` or `--help` with its usage, the module docstring, and runs
-nothing: no `aws` call, no login, no snapshot. An option it does not take prints the usage on stderr and
-exits 2, also before any call ([`awslib/cmdline.py`](awslib/cmdline.py)).
+nothing: no `aws` call, no login, no snapshot. An argument it does not take prints the reason and the
+usage on stderr and exits 2, also before any call ([`awslib/cmdline.py`](awslib/cmdline.py)).
 
 ## The scripts
 

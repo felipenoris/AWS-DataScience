@@ -157,7 +157,8 @@ repos:
 
       # Each aws/ script parses its own arguments, so one that does not call awslib.cmdline first
       # runs whole on a mistyped option. aws/tests runs every program with -h, --help and an unknown
-      # option under an empty AWS configuration, and fails on any subprocess, connection or write.
+      # option under an empty AWS configuration, and fails on any subprocess, name lookup,
+      # connection or write.
       - id: aws-scripts-help
         name: every aws/ script answers --help before it acts
         entry: uv run --quiet pytest -q
