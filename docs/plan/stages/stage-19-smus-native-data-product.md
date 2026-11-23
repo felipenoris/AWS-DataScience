@@ -2023,6 +2023,11 @@ needed here. Under its recommendation, a warehouse sitting inside a Sandbox one 
    or a governance project's, and the import neither exports nor recreates it. If not, the project for
    app-etl owns it, `form_type_owners` names that project, and the import's creation in each target
    meets a name the domain already holds.
+   **Extended 2026-11-23 by the user** (*"Accept product form"*), after `SUP-482`: a table a data product's
+   publication listed, `INACTIVE` and reachable through the product alone, takes the form of every data
+   product listing that carries it when it carries none of its own; a table listed on its own keeps its own
+   form. AWS's pages put a product's metadata *"at the data product level"* and state no placement for a
+   classification (`REFERENCES.md`, 2026-11-23). `catalog.py` `CT-18` reads it.
 5. **The consumer, and who approves.** The consumer: a third project from `experimentation`
    (`test-experimentation` receives the application itself, so a subscription there reads a copy it
    already holds). The approver: the owner project's members, the Data Scientist User, or the Governance

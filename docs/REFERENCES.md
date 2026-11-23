@@ -961,6 +961,18 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/release-notes.html>.
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-metadata-form.html>
   answered an empty page that day.
+- Where a data product's metadata lives (read 2026-11-23, for `catalog.py` `CT-18` and Stage 19 decision 4
+  after `SUP-482`): a metadata rule applies to *"data products, data assets, or both"*, and its scope says
+  which of the two the required forms attach to; a product manages metadata and access *"at the data product
+  level"*, *"rather than individually"*; an unpublished asset is published by its product's publication and
+  available through the product alone. No page states whether an item takes the product's forms, which forms
+  an approver sees, or where a classification belongs:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/metadata-rules-publishing.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/data-products.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/publish-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/subscribe-data-product.html>,
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/review-grant-subscription-to-data-product.html>,
+  <https://docs.aws.amazon.com/datazone/latest/userguide/metadata-rules-publishing.html>.
 - A metadata form's owning project (read 2026-11-10, for Stage 19 decision 4's owner question):
   `CreateFormType` requires `owningProjectIdentifier`, *"the project that owns this metadata form type"*:
   <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateFormType.html>; only a member of
