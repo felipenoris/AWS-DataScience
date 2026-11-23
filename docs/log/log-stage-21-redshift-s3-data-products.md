@@ -1310,7 +1310,7 @@ pasted at 15:05 (5b's log). Times UTC.*
 *Claude, in the session "N.10 dia 2, o resto: Stage 21 pass 5", started by the orchestrating session for
 `promotion.md` §N.10's day 2's rest beside R2. Reads as the infrastructure user with `InfrastructureAccess`
 through `awsds-infra-sandbox-1` (`Sandbox Account 1`) and `awsds-infra-data` (Data Governance), 15:58 to
-16:20; no AWS write, nothing clicked in Chrome. Times UTC.*
+16:10; no AWS write, nothing clicked in Chrome. Times UTC.*
 
 - **[Claude] `make status`**, 15:58 to 15:59: passive and active burns 0.0000 USD, every `[E]` slice down, no
   Studio app billing.
