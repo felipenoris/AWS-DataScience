@@ -29,7 +29,7 @@ def hm(t):
 # ---------------------------------------------------------------- page 1: calendar
 CAL_START, CAL_END = 8.0, 25.0  # 08:00 to 01:00
 CAL_H = 128.0  # mm of the time grid
-NOW = 22 + 20 / 60  # the revision's reading time, drawn on day 0
+NOW = 22 + 40 / 60  # the revision's reading time, drawn on day 0
 DAYS = ["Dom 22/11", "Seg 23/11", "Ter 24/11", "Qua 25/11"]
 CAL_BLOCKS = [
     # day index, start, end, kind, title, line, stages
@@ -40,7 +40,7 @@ CAL_BLOCKS = [
         NOW,
         "done",
         "Feito hoje",
-        "uma subida para o N.9 dia 3, o N.10 dia 1 e o começo do dia 2: Stage 17 C e pass 5; 5b; 6h; passes 5 dos Stages 19 e 20; passes 2 e 3 do Stage 21. O TM-28 aplicado às 21:46. O R1 rodou de madrugada",
+        "uma subida para o N.9 dia 3, o N.10 dia 1 e o começo do dia 2: Stage 17 C e pass 5; 5b; 6h; passes 5 dos Stages 19 e 20; passes 2 e 3 do Stage 21, e o pass 4 desde 22:20. O TM-28 aplicado às 21:46. O R1 rodou de madrugada",
         ["17", "5b", "6h", "19", "20", "21", "11"],
     ),
     (
@@ -48,9 +48,9 @@ CAL_BLOCKS = [
         NOW,
         24.0,
         "warehouse",
-        "Descida e atos",
+        "Pass 4 e descida",
         "",
-        ["21", "6d", "17"],
+        [],
     ),
     (
         1,
@@ -64,13 +64,13 @@ CAL_BLOCKS = [
     (
         1,
         13.5,
-        18.5,
+        17 + 5 / 60,
         "warehouse",
         "N.10 · dia 2, o resto",
-        "hub + Sandbox: redshift · pass 4 e pass 5 do Stage 21, 5.4 do Stage 19, as revogações",
+        "hub + Sandbox: redshift · pass 5 do Stage 21, 5.4 do Stage 19, as revogações",
         ["21", "19", "6h", "20"],
     ),
-    (1, 18.5, 19.5, "none", "Registros", "", ["6d"]),
+    (1, 17 + 5 / 60, 18 + 5 / 60, "none", "Registros", "", ["6d"]),
     (
         2,
         9.0,
@@ -152,7 +152,7 @@ TODAY = [
         21 + 37 / 60,
         22 + 6 / 60,
         "1",
-        "<b>Feito: o pass 3 do Stage 21, a linhagem do warehouse</b>, das 21:37 às 22:06 (00:37 a 01:06 UTC, #384). O <code>lineage_reader</code>, o secret, a conexão por secret e a fonte com <i>Import data lineage</i>; o pull leu sete dias e terminou <code>PARTIALLY_SUCCEEDED</code>: <code>CREATE TABLE … AS</code>, <code>INSERT … SELECT</code> e <code>CREATE VIEW</code> viraram arestas, <code>UPDATE</code> e <code>MERGE</code> não, e o CTAS de <code>awsdatacatalog</code> falhou; o grafo não chega ao lake. O 3.5 removeu a fonte, a conexão, o usuário e o secret; os nós ficam.",
+        "<b>Feito: o pass 3 do Stage 21</b>, das 21:37 às 22:06 (#384). O pull da linhagem terminou <code>PARTIALLY_SUCCEEDED</code>, e o 3.5 removeu a fonte, a conexão, o usuário e o secret; os nós ficam.",
         ["21"],
         "você · Claude⚡",
         "done",
@@ -161,57 +161,67 @@ TODAY = [
         21.75,
         22 + 6 / 60,
         "A",
-        "<b>Feito: o TM-28, pelo orquestrador.</b> Os três applies às 21:46 (00:46 UTC), cada um re-planejado <i>No changes</i>: o SCP do OU <code>Interactive</code> com <code>DenyAgentCoreBuiltInTools</code>, e <code>agent-registry</code> na cerca de <code>staging/studio/</code> e de <code>production/studio/</code>. A bateria <code>--phase ou</code> leu 62 esperados, 0 inesperados, 5 não medidos; a simulação, as seis ações em <code>explicitDeny</code>. O PR #385 entrou no <code>main</code> às 22:06.",
+        "<b>Feito: o TM-28, pelo orquestrador.</b> Os três applies às 21:46, cada um re-planejado <i>No changes</i>; a bateria <code>--phase ou</code> leu 62 esperados, 0 inesperados, 5 não medidos; o PR #385 entrou no <code>main</code> às 22:06.",
         ["11", "6d"],
         "Claude⚡",
         "done",
     ),
     (
         21.75,
-        24.0,
+        22 + 36 / 60,
         "B",
-        "<b>Em paralelo, os subagentes.</b> Um escreve e planeja o 10.5 do Stage 17: o <code>TM-36</code>, o <code>genai.tf</code> dos dois <code>&lt;env&gt;/studio/</code>, <code>&lt;env&gt;/chains/</code>, os <code>state_read_keys</code> de <code>&lt;env&gt;/foundation/</code> e a variável de <code>staging/egress/</code>. Um plano de <code>&lt;env&gt;/studio/</code> tirado antes das 21:46 leva a cerca do TM-28 também (Lesson 69). Os applies são seus, na segunda, depois da revisão do PR. O outro abriu o PR #386: o <code>--help</code> dos scripts de <code>aws/</code>, sem chamada à AWS.",
+        "<b>Feito: os subagentes.</b> O do 10.5 do Stage 17 abriu às 22:36 o PR #388, escrito e planejado, nada aplicado, com a tag <code>sagemaker-prereqs-v0.15.0</code> cortada; os applies são seus, na segunda, do <code>main</code> depois do merge. O outro abriu o PR #386, o <code>--help</code> dos scripts de <code>aws/</code>.",
         ["17", "11"],
         "Claude",
-        "none",
+        "done",
     ),
     (
-        NOW,
-        22.5,
+        22 + 20 / 60,
+        23 + 20 / 60,
         "2",
-        "<b>Leituras de fechamento do Stage 21.</b> <code>list-workgroups</code> só com <code>awsds-sandbox-warehouse</code>, nenhum cluster em <code>describe-clusters</code>, <code>WH-8</code> verde no <code>./aws/warehouse.py</code>: o workgroup do consumidor, removido no 2.9, fica fora do <code>make down</code> e do <code>make status</code>.",
+        "<b>Stage 21, pass 4: o namespace no Glue Data Catalog</b>, desde 22:20, na sua palavra. Feitos até cerca de 22:35, Claude⚡: o 4.1 (o registro e o catálogo federado <code>stage21_warehouse</code>) e o 4.2 (o grant em <code>lab.trades_hot</code>). Seguem: 4.3 e 4.4, você, a leitura pelo editor e uma fonte Glue sobre o catálogo; 4.5, Claude⚡, <code>sandbox/warehouse/</code> (2 a adicionar), <code>sandbox/data/</code> (1 a mudar) e o acesso ao data lake ligado, que cria o compute gerenciado; 4.6, você, o Athena. Cada consulta do compute gerenciado custa ao menos 0,77 USD.",
+        ["21"],
+        "você · Claude⚡",
+        "warehouse",
+    ),
+    (
+        23 + 20 / 60,
+        23 + 35 / 60,
+        "3",
+        "<b>O 4.8, na mesma sessão.</b> O acesso ao data lake desligado, o catálogo apagado, o registro retirado; <code>data_transfer_key_statement_enabled</code> e depois <code>data_transfer_role_enabled</code> em <code>false</code> e aplicados, <code>sandbox/data/</code> primeiro, cada um lido de volta ausente. O <code>make down</code> não desfaz nada disso.",
+        ["21"],
+        "Claude⚡",
+        "warehouse",
+    ),
+    (
+        23 + 35 / 60,
+        23 + 40 / 60,
+        "4",
+        "<b>Leituras de fechamento.</b> <code>list-workgroups</code> só com <code>awsds-sandbox-warehouse</code>, nenhum cluster em <code>describe-clusters</code>, <code>WH-8</code> verde: o workgroup do consumidor e o compute gerenciado ficam fora do <code>make down</code> e do <code>make status</code>.",
         ["21"],
         "Claude",
         "warehouse",
     ),
     (
-        22.5,
-        22 + 50 / 60,
-        "3",
-        "<b>Descida.</b> Todo espaço parado e toda aba do portal fechada, de todas as sessões; Claude avisa as outras sessões; <code>make down ENV=sandbox</code>, <code>make hub-down</code>, <code>make status</code> e as leituras do §R. Começa no máximo às 23:40.",
+        23 + 40 / 60,
+        24.0,
+        "5",
+        "<b>Descida, no limite.</b> Todo espaço parado e toda aba do portal fechada, de todas as sessões; Claude avisa as outras sessões; <code>make down ENV=sandbox</code>, <code>make hub-down</code>, <code>make status</code> e as leituras do §R. Começa no máximo às 23:40.",
         ["infra"],
         "você · Claude",
         "warehouse",
     ),
     (
-        22 + 50 / 60,
-        23.5,
-        "4",
-        "<b>Sem ambiente, os seus atos.</b> <i>Update project</i>, como dono, no <code>app-ml-dev</code>, no <code>app-genai-dev</code> e no <code>app-dbt-dev</code>, livres desde o fim do N.9 dia 3; o espaço de teste <code>jup8h</code> apagado no <code>app-etl-dev</code>. Se quiser adiantar: o PR #386 lido e a decisão do <code>SUP-466</code>.",
+        "depois",
+        "",
+        "6",
+        "<b>Sem ambiente, depois da descida, os seus atos.</b> <i>Update project</i>, como dono, no <code>app-ml-dev</code>, no <code>app-genai-dev</code> e no <code>app-dbt-dev</code>; o espaço de teste <code>jup8h</code> apagado no <code>app-etl-dev</code>. Com a descida terminando às 24:00, vão para segunda às 09:00, com o PR #386 e a decisão do <code>SUP-466</code>.",
         ["6d", "17"],
         "você",
         "none",
     ),
-    (
-        23.5,
-        24.0,
-        "5",
-        "<b>Folga</b> até o fim da sessão. O saldo do free trial do Sandbox se lê depois que fecha o último intervalo de meia hora, ou amanhã cedo.",
-        ["5b"],
-        "você",
-        "none",
-    ),
 ]
+LIMIT = 23 + 40 / 60  # the lowering's latest start
 STRIP_START, STRIP_END = NOW, 24.0
 STRIP_LABEL_W, STRIP_W = 22.0, 162.0
 STRIP_TRACKS = [
@@ -219,15 +229,11 @@ STRIP_TRACKS = [
     (
         "Você e o N.10",
         [
-            (NOW, 22.5, "2", "warehouse"),
-            (22.5, 22 + 50 / 60, "3 · descida", "warehouse"),
-            (22 + 50 / 60, 23.5, "4 · atos sem ambiente", "none"),
-            (23.5, 24.0, "5 · folga", "none"),
+            (22 + 20 / 60, 23 + 20 / 60, "2 · pass 4: 4.3 a 4.6", "warehouse"),
+            (23 + 20 / 60, 23 + 35 / 60, "3 · 4.8", "warehouse"),
+            (23 + 35 / 60, LIMIT, "4", "warehouse"),
+            (LIMIT, 24.0, "5 · descida", "warehouse"),
         ],
-    ),
-    (
-        "Subagentes",
-        [(21.75, 24.0, "B · o 10.5 escrito e planejado; o --help já no PR #386", "none")],
     ),
 ]
 
@@ -239,12 +245,14 @@ def strip():
     row_h, row_gap = 6.0, 1.4
     bottom = len(STRIP_TRACKS) * (row_h + row_gap) - row_gap
     parts = [f'<div class="strip" style="height:{bottom + 5.2:.1f}mm">']
-    for t, lab in [(NOW, hm(NOW)), (22.5, "22:30"), (23.0, "23h"), (23.5, "23:30"), (24.0, "24h")]:
+    ticks = [(NOW, hm(NOW), ""), (23.0, "23h", ""), (23.5, "23:30", "")]
+    ticks += [(LIMIT, f"limite {hm(LIMIT)}", " lim"), (24.0, "24h", "")]
+    for t, lab, cls in ticks:
         parts.append(
-            f'<div class="tline" style="left:{x(t):.2f}mm;height:{bottom + 0.8:.2f}mm"></div>'
+            f'<div class="tline{cls}" style="left:{x(t):.2f}mm;height:{bottom + 0.8:.2f}mm"></div>'
         )
         parts.append(
-            f'<div class="tick" style="left:{x(t):.2f}mm;top:{bottom + 1.2:.2f}mm">{lab}</div>'
+            f'<div class="tick{cls}" style="left:{x(t):.2f}mm;top:{bottom + 1.2:.2f}mm">{lab}</div>'
         )
     for i, (label, segs) in enumerate(STRIP_TRACKS):
         top = i * (row_h + row_gap)
@@ -268,12 +276,13 @@ def day_table(rows, kind, numbered=False):
     for r in rows:
         s, e, short, text, stg, who = r[:6]
         b = HUE[r[6] if len(r) > 6 else kind][0]
+        when = s if isinstance(s, str) else f"{hm(s)}–{hm(e)}"  # a string start is the cell itself
         out.append("<tr>")
         if numbered:
             out.append(f'<td class="n" style="border-left:1mm solid {b}">{short}</td>')
-            out.append(f'<td class="t">{hm(s)}–{hm(e)}</td>')
+            out.append(f'<td class="t">{when}</td>')
         else:
-            out.append(f'<td class="t" style="border-left:1mm solid {b}">{hm(s)}–{hm(e)}</td>')
+            out.append(f'<td class="t" style="border-left:1mm solid {b}">{when}</td>')
         out.append(
             f'<td>{text}</td><td class="stg">{chips(stg)}</td><td class="who">{who}</td></tr>'
         )
@@ -293,47 +302,31 @@ MON = [
     ),
     (
         13 + 55 / 60,
-        15 + 10 / 60,
-        "",
-        "<b>Stage 21, pass 4: o namespace no Glue Data Catalog.</b> 4.1 e 4.2, Claude⚡: o registro, o catálogo federado e os grants; 4.3 e 4.4, você: a leitura pelo editor e uma fonte Glue sobre o catálogo; 4.5: o transfer role e o statement da chave em <code>sandbox/data/</code> (decisão 4 (b)), Claude⚡; 4.6, você: o Athena; 4.8 na mesma sessão, o statement saindo antes do role. A 128 RPU, cada consulta do compute gerenciado custa ao menos 0,77 USD.",
-        ["21"],
-        "você · Claude⚡",
-    ),
-    (
-        15 + 10 / 60,
-        15 + 20 / 60,
-        "",
-        "<b>Leituras de fechamento.</b> <code>list-workgroups</code>, <code>describe-clusters</code> e <code>WH-8</code>: o compute gerenciado fica fora do <code>make down</code>, do <code>make status</code> e do limite de uso.",
-        ["21"],
-        "Claude",
-    ),
-    (
-        15 + 20 / 60,
-        17 + 20 / 60,
+        15 + 55 / 60,
         "",
         "<b>Stage 21, pass 5: imagens como S3 Object Collection.</b> O prefixo publicado do espaço do <code>eighth-experimentation</code>; o produto pedido de um notebook do <code>test-experimentation</code>, aprovado, lido e revogado, com a espera de 5 minutos da revogação. Não usa o warehouse.",
         ["21"],
         "você · Claude",
     ),
     (
-        17 + 20 / 60,
-        18 + 5 / 60,
+        15 + 55 / 60,
+        16 + 40 / 60,
         "",
         "<b>Stage 19 5.4 com o item 5 do rollback do Stage 21.</b> Os grants do 5.1 revogados; a view <code>lab.trades_hot_by_desk</code> e as tabelas removidas, o <code>lab</code> mantido (6h 6.4); depois as assinaturas revogadas, a do 4.12 pelo 2.5 e a do 5.0 do Stage 20, cada uma lida dos dois lados. É o que o R2 espera.",
         ["19", "21", "6h", "20"],
         "você · Claude",
     ),
     (
-        18 + 5 / 60,
-        18.5,
+        16 + 40 / 60,
+        17 + 5 / 60,
         "",
-        "<b>Descida.</b> Espaços parados e abas fechadas; <code>make down ENV=sandbox</code>, <code>make hub-down</code>, <code>make status</code>, §R. O <code>make status</code> não lê workgroups; as leituras de fechamento valem por ele.",
+        "<b>Descida.</b> Espaços parados e abas fechadas; <code>make down ENV=sandbox</code>, <code>make hub-down</code>, <code>make status</code>, §R.",
         ["infra"],
         "você · Claude",
     ),
     (
-        18.5,
-        19.5,
+        17 + 5 / 60,
+        18 + 5 / 60,
         "",
         "<b>Registros, sem ambiente.</b> O saldo do Sandbox depois da descida; o PR do <code>CLAUDE.md</code> do orquestrador (Current position, as chaves das Lessons 89 e 90), com o N.10 fechado; <i>Update project</i> no <code>eighth-experimentation</code> e no <code>test-experimentation</code>.",
         ["6d", "5b"],
@@ -540,6 +533,8 @@ td.stg { width: 21mm; }
   white-space: nowrap; overflow: hidden; }
 .strip .tick { position: absolute; font-size: 6.2pt; color: #8a8984; transform: translateX(-50%); }
 .strip .tline { position: absolute; top: 0; border-left: .18mm solid rgba(0,0,0,.18); }
+.strip .tline.lim { border-left: .35mm dashed #1b1b1a; }
+.strip .tick.lim { color: #1b1b1a; font-weight: 700; }
 .warn { border-left: 1mm solid #1b1b1a; background: #f6f5f2; padding: 1.8mm 2.4mm; border-radius: 0 1.2mm 1.2mm 0; }
 .footer { position: absolute; left: 13mm; right: 13mm; bottom: 6.5mm; font-size: 6.6pt; color: #8a8984;
   display: flex; justify-content: space-between; border-top: .2mm solid #ecebe6; padding-top: 1.2mm; }
@@ -547,7 +542,7 @@ td.stg { width: 21mm; }
 .left-table td { font-size: 7.6pt; }
 """
 
-FOOT = '<div class="footer"><span>AWS Data Science · cronograma do que falta no plano · gerado em 22/11/2026, 22:20 BRT, do main em <code>a42e4c9d</code>, com os PRs #384 e #386 abertos</span><span>{p}/5</span></div>'
+FOOT = '<div class="footer"><span>AWS Data Science · cronograma do que falta no plano · gerado em 22/11/2026, 22:40 BRT, do main em <code>a42e4c9d</code>, com os PRs #384, #386 e #388 abertos</span><span>{p}/5</span></div>'
 
 LEGEND = (
     '<div class="legend">'
@@ -570,11 +565,11 @@ def page1():
 <section class="page">
   <div class="kicker">AWS Data Science · planejamento da execução</div>
   <h1>Cronograma do que falta no plano</h1>
-  <p class="sub">Revisto às 22:20 de domingo, 22/11, com a sessão de hoje indo até 24:00 (03:00 UTC). Horários em BRT
+  <p class="sub">Revisto às 22:40 de domingo, 22/11, com a sessão de hoje indo até 24:00 (03:00 UTC). Horários em BRT
   (UTC−3); o plano registra UTC. A ordem e os prazos são do plano (<code>promotion.md</code> §N.6 e §N.12); os horários dos
   dias seguintes partem das 09:00 por convenção deste relatório, e você pode deslocá-los.</p>
   <div class="tiles">
-    <div class="tile"><div class="l">Descida de hoje</div><div class="v">22:30</div><div class="d">no máximo às 23:40</div></div>
+    <div class="tile"><div class="l">Descida de hoje</div><div class="v">23:40</div><div class="d">no limite; o fim do pass 4 decide</div></div>
     <div class="tile"><div class="l">Próxima subida</div><div class="v">Seg, 13:30</div><div class="d">o resto do N.10 dia 2</div></div>
     <div class="tile"><div class="l">R2</div><div class="v">Ter, 24/11</div><div class="d">app-dbt, app-ml, app-genai e app-etl</div></div>
     <div class="tile"><div class="l">Última subida</div><div class="v">Qua, 25/11</div><div class="d">as sobras do Sandbox</div></div>
@@ -609,26 +604,28 @@ def page1():
 def page2():
     return f"""
 <section class="page">
-  <div class="kicker">Hoje · domingo, 22/11 · 22:20 → 24:00 (01:20 → 03:00 UTC)</div>
-  <h2>O que cabe até a meia-noite: as leituras de fechamento, a descida e os seus atos</h2>
+  <div class="kicker">Hoje · domingo, 22/11 · 22:40 → 24:00 (01:40 → 03:00 UTC)</div>
+  <h2>O que cabe até a meia-noite: o pass 4 do Stage 21, o 4.8 e a descida</h2>
   <p class="sub">No ar desde 15:16 (18:16 UTC): o hub e o Sandbox com <code>mwaa,mlflow,bedrock-base,bedrock-agent,redshift</code>,
-  a subida que o N.9 dia 3 e o N.10 dividiram. O N.10 dia 2 fez os passes 2 e 3 do Stage 21 (#384), e nada mais da lista do
-  dia cabe antes do limite da descida. As trilhas correm juntas, e só a primeira usa o portal e o Sandbox.</p>
+  a subida que o N.9 dia 3 e o N.10 dividiram. O N.10 dia 2 fez os passes 2 e 3 do Stage 21 (#384) e começou o pass 4 às
+  22:20, na sua palavra. A estimativa da sessão do N.10 para o fim do pass 4 decide a hora da descida. Os subagentes
+  terminaram às 22:36, e só o N.10 usa o portal e o Sandbox.</p>
   {strip()}
   {day_table(TODAY, "none", numbered=True)}
   <div class="warn" style="margin:2.6mm 0 0">
-    <b>O pass 4 do Stage 21 e o restante do 6d ficam fora da noite.</b> O pass 4 leva cerca de 75 min, com quatro applies e um
-    compute gerenciado fora do <code>make down</code>; começado às 22:20, as suas leituras de fechamento terminariam às 23:45,
-    depois do limite da descida. O pass 5, cerca de 2 h, vem depois dele. O 6d pede os terminais das outras sessões quietos durante o 7.5, e o seu 7.7 fecha
-    todas as abas do portal; vai para quarta.
+    <b>A descida começa no máximo às 23:40, e a noite não tem folga.</b> Os 75 min do pass 4, contados de 22:20, terminam o 4.8
+    às 23:35. Se o 4.6 passar de 23:20, ou o 4.8 de 23:35, a descida passa de 23:40 e a sessão das 24:00. O corte que mantém o
+    limite é ir do passo em curso direto ao 4.8: o que faltar do pass 4 abre a segunda, com os objetos de que depende criados de
+    novo. O pass 5 e o restante do 6d ficam fora da noite.
   </div>
   <div class="cols" style="margin-top:2.6mm">
     <div class="box">
       <h3>O que termina antes da descida</h3>
       <ul>
+        <li>O 4.8 inteiro, mesmo com um passo do pass 4 cortado.</li>
         <li>As leituras de fechamento: o workgroup do consumidor ausente, nenhum cluster, <code>WH-8</code> verde.</li>
         <li>Todo espaço parado e toda aba do portal fechada, de todas as sessões; o <code>make down</code> varre os apps que sobrarem.</li>
-        <li>O subagente do 10.5 não usa o Sandbox e segue depois dela; o TM-28 terminou às 22:06.</li>
+        <li>O 10.5 terminou às 22:36, no PR #388, sem usar o Sandbox; o TM-28, às 22:06.</li>
       </ul>
     </div>
     <div class="box">
@@ -637,7 +634,7 @@ def page2():
         <li>Os grants do 5.1 no Lake Formation e o <code>USAGE ON DATABASE awsdatacatalog</code> do usuário 103.</li>
         <li>A cópia <code>lab.trades_hot</code>, as tabelas do pass 2 e do 3.3, a view <code>lab.trades_hot_by_desk</code>; o produto <code>sandbox-trades-hot</code>.</li>
         <li>As assinaturas do 4.12 (<code>eighth-experimentation</code>) e do 5.0 (<code>app-dbt-dev</code>), revogadas no fim do resto do dia 2.</li>
-        <li>Custo até a descida: cerca de 0,34 USD/h, mais 1,44 USD por hora de consulta do warehouse, que o free trial absorve.</li>
+        <li>Custo até a descida: cerca de 0,34 USD/h, mais 1,44 USD por hora de consulta do warehouse, que o free trial absorve; se ele cobre o compute gerenciado é uma leitura.</li>
       </ul>
     </div>
   </div>
@@ -656,6 +653,7 @@ def page3():
       <ul>
         <li><b>Saldo do free trial do Redshift em Production</b>, no dia seguinte ao R1. Console; infrastructure user; conta Production; <code>InfrastructureAccess</code>. Última leitura: 299,16 de 300,00 (22/11, depois do R1).</li>
         <li><b>Saldo em Sandbox</b>, no dia seguinte. Mesmo usuário; conta Sandbox; <code>InfrastructureAccess</code>. Última: 286,16 (22/11, depois do dia 1).</li>
+        <li><b>O que o domingo não coube</b>: o <i>Update project</i> no <code>app-ml-dev</code>, no <code>app-genai-dev</code> e no <code>app-dbt-dev</code>, e o espaço <code>jup8h</code> apagado no <code>app-etl-dev</code>.</li>
         <li><b>Revisões e merges</b>: o #386 (o <code>--help</code>) e o deste cronograma; o #384 quando o dia 2 fechar. O merge é sempre seu.</li>
         <li><b>A decisão do <code>SUP-466</code></b>: como o guardrail da conta é aplicado no Sandbox (<code>ALL</code> sem os embeddings, outro mecanismo, ou nenhum). A leitura 6 de quarta espera por ela; o apply de Staging do 10.5 lê nesta manhã a forma sem lista de modelos.</li>
         <li>Opcional: o <b>alerta de orçamento</b> (6e, decisão 6; Stage 12 2.1), no console da Management, usuário AWS Control Tower Admin, <code>AWSAdministratorAccess</code>; as tentativas 1.1 e 1.2 do 6d como Data Scientist User.</li>
@@ -664,18 +662,19 @@ def page3():
     <div class="box">
       <h3>09:30 → ~12:30 · Stage 17 10.5 <span class="chip">17</span><span class="chip">11</span></h3>
       <ul>
-        <li><b>Você</b> revisa o PR do 10.5 e aceita o resíduo do <code>TM-36</code>, ou as decisões 22 e 24 voltam à mesa.</li>
-        <li><b>Claude</b>: a tag do módulo (Recipe B).</li>
+        <li><b>Você</b> revisa e mescla o PR #388 e aceita o resíduo do <code>TM-36</code>, ou as decisões 22 e 24 voltam à mesa. A tag <code>sagemaker-prereqs-v0.15.0</code> já existe.</li>
+        <li><b>Claude</b>: cada slice re-planejado no <code>main</code> depois do merge (Lesson 79).</li>
         <li><b>Os applies</b>, cada um na sua palavra: <code>staging/studio/</code>, que cria o guardrail da conta e a sua configuração; a retenção <code>none</code> em <code>us-west-2</code> em Staging, ato seu no console; <code>production/studio/</code>; a retenção em Production; <code>&lt;env&gt;/chains/</code>; <code>&lt;env&gt;/foundation/</code> com o var-file de alerts.</li>
         <li><b>Claude</b>: a simulação do 10.1 na boundary aplicada e <code>./aws/deploytargets.py</code>. A variável de <code>staging/egress/</code> nasce na subida do R2.</li>
         <li>Se Staging recusar a configuração, o <code>app-genai</code> sai do R2; <code>app-dbt</code> e <code>app-ml</code> seguem.</li>
       </ul>
     </div>
   </div>
-  <h3 style="margin-top:3.4mm">13:30 → ~18:30 · N.10 dia 2, o resto · sessão warehouse, e os registros até ~19:30</h3>
-  <p class="sub">Os passes 4 e 5 do Stage 21, o passo 7 do Stage 19 com o item 5 do rollback, e as
-  assinaturas revogadas. O plano estima cerca de 5 h. Cada <code>make up</code> cria um limite de uso novo, de 10 RPU-h no dia;
-  num estouro, os passos do warehouse esperam a sua palavra, e o pass 5 segue.</p>
+  <h3 style="margin-top:3.4mm">13:30 → ~17:05 · N.10 dia 2, o resto · sessão warehouse, e os registros até ~18:05</h3>
+  <p class="sub">O pass 5 do Stage 21, o passo 7 do Stage 19 com o item 5 do rollback, e as assinaturas revogadas, cerca de
+  3 h 30. O que o domingo deixar do pass 4 abre a tarde, com os objetos de que depende criados de novo e o seu 4.8 antes da
+  descida. Cada <code>make up</code> cria um limite de uso novo, de 10 RPU-h no dia; num estouro, os passos do warehouse esperam
+  a sua palavra, e o pass 5 segue.</p>
   {day_table(MON, "warehouse")}
   {FOOT.format(p=3)}
 </section>"""
@@ -815,8 +814,8 @@ def page5():
         ),
         (
             "21 · Redshift e S3 como data products",
-            "o pass 4, o pass 5 e o item 5 do rollback; o fechamento",
-            "23/11; depois da conta",
+            "o pass 4, desde 22:20 de hoje; o pass 5 e o item 5 do rollback; o fechamento",
+            "22 e 23/11; depois da conta",
         ),
     ]
     rows_out = [
