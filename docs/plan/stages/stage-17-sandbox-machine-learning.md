@@ -1518,7 +1518,9 @@ that trains it. And the developer's loop gains a `bundle` before each `deploy` (
   operator in place of 9.3's refusal. The service ignores `trigger_rule`, so a run that fails
   between the create and the delete leaves an endpoint that bills 0.115 USD per hour: the next run's
   `clear` deletes it, `OR-10` fails on any endpoint, and the chain's sitting ends with a read of
-  `ListEndpoints` (verification xxxv).
+  `ListEndpoints` (verification xxxv). [Stage 9](stage-09-deployment-targets.md)'s verification xvii
+  moved here on 2026-11-23: whether a target's job reaches `sagemaker.runtime` from a subnet in the AZ
+  its single-AZ endpoint is not in.
 
   **The ML pipeline** (decision 19 (b), placed by the user in the `dev` project alone, where the
   training runs): a workflow `app-ml-pipeline`, created by `dev`'s bootstrap alone, that creates or
