@@ -6350,3 +6350,26 @@ triage do app-genai em Production (awsds-prod-chain-app-genai-triage), uma tenta
   `vpce-0cc38cf401b7c102f`, `GetGuardrail`, `ListGuardrails` and `ListTagsForResource` through
   `vpce-07a18f03e17e5c132`, by the project role's `AmazonMWAAServerless` session, no error. `app-genai`'s
   Production leg reads yes; `parse_answer`'s fix stays its follow-up.
+
+## 2026-11-23 — R2: 9.11's release `v0.7.0`, the Production leg
+
+*Claude's hand, R2's session; `production-gate` played on the user's words *"gates do app-etl"* after the
+orchestrating session's «verificado» of the Staging leg; reads as `awsds-infra-prod`, `InfrastructureAccess`.
+Times UTC.*
+
+- **[Claude] `production-gate`** (job 1014) played at 19:05:25, green at 19:05:31.
+- **[Claude] `production-deploy`** (job 1015, 19:05:33 to 19:24:12): *"the bundle of v0.7.0: 10 file(s), a catalog
+  export"*, *"Total files deployed: 9"*; the import *"0 created, 1 updated, 3 skipped (extra in target), 0 failed,
+  0 published"*, the extras `app-etl`'s data product `trades-notional` and `app-dbt`'s assets `trades` and
+  `notional_by_desk`; the workflows `app_etl_deploy_production_app_etl` and `…_warehouse` updated, `READY`. The
+  bootstrap's run `gHhoGi4GC8wHu4J` (19:08:00 to 19:22:42): `transform`, `process`, `summarize`, `write_result` and
+  `publish` `SUCCESS`; `publish` *"source run 6d5lycntokbfkg: SUCCESS, {"added": 0, "failed": 0, "unchanged": 0,
+  "updated": 1}"*, the listing `5hpftif3nnoj2o` at revision 10 `ACTIVE` over the asset `da1fycta6l71n4` at revision
+  8, and the data product `anph2bq7uigqa8` *"revision 1, unchanged"*, its listing `dr8t27tte8ezdc` at revision 2
+  `ACTIVE`.
+- **[Claude] `production-catalog`** (job 1016, 19:24:15 to 19:24:24) *"production-deploy's import was whole: no
+  second import"*. `production-warehouse-ddl` (job 1017) left `manual`, unplayed (Stage 8's log, the user's
+  answer). Pipeline #153 ends with no model job in either leg: lxiv's first half reads yes in both targets; its
+  second and third halves wait on 9.11's estate pull request. The three `awsds-prod-chain-app-etl*` schedules read
+  `DISABLED` at 19:15; `app_etl_deploy_production_app_etl_train` stays `READY` and both training files stay under
+  `shared/app-etl/` (`SUP-484`).
