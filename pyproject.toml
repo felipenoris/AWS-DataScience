@@ -10,9 +10,10 @@
 # means checking what CloudShell ships first.
 #
 # Zero runtime dependencies: the standard library plus the aws CLI as a subprocess, which keeps the
-# CloudShell fallback a one-liner and `uv sync` instant. ruff and PyYAML are dev tools, not
-# dependencies: PyYAML parses the GitLab CI files for scripts/check-gitlab-ci.py, which runs on the
-# laptop and in CI, never in CloudShell. `uv run` installs the dev group by default.
+# CloudShell fallback a one-liner and `uv sync` instant. ruff, PyYAML and pytest are dev tools, not
+# dependencies: PyYAML parses the GitLab CI files for scripts/check-gitlab-ci.py, and pytest runs
+# aws/tests/, both on the laptop and in CI, never in CloudShell. `uv run` installs the dev group by
+# default.
 
 [project]
 name = "awsds-tools"
@@ -23,6 +24,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "pytest>=8",
     "pyyaml>=6",
     "ruff>=0.12",
 ]
@@ -67,3 +69,7 @@ quote-style = "double"
 # The battery-as-data file keeps its own compact one-probe-per-block layout: exploding each
 # argv onto fifteen lines is tidier for code and worse for a file people edit as a table.
 exclude = ["aws/probes/probes.py"]
+
+# The examples/ applications carry their own projects and tests; this one tests aws/.
+[tool.pytest.ini_options]
+testpaths = ["aws/tests"]

@@ -1,22 +1,23 @@
 #!/usr/bin/env -S uv run --quiet
-# org-trusted-access-services.py - which AWS services are allowed to act across this
-# organization, and which account administers each of them.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/org-trusted-access-services.py                   # awsds-infra-identity
-#             ./aws/org-trusted-access-services.py awsds-infra-staging   # a different profile
-#             ./aws/org-trusted-access-services.py -                 # no --profile: run it
-#                                                                    # inside CloudShell
-#             (CloudShell has no uv: run `python3 aws/org-trusted-access-services.py -`
-#              with the aws/ folder present - awslib sits beside this script.)
-#   writes:   aws/output/org-trusted-access-services.txt   (untracked - see .gitignore)
-#   reads:    organizations:ListAWSServiceAccessForOrganization,
-#             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
-#             This script never creates, updates or deletes anything.
-#
+"""org-trusted-access-services.py - which AWS services are allowed to act across this
+organization, and which account administers each of them.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/org-trusted-access-services.py                   # awsds-infra-identity
+          ./aws/org-trusted-access-services.py awsds-infra-staging   # a different profile
+          ./aws/org-trusted-access-services.py -                 # no --profile: run it
+                                                                 # inside CloudShell
+          (CloudShell has no uv: run `python3 aws/org-trusted-access-services.py -`
+           with the aws/ folder present - awslib sits beside this script.)
+writes:   aws/output/org-trusted-access-services.txt   (untracked - see .gitignore)
+reads:    organizations:ListAWSServiceAccessForOrganization,
+          organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
+          This script never creates, updates or deletes anything.
+"""
+
 # Trusted access is an organization-level allowlist keyed by *service principal*, switched on
 # from the management account. What it grants is not an IAM permission and appears in no
 # policy evaluation: it lets the service read the organization's structure and create
@@ -49,7 +50,7 @@ from __future__ import annotations
 import os
 import sys
 
-from awslib import context
+from awslib import cmdline, context
 from awslib.awscli import AwsCli
 from awslib.report import Report, note, tabulate
 
@@ -66,6 +67,7 @@ OUT_NAME = "org-trusted-access-services.txt"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
     cli = AwsCli(profile=profile, region=context.REGION)
     ctx = context.locate(__file__)

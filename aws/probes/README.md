@@ -11,6 +11,9 @@ the script every time.
 ./aws/probes/scp-battery.py --list       # what would run, and in which account
 ```
 
+`-h` or `--help` prints the usage, the script's docstring, and runs nothing; an argument the script does
+not take prints it on stderr and exits 2, before any session is checked.
+
 | Phase | Measures | Notes |
 |---|---|---|
 | `root` | the two documents on the organization root (7.5) | five `creates` probes, canary only |

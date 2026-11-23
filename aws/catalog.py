@@ -1,26 +1,27 @@
 #!/usr/bin/env -S uv run --quiet
-# catalog.py - the SageMaker Catalog over the governed lake: what the business catalog holds, what
-#              it has granted, and which Lake Formation grants a SMUS-managed principal carries.
-#
-#   needs:    a live SSO session for the infrastructure user; one login covers every profile:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/catalog.py
-#             ./aws/catalog.py --self-check   # the product road's rules on samples, no AWS call
-#   writes:   aws/output/catalog.txt   (untracked - see .gitignore)
-#   reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
-#             ListProjectMemberships, ListEnvironments, GetUserProfile, GetGroupProfile,
-#             SearchListings, GetListing, ListDataSources, GetDataSource, ListDataSourceRuns,
-#             ListSubscriptions, ListSubscriptionRequests, ListSubscriptionGrants,
-#             ListPolicyGrants, lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
-#             lakeformation:ListLFTags; in each account read - lakeformation:ListPermissions and
-#             cloudtrail:LookupEvents; in the account a project's environments live in -
-#             datazone:Search over that project's assets and glue:GetTable; and
-#             sts:GetCallerIdentity. Every one is a read.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self-check case
-#             read otherwise
-#
+"""catalog.py - the SageMaker Catalog over the governed lake: what the business catalog holds, what
+             it has granted, and which Lake Formation grants a SMUS-managed principal carries.
+
+needs:    a live SSO session for the infrastructure user; one login covers every profile:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/catalog.py
+          ./aws/catalog.py --self-check   # the product road's rules on samples, no AWS call
+writes:   aws/output/catalog.txt   (untracked - see .gitignore)
+reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
+          ListProjectMemberships, ListEnvironments, GetUserProfile, GetGroupProfile,
+          SearchListings, GetListing, ListDataSources, GetDataSource, ListDataSourceRuns,
+          ListSubscriptions, ListSubscriptionRequests, ListSubscriptionGrants,
+          ListPolicyGrants, lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
+          lakeformation:ListLFTags; in each account read - lakeformation:ListPermissions and
+          cloudtrail:LookupEvents; in the account a project's environments live in -
+          datazone:Search over that project's assets and glue:GetTable; and
+          sts:GetCallerIdentity. Every one is a read.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self-check case
+          read otherwise
+"""
+
 # THE TWO ROADS AN ACCESS ACT CAN TAKE, which is what this script exists to keep apart. On the
 # catalog road a subscription or a direct Share is approved in the portal and DataZone writes a Lake
 # Formation grant in the account that owns the table (INT-23). On the register road a grant is
@@ -173,7 +174,7 @@ import re
 import sys
 from typing import NamedTuple
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -941,6 +942,7 @@ def self_check() -> int:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, flags=("--self-check",), positional=False)
     if "--self-check" in argv:
         return self_check()
     ctx = context.locate(__file__)

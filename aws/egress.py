@@ -1,23 +1,24 @@
 #!/usr/bin/env -S uv run --quiet
-# egress.py - the [E] networking half, per account, side by side: interface endpoints (with
-# their AZ count and private-DNS flag), NAT gateways and elastic IPs, every endpoint policy
-# read against step 9 (the org condition and the AWS-owned-bucket allow-list), the
-# service-per-account matrix step 8's lists produce, the hourly burn those resources cost
-# right now, and the region's endpoint service-name catalog.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/egress.py                        # every awsds-* profile
-#             ./aws/egress.py awsds-infra-prod       # only the ones named
-#             python3 aws/egress.py -                # CloudShell, ambient credentials
-#   writes:   aws/output/egress.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeVpcEndpoints, DescribeVpcEndpointServices, DescribeNatGateways,
-#             DescribeAddresses, DescribeSubnets, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""egress.py - the [E] networking half, per account, side by side: interface endpoints (with
+their AZ count and private-DNS flag), NAT gateways and elastic IPs, every endpoint policy
+read against step 9 (the org condition and the AWS-owned-bucket allow-list), the
+service-per-account matrix step 8's lists produce, the hourly burn those resources cost
+right now, and the region's endpoint service-name catalog.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/egress.py                        # every awsds-* profile
+          ./aws/egress.py awsds-infra-prod       # only the ones named
+          python3 aws/egress.py -                # CloudShell, ambient credentials
+writes:   aws/output/egress.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeVpcEndpoints, DescribeVpcEndpointServices, DescribeNatGateways,
+          DescribeAddresses, DescribeSubnets, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a per-account
 # fact whose meaning is the comparison between accounts. Step 8's endpoint list differs per account
 # role, so whether the set is right is readable only with the columns side by side - an endpoint
@@ -61,7 +62,7 @@ from __future__ import annotations
 import re
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.context import short_svc
 from awslib.report import Checks, Report, note
@@ -75,6 +76,7 @@ RATE_NAT = 0.050
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

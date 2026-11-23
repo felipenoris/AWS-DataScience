@@ -1,35 +1,36 @@
 #!/usr/bin/env -S uv run --quiet
-# datalake.py - Stage 5a's evidence, per account, side by side: the lake buckets and their
-# perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
-# crawlers), the catalog-maintenance role and its trust, the Lake Formation settings with the
-# parameters reading that defends INT-11, the registered locations on both sides of the share
-# (DL-14 for the consumers), the RAM shares and any pending invitation, the
-# consumer Athena workgroups and the derived zone (both removed 2026-08-26, D19 revised -
-# absence is the pass, DL-8/DL-9), the EFS reading (absence expected, save the home
-# filesystem a Studio domain creates for itself - the NFS requirement was withdrawn
-# 2026-08-17), and the Security Hub state. The preflight for Stage 5a, and the standing
-# regression after it.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/datalake.py                     # every awsds-* profile
-#             ./aws/datalake.py awsds-infra-data    # only the ones named
-#             python3 aws/datalake.py -             # CloudShell, ambient credentials
-#   writes:   aws/output/datalake.txt   (untracked - see .gitignore)
-#   reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
-#             GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
-#             kms:ListAliases, glue:GetDatabases, GetCrawlers, iam:GetRole, ListRoles,
-#             GetRolePolicy,
-#             lakeformation:GetDataLakeSettings, ListResources, ListLFTags,
-#             ram:GetResourceShares, GetResourceShareInvitations,
-#             athena:ListWorkGroups, GetWorkGroup, efs:DescribeFileSystems,
-#             securityhub:DescribeHub, GetEnabledStandards, DescribeSecurityHubV2,
-#             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""datalake.py - Stage 5a's evidence, per account, side by side: the lake buckets and their
+perimeter policies, the KMS aliases, the Glue catalog (databases, resource links,
+crawlers), the catalog-maintenance role and its trust, the Lake Formation settings with the
+parameters reading that defends INT-11, the registered locations on both sides of the share
+(DL-14 for the consumers), the RAM shares and any pending invitation, the
+consumer Athena workgroups and the derived zone (both removed 2026-08-26, D19 revised -
+absence is the pass, DL-8/DL-9), the EFS reading (absence expected, save the home
+filesystem a Studio domain creates for itself - the NFS requirement was withdrawn
+2026-08-17), and the Security Hub state. The preflight for Stage 5a, and the standing
+regression after it.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/datalake.py                     # every awsds-* profile
+          ./aws/datalake.py awsds-infra-data    # only the ones named
+          python3 aws/datalake.py -             # CloudShell, ambient credentials
+writes:   aws/output/datalake.txt   (untracked - see .gitignore)
+reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
+          GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
+          kms:ListAliases, glue:GetDatabases, GetCrawlers, iam:GetRole, ListRoles,
+          GetRolePolicy,
+          lakeformation:GetDataLakeSettings, ListResources, ListLFTags,
+          ram:GetResourceShares, GetResourceShareInvitations,
+          athena:ListWorkGroups, GetWorkGroup, efs:DescribeFileSystems,
+          securityhub:DescribeHub, GetEnabledStandards, DescribeSecurityHubV2,
+          organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # It is multi-profile, which aws/INDEX.md admits only for a reason: the whole subject is a
 # cross-account shape (D22). The lake and its policy live in Data Governance while every
 # legitimate reader sits in a consumer account, a share has a grantor side and a
@@ -61,7 +62,7 @@ import json
 import re
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -97,6 +98,7 @@ FSBP = "aws-foundational-security-best-practices"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

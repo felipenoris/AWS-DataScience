@@ -1,35 +1,36 @@
 #!/usr/bin/env -S uv run --quiet
-# studio.py - Stage 6's evidence, registry and runtimes side by side: the one DataZone V2
-# domain in Data Governance (a registry, so also the negative reading: no SageMaker resource
-# may exist there), its blueprint configurations with the grant that authorizes each, its
-# project profiles, the blueprint-provisioned SageMaker AI domains in each Interactive account
-# (VPC-only, private subnets, idle shutdown, the house image's pinned version), the D13
-# permissions boundary on the project roles (INT-15's mechanical half), the step 3 deny Sids in
-# the persona sets, the dev-env image registration (INT-17's mechanical half), the running
-# apps - the burn meter of the one [E] thing Terraform does not own - and the buckets a deleted
-# environment left behind.
-#
-#   needs:    a live SSO session, and nothing else:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/studio.py                      # every awsds-* profile
-#             ./aws/studio.py awsds-infra-data     # only the ones named
-#             python3 aws/studio.py -              # CloudShell, ambient credentials
-#   writes:   aws/output/studio.txt   (untracked - see .gitignore)
-#   reads:    datazone:ListDomains, GetDomain, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint, ListPolicyGrants, ListProjectProfiles, GetProjectProfile,
-#             ListProjects, GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
-#             sagemaker:ListDomains, DescribeDomain, ListTags, ListApps, ListImages,
-#             ListImageVersions,
-#             iam:ListRoles, GetRole, ListAttachedRolePolicies and ListRolePolicies on a flow
-#             environment's role (EXC-27),
-#             cloudformation:DescribeStacks, tag:GetResources, s3:GetBucketTagging,
-#             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
-#             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""studio.py - Stage 6's evidence, registry and runtimes side by side: the one DataZone V2
+domain in Data Governance (a registry, so also the negative reading: no SageMaker resource
+may exist there), its blueprint configurations with the grant that authorizes each, its
+project profiles, the blueprint-provisioned SageMaker AI domains in each Interactive account
+(VPC-only, private subnets, idle shutdown, the house image's pinned version), the D13
+permissions boundary on the project roles (INT-15's mechanical half), the step 3 deny Sids in
+the persona sets, the dev-env image registration (INT-17's mechanical half), the running
+apps - the burn meter of the one [E] thing Terraform does not own - and the buckets a deleted
+environment left behind.
+
+needs:    a live SSO session, and nothing else:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/studio.py                      # every awsds-* profile
+          ./aws/studio.py awsds-infra-data     # only the ones named
+          python3 aws/studio.py -              # CloudShell, ambient credentials
+writes:   aws/output/studio.txt   (untracked - see .gitignore)
+reads:    datazone:ListDomains, GetDomain, ListEnvironmentBlueprintConfigurations,
+          GetEnvironmentBlueprint, ListPolicyGrants, ListProjectProfiles, GetProjectProfile,
+          ListProjects, GetProject, ListEnvironments, GetEnvironment, ListSubscriptionTargets,
+          sagemaker:ListDomains, DescribeDomain, ListTags, ListApps, ListImages,
+          ListImageVersions,
+          iam:ListRoles, GetRole, ListAttachedRolePolicies and ListRolePolicies on a flow
+          environment's role (EXC-27),
+          cloudformation:DescribeStacks, tag:GetResources, s3:GetBucketTagging,
+          sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
+          GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # The subject spans accounts, so this script is multi-profile: under D26 one account holds the
 # registry and other accounts hold the compute it provisions, so "the domain is a registry, not
 # a runtime" is only readable with Data Governance and the two Interactive accounts side by
@@ -58,7 +59,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, flowrole, profiles
+from awslib import cmdline, context, flowrole, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -474,6 +475,7 @@ def judge_leftovers(
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

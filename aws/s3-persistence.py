@@ -1,34 +1,35 @@
 #!/usr/bin/env -S uv run --quiet
-# s3-persistence.py - every S3 persistence resource the infrastructure user can reach, and
-# how each one is configured, all accounts side by side.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers every profile below: the cached token is keyed by the
-#             sso-session name, not by profile or account (aws/AWS-CLI.md, "Signing in").
-#
-#   run:      ./aws/s3-persistence.py                      the infrastructure user's reach
-#             ./aws/s3-persistence.py awsds-infra-data     only the profiles named
-#             python3 aws/s3-persistence.py -              CloudShell, ambient credentials
-#   writes:   aws/output/s3-persistence.txt   (untracked - see .gitignore)
-#   reads:    s3api:ListBuckets / ListDirectoryBuckets and, per bucket, GetBucketLocation,
-#             GetBucketVersioning, GetBucketEncryption, GetPublicAccessBlock,
-#             GetBucketOwnershipControls, GetBucketPolicy, GetBucketLifecycleConfiguration,
-#             GetObjectLockConfiguration, GetBucketReplication, GetBucketLogging,
-#             GetBucketNotificationConfiguration, GetBucketWebsite, GetBucketCors,
-#             GetBucketTagging; s3control:GetPublicAccessBlock / ListAccessPoints /
-#             ListMultiRegionAccessPoints / ListStorageLensConfigurations;
-#             s3tables:ListTableBuckets; kms:ListAliases; cloudwatch:ListMetrics /
-#             GetMetricStatistics; sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call that should always work failed | 2 a check FAILED
-#
-#   cost:     nothing. Every call is a control-plane read, and the two CloudWatch calls read
-#             the free daily storage metrics S3 publishes on its own - no S3 Storage Lens
-#             advanced tier, no S3 Inventory report, nothing that bills per object.
-#
+"""s3-persistence.py - every S3 persistence resource the infrastructure user can reach, and
+how each one is configured, all accounts side by side.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers every profile below: the cached token is keyed by the
+          sso-session name, not by profile or account (aws/AWS-CLI.md, "Signing in").
+
+run:      ./aws/s3-persistence.py                      the infrastructure user's reach
+          ./aws/s3-persistence.py awsds-infra-data     only the profiles named
+          python3 aws/s3-persistence.py -              CloudShell, ambient credentials
+writes:   aws/output/s3-persistence.txt   (untracked - see .gitignore)
+reads:    s3api:ListBuckets / ListDirectoryBuckets and, per bucket, GetBucketLocation,
+          GetBucketVersioning, GetBucketEncryption, GetPublicAccessBlock,
+          GetBucketOwnershipControls, GetBucketPolicy, GetBucketLifecycleConfiguration,
+          GetObjectLockConfiguration, GetBucketReplication, GetBucketLogging,
+          GetBucketNotificationConfiguration, GetBucketWebsite, GetBucketCors,
+          GetBucketTagging; s3control:GetPublicAccessBlock / ListAccessPoints /
+          ListMultiRegionAccessPoints / ListStorageLensConfigurations;
+          s3tables:ListTableBuckets; kms:ListAliases; cloudwatch:ListMetrics /
+          GetMetricStatistics; sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call that should always work failed | 2 a check FAILED
+
+cost:     nothing. Every call is a control-plane read, and the two CloudWatch calls read
+          the free daily storage metrics S3 publishes on its own - no S3 Storage Lens
+          advanced tier, no S3 Inventory report, nothing that bills per object.
+"""
+
 # What this answers that nothing else does.
 #
 #   Three files already judge S3, and each judges one contract: tf-backends.py the Stage 2
@@ -93,7 +94,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
-from awslib import context, policydoc, profiles
+from awslib import cmdline, context, policydoc, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, note
 
@@ -321,6 +322,7 @@ class Bucket:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

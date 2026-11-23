@@ -1,21 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# org-policies.py - what governs each node right now, by Sid, with inheritance resolved,
-# plus the checks that no probe can perform.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/org-policies.py                   # awsds-infra-identity
-#             python3 aws/org-policies.py -           # no --profile: CloudShell on
-#                                                     # MANAGEMENT, as CT Admin (no uv
-#                                                     # there; bring the aws/ folder)
-#   writes:   aws/output/org-policies.txt   (untracked - see .gitignore)
-#   reads:    organizations:ListRoots, ListOrganizationalUnitsForParent, ListAccountsForParent,
-#             ListPoliciesForTarget, DescribePolicy,
-#             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""org-policies.py - what governs each node right now, by Sid, with inheritance resolved,
+plus the checks that no probe can perform.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/org-policies.py                   # awsds-infra-identity
+          python3 aws/org-policies.py -           # no --profile: CloudShell on
+                                                  # MANAGEMENT, as CT Admin (no uv
+                                                  # there; bring the aws/ folder)
+writes:   aws/output/org-policies.txt   (untracked - see .gitignore)
+reads:    organizations:ListRoots, ListOrganizationalUnitsForParent, ListAccountsForParent,
+          ListPoliciesForTarget, DescribePolicy,
+          sts:GetCallerIdentity. This script never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Section 1 carries the id of every attached document, in all four policy types: that id is
 # the argument Stage 2 step 5.5 passes to `terraform import`, and a listing that reads one
 # filter reports the documents of the other three types as absent (Lesson 13).
@@ -62,7 +63,7 @@ import os
 import sys
 from collections import deque
 
-from awslib import context, policydoc
+from awslib import cmdline, context, policydoc
 from awslib.awscli import AwsCli
 from awslib.report import Checks, Report, note
 
@@ -85,6 +86,7 @@ UNREADABLE = "(document unreadable - see section 5)"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
     cli = AwsCli(profile=profile, region=context.REGION)
     ctx = context.locate(__file__)

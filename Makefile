@@ -30,7 +30,7 @@
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
 # copied), check-copies (Stage 8 4.1: files copied across slices), model-chain.py --check (Stage 10
 # steps 5.2 and 5.4: the model chain's requests carry the settings the Workloads OU's document demands), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
-# deploy fills every variable a target stage of each application's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
+# deploy fills every variable a target stage of each application's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), pytest (aws/tests: every aws/ script answers -h, --help and an unknown option before any call), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
 # relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
@@ -59,7 +59,8 @@ help:
 	@printf '              wildcard ARNs, bootstrap parity, copied files, the workflow render,\n'
 	@printf '              slice layers, tfvars shapes, the policy index, the network doc,\n'
 	@printf '              the plan references, account ids and e-mails, provider locks, the\n'
-	@printf '              GitLab CI files, security group descriptions\n'
+	@printf '              GitLab CI files, security group descriptions, the --help of every\n'
+	@printf '              aws/ script\n'
 	@printf '  check-ou    step 9.3, OU coverage - reads the Organization. Needs an SSO session\n'
 	@printf '              as the infrastructure user on Identity: exits 2 without one, never passes\n'
 	@printf '  check-docs  the plan reference check on its own; check runs it too\n'
@@ -216,6 +217,7 @@ check:
 	         "./scripts/model-chain.py --check" \
 	         "./scripts/deploy-application.py --self-check" \
 	         "./aws/catalog.py --self-check" \
+	         "uv run --quiet pytest -q" \
 	         "./scripts/slices.py check" \
 	         "./scripts/check-tfvars-shape.py" \
 	         "./scripts/check-index.py" \

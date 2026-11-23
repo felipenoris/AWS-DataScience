@@ -1,45 +1,46 @@
 #!/usr/bin/env -S uv run --quiet
-# observability.py - Stage 12's instrument: the facts the stage keeps true, read per account side
-# by side. Every one of them is describe-shaped (step 10), so every check reads configuration:
-#
-#   OB-1  every log group this project creates carries an explicit retention (step 3.1). A group
-#         is this project's when it carries the Project tag every slice's default_tags stamps, or
-#         when its name is in the project's namespace (/awsds/, awsds-). The rest are the
-#         services' own; the ones that never expire are a note, the decision EXC-10 records.
-#   OB-2  the organization trail's bucket expires no version sooner than 90 days, nor sooner than
-#         its Object Lock retention (step 3.2, INV-14). The bucket's name is read off the trail.
-#   OB-3  every alarm has a notification target that resolves (step 2): an SNS topic of this
-#         account and Region with a confirmed subscription, a policy that admits CloudWatch, and
-#         no key CloudWatch cannot encrypt under.
-#   OB-4  an AWS Backup plan covers every volume of every [D] instance (step 8). The [D] rows are
-#         read from scripts/tfhygiene/layers.py, never listed here (Lesson 14).
-#   OB-5  each quota of step 9.1 is under 80 % of its limit.
-#
+"""observability.py - Stage 12's instrument: the facts the stage keeps true, read per account side
+by side. Every one of them is describe-shaped (step 10), so every check reads configuration:
+
+  OB-1  every log group this project creates carries an explicit retention (step 3.1). A group
+        is this project's when it carries the Project tag every slice's default_tags stamps, or
+        when its name is in the project's namespace (/awsds/, awsds-). The rest are the
+        services' own; the ones that never expire are a note, the decision EXC-10 records.
+  OB-2  the organization trail's bucket expires no version sooner than 90 days, nor sooner than
+        its Object Lock retention (step 3.2, INV-14). The bucket's name is read off the trail.
+  OB-3  every alarm has a notification target that resolves (step 2): an SNS topic of this
+        account and Region with a confirmed subscription, a policy that admits CloudWatch, and
+        no key CloudWatch cannot encrypt under.
+  OB-4  an AWS Backup plan covers every volume of every [D] instance (step 8). The [D] rows are
+        read from scripts/tfhygiene/layers.py, never listed here (Lesson 14).
+  OB-5  each quota of step 9.1 is under 80 % of its limit.
+
+needs:    a live SSO session as the infrastructure user, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/observability.py                     # every awsds-infra-* profile
+          ./aws/observability.py awsds-infra-prod    # only the ones named
+          python3 aws/observability.py -             # CloudShell, ambient credentials
+writes:   aws/output/observability.txt   (untracked - see .gitignore)
+reads:    logs:DescribeLogGroups, ListTagsForResource; cloudtrail:DescribeTrails;
+          s3:GetBucketVersioning, GetBucketObjectLockConfiguration, GetLifecycleConfiguration
+          (in the bucket's own account only); cloudwatch:DescribeAlarms;
+          sns:GetTopicAttributes; kms:DescribeKey, GetKeyPolicy; ec2:DescribeInstances,
+          DescribeVolumes, DescribeAddresses, DescribeVpcs, DescribeVpcEndpoints;
+          backup:ListBackupPlans, GetBackupPlan, ListBackupSelections, GetBackupSelection,
+          DescribeRegionSettings; dlm:GetLifecyclePolicies, GetLifecyclePolicy;
+          route53:GetAccountLimit; servicequotas:GetServiceQuota, GetAWSDefaultServiceQuota,
+          ListServiceQuotas, ListAWSDefaultServiceQuotas; sagemaker:ListProcessingJobs,
+          ListTrainingJobs, ListTransformJobs, ListEndpoints, ListApps and the Describe call of
+          each running job and endpoint; sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Steps 2 and 8 are not built. OB-3 reads `note` until some alarm measured carries an SNS action,
 # and OB-4 until the [D] rows' account holds a backup plan; from then on an alarm that notifies
 # nobody, or a volume no plan covers, is a `fail`, so a half-built step is loud (Lesson 50).
-#
-#   needs:    a live SSO session as the infrastructure user, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/observability.py                     # every awsds-infra-* profile
-#             ./aws/observability.py awsds-infra-prod    # only the ones named
-#             python3 aws/observability.py -             # CloudShell, ambient credentials
-#   writes:   aws/output/observability.txt   (untracked - see .gitignore)
-#   reads:    logs:DescribeLogGroups, ListTagsForResource; cloudtrail:DescribeTrails;
-#             s3:GetBucketVersioning, GetBucketObjectLockConfiguration, GetLifecycleConfiguration
-#             (in the bucket's own account only); cloudwatch:DescribeAlarms;
-#             sns:GetTopicAttributes; kms:DescribeKey, GetKeyPolicy; ec2:DescribeInstances,
-#             DescribeVolumes, DescribeAddresses, DescribeVpcs, DescribeVpcEndpoints;
-#             backup:ListBackupPlans, GetBackupPlan, ListBackupSelections, GetBackupSelection,
-#             DescribeRegionSettings; dlm:GetLifecyclePolicies, GetLifecyclePolicy;
-#             route53:GetAccountLimit; servicequotas:GetServiceQuota, GetAWSDefaultServiceQuota,
-#             ListServiceQuotas, ListAWSDefaultServiceQuotas; sagemaker:ListProcessingJobs,
-#             ListTrainingJobs, ListTransformJobs, ListEndpoints, ListApps and the Describe call of
-#             each running job and endpoint; sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - The CloudTrail bucket is Log Archive's, which holds no CLI profile (D33/D34). OB-2 is
@@ -61,7 +62,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, is_ambient
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -1409,6 +1410,7 @@ def select_profiles(argv: list) -> tuple:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

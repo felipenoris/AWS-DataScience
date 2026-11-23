@@ -24,6 +24,8 @@ import os
 import subprocess
 import sys
 
+from awslib import cmdline
+
 # The four types, enumerated once. `list-policies` accepts a single --filter, so this is also
 # the list of calls made.
 POLICY_TYPES = [
@@ -159,6 +161,7 @@ def run(policy_dir, profile):
 
 
 def main():
+    cmdline.check(sys.argv[1:], __doc__)
     return run(sys.argv[1], sys.argv[2])
 
 

@@ -1,8 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# guardduty.py - Stage 15's evidence, per account, side by side: the detector each account
-# holds, every protection-plan feature on each detector, and the delegated-administrator
-# registration visible from Identity.
-#
+"""guardduty.py - Stage 15's evidence, per account, side by side: the detector each account
+holds, every protection-plan feature on each detector, and the delegated-administrator
+registration visible from Identity.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/guardduty.py                  # every awsds-* profile
+          ./aws/guardduty.py awsds-infra-identity   # only the ones named
+          python3 aws/guardduty.py -          # CloudShell, ambient credentials
+writes:   aws/output/guardduty.txt   (untracked - see .gitignore)
+reads:    guardduty:ListDetectors, GetDetector,
+          organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Coverage is read across every account at once: one account silently uncovered is the
 # finding. Every protection plan but Runtime Monitoring arrives ON (Stage 15 step 0; AI
 # Protection's default is verification ii's reading) and step 3 switches them off, so an
@@ -13,19 +27,6 @@
 #
 # These checks were VP-8 in ./aws/vpn.py; they are GD-* here, and VP-8 stays RETIRED there
 # rather than renumbered - the Stage 4 log's readings cite it by that name.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/guardduty.py                  # every awsds-* profile
-#             ./aws/guardduty.py awsds-infra-identity   # only the ones named
-#             python3 aws/guardduty.py -          # CloudShell, ambient credentials
-#   writes:   aws/output/guardduty.txt   (untracked - see .gitignore)
-#   reads:    guardduty:ListDetectors, GetDetector,
-#             organizations:ListDelegatedAdministrators, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # What it cannot see, since an empty listing and a missing account look alike:
 #   - GuardDuty's org configuration (auto-enable ALL, the per-plan NONE list) lives in
@@ -44,7 +45,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -79,6 +80,7 @@ FOUNDATIONAL = ("CLOUD_TRAIL", "DNS_LOGS", "FLOW_LOGS")
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

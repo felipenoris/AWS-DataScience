@@ -1,58 +1,59 @@
 #!/usr/bin/env -S uv run --quiet
-# sandbox-ml.py - Stage 17's evidence: the machine learning a SageMaker Unified Studio project
-# offers, read in the Sandbox account. The project roles (the ML tag, the managed policy's
-# version and its create and tag statements, the D13 boundary's five statements and its
-# instance ceiling, the Tooling stack's enableNetworkIsolation), the MLflow Apps, every training
-# job against the boundary's four job settings, the Model Registry group ml-demo-xgboost, the
-# serving objects (each endpoint with its price, decision 6), the ML pipelines, the entries read
-# without being created (HyperPod, Partner AI apps) with the quotas that bound the exercise,
-# the Generative AI objects and the roles behind them, the doors a session opens (the interface
-# endpoints, the S3 gateway's allow-list, the DNS Firewall list), and CloudTrail's record of
-# who created each object, and through which door. Passes 9 and 10's applications in their
-# `dev` projects: app-ml's jobs, its leftover model, its candidate, the version it proposed and
-# its MLflow run (ML-10); app-genai's guardrail against the checkout's definition, its inference
-# profile, its two reports, the deny on its role and the account-level guardrail configuration
-# (ML-11).
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             and an AWS CLI that knows `sagemaker list-mlflow-apps`, `s3vectors`,
-#             `bedrock get-foundation-model-availability` and
-#             `bedrock list-enforced-guardrails-configuration` (2.37.12 knows all four). A CLI
-#             that does not fails those calls into section 15, and the checks that needed them
-#             say so.
-#   run:      ./aws/sandbox-ml.py                        # the Sandbox profile
-#             ./aws/sandbox-ml.py awsds-infra-sandbox-1  # the same, named
-#             python3 aws/sandbox-ml.py -                # CloudShell, ambient
-#   writes:   aws/output/sandbox-ml.txt, and each pipeline's live definition under
-#             aws/output/sandbox-ml/ (untracked - see .gitignore)
-#   reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, GetPolicy,
-#             GetPolicyVersion;
-#             kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
-#             DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListProcessingJobs,
-#             DescribeProcessingJob, ListModelPackageGroups,
-#             DescribeModelPackageGroup, ListModelPackages, DescribeModelPackage, ListEndpoints,
-#             DescribeEndpoint, DescribeEndpointConfig,
-#             ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
-#             DescribeTransformJob, ListPipelines, DescribePipeline, ListPipelineExecutions,
-#             ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
-#             ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas,
-#             ListRequestedServiceQuotaChangeHistory;
-#             bedrock:ListGuardrails, GetGuardrail, ListEvaluationJobs,
-#             GetFoundationModelAvailability, ListTagsForResource, ListInferenceProfiles,
-#             ListEnforcedGuardrailsConfiguration; bedrock-agent (bedrock:) ListKnowledgeBases,
-#             GetKnowledgeBase,
-#             ListDataSources, ListAgents, ListPrompts, ListFlows; aoss:ListCollections;
-#             s3vectors:ListVectorBuckets; lambda:ListFunctions; ec2:DescribeSubnets,
-#             DescribeSecurityGroups, DescribeVpcEndpoints; route53resolver:
-#             ListFirewallDomainLists, ListFirewallDomains; cloudwatch:ListMetrics,
-#             GetMetricStatistics; s3api:HeadObject, ListObjectsV2; s3:GetObject (`aws s3 cp`
-#             to stdout, or to a temporary folder for an archive's hash); cloudtrail:LookupEvents;
-#             sts:GetCallerIdentity. It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""sandbox-ml.py - Stage 17's evidence: the machine learning a SageMaker Unified Studio project
+offers, read in the Sandbox account. The project roles (the ML tag, the managed policy's
+version and its create and tag statements, the D13 boundary's five statements and its
+instance ceiling, the Tooling stack's enableNetworkIsolation), the MLflow Apps, every training
+job against the boundary's four job settings, the Model Registry group ml-demo-xgboost, the
+serving objects (each endpoint with its price, decision 6), the ML pipelines, the entries read
+without being created (HyperPod, Partner AI apps) with the quotas that bound the exercise,
+the Generative AI objects and the roles behind them, the doors a session opens (the interface
+endpoints, the S3 gateway's allow-list, the DNS Firewall list), and CloudTrail's record of
+who created each object, and through which door. Passes 9 and 10's applications in their
+`dev` projects: app-ml's jobs, its leftover model, its candidate, the version it proposed and
+its MLflow run (ML-10); app-genai's guardrail against the checkout's definition, its inference
+profile, its two reports, the deny on its role and the account-level guardrail configuration
+(ML-11).
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          and an AWS CLI that knows `sagemaker list-mlflow-apps`, `s3vectors`,
+          `bedrock get-foundation-model-availability` and
+          `bedrock list-enforced-guardrails-configuration` (2.37.12 knows all four). A CLI
+          that does not fails those calls into section 15, and the checks that needed them
+          say so.
+run:      ./aws/sandbox-ml.py                        # the Sandbox profile
+          ./aws/sandbox-ml.py awsds-infra-sandbox-1  # the same, named
+          python3 aws/sandbox-ml.py -                # CloudShell, ambient
+writes:   aws/output/sandbox-ml.txt, and each pipeline's live definition under
+          aws/output/sandbox-ml/ (untracked - see .gitignore)
+reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, GetPolicy,
+          GetPolicyVersion;
+          kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
+          DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListProcessingJobs,
+          DescribeProcessingJob, ListModelPackageGroups,
+          DescribeModelPackageGroup, ListModelPackages, DescribeModelPackage, ListEndpoints,
+          DescribeEndpoint, DescribeEndpointConfig,
+          ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
+          DescribeTransformJob, ListPipelines, DescribePipeline, ListPipelineExecutions,
+          ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
+          ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas,
+          ListRequestedServiceQuotaChangeHistory;
+          bedrock:ListGuardrails, GetGuardrail, ListEvaluationJobs,
+          GetFoundationModelAvailability, ListTagsForResource, ListInferenceProfiles,
+          ListEnforcedGuardrailsConfiguration; bedrock-agent (bedrock:) ListKnowledgeBases,
+          GetKnowledgeBase,
+          ListDataSources, ListAgents, ListPrompts, ListFlows; aoss:ListCollections;
+          s3vectors:ListVectorBuckets; lambda:ListFunctions; ec2:DescribeSubnets,
+          DescribeSecurityGroups, DescribeVpcEndpoints; route53resolver:
+          ListFirewallDomainLists, ListFirewallDomains; cloudwatch:ListMetrics,
+          GetMetricStatistics; s3api:HeadObject, ListObjectsV2; s3:GetObject (`aws s3 cp`
+          to stdout, or to a temporary folder for an archive's hash); cloudtrail:LookupEvents;
+          sts:GetCallerIdentity. It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # One profile: everything Stage 17 creates is in the Sandbox account - the project and its
 # roles, the jobs, the registry, the endpoints, the pipelines, the MLflow App and the Bedrock
 # objects - so awsds-infra-sandbox-1 (the infrastructure user, InfrastructureAccess in Sandbox)
@@ -89,7 +90,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from awslib import bedrockscope, context, flowrole, profiles
+from awslib import bedrockscope, cmdline, context, flowrole, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -598,6 +599,7 @@ def arn_region(arn: str | None) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

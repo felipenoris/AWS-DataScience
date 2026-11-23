@@ -32,6 +32,10 @@ AWS; that one photographs the public DNS the proxy's allow-lists depend on, read
 `egress/` is `[E]` and down most of the time, and the check matters before the slice is brought up. Its
 two identity columns below therefore read *none*.
 
+Every script here and in `probes/` answers `-h` or `--help` with its usage, the module docstring, and runs
+nothing: no `aws` call, no login, no snapshot. An option it does not take prints the usage on stderr and
+exits 2, also before any call ([`awslib/cmdline.py`](awslib/cmdline.py)).
+
 ## The scripts
 
 | Script | SSO user signed in | Profile it runs as | Writes | Captures |
@@ -994,6 +998,10 @@ deviation still fails loudly.
 Keep the shape, so that one file explains all of them:
 
 - **Read-only.** A script that changes something does not belong in `aws/`.
+- **Call `cmdline.check(argv, __doc__, ...)` first** in the entry point, declaring every option the script
+  takes, and open the file with a docstring that names the arguments: it is the usage `--help` prints.
+  `aws/tests/` fails a program that answers `-h`, `--help` or an unknown option any other way, or that
+  calls out before answering (`uv run pytest`, part of `make check`).
 - **Build on [`awslib`](awslib/__init__.py)**, the package beside the scripts: `context` (repo root, output
   dir, the CloudShell fallback), `awscli` (the CLI as a subprocess, with `run`'s capture/tolerate
   semantics), `report` (sections, `column -t` tables, the failed-calls log), `profiles` (discovery and the

@@ -1,55 +1,56 @@
 #!/usr/bin/env -S uv run --quiet
-# vending.py - Stage 14's instrument: whether a business unit's Sandbox is fully vended, read per
-# unit from the places a vend writes. A vend fails as an account that is 90 % configured, and each
-# check is one of those places, parameterised by unit:
-#
-#   VN-1  the account is ACTIVE in `Sandboxes`, nested under `Interactive`, and neither the account
-#         nor the OU carries a policy of its own (D37, INV-11): per policy type the root enables,
-#         the type's AWS-managed full-access document and nothing else. In a run over every
-#         declared unit, every ACTIVE account in `Sandboxes` is one of them.
-#   VN-2  the unit's CIDR is its `VPC_CIDRS` row, inside `SANDBOX_SUPERNET`, overlapping no other
-#         row, and the unit's VPC carries exactly that range under the Name tag the hub's slices
-#         resolve it by.
-#   VN-3  every `PEERINGS` row the unit is an end of is an `active` connection, routed from each
-#         of the unit's private route tables and back to each of its private subnets (NT-11's
-#         rule, per unit); the unit holds no other peering, and names the same peer slices as
-#         the hand-built unit.
-#   VN-4  the unit's child zone `<env>.awsds.internal` is associated with the unit's VPC and the
-#         hub's and no other, its authorization toward the hub still exists (INT-22), the unit's
-#         VPC resolves the apex and its child zone and nothing else, and the apex's authorization
-#         toward the unit's VPC still exists.
-#   VN-5  the proxy admits the unit's range: a TCP/3128 rule on its security group, and a plane of
-#         the allow-list parameter whose source is that range, in `allowlist` mode (PX-1's and
-#         PX-3's rules, per unit).
-#   VN-6  the group holding `DataScientistAccess` on the unit holds no other seat in `Sandboxes`,
-#         and a unit's own group holds no seat anywhere else. The shared
-#         `sso-group-data-scientists` is the unit's principal while one unit is declared, and its
-#         seats past the graduation boundary (`Workloads`) stay on it by design
-#         (docs/ORGANIZATION.md, the dagger under Assignments): a note, not a failure, until the
-#         second unit, when the shared group holding a unit's seat is the failure (Lesson 50).
-#
+"""vending.py - Stage 14's instrument: whether a business unit's Sandbox is fully vended, read per
+unit from the places a vend writes. A vend fails as an account that is 90 % configured, and each
+check is one of those places, parameterised by unit:
+
+  VN-1  the account is ACTIVE in `Sandboxes`, nested under `Interactive`, and neither the account
+        nor the OU carries a policy of its own (D37, INV-11): per policy type the root enables,
+        the type's AWS-managed full-access document and nothing else. In a run over every
+        declared unit, every ACTIVE account in `Sandboxes` is one of them.
+  VN-2  the unit's CIDR is its `VPC_CIDRS` row, inside `SANDBOX_SUPERNET`, overlapping no other
+        row, and the unit's VPC carries exactly that range under the Name tag the hub's slices
+        resolve it by.
+  VN-3  every `PEERINGS` row the unit is an end of is an `active` connection, routed from each
+        of the unit's private route tables and back to each of its private subnets (NT-11's
+        rule, per unit); the unit holds no other peering, and names the same peer slices as
+        the hand-built unit.
+  VN-4  the unit's child zone `<env>.awsds.internal` is associated with the unit's VPC and the
+        hub's and no other, its authorization toward the hub still exists (INT-22), the unit's
+        VPC resolves the apex and its child zone and nothing else, and the apex's authorization
+        toward the unit's VPC still exists.
+  VN-5  the proxy admits the unit's range: a TCP/3128 rule on its security group, and a plane of
+        the allow-list parameter whose source is that range, in `allowlist` mode (PX-1's and
+        PX-3's rules, per unit).
+  VN-6  the group holding `DataScientistAccess` on the unit holds no other seat in `Sandboxes`,
+        and a unit's own group holds no seat anywhere else. The shared
+        `sso-group-data-scientists` is the unit's principal while one unit is declared, and its
+        seats past the graduation boundary (`Workloads`) stay on it by design
+        (docs/ORGANIZATION.md, the dagger under Assignments): a note, not a failure, until the
+        second unit, when the shared group holding a unit's seat is the failure (Lesson 50).
+
+needs:    a live SSO session as the infrastructure user; one login covers every profile:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/vending.py              # every unit backend.py declares
+          ./aws/vending.py sandbox      # only the account folders named
+writes:   aws/output/vending.txt   (untracked - see .gitignore)
+reads:    in Identity - organizations:ListRoots, ListOrganizationalUnitsForParent,
+          ListAccountsForParent, DescribeAccount, DescribeOrganizationalUnit, ListParents,
+          ListPoliciesForTarget; sso-admin:ListInstances, ListPermissionSets,
+          DescribePermissionSet, ListAccountAssignments, ListAccountAssignmentsForPrincipal;
+          identitystore:DescribeGroup. In each unit and in Production - ec2:DescribeVpcs,
+          DescribeSubnets, DescribeRouteTables, DescribeVpcPeeringConnections;
+          route53:ListHostedZones, GetHostedZone, ListHostedZonesByVPC,
+          ListVPCAssociationAuthorizations. In Production - ssm:GetParameter,
+          ec2:DescribeSecurityGroups. And sts:GetCallerIdentity. It never creates, updates
+          or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Every expectation is generated from scripts/tfhygiene/backend.py (VPC_CIDRS, PEERINGS,
 # VPN_HOST_SLICE, PROFILES, ENV_TOKENS, SMUS_MEMBERS), read as text: aws/ imports nothing from
 # scripts/. A vend adds rows there, and this file reads them.
-#
-#   needs:    a live SSO session as the infrastructure user; one login covers every profile:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/vending.py              # every unit backend.py declares
-#             ./aws/vending.py sandbox      # only the account folders named
-#   writes:   aws/output/vending.txt   (untracked - see .gitignore)
-#   reads:    in Identity - organizations:ListRoots, ListOrganizationalUnitsForParent,
-#             ListAccountsForParent, DescribeAccount, DescribeOrganizationalUnit, ListParents,
-#             ListPoliciesForTarget; sso-admin:ListInstances, ListPermissionSets,
-#             DescribePermissionSet, ListAccountAssignments, ListAccountAssignmentsForPrincipal;
-#             identitystore:DescribeGroup. In each unit and in Production - ec2:DescribeVpcs,
-#             DescribeSubnets, DescribeRouteTables, DescribeVpcPeeringConnections;
-#             route53:ListHostedZones, GetHostedZone, ListHostedZonesByVPC,
-#             ListVPCAssociationAuthorizations. In Production - ssm:GetParameter,
-#             ec2:DescribeSecurityGroups. And sts:GetCallerIdentity. It never creates, updates
-#             or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # Every object it reads is [P] (foundation/, networking/, the identity plane), so a run with the
 # environment down is a full reading.
@@ -74,7 +75,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from awslib import cidr, context, profiles
+from awslib import cidr, cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -1385,6 +1386,7 @@ class Unit:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

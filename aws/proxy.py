@@ -1,33 +1,34 @@
 #!/usr/bin/env -S uv run --quiet
-# proxy.py - Stage 6c's evidence for the estate's single internet exit: the Squid host ([D]) with the
-# public address it wears while it runs, the [P] anchors beside it (the security group, the allow-list
-# parameter, the access log group), the order of its `http_access` rules, and whether the config
-# actually running on the host is the one this repository committed.
-#
+"""proxy.py - Stage 6c's evidence for the estate's single internet exit: the Squid host ([D]) with the
+public address it wears while it runs, the [P] anchors beside it (the security group, the allow-list
+parameter, the access log group), the order of its `http_access` rules, and whether the config
+actually running on the host is the one this repository committed.
+
+needs:    a live SSO session, and nothing else:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/proxy.py                      # the two profiles it needs (see below)
+          ./aws/proxy.py awsds-infra-prod     # only the ones named
+          ./aws/proxy.py --on-host            # also read inside the host (see below)
+writes:   aws/output/proxy.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
+          ssm:GetParameter, logs:DescribeLogGroups, DescribeSubscriptionFilters,
+          DescribeExportTasks, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything - see the next line for the
+          single, typed exception.
+sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
+          GetCommandInvocation, and SendCommand is a write API - it creates a Command, is a
+          mutating CloudTrail event, and runs code on an instance - even though every
+          command it carries is a read. It is a flag and not a default so that
+          `./aws/proxy.py` stays safe to fire at anything. What it buys is PX-3: the
+          squid.conf the host is serving, which no describe call can reach.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # The shape is ./aws/vpn.py's: same two-mode structure, same --on-host fence, same "an empty
 # answer and a failed answer are different things" discipline. The two files are the instruments
 # for D38's two hosts - one way in, one way out.
-#
-#   needs:    a live SSO session, and nothing else:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/proxy.py                      # the two profiles it needs (see below)
-#             ./aws/proxy.py awsds-infra-prod     # only the ones named
-#             ./aws/proxy.py --on-host            # also read inside the host (see below)
-#   writes:   aws/output/proxy.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeInstances, DescribeAddresses, DescribeSecurityGroups,
-#             ssm:GetParameter, logs:DescribeLogGroups, DescribeSubscriptionFilters,
-#             DescribeExportTasks, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything - see the next line for the
-#             single, typed exception.
-#   sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
-#             GetCommandInvocation, and SendCommand is a write API - it creates a Command, is a
-#             mutating CloudTrail event, and runs code on an instance - even though every
-#             command it carries is a read. It is a flag and not a default so that
-#             `./aws/proxy.py` stays safe to fire at anything. What it buys is PX-3: the
-#             squid.conf the host is serving, which no describe call can reach.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # It reads the proxy's account alone. PX-5, which compared the proxy's Elastic IP with the
 # permission sets in Identity, is retired rather than renumbered: after D39 no policy names the
@@ -59,7 +60,7 @@ import re
 import sys
 import time
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -321,6 +322,7 @@ def plane_key(name: str) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, flags=("--on-host",))
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

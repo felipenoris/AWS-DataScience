@@ -1,19 +1,20 @@
 #!/usr/bin/env -S uv run --quiet
-# bedrock-scope.py - the Bedrock scope this repository DECLARES, against what AWS actually does.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/bedrock-scope.py                       # sandbox
-#             ./aws/bedrock-scope.py awsds-infra-staging   # any awsds-* profile
-#   writes:   aws/output/bedrock-scope.txt   (untracked - see .gitignore)
-#   reads:    bedrock:ListInferenceProfiles for the SYSTEM_DEFINED type, GetInferenceProfile,
-#             GetFoundationModel, GetFoundationModelAvailability, GetAccountDataRetention;
-#             account:ListRegions; sts:GetCallerIdentity. Every one is a read: this script creates
-#             nothing, changes nothing and invokes no model.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""bedrock-scope.py - the Bedrock scope this repository DECLARES, against what AWS actually does.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/bedrock-scope.py                       # sandbox
+          ./aws/bedrock-scope.py awsds-infra-staging   # any awsds-* profile
+writes:   aws/output/bedrock-scope.txt   (untracked - see .gitignore)
+reads:    bedrock:ListInferenceProfiles for the SYSTEM_DEFINED type, GetInferenceProfile,
+          GetFoundationModel, GetFoundationModelAvailability, GetAccountDataRetention;
+          account:ListRegions; sts:GetCallerIdentity. Every one is a read: this script creates
+          nothing, changes nothing and invokes no model.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # WHY THIS FILE EXISTS. Stage 6e's scoped set is ONE LIST WITH SEVERAL CONSUMERS, and two of the
 # facts it rests on are AWS's rather than ours:
 #
@@ -63,7 +64,7 @@ import json
 import sys
 from datetime import UTC, datetime
 
-from awslib import context, inferenceprofiles, profiles
+from awslib import cmdline, context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.bedrockscope import (
     GRANT_VARS,
@@ -83,6 +84,7 @@ DEFAULT_PROFILE = "awsds-infra-sandbox-1"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
