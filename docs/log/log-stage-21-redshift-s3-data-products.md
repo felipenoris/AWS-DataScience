@@ -1570,3 +1570,18 @@ held credentials. The revocation and the deletions ran in the Data Scientist Use
 - **[Claude] The spaces**: *Code Spaces*, the card's *Delete*, the word *confirm*: eighth's
   `default-28f1b390-…` in `d-p6gthxc82ckg` at about 17:41, test's in `d-lfgbdrjncmsu` at about 17:42, both
   read *Deleting* and then *"You don't have any code spaces"*. Both portal tabs closed at 17:43.
+- **[Claude] The trail, re-read at 17:50** through the CLI's cached role credentials, the SSO token having
+  expired at 17:15:22: Sandbox's `GetDataAccess` at 17:11:03 carries `AccessDenied`, *"You do not have READ
+  permissions to the requested S3 Prefix"*, the grant register's wording, `durationSeconds` 900. Between the
+  last answered vend (17:10:27) and that refusal, the only S3 Control events are AWS Config's
+  `GetAccessGrant` and `ListTagsForResource` at 17:10:40; `DeleteAccessGrant` follows at 17:11:14, so no
+  write precedes the refusal in the trail. Data Governance's: the product's `UNPUBLISH` change set at
+  17:24:52, `DeleteListing` of `cuilocp2vj9zbk` at 17:27:16 in the user's session (and one by
+  `datazone.amazonaws.com` the same second), `DeleteDataProduct` at 17:27:17, the S3 asset's `UNPUBLISH` at
+  17:28:01, `DeleteAsset` at 17:28:25 and 17:29:11. `get-asset` on both ids and `get-data-product` answer
+  `ResourceNotFoundException`.
+- **[Claude] What stays**: S3 Access Grants holds the five baseline grants and the seven locations,
+  `ef8251ea` (`eighth-experimentation`'s folder) among them. The producer's project role reads
+  `MaxSessionDuration` 3600; a vend longer than 3600 s was not attempted. The projects bucket is versioned,
+  its rule `expire-noncurrent-versions` at 90 days, so the 27 noncurrent versions left by item 5 expire in
+  February 2027.
