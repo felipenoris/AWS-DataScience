@@ -5004,3 +5004,25 @@ the same day. Times UTC.*
   user's word: `SUCCESS`, 3 assets added, `lab.trades_hot` as `cgpzdjxcumuzrk`,
   `amazon.datazone.RedshiftTableAssetType` revision 18, unlisted. *Publish* waits for the user's word with
   Stage 21's 2.3.
+
+## 2026-11-23 — 5.4 on §N.10's day 2: 5.1's grants revoked and the copy dropped
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Pode avançar no
+5.4"*, answering whether to run 5.4 with Stage 21's rollback item 5 before the lowering. The SQL as the Sandbox
+warehouse's admin through the Data API; Lake Formation as the infrastructure user with `InfrastructureAccess`,
+`awsds-infra-prod` and `awsds-infra-sandbox-1`. Times UTC.*
+
+- **[Claude] The reads**, 01:57:00: user 103 is `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`
+  (`svv_user_info`), the one holder of `USAGE` on `awsdatacatalog` (`svv_database_privileges`); `lab.trades_hot`
+  present, and no materialized view in `sandbox` (`svv_mv_info`), 5.2's never having been created (`SUP-459`).
+- **[Claude] The SQL half**: `REVOKE USAGE ON DATABASE awsdatacatalog FROM
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 01:57:31, `FINISHED`; `svv_database_privileges`
+  holds no row for `awsdatacatalog` after it.
+- **[Claude] The copy**: `DROP TABLE lab.trades_hot` at 01:57:42, after Stage 21's view and tables over it
+  (Stage 21's log, rollback item 5).
+- **[Claude] The Lake Formation half**: `DESCRIBE` and `SELECT` on Production's `app_etl.trades_notional`
+  revoked from `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` at 01:58:24, and `DESCRIBE` on Sandbox's link
+  `glue_db_blerpkhn9nj7o0.trades_notional` at 01:58:25. Read back: Production's table keeps the deployment
+  project role's grants and DataZone's two `IAMPrincipals` `SELECT`, 4.12's and Stage 20 5.0's subscriptions;
+  the link keeps DataZone's `IAMPrincipals` `DESCRIBE` and its creator's, the project role's.
+- **What 5.4 leaves**: `make down`, with the lowering (N.10.5), and 4.12's revocation.

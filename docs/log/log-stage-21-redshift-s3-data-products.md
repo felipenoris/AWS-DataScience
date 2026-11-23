@@ -1124,3 +1124,101 @@ as the warehouse's admin through the Data API; the reads as the infrastructure u
   setting as found. The lineage nodes stay: `sandbox.lab.trades_hot_by_day`'s is read after the removal.
   `lab.trades_hot_by_day` (owner `dbadmin`, 10 rows) and `lab.trades_hot_daily` (10 rows after the `INSERT`) wait
   for Stage 19's step 7.
+
+## 2026-11-23 — §N.10's day 2: pass 4, the federated catalog and its removal; rollback item 5
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Autorizo o
+passo 4. Login infra sso feito."*, and for rollback item 5 *"Pode avançar no 5.4"*, answering whether to run Stage
+19's 5.4 with that item before the lowering. The portal's acts in the Data Scientist User's Chrome session; the SQL
+as the warehouse's admin through the Data API; the rest as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), `Data Governance` (`awsds-infra-data`) and `Production`
+(`awsds-infra-prod`). Times UTC.*
+
+- **[Claude] 4.1, the registration**: `register-namespace` at 01:23:29 answered `{"Status": "Registering"}`.
+  `describe-data-shares-for-consumer` by the catalog's ARN listed nothing, while the producer's
+  `describe-data-shares` held the `INTERNAL` datashare `…/ds_internal_namespace` associated to
+  `DataCatalog/<account>`, `AUTHORIZED`. `associate-data-share-consumer` to the catalog's ARN at 01:26:51 made it
+  `ACTIVE`. Lake Formation's `register-resource` of the datashare at 01:27:07: `HybridAccessEnabled` and
+  `WithPrivilegedAccess` false, `VerificationStatus` `NOT_VERIFIED`. `glue create-catalog` `stage21_warehouse`
+  at 01:27:09, its `FederatedCatalog` on `aws:redshift`, `CreateTime` 01:27:10, `aws:PermissionsModel`
+  `LAKEFORMATION`. `get-catalogs --parent-catalog-id … --recursive` is refused, *"GetCatalogsRecursive is
+  supported only at the account level"*; without `--recursive` it lists a child catalog per database, `warehouse`,
+  `dev` and `sandbox`. `sandbox` holds the databases `public` and `lab`, and `lab` six tables: `trades_hot` (6
+  columns), `trades_hot_daily` (2), `trades_hot_by_desk` (3, `TableType` `Table` where Redshift holds a view),
+  `hello_jupyter_via_access` (3), `hello` (2) and `trades_hot_by_day` (3).
+- **[Claude] The catalog's grants**: Lake Formation lists the creator's `InfrastructureAccess` alone, `ALL`,
+  `ALTER`, `CREATE_CATALOG`, `CREATE_DATABASE`, `DESCRIBE` and `DROP` with grant option on the parent catalog;
+  nothing on the child catalog or on `lab`, and no `IAMAllowedPrincipals`. Verification x's first half: no.
+- **[Claude] 4.2**: `DESCRIBE` and `SELECT` on `stage21_warehouse/sandbox`'s `lab.trades_hot` to
+  `eighth-experimentation`'s project role at 01:27:58, read back.
+- **[Claude] 4.5's two applies on**, from this branch, which holds pull requests #323 and #363:
+  `sandbox/warehouse/` with `all_projects_tag_enabled` and `data_transfer_role_enabled` true, *"Plan: 2 to
+  add"*, the role `awsds-sandbox-warehouse-data-transfer` and its inline policy, applied 01:29:46 to 01:29:57 and
+  re-planned *"No changes."* at 01:30:15. `sandbox/data/`, initialised in the worktree, with
+  `data_transfer_key_statement_enabled` true: *"Plan: 0 to add, 1 to change, 0 to destroy."*, the data key's
+  policy gaining `GenerateDataKeyDecryptDataTransferRole` (`kms:GenerateDataKey` and `kms:Decrypt` through S3 to
+  the role), applied 01:31:00 to 01:31:15.
+- **[Claude] 4.3, Redshift through the catalog**: the Query editor's data explorer lists the granted objects
+  alone, `stage21_warehouse` → `sandbox` → `lab` → *tables (1)* `trades_hot`, *views (0)*. The table's menu
+  offers *Preview data*, *Copy name* and *Refresh*, and *Preview data* opens an Athena cell, never a Redshift
+  one. On `redshift-serverless.redshift`, database `sandbox`, `select * from
+  "sandbox@stage21_warehouse"."lab"."trades_hot" limit 10` answered *ERROR: "sandbox@stage21_warehouse" does not
+  exist*, with the toast `autocompleteMsg.getMetadataErrorAccessDenied`. The same session, `current_user`
+  `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, reads four databases in `svv_redshift_databases`:
+  `dev`, `sandbox` and `warehouse` local, `governed_trades` *shared via data catalog*; `show databases from data
+  catalog` gives one, `glue_db_blerpkhn9nj7o0`. No read ran, so `sys_query_history` holds no `ComputeSeconds`
+  for one. Verification x: no.
+- **[Claude] 4.6 before data lake access**: Athena's runs of the preview at 01:31:20 and 01:32:19 failed
+  *"GENERIC_INTERNAL_ERROR: No scheme for file system location: trades_hot"*.
+- **[Claude] 4.5, data lake access**: `get-catalog` first (Lesson 60). `update-catalog` with the whole input was
+  refused at 01:39:09, *"CatalogCustomProperties and IcebergOptimizationProperties can only be present for root
+  catalog."*, the input carrying the `CustomProperties` that `get-catalog` returns; without them it passed at
+  01:39:21, `DataLakeAccess` true and the transfer role, and the read-back kept `aws:PermissionsModel`. The
+  catalog then carried `KmsKey` `AWS_OWNED_KMS_KEY`, `ManagedWorkgroupName` `<account>:stage21_warehouse`,
+  `RedshiftDatabaseName` `dev` and `ManagedWorkgroupStatus` `CREATING`, `AVAILABLE` at 01:40:01. `redshift-serverless
+  list-workgroups` and `list-namespaces` list `awsds-sandbox-warehouse` alone and `describe-clusters` nothing;
+  `list-managed-workgroups` lists the managed workgroup, created 01:39:21.682, its `sourceArn` the catalog, with
+  no capacity field. Sandbox's trail holds no creation of it by 01:44, only reads. No cluster was created, so
+  `DenyRedshiftProvisionedClusters` had nothing to refuse.
+- **[Claude] 4.6 with data lake access**: the preview at 01:40:59 and 01:41:51 failed *"GENERIC_INTERNAL_ERROR:
+  Malformed request: ERROR: "sandbox@stage21_warehouse" does not exist"*, 5,956 and 6,406 ms of engine time, 0
+  bytes scanned: the name and the answer of 4.3. Each run left the session's `GetManagedWorkgroup` calls in the
+  trail, invoked by `redshift-data.amazonaws.com`. A diagnostic outside 4.2's text, `DESCRIBE` on the catalog
+  `stage21_warehouse/sandbox` and on `lab` to the project role, 01:43:09 to 01:43:12, changed nothing: the run at
+  01:43:19 failed the same. As the admin, `svv_datashares` and `svv_datashare_objects` list no `ds_internal`
+  share. Verification xii's Athena half: no.
+- **[Claude] 4.4, the data source**: `stage21-federated-lab` (`cpsozetz63bs7k`), *AWS Glue (Lakehouse)* on
+  `project.default_lakehouse`, created 01:46:29 with *Enter the catalog name* `stage21_warehouse/sandbox`, which
+  the review reads `<account>:stage21_warehouse/sandbox`; the database list offered `lab`; *Include \**, publish
+  *No*, business names off, data quality on. *Import data lineage* was left checked as the form opened, the
+  setting being the connection's. Run `5boqoxlhwbniq8`, on demand, 01:46:41 to 01:46:44, `SUCCESS`, one asset
+  added, *Lineage import status: Completed*. The asset `dtbux9ndboiz9s`, `trades_hot`, type *Glue Table*, shown
+  `stage21_warehouse.lab`; its form *AWS Glue table* holds the catalog id `<account>:stage21_warehouse/sandbox`, the
+  table ARN `arn:aws:glue:us-west-2:<account>:table/stage21_warehouse/sandbox/lab/trades_hot`, six columns and a
+  *Federated Table* block (`lab`, `trades_hot`, connection `aws:redshift`). Its source identifier is that Glue
+  ARN, so it does not meet pass 3's lineage nodes, named by the Redshift ARN. `GetAsset` as Data Governance's
+  `InfrastructureAccess` answered *"User is not permitted to perform operation: GetAsset"*, a non-member's
+  refusal. The publish, request and approval half was not run, for the hour. Verification xi: the table imports,
+  as a Glue table; the subscription is unmeasured.
+- **[Claude] 4.8, the removal**: the asset deleted in the portal, then the data source (*"Data source
+  deleted."*; `GetDataSource` not found at 01:52:25). `update-catalog` with `DataLakeAccess` false at 01:48:49:
+  the access properties gone, `list-managed-workgroups` empty at 01:49:05. `delete-catalog` at 01:49:05,
+  `get-catalog` *"Catalog not found."*; `deregister-resource` at 01:49:08, `describe-resource` *"Entity not
+  found"*; `disassociate-data-share-consumer` at 01:49:23; `deregister-namespace` at 01:49:24, *"Deregistering"*,
+  the datashare still `AUTHORIZED` to `DataCatalog/<account>` five seconds later and gone at 01:52:25. The
+  orchestrating session was told before the applies. `sandbox/data/` off: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, applied 01:51:04 to 01:51:20, the key policy back to `EnableKeyAdministrationInThisAccount`,
+  `AllowSandboxLakeAccessRoleViaS3` and `AllowRedshiftServerlessViaServiceInThisAccount`. `sandbox/warehouse/` off:
+  *"Plan: 0 to add, 0 to change, 2 to destroy."*, applied 01:51:53 to 01:52:03, `get-role` `NoSuchEntity`. Both
+  re-planned *"No changes."* by 01:53:11; `glue get-catalogs` lists none, and Lake Formation no datashare. The
+  first `sandbox/data/` plan, at 01:50:10, had failed *"No valid credential sources found"*, `AWS_PROFILE` unset.
+- **[Claude] The closing reads**, 01:53:11: `awsds-sandbox-warehouse` `AVAILABLE` at 4 RPU, no cluster;
+  `warehouse.py` `WH-8` green, *"1 namespace(s), 1 workgroup(s), all expected"*, and `WH-9` reading
+  `eighth-experimentation`'s `redshift-serverless.redshift` with `lineageSync` off.
+- **[Claude] Rollback item 5**, after Stage 19 5.4's `REVOKE` (that stage's log): `lab` read at 01:57:00, six
+  relations, `trades_hot_by_desk` the view, no `trades_from_lake` and no materialized view. `DROP VIEW
+  lab.trades_hot_by_desk` at 01:57:33, then `DROP TABLE` of `lab.trades_hot_daily`, `lab.trades_hot_by_day` and
+  `lab.trades_hot`, each `FINISHED` by 01:57:42; `lab` keeps `hello` and `hello_jupyter_via_access` (6h 6.4).
+- **What stays**: the data product `sandbox-trades-hot`, its listing and its assets stay published over the
+  dropped relations, with the source `sandbox-lab-trades-hot`, rollback item 1's second half. Pass 5 and the bill
+  of the managed workgroup's nine minutes (6.5) are owed.

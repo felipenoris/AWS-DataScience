@@ -1400,6 +1400,20 @@ entry is still true is the reading.
   release whose cache classifies each table through `get_table_type` would fail the build as well. Where:
   `log-stage-20-dbt-lineage.md`, 2026-11-22 (5.1).
 
+- `SUP-474` **Glue's `UpdateCatalog` refuses on a federated catalog the `CustomProperties` its `GetCatalog`
+  returns, and data lake access creates a Redshift Serverless workgroup that only `ListManagedWorkgroups` shows**
+  (measured 2026-11-23 in Sandbox, Stage 21's 4.5 and 4.8). The catalog `stage21_warehouse`, federated over the
+  Sandbox namespace's datashare, reads back `CatalogProperties.CustomProperties` `{"aws:PermissionsModel":
+  "LAKEFORMATION"}`. An `UpdateCatalog` passing the whole `CatalogInput` with them, as Lesson 60 asks, is refused:
+  *"CatalogCustomProperties and IcebergOptimizationProperties can only be present for root catalog."*. Without
+  them it succeeds, and the property stays. With `DataLakeAccess` true and a data transfer role the catalog reads
+  `KmsKey` `AWS_OWNED_KMS_KEY`, `ManagedWorkgroupName` `<account>:<catalog>`, `RedshiftDatabaseName` `dev` and
+  `ManagedWorkgroupStatus` `CREATING`, `AVAILABLE` within 40 seconds. The workgroup is absent from
+  `ListWorkgroups` and `ListNamespaces`; `ListManagedWorkgroups` lists it with its creation time, its `sourceArn`
+  the catalog, and no capacity field; the account's trail records no creation of it. `DataLakeAccess` false
+  removes it within 16 seconds, before `DeleteCatalog`. Where: `log-stage-21-redshift-s3-data-products.md`,
+  2026-11-23.
+
 ## Lake Formation
 
 - `SUP-100` **`ram enable-sharing-with-aws-organization` both enables trusted access for `ram.amazonaws.com`
@@ -2121,6 +2135,22 @@ entry is still true is the reading.
   succeeded within the minute. The table is a DataZone subscription's resource link to an Iceberg table in
   another account. Nothing reached the Glue Data Catalog. A view over an external schema mapped to the Glue
   database is unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
+- `SUP-475` **A federated catalog over a Redshift namespace is named `"<database>@<catalog>"` and resolves neither
+  in the namespace that produced it nor in its data lake access workgroup** (measured 2026-11-23 in Sandbox, Stage
+  21's 4.1 to 4.6). After `RegisterNamespace` to the account's Data Catalog, the producer's `DescribeDataShares`
+  holds an `INTERNAL` datashare `…/ds_internal_namespace` associated to `DataCatalog/<account>`, `AUTHORIZED`,
+  while `DescribeDataSharesForConsumer` by the catalog's ARN lists nothing until `AssociateDataShareConsumer` makes
+  it `ACTIVE`; the producer's `svv_datashares` never lists it. `GetCatalogs` with `--recursive` under a parent is
+  refused, *"GetCatalogsRecursive is supported only at the account level"*; without it the catalog lists a child
+  catalog per database. With Lake Formation `DESCRIBE` and `SELECT` on a table, then `DESCRIBE` on its child
+  catalog and database, the producer's IAM session (`IAMR:<project role>`) reads no `sandbox@stage21_warehouse` in
+  `svv_redshift_databases`, and a `SELECT` by that name answers *"does not exist"*. Athena's read of the table from
+  the portal's preview fails *"GENERIC_INTERNAL_ERROR: No scheme for file system location: <table>"* before data
+  lake access, and *"Malformed request: ERROR: "sandbox@stage21_warehouse" does not exist"* with it: the managed
+  workgroup's answer, in Redshift's name for the catalog. A read from another warehouse is unmeasured.
+  `DeregisterNamespace` answers `Deregistering`, and the datashare stays `AUTHORIZED` for seconds, gone within
+  three minutes. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -4165,6 +4195,17 @@ entry is still true is the reading.
   is the dropped table, so a dropped table's node stays with its drop as the last upstream. `GetLineageNode`
   returns the latest version with one upstream run; `ListLineageNodeHistory` lists a version per event. The nodes
   outlive the connection and its job: one is read after `DeleteConnection`. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-476` **A Glue data source over a federated catalog imports a Redshift table as a Glue table asset whose
+  source identifier is the Glue table's ARN** (measured 2026-11-23 in Sandbox, Stage 21's 4.4). The *AWS Glue
+  (Lakehouse)* form on `project.default_lakehouse` takes the child catalog by name, `stage21_warehouse/sandbox`,
+  stored as `<account>:stage21_warehouse/sandbox`, and its database list offers the federated database. One run
+  imported the table in two seconds as a *Glue Table* whose form carries a *Federated Table* block, connection
+  `aws:redshift`, and the ARN `arn:aws:glue:us-west-2:<account>:table/<catalog>/<child>/<database>/<table>` as
+  its source identifier: not the Redshift ARN of a Redshift data source's asset or of a lineage node
+  (`SUP-473`), so the two never join. The form's *Import data lineage* box is the connection's setting, checked
+  when the form opens on that connection, and the run reports *Lineage import status: Completed*. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## SageMaker AI spaces and images

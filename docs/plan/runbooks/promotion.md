@@ -2626,11 +2626,13 @@ passes 2 to 4 in order" and its §5.
    closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
    21's pass 5: the prefix published from the `eighth-experimentation` space, the product requested from a
    `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
-   five-minute wait.
+   five-minute wait. **Run 2026-11-22 and 23** to the closing reads, 01:53 UTC (Stage 21's log):
+   passes 2 to 4 with 4.8; pass 5 not run, moved to a Sandbox sitting with no warehouse (N.12.1).
 3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, then the view and the
    tables that item names dropped, `lab` kept (6h 6.4, taken 2026-11-22); then the subscriptions of N.6 item 6
    revoked, Stage 19 4.12's (by its 2.5) and Stage 20 5.0's, each read on both sides. Then the lowering
-   (N.10.5).
+   (N.10.5). **5.4 and rollback item 5 run 2026-11-23**, 01:57 to 01:58 UTC (both
+   logs); the revocations not run.
 
 #### N.10.5 The lowering, each day
 
@@ -2805,9 +2807,9 @@ bound it stay N.6's.
 | 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.9's day 3 beside N.10's day 1: 10.4's reading 6, 6e 6.4 and 6d's remainder left to a later sitting (N.6 item 7) | one raise with N.10's day 1 (the next row) | nothing: its prerequisites done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
-| 2026-11-22 | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 and 3, run by 01:06 UTC (#384), then pass 4 from 01:20 UTC with its 4.8, the closing reads and the lowering, which starts by 02:40 UTC on 2026-11-23 | the raise of the row above | day 1 |
+| 2026-11-22 and 23, ran | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 to 4 with 4.8 and the closing reads by 01:53 UTC, then Stage 19's 5.4 with Stage 21's rollback item 5 by 01:58 UTC (#384), and the lowering, which starts by 02:40 UTC on 2026-11-23 | the raise of the row above | day 1 |
 | 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
-| 2026-11-23 | N.10's day 2's rest: what 2026-11-22 leaves of Stage 21's pass 4, its pass 5, Stage 19's 5.4 with Stage 21's rollback item 5, then the subscriptions of N.6 item 6 revoked | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | nothing: day 1 ran 2026-11-22 |
+| 2026-11-23 | N.10's day 2's rest: Stage 21's pass 5, then the subscriptions of N.6 item 6 revoked and Stage 21's rollback item 1, the data product `sandbox-trades-hot` unpublished and deleted | `make hub-up`, `make up ENV=sandbox`: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
 | 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2, whose revocation of Stage 20 5.0's subscription comes before 8.6 |
 | 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base` | `SUP-466`'s decision, for reading 6 |
 
