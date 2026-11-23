@@ -347,7 +347,8 @@ root unit gives no Sandbox project (6f 1.1). None has been created here.
 - Measured: `classification`, valued `public` or `internal`, owned by `eighth-experimentation`. Each save
   in the portal was a `CreateFormType` answering a new revision, revision 2 at 00:44:24 UTC on
   2026-11-10, and `GetFormType` answers a non-member (`SUP-344`). Every product listing carries it (Stage
-  19 decision 4; `CT-18`). Its model is one `String` with no list of values, the description naming
+  19 decision 4; `CT-18`); a table a data product's publication listed, reachable through the product alone,
+  takes the product's form (decision 4 extended 2026-11-23). Its model is one `String` with no list of values, the description naming
   `public`, `internal`, `restricted` or `personal`, so *Add Form*'s *Enter field values* takes any text
   (read 2026-11-21, Stage 20 8.6).
 - A domain unit's metadata rule can require a form at publishing (the metadata rules page, read
@@ -925,15 +926,15 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-15` | Staging lists nothing, and a chain application's `dev` project lists by exception |
 | `CT-16` | the access acts on a project's product, judged by the stage that owns it |
 | `CT-17` | every grant on a project's listed table explained, a table its data product's publication listed included: each product listing's items are read with `get-listing`, those `search-listings` omits among them (`SUP-482`) |
-| `CT-18` | every product listing carries the `classification` form, read on the table's own listing, the same tables as `CT-17`; a table with no form fails with its data product's form named |
+| `CT-18` | every product listing carries the `classification` form, the same tables as `CT-17`: the table's own form, or for a table with none reachable through its data products alone, every carrying product's (Stage 19 decision 4 extended 2026-11-23); any other table with no form fails, its products' forms named |
 | `CT-19` | no listing publishes a resource link |
 | `CT-20` | every S3 Access Grant a project role holds on another project's folder explained by an approved subscription to an S3 Object Collection at that prefix |
 
-The last run: 2026-11-23 from 18:55 to 19:05 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
+The last run: 2026-11-23 from 19:27 to 19:34 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
 and none of `deploy-staging`; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object Collection
 listing(s)"*, after pass 5's rollback; the two data product listings' items all returned by
-`search-listings`, so no table read through a product alone (Stage 21's log). `--self-check` read 56 of 56
-on 2026-11-23, nine cases on Stage 21 5.3's product.
+`search-listings`, so no table read through a product alone (Stage 21's log). `--self-check` read 62 of 62
+on 2026-11-23, fifteen cases on Stage 21 5.3's product.
 
 ### The CLI's reads, object by object
 

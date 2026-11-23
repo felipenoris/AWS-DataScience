@@ -1689,3 +1689,32 @@ AWS reads alone. Times UTC.*
   18:27. The self-check is the proof; whether `get-listing` answers an `INACTIVE` listing to
   `InfrastructureAccess` in Data Governance is not measured.
 - **[Claude] Records**: `SUP-482`'s later reading; `catalog.md` §P and §V; the stage file's `Status` row.
+
+## 2026-11-23 — Stage 19 decision 4 extended: `CT-18` takes a data product's form for a table it lists alone
+
+*Claude's hand, in the same session, on the user's answers in its chat. Times UTC.*
+
+- **[user] The question**, about the decision the change above left open: *"Sobre esta decisão, a AWS tem
+  alguma recomendação ou caminho padrão da ferramenta?"*
+- **[Claude] AWS's pages**, read for it (`REFERENCES.md`, 2026-11-23): a metadata rule applies to *"data
+  products, data assets, or both"*; a product manages metadata and access *"at the data product level"*; an
+  unpublished asset is available through its product alone. No page states whether an item takes the
+  product's forms, which forms an approver sees, or where a classification belongs. Recommended: the
+  product's form for a table reachable through the product alone, the table's own form still required when it
+  is listed on its own.
+- **[user] The decision**: *"Accept product form"*, the reply button for the recommendation. Recorded under
+  Stage 19 decision 4 as its extension.
+- **[Claude] The change** (`aws/catalog.py`): a table `search-listings` omits whose listing reads `INACTIVE`
+  is marked `product_only`. `CT-18` judges a table by its own form; one with none that is `product_only` by
+  the form of every data product listing that carries it, failing when one carries none or a value outside
+  `public` and `internal`; any other table with no form fails as before, its products' forms named. An omitted
+  listing that reads `ACTIVE` needs its own form. Section 7's classification column reads the same label.
+- **[Claude] `./aws/catalog.py --self-check`**: *"62 of 62 cases as expected"*, fifteen cases on 5.3's shape,
+  six of them new for the rule. Five mutants each read red: no status test 61 of 62, the former rule 58, any
+  product value accepted 61, the first carrying product alone 61, the product's form over the table's own 61.
+- **[Claude] `make check`**: *"check: OK"*.
+- **[Claude] `./aws/catalog.py`, live**, 19:27:06 to 19:33:46, the same four profiles: *"all checks passed"*,
+  14 `pass` and 7 `note` over 12 listings, no call failed; `CT-17` and `CT-18` read as at 18:55, no table
+  reachable through a product alone in the estate.
+- **[Claude] Records**: Stage 19 decision 4's extension; `catalog.md` §M and §V; `GOVERNANCE.md`'s business
+  metadata row; `SUP-482`'s later reading; the stage file's `Status` row.

@@ -130,7 +130,9 @@ exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self
 #   CT-18 every product listing carries the classification form, public or internal (decision
 #         4). This is CT-12's rule read from the catalog, since a project's table carries no
 #         LF-Tag and DataZone fulfils by name. A listing with no form fails, but one named in
-#         UNCLASSIFIED_BY_EXCEPTION, which is a note.
+#         UNCLASSIFIED_BY_EXCEPTION, which is a note, and one reachable through its data
+#         products alone, which takes every carrying product's form (decision 4 extended
+#         2026-11-23).
 #   CT-19 no listing publishes a resource link. A consumer's source imports the link its
 #         subscription created as an inventory asset (Stage 19 0.5); published, it would list
 #         another owner's table under the consumer's name. CT-4 keeps every source from
@@ -178,7 +180,8 @@ exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self
 # A product's publication lists each unpublished asset it holds INACTIVE, and SearchListings omits
 # that listing (SUP-482, measured 2026-11-23): each data product listing's items are read with
 # GetListing, and a Glue table among them the search did not return is judged as a listed one,
-# owned by the project its listing names. CT-18 reads the table's own form and names its product's.
+# owned by the project its listing names. One that reads INACTIVE is reachable through its products
+# alone, and CT-18 reads the products' forms for it when it carries none of its own.
 
 from __future__ import annotations
 
@@ -518,6 +521,9 @@ class Product(NamedTuple):
     approval: str  # SubscriptionTermsForm's approvalRequired
     classification: str | None  # the classification form's value; None with no form
     asset: str  # the asset's id
+    # True for a listing SearchListings omits that reads INACTIVE: a data product's publication
+    # listed it, reachable through the product alone (SUP-482).
+    product_only: bool = False
 
 
 def classification_value(forms: dict) -> str | None:
@@ -532,32 +538,60 @@ def classification_findings(
     products: list, exceptions: dict | None = None, carried: dict | None = None
 ) -> tuple:
     """CT-18's readings, as (problems, excepted): one sentence per listing that breaks the rule,
-    and the Product rows the exceptions cover, UNCLASSIFIED_BY_EXCEPTION unless given. The rule
-    reads the table's own listing (Stage 19 decision 4); `carried` maps an asset listing id to the
-    (name, classification) of each data product listing that carries it, which a sentence names."""
+    and the Product rows the exceptions cover, UNCLASSIFIED_BY_EXCEPTION unless given. `carried`
+    maps an asset listing id to the (name, classification) of each data product listing that
+    carries it. A listing is judged by its own form (Stage 19 decision 4); one with none that is
+    reachable through its products alone by every carrying product's form (decision 4 extended
+    2026-11-23); any other with none fails, its products' forms named."""
     exceptions = UNCLASSIFIED_BY_EXCEPTION if exceptions is None else exceptions
     carried = carried or {}
     problems = []
     excepted = []
     for p in products:
-        if p.classification is None:
-            if p.asset in exceptions:
-                excepted.append(p)
-            else:
-                products_read = "; ".join(
-                    f"its data product {name} reads "
-                    + ("no form" if value is None else value or "an empty value")
-                    for name, value in carried.get(p.listing, [])
-                )
-                problems.append(
-                    f"{p.name} ({p.table}) carries no classification form"
-                    + (f" ({products_read})" if products_read else "")
-                )
+        carriers = carried.get(p.listing, [])
+        if p.classification is None and p.asset in exceptions:
+            excepted.append(p)
+        elif p.classification is None and p.product_only:
+            if not carriers:
+                problems.append(f"{p.name} ({p.table}) carries no classification form")
+            for name, value in carriers:
+                if value is None:
+                    problems.append(
+                        f"{p.name} ({p.table}) carries no classification form, nor does its "
+                        f"data product {name}"
+                    )
+                elif value not in CATALOG_ROAD_CLASSIFICATIONS:
+                    problems.append(
+                        f"{p.name} ({p.table}) is classified {value or 'with an empty value'} "
+                        f"by its data product {name}"
+                    )
+        elif p.classification is None:
+            products_read = "; ".join(
+                f"its data product {name} reads "
+                + ("no form" if value is None else value or "an empty value")
+                for name, value in carriers
+            )
+            problems.append(
+                f"{p.name} ({p.table}) carries no classification form"
+                + (f" ({products_read})" if products_read else "")
+            )
         elif p.classification not in CATALOG_ROAD_CLASSIFICATIONS:
             problems.append(
                 f"{p.name} ({p.table}) is classified {p.classification or 'with an empty value'}"
             )
     return problems, excepted
+
+
+def classification_label(p: Product, carried: dict) -> str:
+    """What CT-18 reads as a listing's classification: its own form's value, or each carrying
+    product's for a listing reachable through its products alone."""
+    if p.classification is None and p.product_only:
+        by_product = ", ".join(
+            f"{'no form' if value is None else value or 'empty'} by its data product {name}"
+            for name, value in carried.get(p.listing, [])
+        )
+        return by_product or "NO FORM"
+    return "NO FORM" if p.classification is None else p.classification or "EMPTY"
 
 
 def road_listings(listings: list, read, registry_account: str, where_of: dict) -> tuple:
@@ -571,8 +605,9 @@ def road_listings(listings: list, read, registry_account: str, where_of: dict) -
     listing is read for the asset listings it carries and for its classification form. Each
     carried listing SearchListings did not return is read the same way: a product's publication
     lists an unpublished table INACTIVE, reachable through the product alone (SUP-482). Such a
-    listing is owned by the project its own record names, or else by the product's owner, and one
-    with no Glue table form is on neither road. `unread` holds "GetListing <id>" per failed read.
+    listing is owned by the project its own record names, or else by the product's owner, is
+    marked product_only when it reads INACTIVE, and is on neither road with no Glue table form.
+    `unread` holds "GetListing <id>" per failed read.
 
     Lake listings are (listing id, "<db>.<table>", owning project, approvalRequired); products
     are Product rows; bundles map an asset listing id to the data product listings that carry
@@ -585,7 +620,7 @@ def road_listings(listings: list, read, registry_account: str, where_of: dict) -
     unread: list = []
     owner_of = {lid: owner for lid, _, _, owner, _ in listings}
 
-    def judge(lid: str, name: str, owner: str, body: dict) -> None:
+    def judge(lid: str, name: str, owner: str, body: dict, product_only: bool = False) -> None:
         forms = listing_forms(body)
         glue = forms.get("GlueTableForm") or {}
         table = f"{glue.get('databaseName', '-')}.{glue.get('tableName', '-')}"
@@ -605,6 +640,7 @@ def road_listings(listings: list, read, registry_account: str, where_of: dict) -
                 approval=approval,
                 classification=classification_value(forms),
                 asset=((body.get("item") or {}).get("assetListing") or {}).get("assetId", "-"),
+                product_only=product_only,
             )
         )
 
@@ -630,7 +666,7 @@ def road_listings(listings: list, read, registry_account: str, where_of: dict) -
             continue
         record = (body.get("item") or {}).get("assetListing") or {}
         owner = record.get("owningProjectId") or owner_of.get(bundles[lid][0], "-")
-        judge(lid, body.get("name") or lid, owner, body)
+        judge(lid, body.get("name") or lid, owner, body, body.get("status") == "INACTIVE")
     return lake, products, bundles, product_classes, unread
 
 
@@ -1045,12 +1081,14 @@ def self_check() -> int:
 
     # CT-17 and CT-18 on a table a data product's publication listed, which SearchListings omits
     # (SUP-482): the listings' shape as Stage 21 5.3 read it on 2026-11-23.
-    def asset_listing(name: str, forms: dict, owner: str | None = own) -> dict:
+    def asset_listing(
+        name: str, forms: dict, owner: str | None = own, status: str = "INACTIVE"
+    ) -> dict:
         """GetListing's answer for an asset listing, its forms a JSON string."""
         record = {"assetId": f"asset-{name}", "forms": json.dumps(forms)}
         if owner:
             record["owningProjectId"] = owner
-        return {"name": name, "status": "INACTIVE", "item": {"assetListing": record}}
+        return {"name": name, "status": status, "item": {"assetListing": record}}
 
     def product_listing(items: list, owned: list, classification: str | None) -> dict:
         """GetListing's answer for a data product listing, items and forms as 5.3 read them."""
@@ -1079,7 +1117,7 @@ def self_check() -> int:
     ]
     bodies = {
         "pl": product_listing(["sl", "tl"], ["sl", "tl"], "internal"),
-        "gl": asset_listing("listed", {**glue_form(sbx, "db", "listed"), **form}),
+        "gl": asset_listing("listed", {**glue_form(sbx, "db", "listed"), **form}, status="ACTIVE"),
         "sl": asset_listing("collection", {S3_COLLECTION_FORM: {"bucketArn": "arn:aws:s3:::b/p/"}}),
         "tl": asset_listing("hidden", glue_form(sbx, "db", "hidden")),
     }
@@ -1093,12 +1131,14 @@ def self_check() -> int:
         "gl", "listed", "consumer", sbx, "db.listed", own, "YES", "internal", "asset-listed"
     )
     hidden_table = Product(
-        "tl", "hidden", "consumer", sbx, "db.hidden", own, "YES", None, "asset-hidden"
+        "tl", "hidden", "consumer", sbx, "db.hidden", own, "YES", None, "asset-hidden", True
     )
     ownerless = asset_listing("hidden", glue_form(sbx, "db", "hidden"), owner=None)
+    searchable = asset_listing("hidden", glue_form(sbx, "db", "hidden"), status="ACTIVE")
     _, found, carriers, product_forms, _ = road()
     carried = {"tl": [("images", product_forms["pl"])]}
     no_form = "hidden (db.hidden) carries no classification form"
+    listed_no_form = "listed (db.listed) carries no classification form"
     fulfil = (
         "consumer",
         f"{sbx}{IAM_PRINCIPALS_SUFFIX}",
@@ -1149,14 +1189,50 @@ def self_check() -> int:
             [fulfilment],
         ),
         (
-            "CT-18: the hidden table with no form of its own, its product's named",
-            classification_findings(found, {}, carried),
-            ([f"{no_form} (its data product images reads internal)"], []),
+            "an omitted table whose listing reads ACTIVE, which needs its own form",
+            road({"tl": searchable})[1][1:],
+            [hidden_table._replace(product_only=False)],
         ),
         (
-            "CT-18: the hidden table and a product with no form",
+            "CT-18: a table reachable through its product alone takes the product's form",
+            classification_findings(found, {}, carried),
+            ([], []),
+        ),
+        (
+            "its label",
+            classification_label(hidden_table, carried),
+            "internal by its data product images",
+        ),
+        (
+            "CT-18: such a table whose product carries no form",
             classification_findings([hidden_table], {}, {"tl": [("images", None)]}),
-            ([f"{no_form} (its data product images reads no form)"], []),
+            ([f"{no_form}, nor does its data product images"], []),
+        ),
+        (
+            "CT-18: such a table whose product is restricted",
+            classification_findings([hidden_table], {}, {"tl": [("images", "restricted")]}),
+            (["hidden (db.hidden) is classified restricted by its data product images"], []),
+        ),
+        (
+            "CT-18: such a table in two products, one with no form",
+            classification_findings(
+                [hidden_table], {}, {"tl": [("images", "internal"), ("other", None)]}
+            ),
+            ([f"{no_form}, nor does its data product other"], []),
+        ),
+        (
+            "CT-18: such a table's own form, judged before its product's",
+            classification_findings(
+                [hidden_table._replace(classification="restricted")], {}, carried
+            ),
+            (["hidden (db.hidden) is classified restricted"], []),
+        ),
+        (
+            "CT-18: a table listed on its own with no form, its product's named",
+            classification_findings(
+                [listed_table._replace(classification=None)], {}, {"gl": [("images", "internal")]}
+            ),
+            ([f"{listed_no_form} (its data product images reads internal)"], []),
         ),
     ]
 
@@ -1956,7 +2032,7 @@ def main(argv: list) -> int:
     product_unread: list = list(failed_reads)
     # The product tables SearchListings did not return, read through a data product listing.
     searched = {lid for lid, _, _, _, _ in listings}
-    through_product = [p for p in products if p.listing not in searched]
+    unsearched = [p for p in products if p.listing not in searched]
 
     def acts(asset_listing: str, table: str, unread: list) -> tuple:
         """One asset listing's subscriptions, ACCEPTED requests and COMPLETED grants, asked under
@@ -2479,9 +2555,9 @@ def main(argv: list) -> int:
     # ---------------------------------------------------------------- CT-17 every product grant explained
     ct17 = "every grant on a project's listed table is explained"
     hidden_tables = (
-        "; read through a data product alone, SearchListings omitting them (SUP-482): "
-        + ", ".join(p.table for p in through_product)
-        if through_product
+        "; read through a data product, SearchListings omitting them (SUP-482): "
+        + ", ".join(p.table for p in unsearched)
+        if unsearched
         else ""
     )
     product_rows: dict = {}  # grant row -> why it exists, empty when nothing explains it
@@ -2601,8 +2677,8 @@ def main(argv: list) -> int:
             "CT-18",
             ct18,
             "; ".join(
-                f"{p.name} {p.classification}"
-                + (" (through a data product alone)" if p in through_product else "")
+                f"{p.name} {classification_label(p, carried)}"
+                + (" (SearchListings omits it)" if p in unsearched and not p.product_only else "")
                 for p in products
             ),
         )
@@ -2969,7 +3045,7 @@ def main(argv: list) -> int:
                 + [
                     f"{p.listing}\t{p.name}\t{p.table}\t{p.where}\t{projects.get(p.owner, p.owner)}"
                     f"\t{p.approval}\t"
-                    + ("NO FORM" if p.classification is None else p.classification or "EMPTY")
+                    + classification_label(p, carried)
                     + "\t"
                     + (", ".join(listing_name.get(b, b) for b in bundles.get(p.listing, [])) or "-")
                     + f"\t{link_cell(p.where, p.table)}"

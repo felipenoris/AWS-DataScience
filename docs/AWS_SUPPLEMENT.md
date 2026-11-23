@@ -4350,11 +4350,12 @@ entry is still true is the reading.
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
   **`catalog.py` amended, 2026-11-23**: `CT-17` and `CT-18` read each data product listing's items with
   `get-listing`, from its `items` and its `ownedByDataProductListing` form, and judge a Glue table among them
-  that `search-listings` did not return as a listed one; `CT-18` reads the table's own form and names its
-  product's. The self-check's cases on 5.3's shape read 56 of 56. The live run of 18:55 to 19:05 UTC found no
-  such table, the product deleted at the rollback, and read `CT-17` and `CT-18` as at 18:27. Whether
-  `get-listing` answers an `INACTIVE` listing to `InfrastructureAccess` in Data Governance is not measured; a
-  refused read leaves both checks a note. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+  that `search-listings` did not return as a listed one; `CT-18` reads the table's own form or, for one that
+  reads `INACTIVE` with none, its products' (Stage 19 decision 4 extended 2026-11-23). The self-check's cases
+  on 5.3's shape read 62 of 62. The live runs of 18:55 to 19:05 and 19:27 to 19:34 UTC found no such table,
+  the product deleted at the rollback, and read `CT-17` and `CT-18` as at 18:27. Whether `get-listing`
+  answers an `INACTIVE` listing to `InfrastructureAccess` in Data Governance is not measured; a refused read
+  leaves both checks a note. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## SageMaker AI spaces and images
 
