@@ -1013,3 +1013,39 @@ infrastructure told first. Times UTC.*
   empty). A portal session carries `RedshiftDbRoles` `datazone_env_<environment id>` (`docs/SMUS.md`, read
   2026-10-10 on the warehouse's path), so a portal session on this workgroup would be a superuser session;
   unmeasured, 2.6 not having run (`SUP-471`).
+
+## 2026-11-23 — §N.10's day 2: 2.9, the consumer's workgroup removed and the reverse applies
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's choice in this session's chat, *"Aceitar e
+fazer 2.9"*, answering whether to accept `SUP-469` as 2.5's reading or to retry on a producer connection
+authenticated by a secret. The user signed in again as the infrastructure user before it (*"usuário sso infra
+logado."*), the token valid to 01:23:31. The portal's act in the Data Scientist User's Chrome session; the reads
+and the applies as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`) and `Data Governance` (`awsds-infra-data`). Times UTC.*
+
+- **The user's decision**: `SUP-469` is 2.5's reading. The retry on a connection authenticated by a secret is
+  not run, so a Redshift asset shared by subscription stays unmeasured end to end.
+- **[Claude] The portal's removal**: `test-experimentation`'s *Resource blueprints*, the deployment
+  `redshift.stage21-consumer-redshift`'s delete, the dialog *Delete blueprint deployment* (*"Deleting a blueprint
+  deployment is final and removes all connections created."*, the word *confirm*), then *"Blueprint deployment
+  deleted successfully"* and the row *Delete in progress*. The trail: `DeleteEnvironment` at 00:24:42 in Data
+  Governance by the domain execution role for the portal user; in Sandbox, `DeleteStack` at 00:24:54,
+  `DeleteWorkgroup` at 00:24:57 and `DeleteNamespace` at 00:25:04, by `awsds-sandbox-smus-provisioning`.
+- **[Claude] What is absent**: the environment `dahsfn6j8lqec0`, `DELETING` at 00:26:09, answered *"Environment
+  not found"* at 00:26:26; the stack `DataZone-Env-dahsfn6j8lqec0` is `DELETE_COMPLETE`. Sandbox's workgroups
+  and namespaces are `awsds-sandbox-warehouse` alone, at 4 and 8. The connection `4i2nv7u733e51s` is not found,
+  its lineage job `50jlej783a7cb4` answers *"The given Job doesn't exist."*, removed before its first run was
+  due, and the target `bbw4g031uhkopc` is not found; no secret named for the namespace exists, scheduled for
+  deletion or not. None of the domain's ten projects holds a `RedshiftServerless` environment (blueprint
+  `dlyaabb17hano0`, 00:27:34).
+- **[Claude] The reverse applies**, N.9's day 3 and N.10's day 1 told first, both idle. From this branch at
+  `d6e83d0b`: `data-governance/governance` planned *"Plan: 0 to add, 1 to change, 0 to destroy."*, the profile
+  `experimentation`'s `environment_configurations`, and applied at 00:28:06, *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*. `sandbox/sagemaker` planned *"Plan: 0 to add, 1 to change, 3 to destroy."*:
+  the `RedshiftServerless` blueprint configuration, its policy grant and the manage-access role's
+  `AmazonDataZoneRedshiftManageAccessRolePolicy` attachment destroyed, the project key updated in place. Applied
+  at 00:28:48, *"Apply complete! Resources: 0 added, 1 changed, 3 destroyed."*. Both re-planned *"No changes.
+  Your infrastructure matches the configuration."* at 00:29.
+- **[Claude] `US-3`** (`./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`, 00:29 to 00:31, *"all checks
+  passed"*): *"14 blueprint configuration(s) in awsds-infra-sandbox-1"*, *"all inside decision 5's category 1"*,
+  and the domain account's Tooling configuration the note it was.
