@@ -137,9 +137,11 @@ XGBoost's as the ones an image may name and the ceiling's instance types:
 awsds-workflows lint . --image-repository awsds-prod-ecr-app-ml --model-item model --algorithm-repository sagemaker-xgboost --instance-type ml.t3.medium --instance-type ml.t3.large --instance-type ml.t3.xlarge --instance-type ml.m5.large --instance-type ml.m5.xlarge --instance-type ml.c5.large --instance-type ml.c5.xlarge
 ```
 
-The pipeline pins the tooling at `37cb5a6`, the merge of `awsds-workflows` pull request #26 (Stage 17
-step 9.3). Its rule `manifest` refuses a storage item that names a connection, and `--model-item model`
-admits the one that carries the model; the application passes it (read 2026-11-17).
+The pipeline pins the tooling at `4401f91`, the merge of `awsds-workflows` pull request #29, whose rule
+`operador` refuses the native notebook operator (the infrastructure repository's Stage 8 5.6). Since pull
+request #26 (`37cb5a6`, Stage 17 step 9.3) the rule `manifest` refuses a storage item that names a
+connection, and `--model-item model` admits the one that carries the model; the application passes it at
+`37cb5a6` (read 2026-11-17) and at `4401f91` (read 2026-11-23).
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
 image, as the project's role, with the shell variables the manifest reads: `DOMAIN_ID`, `DOMAIN_REGION`,

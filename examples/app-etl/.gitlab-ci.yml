@@ -12,12 +12,10 @@
 #                         promotion (Stage 8 step 3; Stage 19 step 4.9), every step of it in another
 #                         account: a manual gate into Staging (decision 28), Staging's egress and its
 #                         deployment project read (the user raises the egress, decision 27), the CI/CD
-#                         CLI deploying the bundle into the project, each chain run, the release's first
+#                         CLI deploying the bundle into the project, the chain run, the release's first
 #                         run anywhere (nothing torn down: the user's `make down`), a manual gate, and
 #                         Production, where the deploy's bootstrap runs app-etl and its product is
-#                         listed; then three manual jobs of Production: the warehouse's DDL (Stage 9
-#                         9.4), and the model's registration and approval, which the batch transform
-#                         follows (Stage 10 steps 5.2 and 5.4)
+#                         listed; then Production's manual job, the warehouse's DDL (Stage 9 9.4)
 #
 # Which runner takes which job (decision 11): every job extending .gates-uv carries tag awsds-test, the
 # test runner, whose jobs hold no AWS identity. build-image, the scan gate, store-bundle and release are
@@ -38,17 +36,16 @@ variables:
   GATES_UV_PROJECTS: "."
   IMAGE_REPO: awsds-prod-ecr-app-etl
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
-  # a SageMaker application (D28), offline. From this commit its rule `manifest` admits the
-  # manifest's catalog item, which publishes nothing (skipPublish) and asks for no access.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/196aceec092649551ed6451796b1c3c7983cfafb.zip"
+  # a SageMaker application (D28), offline. The commit is the merge of awsds-workflows pull request
+  # #29, whose rule `operador` refuses the native notebook operator by name (the infrastructure
+  # repository's Stage 8 5.6), beside the operators #26 refuses by name; its rule `manifest` admits
+  # the manifest's catalog item, which publishes nothing (skipPublish) and asks for no access.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
   # The instance types a processing job may ask for: the ceiling DenySageMakerInstanceCeiling carries
   # in the Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies
   # holds (allowed_instance_types) in the infrastructure repository. A copy, since the application's
   # repository cannot read that module: a change to its list is a change here.
   LINT_INSTANCE_TYPES: "ml.t3.medium ml.t3.large ml.t3.xlarge ml.m5.large ml.m5.xlarge ml.c5.large ml.c5.xlarge"
-  # The repositories of AWS's built-in algorithms a training task may name beside IMAGE_REPO, by
-  # digest: XGBoost 3.0-5 (Stage 10 decision 21).
-  LINT_ALGORITHM_REPOSITORIES: "sagemaker-xgboost"
 
 workflow:
   rules:
@@ -64,14 +61,12 @@ test:
     - uv run ruff format --check
     - uv run pytest
     # The lint with a job's two ceilings (Stage 8 step 5.6, clauses (e) and (f)): a literal ImageUri
-    # or TrainingImage names IMAGE_REPO or one of LINT_ALGORITHM_REPOSITORIES, never the notebook
-    # image, and an InstanceType is one of LINT_INSTANCE_TYPES. Without the options the lint reads
-    # neither.
+    # or TrainingImage names IMAGE_REPO, never the notebook image, and an InstanceType is one of
+    # LINT_INSTANCE_TYPES. Without the options the lint reads neither.
     - |
       set -eu
       set --
       for type in $LINT_INSTANCE_TYPES; do set -- "$@" --instance-type "$type"; done
-      for repository in $LINT_ALGORITHM_REPOSITORIES; do set -- "$@" --algorithm-repository "$repository"; done
       uvx --from "$AWSDS_WORKFLOWS" awsds-workflows lint . --image-repository "$IMAGE_REPO" "$@"
 
 pages:
@@ -134,10 +129,10 @@ scan-gate:
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
 
-# The workers' packages (D28 class 2b): the module of code/ alone, zipped once under each workflow's
-# name, since it needs only the boto3 the MWAA Serverless worker carries and the orchestration slices
-# pin code/<workflow>.zip. `bundle` builds nothing, so the zips are built here, into the folder the
-# manifest includes, and each imported once on the worker's Python minor version.
+# The worker's package (D28 class 2b): the module of code/ alone, zipped as code/app-etl.zip, the
+# `code` the manifest names for the workflow app-etl, since it needs only the boto3 the MWAA
+# Serverless worker carries. `bundle` builds nothing, so the zip is built here, into the folder the
+# manifest includes, and imported once on the worker's Python minor version.
 build-task-code:
   extends: .gates-uv
   stage: build
@@ -146,13 +141,11 @@ build-task-code:
   script:
     - |
       set -eu
-      for workflow in app-etl app-etl-train; do
-        python3 -m zipfile -c "code/$workflow.zip" code/app_etl_tasks.py
-        python3 -m zipfile -l "code/$workflow.zip"
-        PYTHONPATH="code/$workflow.zip" python3 -c "import app_etl_tasks; print(app_etl_tasks.__file__)"
-      done
+      python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
+      python3 -m zipfile -l code/app-etl.zip
+      PYTHONPATH=code/app-etl.zip python3 -c "import app_etl_tasks; print(app_etl_tasks.__file__)"
   artifacts:
-    paths: [code/app-etl.zip, code/app-etl-train.zip]
+    paths: [code/app-etl.zip]
 
 # The release's bundle (step 2.5; Stage 19 decisions 18 (d) and 19 (c)): `bundle` zips the folders
 # the manifest includes, the tag's own files, failing on the warning it prints for a missing include,
@@ -289,12 +282,12 @@ gate-without-proxy:
 # ------------------------------------------------------------------ the promotion (Stage 8 step 3)
 #
 # The legs run on the deploy runner, in its deploy image, each job cloning the infrastructure repository
-# at its default branch with the job token and printing the commit it runs (decision 2): the deploy job,
-# the egress reading and the model chain live there, never here. The job's AWS identity is the profile it
-# names, one per deploy role on the runner; every account value is read at run time from the project or
-# the slice that owns it. A leg applies no Terraform: the CI/CD CLI deploys the bundle into the account's
-# deployment project (Stage 19 decision 6 (b)), and the chains above its workflows are the infrastructure
-# user's (terraform-live/<env>/chains/).
+# at its default branch with the job token and printing the commit it runs (decision 2): the deploy job
+# and the egress reading live there, never here. The job's AWS identity is the profile it names, one per
+# deploy role on the runner; every account value is read at run time from the project or the slice that
+# owns it. A leg applies no Terraform: the CI/CD CLI deploys the bundle into the account's deployment
+# project (Stage 19 decision 6 (b)), and the chains above its workflows are the infrastructure user's
+# (terraform-live/<env>/chains/).
 # The deploy runner reaches every AWS service VPC-SharedServices holds no endpoint for through the proxy,
 # and STS and the other services of that VPC's endpoints directly, its NO_PROXY naming them. So each job
 # checks the proxy first on the SageMaker API, which that VPC holds no endpoint for (step 3.1, Stage 7
@@ -386,15 +379,14 @@ staging-deploy:
     expire_in: 1 year
 
 # 3.3: the deployed artifact run in the account, the release's first run anywhere since Stage 19
-# decision 19 (c), each chain's machine started by the leg and followed to its end (Stage 10 decision
-# 19), the schedules being DISABLED in Staging: app-etl first, whose Glue job writes the product table
-# in the project's database, read back and counted by the job itself, and the training sets; then
-# app-etl-train, which trains on those sets (Stage 10 step 5.1, the retraining Stage 9 decision 1
-# leaves Staging, decision 22). A machine finds its workflow by name and passes the run the variables
-# staging-deploy recorded. The leg then reads what the run left as another principal: the report under
-# the project's shared prefix, and the product table's metadata, on which the deploy role holds
-# DESCRIBE (Stage 19 decision 14 (d)). An execution's name carries the job's id: Step Functions refuses a
-# name an ended execution of the machine holds, so a retry names its executions anew.
+# decision 19 (c), the chain's machine started by the leg and followed to its end (Stage 10 decision
+# 19), the schedules being DISABLED in Staging: app-etl, whose Glue job writes the product table in the
+# project's database, read back and counted by the job itself. The machine finds its workflow by name
+# and passes the run the variables staging-deploy recorded. The leg then reads what the run left as
+# another principal: the report under the project's shared prefix, and the product table's metadata,
+# on which the deploy role holds DESCRIBE (Stage 19 decision 14 (d)). An execution's name carries the
+# job's id: Step Functions refuses a name an ended execution of the machine holds, so a retry names its
+# executions anew.
 staging-test:
   extends: .promotion
   stage: staging
@@ -405,7 +397,7 @@ staging-test:
       set -eu
       export AWS_PROFILE=awsds-deploy-staging
       account="$(aws sts get-caller-identity --query Account --output text)"
-      for chain in app-etl app-etl-train; do
+      for chain in app-etl; do
         machine="arn:aws:states:$DOMAIN_REGION:$account:stateMachine:awsds-staging-chain-$chain"
         execution="$(aws stepfunctions start-execution --state-machine-arn "$machine" --name "$(echo "$CI_COMMIT_TAG-$CI_JOB_ID-$chain" | tr . -)" --query executionArn --output text)"
         echo "started $execution"
@@ -457,21 +449,6 @@ staging-catalog:
     paths: [staging-catalog.log]
     expire_in: 1 year
 
-# 5.4's Staging half: the model app-etl-train trained in this account served by a batch transform on the
-# batch input the Glue job wrote, the predictions counted against the rows the evaluation recorded, the
-# model deleted after (scripts/model-chain.py, which with --project reads the model under the project's
-# shared prefix and serves it as the project's role, in its subnets and under its key).
-staging-model:
-  extends: .promotion
-  stage: staging
-  needs: [staging-test]
-  resource_group: staging
-  script:
-    - |
-      set -eu
-      cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-staging ./scripts/model-chain.py transform staging --tag "$CI_COMMIT_TAG" --project
-
 # 3.4 is retired (decision 27): the pipeline destroys nothing in Staging, as in Production. The project,
 # its workflows and its product table stay at rest, billing nothing but the table's storage, and the
 # user's `make down ENV=staging` takes egress/ down.
@@ -483,7 +460,7 @@ staging-model:
 production-check:
   extends: .promotion
   stage: gate
-  needs: [staging-test, staging-catalog, staging-model, bundle]
+  needs: [staging-test, staging-catalog, bundle]
   resource_group: production
   script:
     - |
@@ -495,7 +472,7 @@ production-check:
 # which would let it start past a failed leg. Who may start a release is the protected tag (step 2.1).
 production-gate:
   stage: gate
-  needs: [staging-test, staging-catalog, staging-model, production-check]
+  needs: [staging-test, staging-catalog, production-check]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
       when: manual
@@ -598,53 +575,3 @@ production-warehouse-ddl:
       run_sql "$(cat warehouse/trades.sql)"
       run_sql "SELECT current_user, count(*) FROM trades.trades_notional"
       aws redshift-data get-statement-result --id "$id" --query 'Records[0][*]' --output text
-
-# Stage 10 step 5.2: the newest completed training job of app-etl-train in Production registered in
-# awsds-prod-model-app-etl as PendingManualApproval, with its evaluation as the version's ModelMetrics and
-# the tag in its CustomerMetadataProperties. Manual, since the job runs out of the pipeline, started by
-# the chain's schedule or by the operator; the version's ARN passes to the next two jobs.
-production-register:
-  extends: .promotion
-  stage: production
-  needs: [production-deploy]
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
-      when: manual
-  allow_failure: false
-  resource_group: production
-  script:
-    - |
-      set -eu
-      cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py register --tag "$CI_COMMIT_TAG" --dotenv "$CI_PROJECT_DIR/model.env" --project
-  artifacts:
-    reports:
-      dotenv: model.env
-
-# 5.2's approval: a blocking manual job, the deployment manager's pause, CE's shape of Stage 8 3.5.
-production-approve:
-  extends: .promotion
-  stage: production
-  needs: [production-register]
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
-      when: manual
-  allow_failure: false
-  resource_group: production
-  script:
-    - |
-      set -eu
-      cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py approve --package-arn "$MODEL_PACKAGE_ARN" --approver "$GITLAB_USER_LOGIN"
-
-# 5.4's Production half: the approved version served by a batch transform, as Staging's model was.
-production-transform:
-  extends: .promotion
-  stage: production
-  needs: [production-approve, production-register]
-  resource_group: production
-  script:
-    - |
-      set -eu
-      cd "$INFRA_DIR"
-      AWS_PROFILE=awsds-deploy-prod ./scripts/model-chain.py transform production --tag "$CI_COMMIT_TAG" --package-arn "$MODEL_PACKAGE_ARN" --project

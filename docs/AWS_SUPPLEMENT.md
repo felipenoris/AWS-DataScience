@@ -2676,7 +2676,8 @@ entry is still true is the reading.
   template does not declare. Against its 19:01Z snapshot the domain changed in the three
   `MaxIdleTimeoutInMinutes` leaves alone: the `CustomImages` entries attached by hand, which name no
   `ImageVersionNumber`, and `ExecutionRoleSessionNameMode` `USER_IDENTITY` stood, the omitted keys read as
-  unchanged (`SUP-212`). Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
+  unchanged (`SUP-212`). Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
+  commit message carries the readings; no stage log holds them.
 
 - `SUP-169` **The `AmazonBedrockKnowledgeBase` blueprint's template creates its OpenSearch Serverless
   collection, Lambdas and roles only for an OpenSearch Serverless store, behind a network policy with
@@ -2862,9 +2863,11 @@ entry is still true is the reading.
   `isEditable` false; every profile has locked the second since Stage 6a step 8.1. The profiles took `525600`
   at 19:00:22Z. After the owner's *Update project* (`UpdateProject` 19:19:49Z, the deployment `UPDATE`
   `SUCCESSFUL` at 19:20:54Z), the environment stored `"525600"` beside `enableSpaces` `"true"`, and its domain
-  read 525600. The element, the environment and the update are now the same, and only the parameter differs:
-  `enableSpaces` remains the one override measured arriving after an environment's creation. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
+  read 525600. The element, the environment and the update are now the same; the parameter and whether its
+  override existed at the environment's creation still differ together, `maxIdleTimeoutInMinutes` overridden
+  since Stage 6a step 8.1 and `enableSpaces` the one override measured arriving after an environment's
+  creation, so which of the two decides stays unmeasured. Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
+  commit message carries the readings; no stage log holds them.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
   just created, which the provisioning role's managed policy does not grant, and the environment goes
@@ -3292,8 +3295,9 @@ entry is still true is the reading.
   Sandbox that day, all on the house image and `ml.t3.medium`, logged their first line 8 min 41 s to 9 min
   10 s after their `CreateApp`. `describe-app` kept the first app's `CreationTime`, 19:26:20Z, through the
   delete and the re-create, and its `LastHealthCheckTimestamp` read that instant while `Pending` and the
-  instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`. Where:
-  `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
+  instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`.
+  Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
+  commit message carries the readings; no stage log holds them.
 
 - `SUP-468` **SageMaker Unified Studio's visual pipeline editor writes no network setting and no volume key
   into a step: its *Security* settings show the project's VPC, subnets, security group and key greyed, and
@@ -3604,6 +3608,11 @@ entry is still true is the reading.
   the consumer's source had imported from the link stayed in its inventory (`SUP-197`). The refusal names a
   missing object, not a revoked access. Whether a session reading by the target's name keeps reading past
   `BatchRevokePermissions` was not measured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14.
+  **Read again 2026-11-22** (6f 2.4, inside Sandbox's account): the portal's *Revoke* dialog carries no box
+  keeping the asset, and `RevokeSubscription` at 08:42:33Z carried `retainPermissions` `false`; the
+  producer's role revoked the grant (`BatchRevokePermissions`) 39 s after and the consumer's role deleted the
+  link (`DeleteTable`) 49 s after, and the query run again answered *"TABLE_NOT_FOUND"*. Where:
+  `log-stage-06f-data-governance.md`, 2026-11-22.
 
 - `SUP-366` **`DeleteDataSource` is refused with an empty `ValidationException` while an asset the source
   imported exists** (read 2026-11-14 from Data Governance's trail, Stage 19 item 20; the cause inferred from
@@ -3653,6 +3662,11 @@ entry is still true is the reading.
   `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, apart from its asset.
   A dbt project's events join the Glue assets' graph as the wrapper builds them, with no transformer in the
   client (Stage 20 decision 3). Where: `log-stage-20-dbt-lineage.md`, 2026-11-21.
+  **Read again 2026-11-22** (Stage 20 5.2, across the accounts): the input of a model over a subscription's
+  link, `table/app_dbt/trades_notional` in Sandbox's catalog, joined the node `degibg9msuotn4` that the
+  grant's completion created by `SYSTEM` at 14:05:21 with `SubscriptionTargetLineageForm`, whose upstream is
+  the listing's node and, past it, Production's asset, table and Spark run: one graph from Production's job
+  to the dbt job, with no transformer. Where: `log-stage-20-dbt-lineage.md`, 2026-11-22.
 
 - `SUP-401` **`DeleteLineageEvent` is refused to a member account by the domain's resource share, whose
   managed permission carries `PostLineageEvent` and not the delete, and to the domain's own account by
@@ -4758,7 +4772,7 @@ entry is still true is the reading.
   - So `3.0-5` is a release, as Lesson 68 says of what a host reads unpinned. An image named by the short tag
     today is not the one the targets serve.
 
-  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/*/ml/training-image.tf`.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/*/sagemaker/training-image.tf`.
 
 - `SUP-467` **A SageMaker pipeline fails a step whose arguments name an `AmazonDataZone*` tag key when the
   step starts, after `CreatePipeline` accepted the definition, and gives each step's job the pipeline's tags
@@ -5918,7 +5932,7 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   present, the configuration is enforced on all models"*; `IncludedModels` and `ExcludedModels` are required
   only inside it. `awscc` 1.106.0 plans a configuration with no `model_enforcement` as `(known after apply)`
   (`terraform-live/staging/studio/genai.tf` and its Production copy). Whether its apply succeeds is unread:
-  Staging's is the first.
+  Staging's is the first. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
 
 ## Terraform
 

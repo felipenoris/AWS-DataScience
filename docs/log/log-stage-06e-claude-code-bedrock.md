@@ -1945,3 +1945,16 @@ id inside a role name becomes `<Sandbox Account 1>`. Times are UTC.*
 - **[Claude] What follows**: no Claude Code session ran in the `code` space for 6.4, and no window was
   marked. 6.4 stays owed to a later sitting with the environment up, its baseline the one read on
   2026-11-20; the session of §N.10's day 1 was told the window will not open.
+
+## 2026-11-23 — 4.1 against decision 12, and 6.4's sitting and baseline, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again; a subagent of this session read the stage text against the logs, and Claude read each
+finding's two sides before writing it. No AWS call.*
+
+- **[Claude] 4.1** still said the endpoints are always-on; decision 12's reversal of 2026-10-09 made them
+  the optional group `bedrock-base`, and 4.1's heading now says so.
+- **[Claude] 6.4**: the later sitting is `promotion.md` §N.6 item 7's, dated 2026-11-25 in §N.12.1, and its
+  baseline is read again just before the window, since `bedrock-usage.py`'s baseline of 2026-11-20
+  predates Stage 17's model calls on §N.9's days 2 and 3.

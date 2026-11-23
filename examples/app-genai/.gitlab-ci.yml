@@ -32,9 +32,11 @@ stages: [test, build, verify, bundle, release, staging-gate, staging, gate, prod
 variables:
   # The workflow tooling, by commit: its lint reads manifest.yaml and the workflows it names against the
   # rules of a SageMaker application, offline. The commit is the merge of awsds-workflows pull request
-  # #26 (Stage 17 step 10.3), whose rule `operador` refuses by name the Bedrock operators that write
-  # what they send and receive to the task log; the application's tasks call the model with boto3.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
+  # #29, whose rule `operador` refuses the native notebook operator by name (the infrastructure
+  # repository's Stage 8 5.6), beside the Bedrock operators it refuses since #26 (Stage 17 step 10.3)
+  # because they write what they send and receive to the task log; the application's tasks call the
+  # model with boto3.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
   # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
   # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
   # (allowed_instance_types) in the infrastructure repository. A copy, since the application's repository

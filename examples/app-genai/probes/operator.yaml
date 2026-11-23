@@ -5,8 +5,8 @@
 # manifest and its workflows, never reads this file (Stage 17 step 10.4, verification xl). The
 # operator sends InvokeModel with the model, the body and two content types, so it can name no
 # guardrail, and it writes the prompt and the response to the task log. The workflow tooling's rule
-# `operador` refuses it by name at the pipeline's pin, 37cb5a6 (Stage 17 step 10.3), and passes it at
-# 196acee, app-etl's pin. The body is Amazon Nova's `messages-v1` schema.
+# `operador` refuses it by name at the pipeline's pin, 4401f91, as at 37cb5a6 (Stage 17 step 10.3),
+# and passes it at 196acee, app-etl's pin. The body is Amazon Nova's `messages-v1` schema.
 # `awsds-workflows render`, which applies no lint rule, fills MODEL_ID and the Region before the
 # definition is imported in the portal's editor.
 app-genai-operator-probe:

@@ -5861,3 +5861,117 @@ No AWS call. Times are UTC.*
 - **[Claude] Records**: `TM-36` and its channel row accepted in `threat-model.md`, its waiting bullet narrowed
   to the applies; this stage's `Status` row and step 10.5; `promotion.md` §N.6 item 8; the waiting list's 10.5
   row; CLAUDE.md's Stage 11 and Stage 17 rows. #388 merged at 01:51:14 with its head before this record.
+
+## 2026-11-23 — R2's pre-flight for `app-ml` and `app-genai`, their pins moved to `4401f91`, and 9.11 unwritten
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94` from `main` at `b89b5a0f`. No AWS call: each job ran on the laptop
+over the applications' trees at `b89b5a0f`, copied outside the worktree, on CPython 3.12.13 and uv
+0.12.13. Times UTC.*
+
+- **[Claude] The `test` jobs**, at 02:14: `app-ml` `uv sync --locked`, `uv lock --check --project code`,
+  ruff clean, 100 passed; `app-genai` ruff clean, 95 passed; the lint with each pipeline's options *"ok: 6
+  arquivo(s)"* and *"ok: 3 arquivo(s)"*, at the pin `37cb5a6` and at `4401f91` alike. `app-etl`, 9.11's
+  application: 100 passed and 1 skipped (the parametrized case its publish gate admits), the lint *"ok: 9
+  arquivo(s)"* at `196acee` and at `4401f91`.
+- **[Claude] The pins**: `awsds-workflows`' `main` reads `4401f91` (#29, 2026-11-21) as its head. Between
+  `37cb5a6` and it the package changed `lint.py` and `render.py` alone, so `package-task` builds the same
+  archive. `examples/app-ml/` and `examples/app-genai/` moved to `4401f91` (`.gitlab-ci.yml`, the README,
+  and `probes/operator.yaml`'s comment), the pin `app-dbt` holds since 2026-11-21, so the first tags of 9.7
+  and 10.6 carry it (`promotion.md` §N.11.1 step 6). `lint probes/operator.yaml` is refused by `operador`
+  with the same line at both commits.
+- **[Claude] The `pip-audit` job**, its script read from this repository's `ci-gates/gates.gitlab-ci.yml`
+  and run verbatim, at 02:17: `app-ml` with `GATES_UV_PROJECTS=code`, *"48 of 48 pinned package(s)
+  audited, 0 blocking vulnerability(ies)"*, exit 0. `app-genai`'s empty case (Lesson 87), with
+  `GATES_UV_PROJECTS=.`: the export holds no pin, `grep -c` exits 1 under `set -eu`, and the job ends with
+  exit 1 and no line after *"the runtime set its lock pins"*, as on 2026-11-17. The pipeline sets no
+  `GATES_UV_PROJECTS`, so R2 runs no `pip-audit` for `app-genai`.
+- **[Claude] The `build-task-code` jobs**, at 02:23, as written but on macOS: `code/app-genai.zip` 8 files,
+  15,715 bytes, imported on 3.12.13; `code/app-ml-train.zip` 15,910,587 bytes, 58,159,344 unzipped, 42
+  distributions, and the register and score zips each importing `app_ml_tasks`. Not run: the worker's
+  import of `mlflow` and `sagemaker_mlflow` from the Linux wheels, the laptop having no container runtime.
+- **[Claude] `./scripts/deploy-application.py --self-check`**: `app-ml` 12 variables per stage, `app-genai`
+  3, every stage `ok`.
+- **[Claude] `scan-gate`**: `app-ml`'s extends `.gates-ecr-scan`, `allow_failure: true`, so its `FAILED`
+  under `SUP-437` leaves the pipeline going. `app-genai` and `app-dbt` build no image and run no
+  `scan-gate`.
+- **[Claude] 9.11**: its merge request is unwritten at `b89b5a0f`. `workflows/app-etl-train.yaml`, its
+  manifest lines and the jobs `staging-model`, `production-register`, `production-approve` and
+  `production-transform` stay in `examples/app-etl/`, and `scripts/model-chain.py` still holds `register`
+  and `transform`. `promotion.md` §N.11.2 step 3 says so, and `app-etl`'s pin there reads `4401f91`, as
+  §N.11.1 step 6 and §N.12.5 do; it read `4613ddc`.
+
+## 2026-11-23 — 10.5's target commands and the later Sandbox sitting's raise, read with nothing up
+
+*Claude's hand, in the same side session and branch as the entry above, at the user's request in its chat
+to review the pending plan; two subagents of this session read 10.5 against the code and the sitting of
+2026-11-25 against the stage text, and Claude read each finding's two sides before writing it. No AWS
+call.*
+
+- **[Claude] 10.5's retention act**: 10.5 sent the targets to `claude-code-sagemaker.md` §M's M1, written
+  for Sandbox alone (decision 2): its loops run on `awsds-infra-sandbox-1` over every enabled Region. In a
+  target the Region ceiling exempts `bedrock:PutAccountDataRetention` nowhere but `Interactive` (§M's M5,
+  `INV-12`), so a copy of the loop on a target's profile would be refused in each Region the ceiling denies. 10.5 now
+  holds the targets' commands, `us-west-2` alone: `get-account-data-retention` before and after,
+  `put-account-data-retention --mode none` (`--mode` required, response field `mode`, CLI 2.37.12's help),
+  on `awsds-infra-staging` then `awsds-infra-prod`, and `list-enforced-guardrails-configuration` after each
+  `<env>/studio/` apply. The pass-10 paragraph that cited M1 says the same.
+- **[Claude] The order**: `<env>/chains/` reads only `project_key_arn` from `<env>/studio/`
+  (`staging/chains/main.tf` lines 20 and 127, `production/chains/main.tf` 19 and 122), and
+  `<env>/foundation/` reads no studio state, naming its key in `state_read_keys` alone. No code orders the
+  retention act; M1's reasoning puts it before each `<env>/studio/`, which grants the first invoke, and no
+  model call runs before 10.6.
+- **[Claude] Reading 6's raise**: 10.4 step 6 runs `app-genai-triage` and `app-genai-probe` from
+  `app-genai-dev`'s space, which the `mwaa` group's `airflow-serverless` endpoint serves
+  (`vpc-egress/endpoints.tf` line 70), and the 2026-11-25 row of `promotion.md` §N.12.1 raises
+  `bedrock-base` alone. §N.6 item 7, §N.12.2 and the passes' group rule now name `bedrock-base,mwaa`. The
+  §N.12.1 row and the waiting list's Sandbox row, beside pull request #384's changed lines, followed after
+  its merge (`663aee70`).
+- **[Claude] Reading 6's change**: `sandbox/bedrock/` passes `included_models = var.enforced_models` and
+  `excluded_models = []` (`application.tf`), and `enforced_models`' validation refuses an empty list and
+  `ALL` (`variables.tf`). Every shape the `SUP-466` decision offers but none needs that slice changed,
+  planned and merged before the sitting; the waiting list's row and §N.12.4 say so.
+- **[Claude] The waiting list**: the Stage 17 row lost `app-ml-dev`'s model package group, which holds
+  `app-ml-dev/1` since 2026-11-22 (registered 20:00:18, approved 20:39:53, the entries above).
+
+## 2026-11-23 — 9.11's application half written, and R2's first pushes read against the projects, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again and prepare what needs nothing up; subagents of this session read the stage text against the
+logs and the code, and Claude read each finding's two sides before writing it. No AWS call.*
+
+- **[Claude] 9.11's application half**, written by a subagent of this session in the branch's worktree and
+  reviewed here, committed as `70cbdf17`: `app-etl-train` leaves `examples/app-etl/workflows/`, the
+  manifest (its three `workflow.create` and `code/app-etl-train.zip`) and `build-task-code`'s archive;
+  the pipeline loses `staging-model`, `production-register`, `production-approve` and
+  `production-transform`, and `staging-test` starts the `app-etl` chain alone; `scripts/model-chain.py`
+  keeps `approve` with `app-ml`'s call shape, reads the group from `sagemaker/`'s outputs and refuses one
+  that is not `awsds-<env>-model-<application>` by its ARN, and loses `register`, `transform` and
+  `--package-arn`; `evaluate` and its seven tests, `TRAINING_IMAGE_URI` in the manifest and
+  `LINT_ALGORITHM_REPOSITORIES` in the pipeline go with them; the lint pin moves to `4401f91`; the
+  hook's and the Makefile's comments follow.
+- **[Claude] The offline readings**, on a copy of the tree: `uv sync --locked`, `ruff check` and
+  `ruff format --check` clean; `pytest` *"93 passed, 1 skipped"*, `main`'s 100 less the seven removed
+  tests; the lint at `4401f91` with the pipeline's options *"ok: 8 arquivo(s)"*, and on a copy whose
+  manifest still names `app-etl-train` two `manifest` refusals; `code/app-etl.zip` 5,895 bytes holding
+  `app_etl_tasks.py` alone; `./scripts/model-chain.py --check` and `./scripts/deploy-application.py
+  --self-check` `OK`, and the commit's hooks passing. No file of the repository calls `register`,
+  `transform` or `--package-arn`.
+- **[Claude] Left to the estate half and the records**, 9.11's own order: the Glue job's training sets
+  (`--TRAIN_PATH`), which no reader takes after the release, since the release changes nothing else;
+  `scripts/tfhygiene/targets.py`, with no caller left; `training-image.tf`'s comment in both targets; and
+  the files that walk the model jobs.
+- **[Claude] 9.7's and 10.6's first push**: R1 left `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`
+  empty (Stage 19's log of 2026-11-22), so a first release has no merge request. `sagemaker-application.md`
+  §L step 1 now carries the commands, `main` pushed by a Maintainer from `examples/<app>/`'s archive and
+  the tree read against its source (Lesson 86); `gitlab.md`'s template procedure stays for a later change,
+  its `git rm -q -r .` exiting 128 on an empty clone. 9.7 and 10.6 say so, 9.7's first commit carrying
+  `model.json`'s training job and hash.
+- **[Claude] R2's order**, `promotion.md` §N.11.2: both raises name `GROUPS=bedrock-base`; Staging stays up
+  through step 3's leg and step 4 lowers it; `pip-audit` runs the day of each tag before it (Lesson 77);
+  `sagemaker-application.md` §L step 8 names the four changes a project with no list needs to accept a
+  finding, since `gates-v0.6.0`'s `case` maps `awsds/dev-env` alone; step 3 reads lxiv's first half and
+  Stage 8 xxvi after each leg (§N.5).
+- **[Claude] `SUP-464`**'s path corrected to `terraform-live/*/sagemaker/training-image.tf`, and **`SUP-466`**'s
+  reading of 2026-11-23 given its log, the entry on 10.5's writing above.

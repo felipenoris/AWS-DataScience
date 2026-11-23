@@ -2439,3 +2439,37 @@ as `awsds-infra-prod`, after Stage 19 4.12's (that stage's log); the reads as `a
   and its delete. `catalog.py` lists `app-dbt-dev`'s two assets, `trades` and `notional_by_desk`. The
   scheduled run of 2026-11-23 starts after the delete, so of 8.6's two deletions only pass 5's table asset
   remains, if that run imports `notional_by_desk_prod`. That run is read at the next login.
+
+## 2026-11-23 — R2's pre-flight for `app-dbt` with nothing up, and the read before its tag
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94` from `main` at `b89b5a0f`. No AWS call: each job ran on the laptop
+over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on CPython 3.12.13 and uv
+0.12.13. Times UTC.*
+
+- **[Claude] The `test` job**, at 02:14: `uv sync --locked`, `ruff check` and `ruff format --check`
+  clean; `pytest` 86 passed in a copy that is a git repository, as the GitLab project is (83 passed and 3
+  skipped in one that is not, the skips reading `run-dbt.sh`'s stored mode through git); the lint at the
+  pin `4401f91` *"ok: 4 arquivo(s)"* with the pipeline's instance types.
+- **[Claude] The `pip-audit` job**, at 02:17, its script read from this repository's
+  `ci-gates/gates.gitlab-ci.yml` and run verbatim with `GATES_UV_PROJECTS=.`: *"78 of 78 pinned
+  package(s) audited, 0 blocking vulnerability(ies)"*, *"No known vulnerabilities found"*, exit 0. A
+  dated verdict: R2 runs it again on the day of the tag (Lesson 77).
+- **[Claude] The `build-task-code` job**, at 02:23, its script as written: `code/app-dbt.zip` 5,102
+  entries, 26,129,277 bytes, 82,844,382 unzipped, `run-dbt.sh` and `app_dbt/bin/dbt` at `0o100755`, exit
+  0. 5.1's archive, one model larger, read 5,103 entries.
+- **[Claude] `./scripts/deploy-application.py --self-check`**: `app-dbt`'s two stages `ok` at 9 variables,
+  with 8.1's three workflow names.
+- **[Claude] The read before the tag**: `promotion.md` §N.11.2 step 2 now has Claude read `app-dbt-dev`'s
+  assets after 8.6's deletion and before `app-dbt`'s tag, `trades` and `notional_by_desk` expected alone
+  (2.4's read), since `bundle`'s guard, `scripts/check-catalog-export.py`, fails on any asset
+  `product.json` does not list, and a protected tag never moves (Lesson 86). 5.0's subscription
+  `6n3yg1rsytsemo` (request `6oy7kvmszacaa8`) was revoked before any import of its link, by §N.10's day 2
+  (pull request #384), so 8.6's one deletion left is pass 5's table asset, if the source's scheduled run of
+  2026-11-23 imported it (the entry above).
+- **[Claude] `SUP-391`** gains 5.2's reading of 2026-11-22 (this log), the subscription target's node joining
+  the graph across the accounts; the entry held the one-account reading of 2026-11-21.
+- **[Claude] The Status** loses *"Left: 5.0's revocation with 4.12's"* after pull request #384's merge
+  (`663aee70`), the revocation being the entry above.
+- **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
+  and GitLab.

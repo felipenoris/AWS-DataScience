@@ -5,21 +5,19 @@ Data Science environment, and the template its other applications start from: th
 `awsds/app-etl` received this tree from the infrastructure repository's `examples/app-etl/`
 (Stage 8 step 2.2) and holds it since. Since step 2.5 it is a SageMaker application (D41): a manifest
 the CI/CD CLI deploys to a project, and its workflows: `app-etl`, five tasks over the trades, the last
-listing the product in the SageMaker Catalog (Stage 19);
-`app-etl-train`, an XGBoost model trained on what `app-etl` prepared (Stage 10 step 5.1); and
-`app-etl-warehouse`, Production's load of the product into the governed warehouse (Stage 9 step 9.4),
-which Production's project alone receives. The cycle an application on this template follows, from a
-space to Production, hand by hand, is `docs/plan/runbooks/sagemaker-application.md` in the infrastructure
-repository.
+listing the product in the SageMaker Catalog (Stage 19); and `app-etl-warehouse`, Production's load of
+the product into the governed warehouse (Stage 9 step 9.4), which Production's project alone receives.
+The cycle an application on this template follows, from a space to Production, hand by hand, is
+`docs/plan/runbooks/sagemaker-application.md` in the infrastructure repository.
 
 | Path | What it is |
 |---|---|
 | `src/app_etl/` | the code of the processing job: `pipeline.py` the transformation, `__main__.py` the command; the job reads it as its input, never from the image (D28 class 2d) |
-| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; `publish`, the product and its data product listed in the SageMaker Catalog; and `evaluate`, a training job's metrics written beside its model; the pipeline zips the file once per workflow, `code/app-etl.zip` and `code/app-etl-train.zip`, each workflow's `code` (class 2b) |
+| `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; and `publish`, the product and its data product listed in the SageMaker Catalog; the pipeline zips the file as `code/app-etl.zip`, the workflow's `code` (class 2b) |
 | `glue/transform.py` | the Glue job's script, the Spark transform over the trades: the CSV the processing job reads, the application's table and the training sets (class 2c) |
 | `glue/load_warehouse.py` | Production's warehouse load: the product table into `trades.trades_notional` of the database `governed`, over JDBC as the project's role (class 2c) |
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
-| `workflows/` | the three workflow definitions, in the CI/CD CLI's notation |
+| `workflows/` | the workflow definitions, in the CI/CD CLI's notation |
 | `manifest.yaml` | the application: its content, the folders the CLI copies and the catalog it carries, and its three stages, one account each: `dev`, the Sandbox project it is developed in, and `staging` and `prod`, each account's deployment project (the infrastructure repository's Stage 19 step 4.9) |
 | `product.json` | the product the application declares: the catalog resources a release must carry and the ones it may, which the pipeline's `bundle` job holds the `dev` project's export to |
 | `scripts/dev-cli.sh` | the CI/CD CLI for the `dev` stage in a space: the house image's CLI by its path, its domain lookup answered by `DOMAIN_ID`, the other stages' variables given a placeholder; no storage item names `scripts/`, so the bundle never carries it |
@@ -86,14 +84,6 @@ the first deploy, the same name in every project, never by the application. The 
 `datazone` endpoint, naming the domain by `{domain.id}` and the account by the stage variable
 `ACCOUNT_ID`; a post that fails leaves the job's result alone.
 
-`app-etl-train` runs two tasks after `app-etl`: `train`, a SageMaker training job on AWS's XGBoost 3.0-5
-by digest (`{env.TRAINING_IMAGE_URI}`), `ml.m5.large`, network-isolated in the job subnets, its volume
-and its model under the project's key, the model under `models/`; and `evaluate`, which writes
-`models/<job>/evaluation.json`, SageMaker's model-quality statistics with the validation RMSE and the
-batch's row count. The training job's name comes to `evaluate` through `train`'s XCom, since
-`{{ ts_nodash }}` is midnight in a manual run and two runs of one day would collide on it. The CLI
-creates the workflow in `dev` and does not run it.
-
 `app-etl-warehouse` is one Glue task, `load`: the job `app-etl-load-<project id>`, created by the
 task as `app-etl`'s is, reads the product table and writes it into the governed warehouse, whose names
 are the task's arguments. The manifest lists the workflow and the `prod` stage's bootstrap alone
@@ -148,16 +138,12 @@ awsds-workflows lint . --image-repository awsds-prod-ecr-app-etl --instance-type
 
 The deploy to the `dev` project runs the CI/CD CLI (`aws-smus-cicd-cli` 1.0.9) from a space on the house
 image, as the project's role, with the shell variables the manifest reads, `JOB_IMAGE_URI` being the image
-the last release's notes name. The workers' packages come first, one per workflow with a `code` field,
+the last release's notes name. The worker's package comes first, the `code` of the workflow `app-etl`,
 since `bundle` and `deploy` copy and never build; then the deploy, which copies the folders and creates
-both workflows, and a run:
+the workflow, and a run:
 
 ```bash
 python3 -m zipfile -c code/app-etl.zip code/app_etl_tasks.py
-```
-
-```bash
-python3 -m zipfile -c code/app-etl-train.zip code/app_etl_tasks.py
 ```
 
 ```bash
@@ -187,7 +173,7 @@ repository's `docs/plan/runbooks/sagemaker-application.md` §D.
 |---|---|---|
 | any branch | `test` (`uv sync --locked`, ruff, pytest, the workflow lint), `secret_detection` and its gate, `pip-audit` | the test runner, no AWS identity |
 | `main` | the same, and `pages` | the test runner |
-| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the workers' zips); `bundle` (the release's bundle, made from the tag's files and the `dev` project's catalog, held to `product.json`; nothing is deployed in Sandbox); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-gate` (manual), `staging-check` (Staging's `egress/`, the user's to raise, and its deployment project read), `staging-deploy` (the CLI's deploy into the project), `staging-test` (both chains, the report and the product table), `staging-model` (the batch transform of Staging's model), `production-check` (Production's project and the deploy role's membership), `production-gate` (manual), `production-deploy` (the CLI's deploy, whose bootstrap runs `app-etl`); then Production's manual jobs `production-warehouse-ddl`, `production-register` and `production-approve`, and `production-transform` after the approval | the test runner, the build runner, and the deploy runner for `bundle` and the promotion |
+| a tag `v<semver>` | `test`, `pip-audit`, `build-image` (smoke, then the push as `v<semver>-<short sha>`), `scan-gate`, informative: it may fail and the pipeline goes on; `build-task-code` (the worker's zip); `bundle` (the release's bundle, made from the tag's files and the `dev` project's catalog, held to `product.json`; nothing is deployed in Sandbox); `store-bundle` (the bundle to `awsds-prod-releases`); `release` (the tag's GitLab release); the promotion: `staging-gate` (manual), `staging-check` (Staging's `egress/`, the user's to raise, and its deployment project read), `staging-deploy` (the CLI's deploy into the project), `staging-test` (the chain `app-etl`, the report and the product table), `production-check` (Production's project and the deploy role's membership), `production-gate` (manual), `production-deploy` (the CLI's deploy, whose bootstrap runs `app-etl`); then Production's manual job `production-warehouse-ddl` | the test runner, the build runner, and the deploy runner for `bundle` and the promotion |
 
 A release is a tag `v<major>.<minor>.<patch>` on `main`, which only a Maintainer can create: the tag is
 protected, and that protection is the release gate. ECR's tags are immutable, so a second pipeline for
@@ -220,16 +206,12 @@ against the SHA256 `bundle` passed; `scripts/deploy-application.py` extracts it 
 manifest, fills the stage's variables from the project's Tooling environment and runs the CLI's `deploy`,
 which copies the files under the project's shared prefix, imports the catalog without listing anything
 and creates or updates the stage's workflows; the script reads the deploy's log beyond its exit status
-and records the stage's variables for the chains. The leg starts each chain's machine and follows it,
-reads the report and the product table's metadata, `scripts/model-chain.py` serves Staging's own model by
-a batch transform and counts the predictions, and nothing is torn down: Staging's `make down` is the
-user's. Production's project is read before the manual gate, the deploy role's membership of it
+and records the stage's variables for the chains. The leg starts the chain's machine and follows it,
+reads the report and the product table's metadata, and nothing is torn down: Staging's `make down` is
+the user's. Production's project is read before the manual gate, the deploy role's membership of it
 included, and gets the same bundle and image; its deploy's bootstrap runs `app-etl` and follows the run,
-whose last task lists the product. After
-`production-deploy`, three jobs wait for a person: the warehouse's DDL once the compute is up; the
-registration of the newest completed `app-etl-train` job as `PendingManualApproval`, once Production's
-train chain has run; and its approval, the deployment manager's pause, which the batch transform of the
-approved version follows. The jobs need the hub and the deploy runner, and a Production run
+whose last task lists the product. After `production-deploy`, the warehouse's DDL waits for a person,
+who runs it once the compute is up. The jobs need the hub and the deploy runner, and a Production run
 `production/workloads-egress/` (`make up ENV=production ONLY=workloads-egress`).
 
 ## The job contract

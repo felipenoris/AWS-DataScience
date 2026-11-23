@@ -39,9 +39,11 @@ variables:
   IMAGE_REPO: awsds-prod-ecr-app-ml
   # The workflow tooling, by commit: its lint reads manifest.yaml and workflows/ against the rules of
   # a SageMaker application (D28), offline. The commit is the merge of awsds-workflows pull request
-  # #26 (Stage 17 step 9.3), which adds the rules `transformacao` and `modelo` and the option
-  # `--model-item`, the test job's way to admit the one storage item that names a connection.
-  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/37cb5a6260c8348cc208988e42090caf42a3a207.zip"
+  # #29, whose rule `operador` refuses the native notebook operator by name (the infrastructure
+  # repository's Stage 8 5.6), after #26 (Stage 17 step 9.3) added the rules `transformacao` and
+  # `modelo` and the option `--model-item`, the test job's way to admit the one storage item that
+  # names a connection.
+  AWSDS_WORKFLOWS: "awsds-workflows @ https://github.com/felipenoris/awsds-workflows/archive/4401f91ffdf3b742c231e08bfe3443b05de4afec.zip"
   # The instance types a job may ask for: the ceiling DenySageMakerInstanceCeiling carries in the
   # Workloads SCP and in Sandbox's project boundary, the list terraform-modules/sagemaker-denies holds
   # (allowed_instance_types) in the infrastructure repository. A copy, since the application's

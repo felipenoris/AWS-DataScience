@@ -1455,3 +1455,20 @@ Account 1), at 22:15. The workgroup was still up and idle, §N.9's day 3 holding
   1,494, 0.1494 USD. The balance stands 0.06 USD under `ChargedSeconds`, about the 20:00 interval's
   0.048 USD, so the next day's reading settles which meter it follows (`SUP-142`, `SUP-143`). The intervals of
   6h's steps 5 and 10, 21:30 and 22:00, read 0.
+
+## 2026-11-23 — The Status and 5.1's text read against day 1, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again; a subagent of this session read the stage text against the logs, and Claude read each
+finding's two sides before writing it. No AWS call.*
+
+- **[Claude] The Status**: the three items owed with the compute up, the `--sql` reading of 2026-10-10 and
+  the re-plan read as done on 2026-11-22 (the entries above); the doubled clause on verification x's bill
+  half removed.
+- **[Claude] 5.1's `max_query_execution_time`** binds as a Query Monitoring Rule, verdict (c), in place of
+  *"unmeasured"*; the sitting's first block records the re-plan's `No changes`.
+- **[Claude] The trial's readings**: day 2 ran on day 1's raise and lowered it on 2026-11-23, so the 286.16
+  of about 22:14 is day 1's alone, and the readings after day 2 and the next day are each set against both
+  days' `ChargedSeconds` per workgroup (the waiting list's row, and its 2026-12-19 date, which still read
+  287.51).

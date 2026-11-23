@@ -1,6 +1,5 @@
-"""The worker's tasks, offline: the report over fabricated summaries, the listing over a double of
-DataZone, and the evaluation over doubles of SageMaker and S3, since the project installs no boto3
-(the worker carries it)."""
+"""The worker's tasks, offline: the report over fabricated summaries and the listing over a double
+of DataZone, since the project installs no boto3 (the worker carries it)."""
 
 from __future__ import annotations
 
@@ -107,97 +106,6 @@ def test_summarize_returns_the_report_as_json_text(s3, capsys):
 def test_summarize_refuses_a_prefix_without_summaries(s3):
     with pytest.raises(RuntimeError, match="no .summary.json under"):
         app_etl_tasks.summarize("s3://bucket/app-etl/work/empty/")
-
-
-TRAINING = {
-    "TrainingJobName": "app-etl-train-20261024T120000",
-    "TrainingJobStatus": "Completed",
-    "ModelArtifacts": {
-        "S3ModelArtifacts": (
-            "s3://bucket/models/app-etl/app-etl-train-20261024T120000/output/model.tar.gz"
-        )
-    },
-    "FinalMetricDataList": [
-        {"MetricName": "train:rmse", "Value": 12.5},
-        {"MetricName": "validation:rmse", "Value": 40.25},
-    ],
-}
-
-
-class FakeClients:
-    """The SageMaker and S3 calls `evaluate` makes, over TRAINING and a batch of three rows."""
-
-    def __init__(self, training):
-        self.training = training
-        self.put = {}
-
-    def describe_training_job(self, TrainingJobName):
-        assert TrainingJobName == self.training["TrainingJobName"]
-        return self.training
-
-    def get_object(self, Bucket, Key):
-        assert (Bucket, Key) == ("bucket", "app-etl/work/train/batch/batch.csv")
-        body = b"120,98.5\n500,1.08\n80,99.75\n"
-        return {"Body": types.SimpleNamespace(read=lambda: body)}
-
-    def put_object(self, Bucket, Key, Body):
-        self.put[f"s3://{Bucket}/{Key}"] = json.loads(Body)
-
-
-def run_evaluate(monkeypatch, training):
-    clients = FakeClients(training)
-    boto3 = types.ModuleType("boto3")
-    boto3.client = lambda service: clients
-    monkeypatch.setitem(sys.modules, "boto3", boto3)
-    result = app_etl_tasks.evaluate(
-        json.dumps({"Training": training}),
-        batch="s3://bucket/app-etl/work/train/batch/batch.csv",
-        models="s3://bucket/models/app-etl/",
-    )
-    return clients, json.loads(result)
-
-
-def test_evaluate_writes_the_model_quality_beside_the_model(monkeypatch, capsys):
-    clients, result = run_evaluate(monkeypatch, TRAINING)
-    key = "s3://bucket/models/app-etl/app-etl-train-20261024T120000/evaluation.json"
-    assert clients.put[key] == result
-    assert result["regression_metrics"]["rmse"] == {"value": 40.25, "standard_deviation": "NaN"}
-    assert result["awsds"]["batch_rows"] == 3
-    assert result["awsds"]["model_data"].endswith("/output/model.tar.gz")
-    assert "validation:rmse 40.25, 3 batch row(s)" in capsys.readouterr().out
-
-
-def test_evaluate_refuses_a_job_that_did_not_complete(monkeypatch):
-    with pytest.raises(RuntimeError, match="is Failed, not Completed"):
-        run_evaluate(monkeypatch, {**TRAINING, "TrainingJobStatus": "Failed"})
-
-
-def test_evaluate_refuses_a_job_without_the_validation_metric(monkeypatch):
-    training = {**TRAINING, "FinalMetricDataList": [{"MetricName": "train:rmse", "Value": 1.0}]}
-    with pytest.raises(RuntimeError, match="reports no validation:rmse"):
-        run_evaluate(monkeypatch, training)
-
-
-def test_the_job_name_is_read_from_the_xcom_as_the_worker_renders_it():
-    rendered = json.dumps({"Training": TRAINING})
-    assert app_etl_tasks.training_job_name(rendered) == "app-etl-train-20261024T120000"
-
-
-def test_the_job_name_is_read_from_twice_encoded_text_a_dict_and_a_literal():
-    name = "app-etl-train-20261024T120000"
-    assert app_etl_tasks.training_job_name(json.dumps(json.dumps({"Training": TRAINING}))) == name
-    assert app_etl_tasks.training_job_name({"Training": TRAINING}) == name
-    assert app_etl_tasks.training_job_name(repr({"Training": TRAINING})) == name
-
-
-def test_an_xcom_without_the_job_fails_naming_its_keys():
-    with pytest.raises(RuntimeError, match=r"names no training job: \['Processing'\]"):
-        app_etl_tasks.training_job_name(json.dumps({"Processing": {}}))
-
-
-def test_an_xcom_that_is_not_json_fails():
-    with pytest.raises(RuntimeError, match="neither JSON nor a literal"):
-        app_etl_tasks.training_job_name("app-etl-train-20261024T120000 (")
 
 
 DOMAIN, PROJECT = "dzd-example", "prj-example"

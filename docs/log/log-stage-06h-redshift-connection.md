@@ -2889,3 +2889,19 @@ with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and
   `lineageSync` `False`, `READY`. `./aws/warehouse.py awsds-infra-sandbox-1` at 21:58:02: 11 pass, 6 note,
   0 fail, `WH-9` as before.
 - **[Claude] Left by these steps**: nothing. N.9's session told at 22:02 that it may lower.
+
+## 2026-11-23 — The Status, decision 8 and xi read against day 1, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again; a subagent of this session read the stage text against the logs, and Claude read each
+finding's two sides before writing it. No AWS call.*
+
+- **[Claude] The Status**: its older clauses owed pass 3's negatives and the standing apply; they now say
+  the warehouse sitting's day 1 ran them, the apply at 19:18 UTC (the entries of 2026-11-22). Decision 8's
+  text records the apply.
+- **[Claude] xi** answered *"yes, a contributor can"* to a question asking whether anything stops one; it
+  now reads *"no, nothing stops a contributor"*, the entry of 2026-11-22's wording.
+- **[Claude] 6.4 in `promotion.md` §N.6 item 9**: its plan put 6.4 on §N.10's day 2, and the day's record,
+  pull request #384's, did not name it; after that pull request's merge (`663aee70`) the record says
+  `lab` kept (6.4, taken 2026-11-22), as §N.10.4 step 3 does.

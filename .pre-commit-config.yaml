@@ -124,15 +124,15 @@ repos:
         pass_filenames: false
         files: ^(terraform-live/(staging|production)/(foundation|sagemaker|studio)/.*\.tf|scripts/check-copies\.py)$
 
-      # Stage 10 steps 5.2 and 5.4 - the model chain's requests, built from stand-in values: a model
-      # without network isolation or a transform without the data key fails here, not at the
-      # Workloads OU's document in a pipeline job.
+      # Stage 17 pass 9 - the approval's lookup on stand-in values: a version found by a hash its
+      # description does not carry, or a group read from sagemaker/'s outputs that is not the
+      # application's by its ARN, fails here, not at the approval in a pipeline job.
       - id: model-chain-check
-        name: the model chain's requests carry the job settings
+        name: the approval finds the release's version by its hash in the application's group
         entry: ./scripts/model-chain.py --check
         language: system
         pass_filenames: false
-        files: ^scripts/(model-chain\.py|tfhygiene/(targets|projects)\.py)$
+        files: ^scripts/(model-chain\.py|tfhygiene/states\.py)$
 
       # Stage 19 step 4.9 - the leg's deploy against each application's manifest, offline: a target
       # stage reading a variable the script does not fill, or a workflow naming one a stage does not

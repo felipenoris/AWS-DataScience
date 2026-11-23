@@ -4899,3 +4899,22 @@ user with `InfrastructureAccess`). Times are UTC.*
   app the idle shutdown deleted at 23:19:09 (`DeleteApp` by `AWSServiceRoleForAmazonSageMakerNotebooks`
   through `global.workflows.looseleaf.im.amazonaws.com`, `SUP-221`). No app stands in any of Stage 17's
   three domains.
+
+## 2026-11-23 — The remainder's sitting and its 6.1 (viii) address, read with nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan. No AWS call.*
+
+- **[Claude] The remainder's date**: *The remainder after day 1* still placed steps 9 to 12 at the end of
+  `promotion.md` §N.9's day 3, which ran on 2026-11-22 without them (the entry above). It now names §N.6
+  item 7's later Sandbox sitting, last in its day, dated 2026-11-25 in §N.12.1; §N.12.4's bullet points
+  there too. The Status row already said a later Sandbox sitting.
+- **[Claude] Item 4's address**: step 11 reads the Code Editor app's address from step 6's `200` line, and
+  step 6 does not run in the remainder. The addresses step 6 mapped on 2026-11-21 (`code` 10.20.72.18 among
+  them) belonged to apps the idle shutdown and the user deleted that day. Item 4 now takes the address from
+  step 6's filter run from item 2's app start, the other spaces stopped.
+- **[Claude] `SUP-168`, `SUP-380` and `SUP-456`**: their idle-range readings of 2026-11-22 named this log,
+  which holds none of them; their `Where:` names pull request #380 (`df632a3b`), whose commit message
+  carries them. `SUP-380`'s *"only the parameter differs"* now says the override's presence at the
+  environment's creation differs with it, which reading 2 and the entry of 2026-11-22 also leave open.
