@@ -4963,6 +4963,16 @@ entry is still true is the reading.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/sandbox-ml/pipeline/definition.json`.
 
+- `SUP-485` **`ListModelPackages` answers an empty list, exit 0, for a group that does not exist** (measured
+  2026-11-23 in Staging, Stage 17 9.11, as `InfrastructureAccess`). `list-model-packages
+  --model-package-group-name awsds-staging-model-app-etl` read `"ModelPackageSummaryList": []`, and so did a
+  name no group ever carried. `describe-model-package-group` on the first answered *"ValidationException ...
+  ModelPackageGroup arn:aws:sagemaker:us-west-2:<Staging>:model-package-group/awsds-staging-model-app-etl does
+  not exist."*, and `list-model-package-groups` listed `awsds-staging-model-app-ml` alone. So a group "holding
+  no version" is read with `DescribeModelPackageGroup` first: R2's reading of 2026-11-23, "`awsds-staging-model-
+  app-etl` holds no version", was this empty list over a group no slice declared. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API
@@ -5797,6 +5807,9 @@ entry is still true is the reading.
   removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
   workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,
   by a chain or by hand, until it is deleted outside the CLI, and its archive stays in the workflow scan's root.
+  Read again 2026-11-23 at 21:42 UTC, Stage 17 9.11's hand acts: `delete-workflow` removed
+  `app_etl_deploy_staging_app_etl_train` and `app_etl_deploy_production_app_etl_train`, and each workflow's log group
+  under `/aws/mwaa-serverless/` stayed, Staging's with 34,965 bytes.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23 (9.11).
 
 ## Bedrock

@@ -3226,3 +3226,26 @@ from 15:14 to 15:35. Times UTC.*
 - **[Claude] Its bill**: 23,040 `ChargedSeconds`, 2.30 USD, for 4 `ComputeSeconds`, inside Sandbox's free trial
   (5b's log, 2026-11-23).
 - **[Claude] Records**: this stage's 9.5a and xxiii; `SUP-474`.
+
+## 2026-11-23 — `DT-8` reads Staging's product databases
+
+*Claude's hand, Stage 17 9.11's estate session, which carries the change on the user's words in the orchestrating
+session's chat (*"Sobre "OR-8 e DT-8 entram no PR da sessão do 9.11.", sim pode fazer desta forma."*); reads as
+the infrastructure user, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] What failed**: R2's run of `./aws/deploytargets.py` failed `DT-8` on *"staging table app_dbt.trades
+  carries a lake table's name - Staging holds no copy (decision 3)"* (Stage 8's log, R2's §R). `app-dbt`'s Glue
+  job loads the bundle's sample into its own `app_dbt.trades`, which shares `curated.trades`' name and copies
+  nothing from it (Stage 19 decision 22 (a)).
+- **[Claude] The change**, on 9.11's branch: a lake table's namesake in an application's product database,
+  `STAGING_PRODUCT_DBS` (`app_etl`, `app_dbt`, `foundation/deploy-project.tf`'s `deployment_product_databases`,
+  which a test compares), is a note; anywhere else it fails. The check also passed with a side unread: an
+  unread lake or Staging catalog is now a note, never a pass, and a copy found still fails.
+  `aws/tests/test_registry_and_namesakes.py` holds the cases, the empty ones included.
+- **[Claude] The run** at 21:36:21: *"DT-8 staging share — 2 grant(s) to Staging, DESCRIBE and SELECT alone"*,
+  *"staging links — resolve into Data Governance: curated, raw"*, *"staging copies — no local table outside a
+  product database carries a lake table's name"*, and the note *"staging table app_dbt.trades — an
+  application's own table, loaded from the bundle's sample, sharing a lake table's name (Stage 19 decision 22
+  (a))"*. Staging's local databases: `app_dbt`, `app_etl`, `default`. The run read 45 passed, 1 note, 0 failed;
+  the eleven failed calls are the opening `sts get-caller-identity` of the profiles whose SSO sessions were not
+  signed in.

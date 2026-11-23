@@ -2,9 +2,10 @@
 # steps 3.1-3.4 (INT-08), and the misuse alarm with the alerts topic it reaches (4.6, decision 5).
 #
 # What it does from the deploy runner: the CI/CD CLI's deploy into deploy-staging and the leg around it
-# (Stage 19 steps 4.8 and 4.9), the start of the chains in staging-test, and the model chain's jobs. It
-# applies no slice and writes no state: staging/egress/ is the user's `make up` / `make down` since
-# decision 27 (2026-10-24), and the leg reads it before it writes (scripts/check-egress.py). Its grants
+# (Stage 19 steps 4.8 and 4.9), the start of the chains in staging-test, and the approval of app-ml's
+# version in this account's registry. It applies no slice and writes no state: staging/egress/ is the
+# user's `make up` / `make down` since decision 27 (2026-10-24), and the leg reads it before it writes
+# (scripts/check-egress.py). Its grants
 # are the inline document apply-application (apply-application.tf) and the managed policy
 # deploy-project.tf attaches.
 #
@@ -40,11 +41,6 @@ locals {
   partition      = data.aws_partition.current.partition
   account_id     = data.aws_caller_identity.current.account_id
   region_account = "${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}"
-
-  # Production's model registry (production/sagemaker/registry.tf): the deploy runner's home is that
-  # account (D14), so the alias above resolves its id.
-  registry_account_id = data.aws_caller_identity.deploy_runner.account_id
-  registry_env        = one([for k, v in var.deploy_runner : v.env])
 }
 
 module "deploy_role" {
@@ -69,28 +65,10 @@ module "deploy_role" {
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# Staging's statements in apply-application.tf's document: the leg's read of the version it deploys,
-# the approval of a version in this account's own registry, and the chain's machine it starts in
-# staging-test and follows to its end (Stage 10 decision 19).
+# Staging's statements in apply-application.tf's document: the approval of a version in this account's
+# own registry, and the chain's machine it starts in staging-test and follows to its end (Stage 10
+# decision 19).
 data "aws_iam_policy_document" "apply_application_in_this_account" {
-  # checkov:skip=CKV_AWS_356:ListModelPackages on "*": the Service Reference gives it the type model-package, and which ARN the service evaluates is unread (Stage 17 9.1); the registry's resource policy names this role
-
-  # Step 3.2: the approved version, read in production/sagemaker/registry.tf's groups, whose resource
-  # policy admits this role to the same two actions (Stage 9 step 3.2).
-  statement {
-    sid       = "ReadTheApprovedModelVersions"
-    effect    = "Allow"
-    actions   = ["sagemaker:DescribeModelPackage"]
-    resources = ["arn:${local.partition}:sagemaker:${data.aws_region.current.region}:${local.registry_account_id}:model-package/awsds-${local.registry_env}-model-*/*"]
-  }
-
-  statement {
-    sid       = "ListTheModelVersions"
-    effect    = "Allow"
-    actions   = ["sagemaker:ListModelPackages"]
-    resources = ["*"]
-  }
-
   # Stage 17 step 9.5: app-ml's versions in this account's group (staging/sagemaker/registry.tf), which
   # the register task proposes PendingManualApproval as the deployment project's role and staging-test
   # approves. No CreateModelPackage: a task registers (Stage 17 decision 16 (b)).

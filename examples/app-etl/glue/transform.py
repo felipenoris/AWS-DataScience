@@ -8,9 +8,6 @@ The job reads the trades, applies `transform` and writes what the next steps rea
   file to the target's key and deletes what Spark wrote, with the boto3 the Glue worker carries;
 - with --TABLE_PATH, the application's table as Parquet under that prefix, read back and counted
   against the rows read;
-- with --TRAIN_PATH, the training sets in XGBoost's CSV layout, the label first and no header:
-  `train/train.csv`, every fifth row in `validation/validation.csv`, and the features alone in
-  `batch/batch.csv`, the batch transform's input (Stage 10 steps 5.1 and 5.4);
 - with --TABLE_DATABASE and --TABLE_NAME, both or neither, the product: the result as an Iceberg
   table of the project's database, on the Spark catalog PRODUCT_CATALOG the job's --conf declares
   over the account's Glue Data Catalog, read back and counted (Stage 19 decision 2). The Glue table
@@ -35,7 +32,6 @@ pyspark and boto3. What it prints are counts, names and paths, never a value of 
 
 from __future__ import annotations
 
-import io
 import json
 import sys
 from urllib.parse import urlparse
@@ -48,16 +44,10 @@ from pyspark.sql import functions as F
 # The application's schema source: the columns it reads from the governed table, in order.
 GOVERNED_COLUMNS = ("trade_date", "desk", "instrument", "quantity", "price")
 
-# The training sets: the label XGBoost learns and the features it learns it from.
-LABEL = "notional"
-FEATURES = ("quantity", "price")
-VALIDATION_EVERY = 5
-
 OPTIONAL = (
     "SOURCE_TABLE",
     "SOURCE_SNAPSHOT",
     "TABLE_PATH",
-    "TRAIN_PATH",
     "TABLE_DATABASE",
     "TABLE_NAME",
 )
@@ -189,32 +179,6 @@ def write_product_table(spark: SparkSession, result: DataFrame, name: str, rows:
     print(f"wrote {rows} row(s) to the product table {name}")
 
 
-def training_sets(rows: list[dict]) -> dict[str, str]:
-    """XGBoost's CSV layout, the label first and no header: the training and validation sets, and
-    the batch transform's input, the features alone, by file name."""
-    train, validation, batch = io.StringIO(), io.StringIO(), io.StringIO()
-    for index, row in enumerate(rows):
-        features = ",".join(str(row[name]) for name in FEATURES)
-        target = validation if index % VALIDATION_EVERY == VALIDATION_EVERY - 1 else train
-        target.write(f"{row[LABEL]},{features}\n")
-        batch.write(f"{features}\n")
-    return {
-        "train/train.csv": train.getvalue(),
-        "validation/validation.csv": validation.getvalue(),
-        "batch/batch.csv": batch.getvalue(),
-    }
-
-
-def write_training_sets(result: DataFrame, path: str) -> None:
-    """The three files of `training_sets` under the prefix `path`."""
-    rows = [row.asDict() for row in result.select(LABEL, *FEATURES).collect()]
-    bucket, prefix = split_uri(path.rstrip("/") + "/")
-    s3 = boto3.client("s3")
-    for name, body in training_sets(rows).items():
-        s3.put_object(Bucket=bucket, Key=prefix + name, Body=body.encode())
-        print(f"wrote s3://{bucket}/{prefix}{name}, {body.count(chr(10))} line(s)")
-
-
 def main() -> None:
     arguments = getResolvedOptions(sys.argv, ["SOURCE_PATH", "TARGET_PATH"])
     arguments.update(optional_options(sys.argv, OPTIONAL))
@@ -237,8 +201,6 @@ def main() -> None:
     product = product_table(arguments)
     if product:
         write_product_table(spark, result, product, rows)
-    if arguments.get("TRAIN_PATH"):
-        write_training_sets(result, arguments["TRAIN_PATH"])
 
 
 if __name__ == "__main__":

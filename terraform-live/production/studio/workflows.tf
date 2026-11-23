@@ -1,20 +1,19 @@
 # The workflows grant on the deployment project's role (Stage 19 step 4.4): the statements
 # sandbox/workflows/ attaches to every Sandbox project role, whose reasoning and measurements are
-# that slice's main.tf; the same pair for the training job app-etl-train creates; the pair for the
-# transform job and the tag of the model app-ml's tasks create, with the registration of app-ml's
-# model versions, which the role cannot approve (Stage 17 step 9.5); where project-roles.tf sets
-# publishing_starts_the_source, the publishing task's start of the project's data source; and where
-# it sets publishing_creates_the_data_product, the task's creation and revision of the product's data
-# product. In a deployment project the role is every workflow's execution role and the role of the
-# Glue, processing, training and transform jobs its operators create (Stage 18 step 4.4: without the
-# grant the first run was refused glue:GetJob; SUP-267).
+# that slice's main.tf; the pair for the transform job and the tag of the model app-ml's tasks
+# create, with the registration of app-ml's model versions, which the role cannot approve (Stage 17
+# step 9.5); where project-roles.tf sets publishing_starts_the_source, the publishing task's start of
+# the project's data source; and where it sets publishing_creates_the_data_product, the task's
+# creation and revision of the product's data product. In a deployment project the role is every
+# workflow's execution role and the role of the Glue, processing and transform jobs its operators
+# create (Stage 18 step 4.4: without the grant the first run was refused glue:GetJob; SUP-267). No
+# workflow of a target trains: app-ml trains in its dev project alone (Stage 17 step 9.2).
 #
 # The policy exists once the blueprints are enabled, since its last statement can name the domain.
 # It is attached to the roles project-roles.tf names.
 
 locals {
   processing_jobs = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:processing-job/*"
-  training_jobs   = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:training-job/*"
   transform_jobs  = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:transform-job/*"
   models          = "arn:${data.aws_partition.current.partition}:sagemaker:${var.region}:${data.aws_caller_identity.current.account_id}:model/*"
 
@@ -34,7 +33,7 @@ locals {
     var.publishing_creates_the_data_product ? "creates or revises the product's data product" : "",
   ])
   workflows_description = join("", [
-    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing, training or transform job name before creating the job, a task tags a model with the caller's project and registers app-ml's model versions, which the role cannot approve",
+    "sandbox/workflows/'s grant on a deployment project's role: a workflow's operators check a Glue, processing or transform job name before creating the job, a task tags a model with the caller's project and registers app-ml's model versions, which the role cannot approve",
     length(local.publishing_steps) > 0 ? ", and the publishing task ${join(" and ", local.publishing_steps)}" : "",
     ".",
   ])
@@ -93,50 +92,8 @@ data "aws_iam_policy_document" "workflows" {
     }
   }
 
-  # SageMakerTrainingOperator describes the job name before CreateTrainingJob (SUP-268), and the
-  # blueprint's DescribeTrainingJob, like its DescribeProcessingJob, requires the caller's project tag.
-  statement {
-    sid       = "DescribeATrainingJobNoProjectHolds"
-    effect    = "Allow"
-    actions   = ["sagemaker:DescribeTrainingJob"]
-    resources = [local.training_jobs]
-
-    condition {
-      test     = "Null"
-      variable = "aws:ResourceTag/AmazonDataZoneProject"
-      values   = ["true"]
-    }
-  }
-
-  # The training job's tags, authorized as sagemaker:AddTags under the same conditions as the
-  # processing job's.
-  statement {
-    sid       = "TagATrainingJobWithTheCallersProject"
-    effect    = "Allow"
-    actions   = ["sagemaker:AddTags"]
-    resources = [local.training_jobs]
-
-    condition {
-      test     = "StringEquals"
-      variable = "aws:RequestTag/AmazonDataZoneProject"
-      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
-    }
-
-    condition {
-      test     = "StringEqualsIfExists"
-      variable = "aws:ResourceTag/AmazonDataZoneProject"
-      values   = ["$${aws:PrincipalTag/AmazonDataZoneProject}"]
-    }
-
-    condition {
-      test     = "ForAllValues:StringEquals"
-      variable = "aws:TagKeys"
-      values   = ["AmazonDataZoneProject"]
-    }
-  }
-
   # SageMakerTransformOperator describes the job name before CreateTransformJob (SUP-372), and the
-  # blueprint's DescribeTransformJob, like its DescribeTrainingJob, requires the caller's project tag.
+  # blueprint's DescribeTransformJob, like its DescribeProcessingJob, requires the caller's project tag.
   statement {
     sid       = "DescribeATransformJobNoProjectHolds"
     effect    = "Allow"

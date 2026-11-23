@@ -1108,8 +1108,10 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   Stage 17's consumes another application's marker as written, so xxv stays open on them.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
-- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provokes in
-  both deployment projects, `app-etl-train` leaving `workflows/`. **A workflow's 50th version**: Stage 8 xxiii, read
+- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provoked in
+  both deployment projects on 2026-11-23, `app-etl-train` leaving `workflows/`: the CLI's deploy kept the
+  workflow `READY` and both of its files (`SUP-484`), whose deletion is an act of 9.11's estate (N.6 item
+  11). **A workflow's 50th version**: Stage 8 xxiii, read
   2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin. No release deploys
   to that project since Stage 19 decision 19 (c), so its count stands; the question passes to the `dev`
   project's workflows, a version per deploy from a space, and from release F to each deployment
@@ -1271,8 +1273,13 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
     targets, `app-dbt` as `v0.1.1`.
 11. **With nothing up, after R2**: 9.11's estate pull request, planned from a `main` that holds it
     (Lesson 79), option (a) taken by the user on 2026-11-23: `awsds-prod-model-app-etl/1` deleted by hand on the
-    user's word, then the apply removes both groups; the retired workflow `app_etl_deploy_<target>_app_etl_train`
-    and its two files deleted in each target (`SUP-484`), each an act the user names.
+    user's word, then the apply removes Production's group, Staging having none (`SUP-485`); the retired workflow
+    `app_etl_deploy_<target>_app_etl_train` and its two files deleted in each target (`SUP-484`), each an act the
+    user names. The pull request, #397, was written and planned from its branch on 2026-11-23 (Stage 17's log):
+    seven slices change, `staging/sagemaker/` reads `No changes`. The hand acts ran the same evening on the
+    user's words: version 1, both retired workflows and their files, and Staging's `models/`. After the merge, a
+    session from `main` plans, applies on the user's words and re-plans each slice `No changes` (lxiv's third
+    half); `work/train/` is deleted after `app-etl`'s next release.
 12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
     xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
     can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
