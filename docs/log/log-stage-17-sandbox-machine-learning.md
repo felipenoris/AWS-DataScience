@@ -6481,3 +6481,73 @@ logs. No AWS call: the readings are R2's, relayed from its transcript on 2026-11
   local times converted to UTC: `app-etl.zip`, `app-etl.yaml` and `app-etl-warehouse.yaml` at 19:06:24, 19:07:23
   and 19:07:38; `code/app-etl-train.zip` (2026-11-22 04:46:32) and `workflows/app-etl-train.yaml` (04:47:40)
   kept.
+
+## 2026-11-23 — 9.11's estate: the applies from `main`, the re-plans and the instruments
+
+*Claude's hand, the session of 9.11's estate applies, on the branch `claude/nervous-roentgen-9d111c`, as the
+infrastructure user with `InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`) and `Production
+Account` (`awsds-infra-prod`). The writes are the seven applies, each on the user's words in the session's
+chat; the running sessions were told before each. The account id in an error is written `<Production
+Account>`. Terraform 1.17.2. Times UTC.*
+
+- **[The user] The authorizations**, in this session's chat: *"Autorizo os três"*, answering a question that
+  named `staging/chains`, `staging/studio` and `staging/foundation`; then, one at a time, *"Autorizo
+  production/chains"*, *"Autorizo o studio"*, *"Autorizo o foundation"* and *"Autorizo o sagemaker"*, each
+  answering a question that named its Production slice. The user signed in again at 22:19 and 22:48 (the
+  token's cache written 22:48:22); the cache was written once more at 23:36:36, `expiresAt` 00:36:36 the next
+  day, before the authorization of `production/foundation`.
+- **[Claude] The plans**, from `main` at `7a3f4e37`, `-input=false`, each saved to
+  `~/tmp/s17-911-<account>-<slice>.tfplan`, both `foundation/` with the project folder's `alerts.auto.tfvars`:
+  Staging 22:20:48 to 22:22:08, Production 22:22:57 to 22:24:21. Each read as #397's table: both `chains/`
+  *"Plan: 0 to add, 1 to change, 6 to destroy."*, `app-etl-train`'s state machine, schedule, `chain_failed`
+  and `workflow_failed` rules and their targets, and `app_etl_deploy_<target>_app_etl_train-??????????` out of
+  two statements of the chain-exec role's inline policy; both `studio/` *"2 to add, 0 to change, 2 to
+  destroy"*, `awsds-<env>-workflows` replaced on its description with its attachment,
+  `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` out; both `foundation/` *"0
+  to add, 2 to change, 0 to destroy"*, the statements #397 lists and Staging's output
+  `registry_model_package_group_arn_prefix`; `production/sagemaker/` *"0 to add, 0 to change, 2 to destroy"*,
+  the group and its policy. #398 merged at 22:21:57 as `99a47744` and #399 at 22:51:04 as `6d297252`; neither
+  touched `terraform-live/`, `terraform-modules/`, `scripts/`, `aws/` or `examples/`, so the branch was
+  fast-forwarded to each and the saved plans applied as read.
+- **[Claude] Before**, 22:24:58: the eight schedules of `awsds-staging-chains` and the seven of
+  `awsds-prod-chains` `DISABLED`; `awsds-prod-model-app-etl` `Completed`, `list-model-packages` `[]`. Read again
+  at 23:38:07, before its apply: the same, its policy holding `RegisterAndApproveAsTheProductionDeployRole`,
+  `ReadTheVersionsAsTheStagingDeployRole` and `ReadTheStatusFromSandbox`.
+- **[Claude] Staging's applies**, 22:37:29 to 22:38:45: `staging/chains/` *"Apply complete! Resources: 0
+  added, 1 changed, 6 destroyed."*, the state machine's destruction taking 36 s; `staging/studio/` *"2 added, 0
+  changed, 2 destroyed"*, the policy destroyed and created again within 22:38:20 to 22:38:33; and
+  `staging/foundation/` *"0 added, 2 changed, 0 destroyed"*. Each re-planned `No changes` from `99a47744`,
+  22:38:52 to 22:39:49.
+- **[Claude] Staging read back** at 22:39:56: seven schedules, each `DISABLED`; `awsds-staging-chain-app-etl` the
+  one `app-etl` state machine; no EventBridge rule named `*app-etl-train*`; `awsds-staging-workflows` `v1`,
+  created 22:38:30, attached to the deployment project's role alone, nine statements, the training pair gone.
+- **[Claude] Production's applies**, each on its own words: `production/chains/` 22:48:20 to 22:49:33, *"0
+  added, 1 changed, 6 destroyed"*, the state machine 55 s; `production/studio/` 22:59:22 to 22:59:37, *"2 added,
+  0 changed, 2 destroyed"*; `production/foundation/` 23:37:04 to 23:37:17, *"0 added, 2 changed, 0
+  destroyed"*; and `production/sagemaker/` 23:38:45 to 23:38:58, *"0 added, 0 changed, 2 destroyed"*, the group's
+  policy and then the group, each in a second. Each re-planned `No changes` from `main` right after its apply:
+  22:49:56, 23:01:29, 23:37:36 with the var-file, and 23:39:12.
+- **[Claude] Production read back**: at 22:49:56, six schedules `DISABLED`, `awsds-prod-chain-app-etl` and
+  `-app-etl-warehouse` the `app-etl` state machines, no rule named `*app-etl-train*`; at 23:01:37,
+  `awsds-prod-workflows` `v1`, created 22:59:34, attached to `deploy-production`'s role alone, eleven
+  statements, the training pair gone; at 23:37:42, `awsds-deploy-prod`'s `apply-application` with five
+  statements (`RunTheGovernedWarehouseDdl`, `FollowItsOwnStatements`, `ApproveTheModelATaskRegisters`,
+  `DescribeTheEgressEndpoints`, `ReadTheDnsFirewallAssociation`) and `awsds-prod-deploy-project` at `v7` with
+  seventeen, `PassTheProjectRoleToSageMaker` gone; at 23:40:11, `list-model-package-groups` listing
+  `awsds-prod-model-app-ml` alone and `describe-model-package-group` on the retired group answering
+  *"ValidationException … ModelPackageGroup arn:aws:sagemaker:us-west-2:<Production
+  Account>:model-package-group/awsds-prod-model-app-etl does not exist."*
+- **[Claude] lxiv's third half**: every slice the retirement touched re-plans `No changes` from `main`, the seven
+  above and `staging/sagemaker/`, whose change was a comment, initialised and planned from `6d297252` at
+  23:39:41 to 23:39:53. lxiv's second half stays unmeasured: the group held no version at its apply.
+- **[Claude] The retired workflows' log groups**, read at 23:40:11 as at 21:42: Staging's with 34,965 bytes and
+  Production's with 0, neither with a retention. No apply touched them.
+- **[Claude] The instruments**, on the five infrastructure profiles. A first run at 23:40:11 passed the five
+  as one word, zsh leaving an unquoted variable unsplit (Lesson 84), and each script stopped on *"no profile
+  authenticated"*, writing nothing. Run again with the five as separate words: `./aws/orchestration.py`, 23:40:33
+  to 23:43:24, exit 2, 125 checks passing, `OR-8` passing in both targets on `app-ml`'s versions and noting
+  `awsds-prod-model-app-etl`'s two events as `awsds-deploy-prod` (the newest 2026-10-25 01:29:10), `OR-9` reading
+  the remaining chains' schedules `DISABLED`, and 15 `OR-2` failures, each a log group with no retention
+  (`EXC-25`), the two retired workflows' groups among them; `./aws/deploytargets.py`, 23:43:24 to 23:45:03, exit
+  0, 44 checks passing, `DT-3` reading `awsds-prod-model-app-ml` alone with its two-statement policy, and
+  `DT-8`'s note on `app_dbt.trades`. Neither run had a failed call.
