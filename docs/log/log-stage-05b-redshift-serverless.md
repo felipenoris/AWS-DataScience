@@ -1510,3 +1510,23 @@ permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account 
   reading is owed.
 - **[Claude] Records**: this stage's `Status` row; `SUP-143`, `SUP-474`; `docs/PRICING.md` §5's federated
   catalog paragraph; `promotion.md` §N.10.6; the waiting list's two trial rows and its 2026-12-19 date.
+
+## 2026-11-23 — The `default` workgroup dimension, read with nothing up
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", at the user's request in that session's chat to
+review `AWS_SUPPLEMENT` with the session's learnings (*"Revise o `AWS_SUPPLEMENT` com o aprendizado desta
+sessão"*). The reads as the infrastructure user, permission set `InfrastructureAccess`, through
+`awsds-infra-sandbox-1` and `awsds-infra-prod`, from 15:25 to 15:35. Times are UTC.*
+
+- **[Claude] What publishes**: `list-metrics` names `DatabaseConnections`, `ChargedSeconds`, `ComputeCapacity`
+  and `ComputeSeconds` under `Workgroup` `default` in Sandbox and in Production, where no workgroup has that name.
+  `ChargedSeconds`' daily `Sum` is 0 and its `SampleCount` 1,439 or 1,440 from 2026-11-09 to 2026-11-21 in
+  Sandbox, and the same in Production but 227 on 2026-11-16 and 695 on 2026-11-17. 2026-11-22 holds 1,098 in
+  Sandbox and 341 in Production, and 2026-11-23 none in either.
+- **[Claude] Against the workgroups' trail**: the half-hour counts end at 03:46 on 2026-11-16 and 05:41 on
+  2026-11-22 in Production, after `CreateWorkgroup` at 03:45:46 and 05:39:48, and at 18:18 on 2026-11-22 in
+  Sandbox, after `CreateWorkgroup` at 18:16:42. Production's came back at 12:25 on 2026-11-17, after
+  `DeleteWorkgroup` at 05:33:18 to 05:33:20 on 2026-11-16. Neither came back after the latest deletes, 05:47:52 to
+  05:48:01 on 2026-11-22 in Production and 02:17:17 to 02:17:34 on 2026-11-23 in Sandbox.
+- **[Claude] What it changes**: the zeros of `default` in this day's earlier entry and in Stage 9's are this
+  dimension, and its silence holds no workgroup (`SUP-478`).
