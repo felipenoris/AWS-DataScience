@@ -1278,8 +1278,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
     user names. The pull request, #397, was written and planned from its branch on 2026-11-23 (Stage 17's log):
     seven slices change, `staging/sagemaker/` reads `No changes`. The hand acts ran the same evening on the
     user's words: version 1, both retired workflows and their files, and Staging's `models/`. After the merge, a
-    session from `main` plans, applies on the user's words and re-plans each slice `No changes` (lxiv's third
-    half); `work/train/` is deleted after `app-etl`'s next release.
+    session from `main` applied the seven slices on the user's words, 22:37 to 23:39 UTC, and re-planned each
+    `No changes`, `staging/sagemaker/` included (lxiv's third half, Stage 17's log); `work/train/` is deleted after
+    `app-etl`'s next release.
 12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
     xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
     can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
