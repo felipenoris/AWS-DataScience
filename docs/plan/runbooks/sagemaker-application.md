@@ -254,7 +254,49 @@ The infrastructure user creates `awsds/<app>` as GitLab's local administrator, a
 is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G, the mirror's §M):
 
 1. **The project**: group `awsds` → **New project → Create blank project**, visibility **Private**, no
-   README. The first push brings the template's tree.
+   README. The first push brings the template's tree onto `main`, by a Maintainer and with no merge
+   request: an empty project has no `main` to merge into, and [`gitlab.md`](gitlab.md)'s "The application
+   template" swaps the files of a branch cut from one (its `git rm -q -r .` exits 128 on an empty clone).
+   The commands run on the laptop with the tunnel up and git trusting the root, from a checkout of this
+   repository at the commit whose `examples/<app>/` is the release's, `<app>` the application's name:
+
+   ```bash
+   git clone https://gitlab.awsds.internal/awsds/<app>.git "$HOME/tmp/<app>"
+   ```
+
+   ```bash
+   git archive --format=tar -o "$HOME/tmp/<app>-template.tar" HEAD:examples/<app>
+   ```
+
+   ```bash
+   tar -x -f "$HOME/tmp/<app>-template.tar" -C "$HOME/tmp/<app>"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/<app>" add -A
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/<app>" commit -m "examples/<app> at <commit>, the application's first tree"
+   ```
+
+   ```bash
+   git -C "$HOME/tmp/<app>" push -u origin HEAD:main
+   ```
+
+   [Claude] then reads the pushed tree against its source (Lesson 86): the first hash, the project's, equals
+   the second, this repository's:
+
+   ```bash
+   git -C "$HOME/tmp/<app>" rev-parse 'HEAD^{tree}'
+   ```
+
+   ```bash
+   git rev-parse 'HEAD:examples/<app>'
+   ```
+
+   `main`'s pipeline runs `test`, `secret_detection` and, with `GATES_UV_PROJECTS`, `pip-audit`, and the tag
+   follows on `main` (§T). A later change reaches the project by a merge request, `gitlab.md`'s procedure.
 2. **Protection**: **Settings → Repository → Protected branches**, `main`, push and merge
    **Maintainers**; **Protected tags**, `v*`, create **Maintainers**. The protected tag is the whole of
    the release gate in GitLab CE: whoever may create it may release, and the build and deploy runners
@@ -301,8 +343,12 @@ is a control (the runners' half is [`gitlab.md`](gitlab.md) §K, the gates' §G,
 7. **Pages** needs no setting: the `pages` job on `main` publishes `public/` under the project's own name
    below `awsds-pages.internal`, shown under **Deploy → Pages**, reachable through the VPN.
 8. **An accepted finding** of `pip-audit` is a line in `awsds/ci-gates`'s `baselines.gitlab-ci.yml`, in
-   a list keyed by the project's path, and a new `gates-v*` tag (`gitlab.md` §G); the image's scan
-   baseline is the Distribution lineage's, shared by every `awsds-prod-ecr-app-*`.
+   a list keyed by the project's path, and a new `gates-v*` tag (`gitlab.md` §G). A project with no list
+   yet needs four changes before its tag: the list, its arm in `gates.gitlab-ci.yml`'s `case` on
+   `$CI_PROJECT_PATH`, which maps `awsds/dev-env` alone at `gates-v0.6.0` and gives every other path no
+   accepted finding, the gates tag, and the commit that moves the application's `include:` `ref` to it;
+   otherwise the lock moves past the finding. The image's scan baseline is the Distribution lineage's,
+   shared by every `awsds-prod-ecr-app-*`.
 
 ---
 

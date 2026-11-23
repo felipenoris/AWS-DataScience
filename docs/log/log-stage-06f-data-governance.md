@@ -1709,3 +1709,14 @@ Governance Manager no portal (item 6)" were told from 14:53:07 to 14:53:11, befo
   `DeleteEnvironment` and `DeleteStack`, at 14:59, are 7.6's (Stage 17's log).
 - **2.7 done**: the record is gone, and the database, the table, their grants and the source stand as
   before. The portal's client-side cleanup (`SUP-172`) was not on the path.
+
+## 2026-11-23 — `SUP-365` given 2.4's revocation, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again; a subagent of this session read the stage text against the logs, and Claude read each
+finding's two sides before writing it. No AWS call.*
+
+- **[Claude] `SUP-365`** gains 2.4's reading of 2026-11-22 (the entry above): `retainPermissions` `false`,
+  the grant revoked 39 s and the link deleted 49 s after `RevokeSubscription`, and *"TABLE_NOT_FOUND"*. The
+  entry held Stage 19's reading of 2026-11-14 alone.

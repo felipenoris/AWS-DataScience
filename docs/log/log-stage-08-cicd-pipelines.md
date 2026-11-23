@@ -4636,3 +4636,25 @@ Times are UTC.*
   `4401f91`: `app-etl` *"ok: 9 arquivo(s)"* at `196acee` and at `4401f91`, `app-ml` *"ok: 6 arquivo(s)"* and
   `app-genai` *"ok: 3 arquivo(s)"* at `37cb5a6` and at `4401f91`, every run exit 0. `app-dbt` is pinned at
   `4401f91` already, so each application's next tag moves its pin with nothing to change in its workflows.
+
+## 2026-11-23 — 5.6 (c)'s rule, 3.3's record, xxvii and the runners' projects read against the logs, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again; a subagent of this session read the stage text against the logs, and Claude read each
+finding's two sides before writing it. No AWS call.*
+
+- **[Claude] 5.6 (c)** now names `SageMakerUnifiedStudioNotebookOperator`, which the rule `operador`
+  refuses since `awsds-workflows` `4401f91` (the entry of 2026-11-21). `app-ml` and `app-genai` moved to
+  that pin on 2026-11-23 and `app-etl` with Stage 17 9.11's change, so R2 runs every application at it.
+- **[Claude] 3.3's snapshot record** read as run on `v0.4.7`'s legs (the entries of 2026-11-15); the Status
+  and 3.3 still said it was unrun.
+- **[Claude] xxvii's plan half** waits for an Amazon Linux release that lands while the runners are up:
+  Stage 19's log of 2026-11-15 read `ami-0dac6cd09676c9fb1`, modified 2026-11-12, and runners created on
+  it planning `No changes`. The verification and the waiting list's Promotion row, which said the half was
+  readable, say so.
+- **[Claude] The mirror**: the sentence holding its state of 2026-10-25 gives the rule, and `gitlab.md` §M
+  step 5 reads the mirror at `origin/main`'s commit after each push (Lesson 86).
+- **[Claude] `gitlab.md`** after R1's acts (Stage 19's log of 2026-11-22): §K's runner table lists
+  `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt` on the three runners, §M step 3's allowlist holds
+  them, and §U's `BUILD=1` row names every application's tag.

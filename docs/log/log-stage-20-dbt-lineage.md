@@ -2407,7 +2407,7 @@ are not copied. Times UTC.*
   before R2's tag (8.6). `jup-app-dbt-dev` was left `InService` under its idle timeout, with `~/app-dbt`
   and the tar in its home; its JupyterLab tab was closed at 20:14.
 
-## 2026-11-23 — R2's pre-flight for `app-dbt` with nothing up, and the order 8.6 waits on
+## 2026-11-23 — R2's pre-flight for `app-dbt` with nothing up, and the read before its tag
 
 *Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
 `claude/prep-pending-sittings-369d94` from `main` at `b89b5a0f`. No AWS call: each job ran on the laptop
@@ -2427,22 +2427,13 @@ over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on C
   0. 5.1's archive, one model larger, read 5,103 entries.
 - **[Claude] `./scripts/deploy-application.py --self-check`**: `app-dbt`'s two stages `ok` at 9 variables,
   with 8.1's three workflow names.
-- **[Claude] The order**: `promotion.md` §N.10.7 item 1, §N.11.2's opening and step 2 and §N.6 item 10 now
-  say that R2 waits on the revocation of 5.0's subscription `6oy7kvmszacaa8` that ends §N.10's day 2. The
-  revocation deletes the link `app_dbt.trades_notional` (`SUP-365`); while the link stands, the source
-  imports it again at each 02:43 run (`SUP-197`), so 8.6's deletion of its asset holds only after the
-  revocation.
+- **[Claude] The read before the tag**: `promotion.md` §N.11.2 step 2 now has Claude read `app-dbt-dev`'s
+  assets after 8.6's deletion and before `app-dbt`'s tag, `trades` and `notional_by_desk` expected alone
+  (2.4's read), since `bundle`'s guard, `scripts/check-catalog-export.py`, fails on any asset
+  `product.json` does not list, and a protected tag never moves (Lesson 86). 5.0's subscription
+  `6n3yg1rsytsemo` (request `6oy7kvmszacaa8`) was revoked before any import of its link, by §N.10's day 2
+  (pull request #384), so 8.6 deletes pass 5's table asset alone.
+- **[Claude] `SUP-391`** gains 5.2's reading of 2026-11-22 (this log), the subscription target's node joining
+  the graph across the accounts; the entry held the one-account reading of 2026-11-21.
 - **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
   and GitLab.
-
-## 2026-11-23 — R2's read of the revocation before 8.6, written with nothing up
-
-*Claude's hand, in the same side session and branch as the entry above, at the user's request in its
-chat to review the pending plan. No AWS call.*
-
-- **[Claude] The read before 8.6** (Lesson 86): the session of `promotion.md` §N.10's day 2 reported Stage
-  20 5.0's revocation at 02:20 UTC and Stage 19 4.12's at 02:18, and its pull request #384 still read *"the
-  revocations not run"* at 02:08. §N.11.2 step 2 now has Claude read the object before 8.6's deletion:
-  subscription `6n3yg1rsytsemo` `REVOKED` and the link `app_dbt.trades_notional` gone from Sandbox's
-  catalog, the names this log recorded on 2026-11-22 (the request `6oy7kvmszacaa8`, the link's
-  `glue:CreateTable` at 14:05:20).

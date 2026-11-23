@@ -4914,3 +4914,7 @@ plan. No AWS call.*
   step 6 does not run in the remainder. The addresses step 6 mapped on 2026-11-21 (`code` 10.20.72.18 among
   them) belonged to apps the idle shutdown and the user deleted that day. Item 4 now takes the address from
   step 6's filter run from item 2's app start, the other spaces stopped.
+- **[Claude] `SUP-168`, `SUP-380` and `SUP-456`**: their idle-range readings of 2026-11-22 named this log,
+  which holds none of them; their `Where:` names pull request #380 (`df632a3b`), whose commit message
+  carries them. `SUP-380`'s *"only the parameter differs"* now says the override's presence at the
+  environment's creation differs with it, which reading 2 and the entry of 2026-11-22 also leave open.

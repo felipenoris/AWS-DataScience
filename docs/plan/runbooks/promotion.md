@@ -1215,8 +1215,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
 6. **With nothing up, now**: [user] Stage 19's xxvi portal half, then 4.12's request by
    `eighth-experimentation` and Stage 20 5.0's by `app-dbt-dev`, both on release G's listing, each
    approved by the Governance Manager; [Claude] each fulfilment read on both sides, then Stage 20 5.1's
-   model, its archive and its tar. Since R1 carried no `app-dbt` bundle, 5.0 waits on none: its link asset
-   and pass 5's table asset leave `app-dbt-dev` before R2's `app-dbt` tag (Stage 20 8.6). Both
+   model, its archive and its tar. Since R1 carried no `app-dbt` bundle, 5.0 waits on none: pass 5's table
+   asset leaves `app-dbt-dev` before R2's `app-dbt` tag (Stage 20 8.6). Both
    subscriptions stay until N.10's day 2 ends, since both of its days read through them. **Run 2026-11-22**
    with nothing up: the requests `6gtjmvdzma9n9s` at 08:27:36 UTC and `6oy7kvmszacaa8` at 08:28:16 UTC;
    xxvi's portal half from 13:35 to 13:50 UTC, yes; the Governance Manager's approvals at 14:04:10 and
@@ -1256,18 +1256,18 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    creation for want of the access role's `redshift-data:ListDatabases` (`SUP-460`), runs again on day 2;
    the four metadata reads were applied the same evening.
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
-    orders before pass 8, and the revocation of Stage 20 5.0's subscription that ends item 9's day 2, which
-    8.6 waits on (N.10.7 item 1); #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening
-    pushes the mirror: `app-dbt`'s first release,
+    orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
+    mirror: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
     retiring its model half (9.11).
 11. **With nothing up, after R2**: 9.11's estate pull request, planned from a `main` that holds it
     (Lesson 79).
-12. **The stages' close**: after item 5, Stages 8, 9 and 10 hold only what N.5 lists, and each can close
-    as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The user's
-    decision, read then.
+12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
+    xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
+    can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
+    user's decision, read then.
 13. **What waits on something else** (N.5): a second application in a chain that consumes another's
     marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 10),
     a workflow's 50th version, a blueprint reconciliation, and the halves no step provokes.
@@ -2678,11 +2678,8 @@ warehouse's share to 2026-12-19; whether it covers the two other compute objects
 
 #### N.10.7 What follows the sitting
 
-1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5, this sitting's day 1 (N.6 items 7 to 10) and the
-   revocation of Stage 20 5.0's subscription that ends its day 2 (N.10.4 step 3), #321 merged on
-   2026-11-22: Stage 20 orders its pass 8 after pass 5, and 8.6's deletion of 5.0's link asset holds only
-   once the revocation has deleted the link, which `app-dbt-dev`'s source imports again at each daily run
-   while it stands (`SUP-197`, `SUP-365`).
+1. **R2** (N.11.2), after N.9's day 3, Stage 17 10.5 and this sitting's day 1 (N.6 items 7 to 10), #321
+   merged on 2026-11-22: Stage 20 orders its pass 8 after pass 5.
 2. The bill halves after 2026-12-19: 5b's verification x and 6h's xii; Stage 19's close (its sitting 12);
    Stage 21's close.
 
@@ -2708,7 +2705,7 @@ request and release G's reached GitLab with step 2's password rotation unconfirm
 2026-11-22 that the admin user's password was changed in this sitting, its order against the pushes unstated
 (Stage 19's log). N.6 item 6, Stage 19 4.12's and Stage 20 5.0's requests, is left for after
 the sitting, with nothing up: pass 8 being R2's, 5.0 waits on no `bundle` job, and R2's tag first deletes
-its link's asset (Stage 20 8.6, N.11.2 step 2). The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
+pass 5's table asset (Stage 20 8.6, N.11.2 step 2), 5.0's link revoked on 2026-11-23 before any import. The build runner was terminated at 02:41:40 by an apply without `BUILD=1` and raised again at 04:01:22,
 so step 4 now reads it before the tag.
 
 1. [Claude] With nothing up: N.8.3 step 1, `LastRotatedDate` on 2026-11-22; the other sessions told;
@@ -2761,41 +2758,49 @@ so step 4 now reads it before the tag.
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
 After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
-whose pass 5 Stage 20 orders before pass 8, and the revocation of Stage 20 5.0's subscription that ends
-N.10's day 2, which step 2's deletion of the link asset waits on (N.10.7 item 1), #321 merged on
-2026-11-22; before 2026-12-18, since it carries
+whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22, and
+[pull request #390](https://github.com/felipenoris/AWS-DataScience/pull/390) merged, whose `examples/` trees
+steps 2 and 3 push; before 2026-12-18, since it carries
 `app-dbt`'s first release, which R1 left on 2026-11-22, or with that archive moved to dbt 1.12.
 
 1. [Claude] The other sessions told, `make status`. [user] `make hub-up`, `make gitlab-up BUILD=1`, the
    tunnel. Then what R1 left (N.11.1 steps 6 and 7): [user] the keychain's `gitlab.awsds.internal` entry
    erased (N.8.2 step 3) if it still holds the password from before R1's rotation, which the first push shows; #321 merged at `81d70158` (N.11.1 step 6),
-   `git pull` and `git push gitlab main`, the mirror the legs clone the scripts from; `awsds/dev-env`'s README row for
-   `default-v0.10.1` by a merge request, then [Claude] its mirror (`./scripts/gitlab-mirror.py awsds/dev-env`,
+   `git pull` on `main` in the project folder and `git push gitlab main`, the mirror the legs clone the
+   scripts from, [Claude] read at `origin/main`'s commit ([`gitlab.md`](gitlab.md) §M step 5);
+   `awsds/dev-env`'s README row for `default-v0.10.1` by a merge request, then [Claude] its mirror (`./scripts/gitlab-mirror.py awsds/dev-env`,
    `gitlab/README.md`, *Changing a recipe*), which moves `gitlab/mirror.json` past `7f2623b6`. [Claude]
    Before each tag of step 2, the build runner read running ([`gitlab.md`](gitlab.md) §U step 3).
-2. [user] Each application's first push and branch pipeline, its merge request and its tag, in this order:
-   `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), R1 having left it; `app-ml`'s (Stage 17 9.7), whose bundle
-   carries the candidate `app-ml-dev` last published; `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no
-   `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
-   ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
-   `make up ENV=production ONLY=workloads-egress` before the first `production-gate`. Each raise names
-   `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's through the `optional_service_groups` variable
-   Stage 17 10.5 gives `staging/egress/` (written 2026-11-23). [Claude] the
+2. [user] Each application's first push, onto its empty project's `main` with no merge request
+   ([`sagemaker-application.md`](sagemaker-application.md) §L step 1), its `main` pipeline and its tag, as
+   a deployment manager, in this order: `app-dbt`'s `v0.1.0` (Stage 20 8.7 and 8.8), R1 having left it;
+   `app-ml`'s (Stage 17 9.7), whose bundle carries the candidate `app-ml-dev` last published;
+   `app-genai`'s (10.6), whose `.gitlab-ci.yml` sets no `GATES_UV_PROJECTS`, so its pipeline runs no
+   `pip-audit` and no gates tag comes first. The pins of `app-ml` and `app-genai` moved to
+   `awsds-workflows` `4401f91` with nothing up on 2026-11-23 (Stage 17's log), the pin `app-dbt` holds.
+   `make up ENV=staging ONLY=egress GROUPS=bedrock-base` before the first tag, Staging staying up through
+   step 3's leg (this order governs 8.8's lowering); `make up ENV=production ONLY=workloads-egress
+   GROUPS=bedrock-base` before the first `production-gate`. `bedrock-base` serves `app-genai`'s
+   `staging-check` and 10.6's start of its Production chain, Staging's through the
+   `optional_service_groups` variable Stage 17 10.5 gives `staging/egress/` (written 2026-11-23), and a
+   `make up` without it destroys the group's endpoints. [Claude] The day of each tag, before it:
+   `pip-audit`'s step verbatim on `app-dbt` (`.`) and `app-ml` (`code`) (Lesson 77), a finding holding the
+   tag until the lock moves or `sagemaker-application.md` §L step 8's acceptance is in place; and before
+   `app-dbt`'s, after 8.6's deletion below, Stage 20 2.4's asset read on `app-dbt-dev`, `trades` and
+   `notional_by_desk` expected alone, since `bundle`'s guard fails on any other asset once the protected
+   tag exists, and the tag pushed before the next 02:43 UTC run (Lesson 86). [Claude] the
    readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
-   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, after 5.0's revocation and
-   between two of its source's daily runs (02:43 UTC), so the bundle carries neither. [Claude] Before
-   8.6, the revocation's object read (Lesson 86): subscription `6n3yg1rsytsemo` `REVOKED` and the link
-   `app_dbt.trades_notional` gone from Sandbox's catalog, the revocation reported by N.10's day 2 at
-   02:20 UTC on 2026-11-23 (Stage 20's log of 2026-11-22 names both). The pins of
-   `app-ml` and `app-genai` moved to `awsds-workflows` `4401f91` with nothing up on 2026-11-23 (Stage
-   17's log), so each first push carries the pin `app-dbt` already holds.
+   deletion of pass 5's table asset from `app-dbt-dev`, between two of its source's daily runs (02:43 UTC),
+   so the bundle does not carry it; 5.0's link, revoked on 2026-11-23, was never imported.
 3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
-   the model in both targets; `app-etl`'s lint pin moves to `4401f91` with it. 9.11's merge request is
-   Claude's to write with nothing up before the sitting, unwritten at `b89b5a0f`: `app-etl-train` is
-   still in `examples/app-etl/workflows/` and the four model jobs in its `.gitlab-ci.yml`.
-4. [user] `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
-   `make hub-down`. [Claude] `make status`, §R, and 9.11's estate pull request, planned from a `main` that
-   holds the release (N.6 item 11).
+   the model in both targets: 9.11's application half, written and read offline on 2026-11-23 (pull
+   request #390, Stage 17's log), reaches `awsds/app-etl` by [`gitlab.md`](gitlab.md)'s "The application
+   template" with its merge request, its lint pin at `4401f91`. Its Staging leg is the sitting's last.
+   [Claude] After each leg, Stage 17 lxiv's first half and Stage 8 xxvi in that deployment project, the
+   removed `app-etl-train` files left under its prefix by a deploy that empties none (N.5, `SUP-348`).
+4. [user] `make down ENV=staging`; `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`;
+   the tunnel down; `make hub-down`. [Claude] `make status`, §R, and 9.11's estate pull request, planned
+   from a `main` that holds the release (N.6 item 11).
 
 #### N.11.3 The sittings' cost
 
@@ -2960,7 +2965,8 @@ The waiting list holds each as a row. In the calendar's order:
   target's retention mode, by 10.5's commands.
 - **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half and the approvals of the two
   requests, done 2026-11-22 (N.12.5); N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
-  admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
+  admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` alone
+  until 6h's step 7 of 2026-11-22, so
   `test-experimentation`'s notebook reaches no workgroup whatever its grant, and 5.2b as written reads the
   network's timeout, not the schema's verbs (Lesson 42). The wide tag admits every project at the IAM layer
   and lets `projects` take a second entry: `test-experimentation` in `projects` within the wide tag's

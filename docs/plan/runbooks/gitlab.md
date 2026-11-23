@@ -47,7 +47,7 @@ The hub is somebody else's dependency, so a GitLab session leaves it alone (Stag
    |---|---|---|---|
    | `make gitlab-up RUNNERS=0` | none | 0 | runs no pipeline, or comes before the runners' tokens are in their containers (§K): a runner that cannot register bills until `make gitlab-down` |
    | `make gitlab-up` | the deploy and test runners | 0.0376 | runs branch, merge-request and `main` pipelines, whose jobs all carry the test runner's tag, `pages` among them |
-   | `make gitlab-up BUILD=1` | the build runner too | 0.2493 | runs a tag pipeline or builds an image: an `awsds/app-etl` tag `v<semver>`, an `awsds/dev-env` release `<flavour>-v<semver>`, `awsds/deploy-image`'s pipeline. Their untagged jobs (`build-image`, `build-images`, the scans, `store-bundle`, `release`, `staging-gate`, `production-gate`, `build-deploy-image`) run on the build runner alone, and wait as *stuck* without it |
+   | `make gitlab-up BUILD=1` | the build runner too | 0.2493 | runs a tag pipeline or builds an image: an application's tag `v<semver>` (`awsds/app-etl`, `awsds/app-ml`, `awsds/app-genai`, `awsds/app-dbt`), an `awsds/dev-env` release `<flavour>-v<semver>`, `awsds/deploy-image`'s pipeline. Their untagged jobs (`build-image`, `build-images`, the scans, `store-bundle`, `release`, `staging-gate`, `production-gate`, `build-deploy-image`) run on the build runner alone, and wait as *stuck* without it |
 
    The default raises the deploy and test runners:
 
@@ -372,9 +372,9 @@ Each runner is a project runner, never an instance runner (step 6.1), and an `[E
 
 | Runner | Host | Takes | Projects | Raised by |
 |---|---|---|---|---|
-| the build runner `awsds-prod-runner` | `m8i.xlarge` | untagged jobs, on protected refs alone | `awsds/app-etl`, `awsds/dev-env`, and `awsds/deploy-image`, assigned in the admin area | `make gitlab-up BUILD=1` |
-| the deploy runner `awsds-prod-runner-deploy` | `t3a.small` | jobs tagged `awsds-deploy`, on protected refs alone | `awsds/app-etl`, `awsds/dev-env` | `make gitlab-up`, with or without `BUILD=1`, once `deploy_image_digest` is set |
-| the test runner `awsds-prod-runner-test` | `t3a.small` | jobs tagged `awsds-test`, on any ref | `awsds/app-etl`, `awsds/dev-env`, `awsds/ci-gates` | `make gitlab-up`, with or without `BUILD=1` |
+| the build runner `awsds-prod-runner` | `m8i.xlarge` | untagged jobs, on protected refs alone | `awsds/app-etl`, `awsds/dev-env`, and `awsds/deploy-image`, assigned in the admin area; `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`, linked 2026-11-22 | `make gitlab-up BUILD=1` |
+| the deploy runner `awsds-prod-runner-deploy` | `t3a.small` | jobs tagged `awsds-deploy`, on protected refs alone | `awsds/app-etl`, `awsds/dev-env`; `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`, linked 2026-11-22 | `make gitlab-up`, with or without `BUILD=1`, once `deploy_image_digest` is set |
+| the test runner `awsds-prod-runner-test` | `t3a.small` | jobs tagged `awsds-test`, on any ref | `awsds/app-etl`, `awsds/dev-env`, `awsds/ci-gates`; `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`, linked 2026-11-22 | `make gitlab-up`, with or without `BUILD=1` |
 
 ### The build runner
 
@@ -702,17 +702,27 @@ Two copies, in opposite directions. The image recipes live in GitLab since Stage
 
 1. **Create it**, as the local administrator: group `awsds` → **New project → Create blank project**: name `infrastructure`, visibility **Private**, no README. **Protected branches**: `main`, push and merge **Maintainers**.
 2. **Members**: `awsds/deployment-managers` as **Reporter**, since pass 4's first sitting (2026-10-24, the Stage 7 log): Stage 8 decision 2 keeps the mirror as the promotion jobs' reader. `awsds/dev-env-stewards` held that seat until the same day, for the registration job's clone with its job token (`register` and `retire` clone nothing since Stage 8 decision 18).
-3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: `awsds/app-etl`, which replaced `awsds/dev-env` at pass 4's first sitting (2026-10-24), before the first promotion cloned the mirror.
+3. **The job token**: **Settings → CI/CD → Job token permissions → Authorized groups and projects**: `awsds/app-etl`, which replaced `awsds/dev-env` at pass 4's first sitting (2026-10-24), before the first promotion cloned the mirror; `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt` since R1 (2026-11-22, the Stage 19 log).
 4. **The remote**, once, in the project folder: a second remote, never a second push URL on `origin`, through which every session's push would also go to GitLab and fail while it is stopped:
 
    ```bash
    git remote add gitlab https://gitlab.awsds.internal/awsds/infrastructure.git
    ```
 
-5. **The push**, `main` alone, in the same sitting as any merge the pipelines consume:
+5. **The push**, `main` alone, from the project folder on `main` after `git pull`, in the same sitting as any merge the pipelines consume:
 
    ```bash
    git push gitlab main
+   ```
+
+   Then [Claude] reads the mirror at `origin/main`'s commit (Lesson 86), since a leg clones the default branch and a stale checkout pushes a stale `main`; the two hashes are equal:
+
+   ```bash
+   git ls-remote gitlab refs/heads/main
+   ```
+
+   ```bash
+   git rev-parse origin/main
    ```
 
    A job that clones the mirror prints the commit it cloned, so a stale mirror shows in its log; `register` and `retire` clone nothing since Stage 8 decision 18.

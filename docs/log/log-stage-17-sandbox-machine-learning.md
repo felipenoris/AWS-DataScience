@@ -5933,3 +5933,45 @@ call.*
   planned and merged before the sitting; the waiting list's row and §N.12.4 say so.
 - **[Claude] The waiting list**: the Stage 17 row lost `app-ml-dev`'s model package group, which holds
   `app-ml-dev/1` since 2026-11-22 (registered 20:00:18, approved 20:39:53, the entries above).
+
+## 2026-11-23 — 9.11's application half written, and R2's first pushes read against the projects, nothing up
+
+*Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
+`claude/prep-pending-sittings-369d94`, at the user's request in that session's chat to review the pending
+plan again and prepare what needs nothing up; subagents of this session read the stage text against the
+logs and the code, and Claude read each finding's two sides before writing it. No AWS call.*
+
+- **[Claude] 9.11's application half**, written by a subagent of this session in the branch's worktree and
+  reviewed here, committed as `70cbdf17`: `app-etl-train` leaves `examples/app-etl/workflows/`, the
+  manifest (its three `workflow.create` and `code/app-etl-train.zip`) and `build-task-code`'s archive;
+  the pipeline loses `staging-model`, `production-register`, `production-approve` and
+  `production-transform`, and `staging-test` starts the `app-etl` chain alone; `scripts/model-chain.py`
+  keeps `approve` with `app-ml`'s call shape, reads the group from `sagemaker/`'s outputs and refuses one
+  that is not `awsds-<env>-model-<application>` by its ARN, and loses `register`, `transform` and
+  `--package-arn`; `evaluate` and its seven tests, `TRAINING_IMAGE_URI` in the manifest and
+  `LINT_ALGORITHM_REPOSITORIES` in the pipeline go with them; the lint pin moves to `4401f91`; the
+  hook's and the Makefile's comments follow.
+- **[Claude] The offline readings**, on a copy of the tree: `uv sync --locked`, `ruff check` and
+  `ruff format --check` clean; `pytest` *"93 passed, 1 skipped"*, `main`'s 100 less the seven removed
+  tests; the lint at `4401f91` with the pipeline's options *"ok: 8 arquivo(s)"*, and on a copy whose
+  manifest still names `app-etl-train` two `manifest` refusals; `code/app-etl.zip` 5,895 bytes holding
+  `app_etl_tasks.py` alone; `./scripts/model-chain.py --check` and `./scripts/deploy-application.py
+  --self-check` `OK`, and the commit's hooks passing. No file of the repository calls `register`,
+  `transform` or `--package-arn`.
+- **[Claude] Left to the estate half and the records**, 9.11's own order: the Glue job's training sets
+  (`--TRAIN_PATH`), which no reader takes after the release, since the release changes nothing else;
+  `scripts/tfhygiene/targets.py`, with no caller left; `training-image.tf`'s comment in both targets; and
+  the files that walk the model jobs.
+- **[Claude] 9.7's and 10.6's first push**: R1 left `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt`
+  empty (Stage 19's log of 2026-11-22), so a first release has no merge request. `sagemaker-application.md`
+  §L step 1 now carries the commands, `main` pushed by a Maintainer from `examples/<app>/`'s archive and
+  the tree read against its source (Lesson 86); `gitlab.md`'s template procedure stays for a later change,
+  its `git rm -q -r .` exiting 128 on an empty clone. 9.7 and 10.6 say so, 9.7's first commit carrying
+  `model.json`'s training job and hash.
+- **[Claude] R2's order**, `promotion.md` §N.11.2: both raises name `GROUPS=bedrock-base`; Staging stays up
+  through step 3's leg and step 4 lowers it; `pip-audit` runs the day of each tag before it (Lesson 77);
+  `sagemaker-application.md` §L step 8 names the four changes a project with no list needs to accept a
+  finding, since `gates-v0.6.0`'s `case` maps `awsds/dev-env` alone; step 3 reads lxiv's first half and
+  Stage 8 xxvi after each leg (§N.5).
+- **[Claude] `SUP-464`**'s path corrected to `terraform-live/*/sagemaker/training-image.tf`, and **`SUP-466`**'s
+  reading of 2026-11-23 given its log, the entry on 10.5's writing above.
