@@ -2514,3 +2514,41 @@ the trail read as `awsds-infra-data`. Times UTC.*
   `notional_by_desk`, and the source `3uof8bs4x693f4` runs on `cron(43 2 * * ? *)`, `READY`,
   `publishOnImport` false. Its next run creates the asset again, so the tag `v0.1.0` is pushed before 02:43
   on 2026-11-24 (Lesson 86), and 2.4's read runs again right before the tag.
+
+## 2026-11-23 — R2: 8.7's first push, and `v0.1.0`'s pipeline stopped at `build-task-code`
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, which name
+each act of the list `r2-acts-for-15h.md` in order, among them *"primeiro push do app-dbt; tag v0.1.0 do
+app-dbt; gates do app-dbt"*, and *"Um job que falhar para a sessão no log dele."* GitLab as its local
+administrator `felipenoris`, signed in by the user in a Chrome tab of Claude's; git through the laptop's
+keychain credential; AWS reads as the infrastructure user. Times UTC.*
+
+- **[Claude] 8.7's first push** (`sagemaker-application.md` §L step 1): `awsds/app-dbt` cloned empty into
+  `$HOME/tmp/app-dbt`, `examples/app-dbt/` at `origin/main` `495ebb1a` extracted and committed, the tree
+  `71a3400d` on both sides (Lesson 86), `code/run-dbt.sh` at `100755`; pushed onto `main` at 16:48:34 as
+  `395940e8`. The `main` pipeline #141: `secret_detection` and its gate, `pip-audit` *"78 of 78 pinned
+  package(s) audited, 0 blocking vulnerability(ies)"*, and `test` *"83 passed, 3 skipped"*, ruff clean, the
+  lint *"ok: 4 arquivo(s)"*, each on `awsds-prod-runner-test`, the pipeline `success` by 16:50. The three
+  skips are the tests that read `run-dbt.sh`'s stored mode through git, as in a copy that is no git
+  repository (the pre-flight's entry).
+- **[Claude] Before the tag**, at 16:51:21: the build runner `i-015f85e903a4bfe45` running; 2.4's `search`
+  on `app-dbt-dev` listing `trades` and `notional_by_desk` alone; no tag on the project.
+- **[Claude] The tag `v0.1.0`** on `395940e8`, pushed at 16:51:36. Pipeline #143, created 16:51:40:
+  `pip-audit` and `test` green; **`build-task-code` failed** (job 909, 16:52:37 to 16:53:00, on the test
+  runner): *"code/app-dbt.zip: 5102 entries, 26129232 bytes, 82844337 unzipped, modes {'run-dbt.sh':
+  '0o100777', 'app_dbt/bin/dbt': '0o100755'}"*, then *"FATAL: run-dbt.sh at mode 0o100777"*. Every later
+  job skipped: no bundle, no release, nothing deployed, Staging and Production untouched. The tag is spent
+  (a protected tag never moves), so the release becomes `v0.1.1`. The session stopped at the job's log, the
+  user's rule.
+- **[Claude] The cause**: `package-task` copies an included file's mode from the checkout, and the runner's
+  checkout leaves `run-dbt.sh` at `0777` whatever git stores (`100755`), the umask the runner's docker
+  executor checks out under. On the laptop, under umask 022, the archive held `0o100755`, which every
+  earlier build and the bundle's rehearsal read (8.6, and the pre-flight of 02:23). Reproduced on the laptop
+  at 16:53: the same tree with `run-dbt.sh` at `0777` packages to `0o100777`, and after `chmod 0755` to
+  `0o100755` for both files. Lesson 87's class: the check was written against the laptop's umask, and no
+  other application's archive includes an executable (`app-ml`, `app-genai` and `app-etl` carry no mode
+  check).
+- **[Claude] The fix, written and run with nothing deployed**: `build-task-code` runs `chmod 0755
+  code/run-dbt.sh` before `package-task` (commit `360d9a39` on this branch, `examples/app-dbt/` tree
+  `1ed5058e`). The job's script, run on a copy whose `run-dbt.sh` was set to `0777`, printed both modes
+  `0o100755`, exit 0; the `test` job on the tree *"86 passed"*, the lint *"ok: 4 arquivo(s)"*.
