@@ -1222,3 +1222,29 @@ as the warehouse's admin through the Data API; the rest as the infrastructure us
 - **What stays**: the data product `sandbox-trades-hot`, its listing and its assets stay published over the
   dropped relations, with the source `sandbox-lab-trades-hot`, rollback item 1's second half. Pass 5 and the bill
   of the managed workgroup's nine minutes (6.5) are owed.
+
+## 2026-11-23 — The lowering of §N.10's day 2 and §R's readings
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Descer e
+revogar"*, answering *"Desço agora (`make down ENV=sandbox` e `make hub-down`) e revogo as duas
+assinaturas, ou só desço?"*. The `make` targets with `AUTO=1` from this session's shell, the reads as the
+infrastructure user with `InfrastructureAccess`. The revocations of Stage 19 4.12 and Stage 20 5.0 ran during
+the down, needing nothing up (both logs). Times UTC.*
+
+- **[Claude] The portal**: the one tab of this sitting, in the Data Scientist User's Chrome session, closed at
+  02:15:41 (`sagemaker-application.md` §D).
+- **[Claude] `make down ENV=sandbox`**, 02:15:48 to 02:26:52, rc 0. The Studio apps step found no running app
+  in Sandbox's nine domains. `probes` destroyed 4 resources (the two instances and their security groups),
+  `warehouse-compute` 2 (`aws_redshiftserverless_usage_limit.compute` and the workgroup, 1m13s), `egress` 34,
+  its last interface endpoint after 2m26s.
+- **[Claude] `make hub-down`**, 02:27:43 to 02:27:48, rc 0: `awsds-prod-proxy` and `awsds-prod-vpn` stopped.
+- **[Claude] `make status`**, 02:27:56: passive and active burns 0.0000 USD; every `[E]` slice down in the
+  three accounts, the VPN, proxy and GitLab hosts stopped, no Studio app billing, no EMR Serverless
+  application started and no OpenSearch Serverless collection.
+- **[Claude] §R's readings**, 02:28:15: `./aws/egress.py awsds-infra-prod awsds-infra-staging
+  awsds-infra-sandbox-1` *"all checks passed"*, `EG-5` read; §R's loop lists no Studio app in the nine
+  domains; `list-workgroups`, `list-managed-workgroups` and `describe-clusters` answer empty in Sandbox.
+  `catalog.py`, 02:29:25 to 02:32:30, *"all checks passed"*.
+- **What N.10's day 2 leaves of this stage**: pass 5, on a Sandbox sitting with no warehouse; rollback item 1's
+  second half, the data product `sandbox-trades-hot` with its listings and the source `sandbox-lab-trades-hot`,
+  needing nothing up; 6.5's bill of the managed workgroup, read the day after.

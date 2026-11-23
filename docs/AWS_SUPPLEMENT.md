@@ -3426,7 +3426,15 @@ entry is still true is the reading.
   from `deploy-production`'s project role, and read `COMPLETED` 61 s after the grant's creation; the second,
   on the same listing, one `BatchGrantPermissions` and no RAM or Glue call, `COMPLETED` 4.5 s after its
   grant's creation (`log-stage-19-smus-native-data-product.md` and `log-stage-20-dbt-lineage.md`,
-  2026-11-22).
+  2026-11-22). Revoked in the same order on 2026-11-23 (4.12's subscription at 02:18:14Z, 5.0's at
+  02:20:52Z, each `retainPermissions` `false`), the removal mirrors the fulfilment. The first revocation made
+  one `BatchRevokePermissions` in Production 42 s after the call and the link's `DeleteTable` in Sandbox 51 s
+  after, and left the share `ACTIVE` and the three policies in place. The second, the account's last, made
+  `BatchRevokePermissions`, `ram:DeleteResourceShare` and the three `glue:DeleteResourcePolicy` within 4 s,
+  each delete repeated in the same second and answering `EntityNotFoundException`, and the link's
+  `DeleteTable`; all from the project roles in `AWSDataZone-Subscriptions` sessions. The share and the
+  per-resource policies stay while another subscription to the same consumer account stands, and go with the
+  last (`log-stage-19-smus-native-data-product.md` and `log-stage-20-dbt-lineage.md`, 2026-11-23).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
