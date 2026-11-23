@@ -1620,4 +1620,38 @@ this session and recorded here. Times UTC.*
   terminal to answer Terraform's prompt. *"HALTED at terraform-live/sandbox/probes: terraform destroy failed
   above. The rows after it are untouched: terraform-live/sandbox/warehouse-compute,
   terraform-live/sandbox/egress."* Nothing was destroyed. The second run, `make down ENV=sandbox AUTO=1`,
-  started at about 18:13.
+  started at 18:12:50.
+- **[Claude] The second run, `make down ENV=sandbox AUTO=1`**, 18:12:50 to 18:23:12: `sandbox/probes` *"Destroy
+  complete! Resources: 4 destroyed."*, `sandbox/warehouse-compute` *"No changes. No objects need to be
+  destroyed."*, `sandbox/egress` *"Plan: 0 to add, 0 to change, 27 to destroy."* then *"Destroy complete!
+  Resources: 27 destroyed."*; the twelve `[P]` slices and `bootstrap/` refused as always; the Studio-app hook
+  found no running app in the nine domains.
+- **[Claude] §R's readings**: `make status` at 18:24:52 reads Sandbox's three `[E]` slices down with 0
+  resources, no Studio app billing and no EMR Serverless application or OpenSearch Serverless collection in
+  any account; the estate's passive burn 0.6875 USD/h and its active burn on `production/egress`,
+  `production/workloads-egress` and `staging/egress`, R2's. `./aws/egress.py awsds-infra-prod
+  awsds-infra-staging awsds-infra-sandbox-1` wrote *"all checks passed"*, Sandbox at 0 interface endpoints, 0
+  NAT gateways, 0.000 USD/h, the 34 endpoints left in Production and Staging. §R's `list-apps` loop over
+  Sandbox's domains printed nothing at 18:26:48. R2 and the orchestrator told at about 18:27.
+- **[orchestrator] Act 12 read at 18:27:48** by `make status`: `sandbox/egress` down with 0 resources (state
+  serial 566), `sandbox/probes` down with 0, `sandbox/warehouse-compute` down, no Studio app in any account,
+  the estate's passive burn 0.6875 USD/h, the hub, GitLab, its runners and the egress of Staging and
+  Production, all R2's.
+
+## 2026-11-23 — The user's decisions on pass 5's open questions
+
+*The user's hand, in the orchestrating session's chat at about 18:3x UTC, relayed to this session by the
+orchestrator; recorded by Claude. The recommendations went to the orchestrator at about 18:29.*
+
+- **[user]** *"Aceito as três recomendações do N.10."*, which takes:
+  1. **`TM-37` accepted**, option (a): the residual of sessions vended before a revocation, up to the
+     producer role's 3600 s, with Sandbox's trail as its detection; reopened if AWS ends vended sessions at a
+     revocation. Set aside: (b) IAM's *Revoke active sessions* on the producer's role at each revocation; (c)
+     leaving it to Stage 11's review.
+  2. **5.4 not run again** with a requester outside the owning project (`SUP-480`), option (a): the manual
+     approval rests on Stage 19's measurement of 2026-11-22, and the S3 Object Collection's own half, the
+     grant written on approval, was measured at 5.4 and 5.6.
+  3. **The refusal of 17:11:03 recorded as observed and closed**, option (a): one occurrence, a refusal that
+     came early rather than late. Set aside: a support case with AWS, a re-measurement with a tighter loop.
+- **[Claude] Records**: `TM-37` and its channel row accepted in `threat-model.md`; the stage file's `Status`
+  row.

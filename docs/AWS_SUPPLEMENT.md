@@ -4343,6 +4343,11 @@ entry is still true is the reading.
   `catalog.py` `CT-17` and `CT-18` read nothing of it on 2026-11-23, while the product listing carried the
   `classification` form and the table's listing none. Where: `log-stage-21-redshift-s3-data-products.md`,
   2026-11-23.
+  **Read again at the rollback, 2026-11-23**: the product's `UNPUBLISH` change set at 17:24:52 and
+  `DeleteDataProduct` at 17:27:17, preceded by `DeleteListing` of the product listing in the user's session and
+  a second `DeleteListing` by `datazone.amazonaws.com` in the same second, 17:27:16. The table's page then read
+  *"This asset is unpublished"* and its `DeleteAsset` (17:29:11) needed no unpublish of its own. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## SageMaker AI spaces and images
 
