@@ -1248,3 +1248,34 @@ the down, needing nothing up (both logs). Times UTC.*
 - **What N.10's day 2 leaves of this stage**: pass 5, on a Sandbox sitting with no warehouse; rollback item 1's
   second half, the data product `sandbox-trades-hot` with its listings and the source `sandbox-lab-trades-hot`,
   needing nothing up; 6.5's bill of the managed workgroup, read the day after.
+
+## 2026-11-23 — Rollback item 1's second half: pass 2's data product, its assets and the source deleted
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Fazer
+agora"*, answering whether to unpublish and delete `sandbox-trades-hot` and the source
+`sandbox-lab-trades-hot` now or after pass 5. The portal's acts in the Data Scientist User's Chrome session, in
+`eighth-experimentation`, in `catalog.md` §A's order, each object read on its page before its delete. The CLI
+login had expired at 02:56, so no trail was read. Times UTC, the shell's clock read after each confirmation.*
+
+- **[Claude] The data product** `sandbox-trades-hot` (`614tardy0iah3k`), read first: *Published*, two included
+  assets, *Subscriber count* 0, published revision 2. *Actions → Unpublish*, whose dialog says the product can
+  no longer be viewed or subscribed to, assets available only through it go with it, active subscriptions
+  remain and individually published assets are not affected: *"Data product unpublished successfully."* by
+  03:08:04, the page reading *Not published*. *Actions → Delete* (*"This action cannot be undone. All
+  associated metadata will be permanently removed."*) by 03:08:31; the project's *Data products* tab then lists
+  `my-data-product` alone.
+- **[Claude] The assets**, each read with *Subscriber count* 0 and *No associated data products*: `trades_hot`
+  (`cgpzdjxcumuzrk`, listing `cl14qzshdc64y8`) unpublished by 03:09:43 and deleted by 03:10:13; the view
+  `trades_hot_by_desk` (`4o4k5h7uxxsj68`, listing `5t9cxrhio6c8eo`) unpublished by 03:11:03 and deleted by
+  03:11:33; `trades_hot_daily` (`57py2yrv0o93ww`), *Not published yet*, deleted by 03:12:20. The unpublish
+  dialog: the asset no longer discoverable, pending access requests cancelled, existing access kept. The
+  generated business-name suggestions on each page were left unanswered.
+- **[Claude] The source** `sandbox-lab-trades-hot` (`brnatob4h2kwb4`), read first: Amazon Redshift on
+  `redshift-serverless.redshift`, *Ready*, two on-demand runs on 2026-11-22, the second adding the three assets.
+  *Actions → Delete data source* (*"Deleting this data source will not delete assets it has already published,
+  but no new runs will occur."*): *"Data source deleted."* by 03:13:10, the list reading *Deleting*, then four
+  sources.
+- **[Claude] The reads after**: the inventory holds `house-price`, `trades`, `to-run-in-background-tytue9` and
+  `trades_notional`; a search of the entire catalog for `trades_hot` and for `sandbox-trades-hot` answers *No
+  results found*. The tab closed at 03:14.
+- **What is left of this stage**: pass 5 with its own rollback; 6.5's bill.
