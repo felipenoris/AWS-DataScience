@@ -1456,3 +1456,71 @@ environment. Times UTC.*
   `internal`. The table's listing reads `INACTIVE` on `get-asset` and `search-listings` returns it under no
   name: the product's publication published the table reachable through the product alone (`catalog.md`
   §P). The S3 listing stays `ACTIVE`, published on its own at 5.2.
+
+## 2026-11-23 — 5.4 to 5.6: the product subscribed, an image read, a second subscription that writes
+
+*Claude's hand, on the same authorization. The requests ran in `test-experimentation`'s space terminal as
+its project role; the revocations in the Data Scientist User's portal session as `eighth-experimentation`'s
+owner. Reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times UTC.*
+
+- **[Claude] 5.4, the request**: `create-subscription-request` on the product listing `cuilocp2vj9zbk` for
+  the project `4gqfau9xuo6e4w`, the caller `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`, at
+  16:59:40: request `6mias4doyrhes0` answered `ACCEPTED` at creation, `reviewerId` null, its `createdBy` the
+  Data Scientist User's id, owner of both projects, and not the role; the subscription `b6uw188klp591s`
+  `APPROVED` at the same instant. No read-only approval was offered: DataZone resolved the space's
+  project-role session to the space's user, so the pre-flight's way around the shared owner did not
+  separate the identities. The Data Governance trail records the request with no `userIdentity.arn`.
+- **[Claude] 5.4, the grants**: two subscription grants by `SYSTEM`, one per item. The S3 item's
+  `41lmo2ob4vrngw` (target `dg143yovd8itu8`, the listing `3rnyg9wgrg1v2o`) `COMPLETED` at 17:00:55; the
+  table's `5b711vxrc27e34` (target `ai0iw2p6vlxw5s`, the listing `4m03acvondth1s`) `COMPLETED` at
+  17:00:32, `targetName` `stage21_images`. Neither carries `permissions` or `assetScope`.
+- **[Claude] 5.4, S3 Access Grants**: one new grant `2459c1ea-5c0f-4b23-a725-56d2296c4562`, created
+  17:00:46 by `CreateAccessGrant` as `eighth-experimentation`'s project role in session
+  `AWSDataZone-Subscriptions`, invoked by `datazone.amazonaws.com`: grantee type `IAM`,
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, permission `READ`, location `ef8251ea-…` (the
+  producer project's, whose role is the producer's project role), scope
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/*`, no
+  application. The locations stay seven and the five baseline grants unchanged.
+- **[Claude] 5.4, the Glue item (`CT-17`'s shape)**: `SELECT` on `glue_db_blerpkhn9nj7o0.stage21_images`
+  to the account's `IAMPrincipals`, last updated 17:00:14 by the producer's project role (Stage 19
+  verification vi's shape; `list-permissions` prints no condition), and the resource link
+  `glue_db_4zojr4rr6bmnww.stage21_images` in the consumer's database.
+- **[Claude] 5.5, the notebook**, `test-experimentation`'s terminal as the project role, from 17:02:27:
+  a direct `aws s3 cp` of `img-00.png` answered *"An error occurred (403) when calling the HeadObject
+  operation: Forbidden"*; `get-data-access --permission READ` on the scope answered credentials expiring
+  18:02:29, `MatchedGrantTarget` the scope; on `shared/*`, *"You do not have READ permissions to the
+  requested S3 Prefix"*; `--permission WRITE` on the scope, *"You do not have WRITE permissions to the
+  requested S3 Prefix"*. The vended credentials are a session of the producer's project role,
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/access-grants-32edee89-…`. With them `img-00.png`
+  downloaded, MD5 `3e79bce7e8ebb78d64ef14e0701b1b7b`, the generator's; `aws s3 ls` of the scope 21 lines;
+  `aws s3 ls` of `shared/` refused, *"not authorized to perform: s3:ListBucket … because no session policy
+  allows the s3:ListBucket action"*; an upload under the scope refused, *"not authorized to perform:
+  kms:GenerateDataKey on resource: … because no session policy allows the kms:GenerateDataKey action"*.
+  The write's refusal names KMS, so S3's decision on `s3:PutObject` is not read from it.
+- **[Claude] 5.5, the portal**: `test-experimentation`'s *Data → S3 buckets → Subscribed buckets* lists the
+  prefix with its 20 objects (177 to 180 bytes, 2026-11-23 13:26 local); opening `img-00.png` rendered the
+  image, with *Download* and *Copy*.
+- **[Claude] 5.5, the trail**: every `GetDataAccess` carries `eventSource` `s3.amazonaws.com` and the host
+  `<account>.s3-control.us-west-2.amazonaws.com`. The terminal's three (17:02:29 to 17:02:31) as
+  `…/SageMaker`, from `10.20.66.248` through `vpce-0cc3e139c1167ca83`, Sandbox's S3 gateway endpoint
+  `awsds-sandbox-s3-gateway`: the terminal sets no `HTTPS_PROXY`, `HTTP_PROXY` or `NO_PROXY`. The
+  portal's two (17:03:39 the prefix, 17:03:49 `img-00.png*`) as the consumer's project role in the user's
+  session `28f1b390-…@bi356s1sacz0cw`, from the laptop's public address, with no endpoint id.
+- **[Claude] 5.6, the revocation**: the product's *Subscriptions → Access*, the row *Shared*, *View access
+  details* (*Shared by* the Data Scientist User, no permission shown), then *Revoke* (*"To confirm revoke,
+  type 'confirm'"*, no option to keep the access). `RevokeSubscription` at 17:06:02 as
+  `awsds-data-studio-domain-execution` in the user's session; the subscription `REVOKED`, both grants
+  `REVOKE_IN_PROGRESS` at 17:06:32; `DeleteAccessGrant` at 17:07:04 by the producer's project role
+  (`AWSDataZone-Subscriptions`). At 17:07:35 `get-data-access` READ answered *"You do not have READ
+  permissions"*, while the credentials vended at 17:02:29 downloaded `img-01.png` at 17:07:36.
+- **[Claude] 5.6, the second request**: on the product listing with `--asset-permissions
+  'assetId=dsmm79zurlnbww,permissions={s3=[READ,WRITE]}'`, at 17:07:53: *"ValidationException … assetPermissions
+  is only supported for S3ObjectCollection Listing"*. On the S3 listing `3rnyg9wgrg1v2o` with the same
+  permissions, at 17:08:19: request `cka9znwbot9oy8` `ACCEPTED` at creation, subscription `cbfstcg0z2she8`
+  `APPROVED`. `CreateAccessGrant` at 17:08:36: grant `1b8bfd2b-e352-472b-9d5a-ba23787f1fe6`, the same
+  grantee, location and scope, `READWRITE`. A product's subscription grants its S3 item `READ`; write is
+  asked on the asset's own listing, and only an asset published on its own has one.
+- **[Claude] 5.6, the write**: `get-data-access --permission READWRITE` at 17:09:12, credentials expiring
+  18:09:13, a session `access-grants-f84bf4dd-…` of the producer's project role; `written-5-6.png` (a copy
+  of `img-01.png`) uploaded, `head-object` 178 bytes, `aws:kms`, version `JBaWjkchDqVZkWHuo7CqshDORAA0obT7`,
+  last modified 17:09:16.
