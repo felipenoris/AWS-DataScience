@@ -217,6 +217,59 @@ def _as_list(value) -> list:
     return [value] if isinstance(value, str) else list(value)
 
 
+def split_namesakes(local_tables: dict, lake_tables: set) -> tuple:
+    """Staging's local tables named like a lake table, as two sorted lists of (database, table):
+    copies, outside an application's product database, and the applications' own namesakes,
+    inside one. local_tables maps each local database to its table names."""
+    copies: list = []
+    own: list = []
+    for db, tables in local_tables.items():
+        for t in tables:
+            if t in lake_tables:
+                (own if db in STAGING_PRODUCT_DBS else copies).append((db, str(t)))
+    return sorted(copies), sorted(own)
+
+
+def namesake_verdicts(unread: list, copies: list, own: list) -> list:
+    """DT-8's lines on Staging's local tables, as (verb, subject, detail), the verb ok, note or
+    fail. unread names each catalog read that did not complete: a comparison missing a side is a
+    note, never a pass, and the copies it did find still fail."""
+    lines: list = [
+        (
+            "fail",
+            f"staging table {db}.{t}",
+            "carries a lake table's name - Staging holds no copy (decision 3).",
+        )
+        for db, t in copies
+    ]
+    if unread:
+        lines.append(
+            (
+                "note",
+                "staging copies",
+                f"not compared in full: {'; '.join(unread)} - an absence, not a pass.",
+            )
+        )
+    elif not copies:
+        lines.append(
+            (
+                "ok",
+                "staging copies",
+                "no local table outside a product database carries a lake table's name",
+            )
+        )
+    lines.extend(
+        (
+            "note",
+            f"staging table {db}.{t}",
+            "an application's own table, loaded from the bundle's sample, sharing a lake "
+            "table's name (Stage 19 decision 22 (a)).",
+        )
+        for db, t in own
+    )
+    return lines
+
+
 def main(argv: list) -> int:
     cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
@@ -671,6 +724,7 @@ def main(argv: list) -> int:
     staging_share_rows: list = []  # (resource, permissions) granted to Staging's account
     staging_write_grants: list = []  # (resource, permissions beyond DESCRIBE and SELECT)
     staging_local_dbs: list = []  # Staging's databases that are not resource links
+    staging_dbs_read = False  # Staging's get-databases answered
     share_listed = False  # the grantor's listing read to its last page
     link_rows: list = []  # (profile, database, target catalog tail, target database)
     pending_invites: list = []  # (profile, share name, status)
@@ -716,6 +770,8 @@ def main(argv: list) -> int:
             "json",
             log=False,
         )
+        if p == STAGING_PROFILE:
+            staging_dbs_read = res.ok
         for name, target_catalog, target_db in (
             json.loads(res.stdout or "[]") if res.ok and res.stdout else []
         ):
@@ -822,6 +878,7 @@ def main(argv: list) -> int:
     staging_links_to_data: list = []  # resource links resolving into Data Governance
     staging_copies: list = []  # (local database, table) named like a lake table
     staging_own_namesakes: list = []  # (product database, table) named like a lake table
+    staging_copies_unread: list = []  # each catalog read the comparison lacks
     staging_wg_row = None
     staging_job_state = "(not measured)"
     staging_trust_bad: list = []
@@ -858,8 +915,10 @@ def main(argv: list) -> int:
         staging_cmk_present = STAGING_CMK_ALIAS in aliases
         # A copy reads as a local table carrying a lake table's name: the application's own tables are
         # its schemas, and a governed table is read through the links, never re-created here.
-        if data_live and staging_local_dbs:
-            lake_tables: set = set()
+        lake_tables: set = set()
+        if not data_live:
+            staging_copies_unread.append("the lake's tables (Data Governance not measured)")
+        else:
             for db in LAKE_DBS:
                 r = cli_for(DATA_PROFILE).run(
                     "glue",
@@ -873,28 +932,33 @@ def main(argv: list) -> int:
                     log=False,
                     tolerate="EntityNotFoundException",
                 )
-                if r.ok and not r.tolerated and r.stdout:
+                if not r.ok:
+                    staging_copies_unread.append(f"the lake's {db} (read failed)")
+                elif not r.tolerated and r.stdout:
                     lake_tables.update(str(t) for t in json.loads(r.stdout))
-            for db in staging_local_dbs:
-                r = cli.run(
-                    "glue",
-                    "get-tables",
-                    "--database-name",
-                    db,
-                    "--query",
-                    "TableList[].Name",
-                    "--output",
-                    "json",
-                    log=False,
-                    tolerate="EntityNotFoundException",
-                )
-                for t in json.loads(r.stdout or "[]") if r.ok and r.stdout else []:
-                    if str(t) not in lake_tables:
-                        continue
-                    if db in STAGING_PRODUCT_DBS:
-                        staging_own_namesakes.append((db, str(t)))
-                    else:
-                        staging_copies.append((db, str(t)))
+            if not lake_tables and not staging_copies_unread:
+                staging_copies_unread.append(f"the lake's {' and '.join(LAKE_DBS)} (no table)")
+        if not staging_dbs_read:
+            staging_copies_unread.append("Staging's databases (read failed)")
+        local_tables: dict = {}
+        for db in staging_local_dbs:
+            r = cli.run(
+                "glue",
+                "get-tables",
+                "--database-name",
+                db,
+                "--query",
+                "TableList[].Name",
+                "--output",
+                "json",
+                log=False,
+                tolerate="EntityNotFoundException",
+            )
+            if not r.ok:
+                staging_copies_unread.append(f"Staging's {db} (read failed)")
+                continue
+            local_tables[db] = json.loads(r.stdout or "[]") if not r.tolerated and r.stdout else []
+        staging_copies, staging_own_namesakes = split_namesakes(local_tables, lake_tables)
 
     # ------------------------------ 8. the escape hatch: role, alarm, assumptions (step 6)
     debug_state = "(not measured)"
@@ -1480,26 +1544,10 @@ def main(argv: list) -> int:
                 if staging_data_built
                 else "none yet - expected before step 4.5.",
             )
-        if staging_copies:
-            for db, t in staging_copies:
-                checks.fail(
-                    "DT-8",
-                    f"staging table {db}.{t}",
-                    "carries a lake table's name - Staging holds no copy (decision 3).",
-                )
-        else:
-            checks.ok(
-                "DT-8",
-                "staging copies",
-                "no local table outside a product database carries a lake table's name",
-            )
-        for db, t in staging_own_namesakes:
-            checks.note(
-                "DT-8",
-                f"staging table {db}.{t}",
-                "an application's own table, loaded from the bundle's sample, sharing a lake "
-                "table's name (Stage 19 decision 22 (a)).",
-            )
+        for verb, subject, detail in namesake_verdicts(
+            staging_copies_unread, staging_copies, staging_own_namesakes
+        ):
+            getattr(checks, verb)("DT-8", subject, detail)
 
     # DT-9: the escape hatch - windowed trust, closed at rest, 1 h sessions, alarmed.
     if prod_live:
@@ -2137,8 +2185,9 @@ What the checks are, and where each comes from:
   DT-6   the write share granted, no pending invitation (2.1-2.2, INT-03/INT-11)
   DT-7   the drop-box statement and key both name awsds-prod-job-exec (2.5, INT-10)
   DT-8   Staging's grants on the lake are DESCRIBE or SELECT, its links resolve into Data
-         Governance once staging/data/ stands, and no local table copies a lake table (4.1,
-         decision 3)
+         Governance once staging/data/ stands, and no local table outside an application's
+         product database carries a lake table's name, an unread catalog a note (4.1,
+         decision 3; Stage 19 decision 22 (a))
   DT-9   the escape hatch: windowed trust pinned to the Region, closed at rest, <=1h,
          alarmed by rules that receive AssumeRole (6.1-6.2)
   DT-10  the persona halves read back through the delegated admin (5.1-5.2)
