@@ -623,7 +623,7 @@ leaves it as written, so it is never used there.
 **What the CLI does with the manifest**, measured in the lab (2026-10-15 and 2026-10-16, D41), by the
 `test` stage's deploys to 2026-11-11 and by release F's legs (pipeline #129, 2026-11-16): `deploy` syncs each storage item to its target directory with no `--delete` (a file
 a release drops stays until a hand removes it, `SUP-348`, and so does a workflow the manifest stops naming,
-`app-etl-train`'s `READY` in both deployment projects after `v0.7.0` on 2026-11-23, `SUP-484`); `workflow.create` makes the workflow with the project role,
+`app-etl-train`'s `READY` in both deployment projects after `v0.7.0` on 2026-11-23 until a hand deleted it the same evening, its log group staying, `SUP-484`); `workflow.create` makes the workflow with the project role,
 the Tooling environment's subnets, group and key, the log group
 `/aws/mwaa-serverless/<domain>-<project>/<name>` and six tags, under the name
 `<app>_<project>_<workflow>`, copying a Python task's zip to `shared/operatorFiles/<workflow>-<ms>.zip`,
