@@ -4699,3 +4699,50 @@ infrastructure user, `InfrastructureAccess`, through `awsds-infra-prod`, `awsds-
   `sagemaker-application.md` §L step 1's clones; `$HOME/tmp/app-etl` exists, an earlier clone.
 - **[Claude] The project folder** read on `main` at `684ec8b1`, `origin/main`'s commit, clean, with the
   mirror's `gitlab` remote.
+
+## 2026-11-23 — R2: the opening and the four releases' pipelines
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat naming
+each act of `r2-acts-for-15h.md` in order, *"Um job que falhar para a sessão no log dele."*, and later *"Um
+ato bloqueado não segura as outras aplicações"*. GitLab as its local administrator `felipenoris`, signed in by
+the user in a Chrome tab of Claude's; git through the laptop's keychain credential; AWS reads as the
+infrastructure user, `InfrastructureAccess`. The orchestrating session's readings are marked as such. Times
+UTC. Each application's legs are in its stage's log: `app-dbt` in Stage 20's, `app-ml`, `app-genai` and
+`app-etl` in Stage 17's.*
+
+- **[user] The raise and the tunnel**: `make status` at 16:41 read the hub, GitLab, the build runner
+  `i-015f85e903a4bfe45`, `staging/egress/` and `production/workloads-egress/` up, each egress with eleven
+  interface endpoints, `bedrock` and `bedrock-runtime` among them; passive burn 0.8759 USD/h.
+- **[Claude] GitLab's session**: `/api/v4/user` at 16:43 answered `felipenoris`, administrator, in Claude's tab.
+- **[Claude] The mirror**: `gitlab`'s `main` read `495ebb1a` at 16:43:12, `origin/main`'s commit, which holds
+  #321's `81d70158`; its push was the user's, `86748b34` to `495ebb1a` at 16:40:36 in `awsds/infrastructure`'s
+  events.
+- **[Claude] `awsds/dev-env`'s README row** for `default-v0.10.1`: `main` at `7f2623b6`, !16's merge, its include
+  at `gates-v0.7.0` (`2dedd500`); the branch `readme-default-v0.10.1` at `3b4deb20`, one line; merge request
+  `!17` opened at 16:47:55; its pipeline #140 (`recipe-checks`, `pip-audit`, `secret_detection` and its gate)
+  green; merged at 16:50:39 by `felipenoris`, the merge commit `77b713e9`. `./scripts/gitlab-mirror.py
+  awsds/dev-env` copied it into `gitlab/awsds/dev-env/` (commit `aa331119` on this branch), `.gitlab-ci.yml`'s
+  include moving to `gates-v0.7.0` with it.
+- **[Claude] The four releases**, each a tag on a `main` whose tree is its `examples/` source's (Lesson 86):
+  `app-dbt` `v0.1.0` (pipeline #143, stopped at `build-task-code`, Stage 20's log) and `v0.1.1` (#148);
+  `app-ml` `v0.1.0` (#147); `app-genai` `v0.1.0` (#150); `app-etl` `v0.7.0` (#153). `store-bundle` wrote
+  `app-dbt/v0.1.1/app-dbt.zip` (25501481 bytes, 17:07:04), `app-ml/v0.1.0/app-ml.zip` (15601746, 17:08:18) and
+  `app-genai/v0.1.0/app-genai.zip` (18354, 17:54:04) to `awsds-prod-releases`.
+- **[Claude] The deploy runner serialises the legs**: one job at a time on `awsds-prod-runner-deploy`, so
+  `app-ml`'s `staging-deploy` waited from 17:10:57 to 17:21:32 behind `app-dbt`'s `staging-test`, and each
+  later job queued behind the job running.
+- **[Claude] The gates**, each on the orchestrating session's «verificado» before every `production-gate` and
+  `production-approve`: `app-dbt` `staging-gate` 17:08:01 and `production-gate` 18:02:09; `app-ml` 17:09:57
+  and 18:02:10, `production-approve` 18:32:48; `app-genai` 17:54:52 and 18:32:49; `app-etl` `staging-gate`
+  18:37:28. `app-etl`'s `production-warehouse-ddl` (manual, `allow_failure`, Production's warehouse) is no act
+  of the list and stays unplayed.
+- **The orchestrating session's readings**, as it reported them: the GitLab refs at 16:43, 16:56, 17:05 and
+  17:53 (each tag on its `main`); `awsds-prod-releases` at 16:58; `app-dbt`'s Staging leg at 17:27 (the bundle,
+  both executions `SUCCEEDED`, both tables `ICEBERG`); `app-ml`'s at 17:51 (the bundle, both executions, the
+  approved version's metadata, the image's digest); `app-genai`'s at 18:27 (the bundle, both executions, the
+  guardrail's version 1 `READY` at 18:01:25, the triage report); `app-ml`'s Production registry at 18:26 (one
+  version, `PendingManualApproval`, no transform job since 18:00); `app-etl`'s refs at 18:31. The assets of
+  `deploy-production` answered it `AccessDeniedException`, the infrastructure user being no member there.
+- **[Claude] The N.10 session's lowering**, as it reported it: `make down ENV=sandbox` ended at 18:23:12,
+  `make status` at 18:24:52 reading Sandbox at zero; the orchestrating session's at 18:27:48 reads passive
+  burn 0.6875 USD/h, all R2's.

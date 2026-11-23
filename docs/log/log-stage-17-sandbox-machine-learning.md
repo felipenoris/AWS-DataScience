@@ -6233,3 +6233,35 @@ segura as outras aplicações"*). Times UTC.*
 - **[Claude] The tag `v0.7.0`**, the next after `v0.6.0` read from GitLab's tags at 18:30:17, on `3d3146bb`,
   pushed at 18:30:42, the runners online and the build runner `i-015f85e903a4bfe45` running, `app-ml`'s model
   held in both targets (`promotion.md` §N.11.2 step 3's condition). Pipeline #153.
+
+## 2026-11-23 — R2: 10.6's Production leg, the triage chain failed at `check`
+
+*Claude's hand, R2's session; `production-gate` played on the user's words *"gates do app-genai"* after the
+orchestrating session's «verificado», the chain started on *"chain de triage do app-genai"*, as
+`awsds-infra-prod`, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] `production-gate`** (job 986) played at 18:32:51; **`production-deploy`** (job 987, 18:33:39 to
+  18:35:11) created the workflow `app_genai_deploy_production_app_genai_triage` in `deploy-production`, `READY`,
+  and recorded the stage's variables in `/datascience/prod/applications/app-genai/stage-variables` (version 1,
+  18:35:06): `EXPECT_UNGUARDED` `refused`, `MIN_ACCURACY` `0.80`, `MODEL_ID` the application inference profile
+  `33nugu2skjt9`. Pipeline #150 green.
+- **[Claude] The triage chain**: `awsds-prod-chain-app-genai-triage`, execution `r2-v0-1-0-app-genai-triage`,
+  started at 18:37:38, `FAILED` at 18:42:40 on *"app-genai-triage did not succeed"*. The workflow run
+  `wk88Ec50c1IWHet` (18:37:41 to 18:41:06): `guardrail` `SUCCESS` (18:38:23 to 18:38:34), `triage` `SUCCESS`
+  (18:39:14 to 18:40:14), `check` `FAILED` (18:40:53 to 18:41:05) on *"RuntimeError: 1 failure(s): m19: the
+  answer is no JSON object with a label of the list"*. The task's line: *"40 answer(s), 38 let through, 2
+  blocked; accuracy 0.9474 against 0.8; 1 failure(s)"*. The report `shared/app-genai/outbox/triage-report.json`:
+  36 of 38 agreed, `m34` answered `account` (expected `feedback`), 12001 input and 951 output tokens, the
+  planted `m25` anonymized (`EMAIL`, `PHONE`), `m31` blocked (`PROMPT_ATTACK`) and `m36` blocked (the denied
+  topic *Investment advice*), no unexpected block, `"passed": false`. `m19`'s answer in
+  `work/20261123T184013Z/answers.jsonl` is `{"label": "billing", "summary": "Discount code not applied to order,
+  resulting in unexpected extra charge."}]`, a trailing `]` after the object, `stop_reason` `end_turn`, 25
+  output tokens. The line of `app-genai` stops here (the user's *"Um job que falhar para a sessão no log
+  dele"*); nothing else of it ran.
+- **[Claude] Verification xlii, Production** (CloudTrail, 18:37 to 18:42): 40 `Converse`, no error, by
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow` with the session `AmazonMWAAServerless`, through
+  `vpce-0cc38cf401b7c102f` (`awsds-prod-workloads-bedrock-runtime`), the model the profile `33nugu2skjt9`, the
+  guardrail `8fwsdhtioqe8`. `CreateGuardrail` at 18:38:32 by the same role and session through
+  `vpce-07a18f03e17e5c132` (`awsds-prod-workloads-bedrock`), then `GetGuardrail` and `CreateGuardrailVersion`;
+  the guardrail `app-genai-d7qcazihvr3s7k`, no customer key, version 1, hash `6b4f6876…cf78`. Each answer names
+  the account-enforced guardrail `aml52z7rpznt` version 1 beside the request's. xlii reads yes for Production.
