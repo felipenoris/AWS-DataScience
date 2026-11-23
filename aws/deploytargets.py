@@ -103,6 +103,11 @@ PROD_CMK_ALIAS = "alias/awsds-prod-data"  # one data CMK per account
 DROPBOX_SUBSTR = "dropbox"
 LAKE_BUCKET_SUBSTR = "awsds-data-"
 LAKE_DBS = ("raw", "curated")  # the lake databases a consumer reads through its share (2.1, 4.1)
+# The applications' product databases in Staging, foundation/deploy-project.tf's
+# deployment_product_databases: each application's tables, loaded from the bundle's sample, since
+# every Staging run reads the inbox and no workflow names a governed table (Stage 19 decision 22 (a)).
+# A table there may carry a lake table's name, as app_dbt.trades does, and copies nothing from it.
+STAGING_PRODUCT_DBS = ("app_etl", "app_dbt")
 # What a read share grants: Staging receives these and nothing else (decision 3).
 READ_PERMISSIONS = {"DESCRIBE", "SELECT"}
 SETS_READ = ("DataScientistProdAccess", "DataScientistStagingAccess")
@@ -816,6 +821,7 @@ def main(argv: list) -> int:
     # --------------------------- 7. Staging's read of the lake, through its share (decision 3)
     staging_links_to_data: list = []  # resource links resolving into Data Governance
     staging_copies: list = []  # (local database, table) named like a lake table
+    staging_own_namesakes: list = []  # (product database, table) named like a lake table
     staging_wg_row = None
     staging_job_state = "(not measured)"
     staging_trust_bad: list = []
@@ -883,7 +889,11 @@ def main(argv: list) -> int:
                     tolerate="EntityNotFoundException",
                 )
                 for t in json.loads(r.stdout or "[]") if r.ok and r.stdout else []:
-                    if str(t) in lake_tables:
+                    if str(t) not in lake_tables:
+                        continue
+                    if db in STAGING_PRODUCT_DBS:
+                        staging_own_namesakes.append((db, str(t)))
+                    else:
                         staging_copies.append((db, str(t)))
 
     # ------------------------------ 8. the escape hatch: role, alarm, assumptions (step 6)
@@ -1430,7 +1440,8 @@ def main(argv: list) -> int:
 
     # DT-8: Staging reads the lake through its share and writes none of it (decision 3): every grant
     # to its account is DESCRIBE or SELECT, its links resolve into Data Governance once staging/data/
-    # stands, and no local table carries a lake table's name.
+    # stands, and no local table outside an application's product database carries a lake table's
+    # name. A product database's namesake is the application's own table, noted.
     if staging_live:
         if data_live and share_listed:
             if staging_write_grants:
@@ -1477,7 +1488,18 @@ def main(argv: list) -> int:
                     "carries a lake table's name - Staging holds no copy (decision 3).",
                 )
         else:
-            checks.ok("DT-8", "staging copies", "no local table carries a lake table's name")
+            checks.ok(
+                "DT-8",
+                "staging copies",
+                "no local table outside a product database carries a lake table's name",
+            )
+        for db, t in staging_own_namesakes:
+            checks.note(
+                "DT-8",
+                f"staging table {db}.{t}",
+                "an application's own table, loaded from the bundle's sample, sharing a lake "
+                "table's name (Stage 19 decision 22 (a)).",
+            )
 
     # DT-9: the escape hatch - windowed trust, closed at rest, 1 h sessions, alarmed.
     if prod_live:

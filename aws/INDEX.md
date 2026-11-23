@@ -661,7 +661,7 @@ there.
 | Did the write share arrive, with **no pending RAM invitation** (INT-03, INT-11's tax)? | 5, decided by `DT-6` |
 | Do the drop-box statement **and** its key name exactly `awsds-prod-job-exec` (the Stage 5a contract, INT-10)? | 6, decided by `DT-7` |
 | Does Staging read the lake through `DESCRIBE` and `SELECT` alone, through links that resolve into Data Governance (decision 3)? | 7, decided by `DT-8` |
-| Does any Staging table copy a lake table, by its name? | 7, decided by `DT-8` |
+| Does any Staging table copy a lake table, by its name, outside an application's product database, whose namesake is noted (Stage 19 decision 22 (a))? | 7, decided by `DT-8` |
 | Is the escape hatch closed at rest, capped at 1 h, alarmed on **every** assumption? | 8, decided by `DT-9` |
 | Did the persona sets gain their owed allows — and the Staging set **nothing** (Lesson 22)? | 9, decided by `DT-10` |
 | Does the `Workloads` OU document carry the five job settings and the serverless-inference deny, and is it attached? | 10, decided by `DT-11` |
@@ -701,7 +701,7 @@ there.
 | Did the service-linked role appear at the first `CreateWorkflow` in each account (Lesson 17, steps 0.3/1.6)? | 9 — reported both ways, absent is the pre-stage baseline |
 | Is each account's definition under `workflows/` in its own outputs bucket, `awsds-prod-outputs` or `awsds-staging-outputs`, with the S3 `VersionId` pinned (decisions 1, 6 and 17)? | 9, decided by `OR-5` |
 | How many workflow versions exist against the 50-version quota (risk 4)? | 2, decided by `OR-7` |
-| Was every registry write `awsds-deploy-prod` (INT-07's registry half, Stage 9 3.2 read as behaviour)? | 10, decided by `OR-8` |
+| Was each registry version proposed `PendingManualApproval` by a project role, and each approval `awsds-deploy-prod`'s (Stage 17 decision 16 (b) read as behaviour)? | 10, decided by `OR-8` |
 | Does any Sandbox carry a `Workflows` blueprint configuration? | 11 — context; `./aws/studio.py` `US-3` is the check |
 | Which accounts is nobody measuring? | 13 — Sandbox's portal-authored workflows, the Sandboxes beyond unit 1, GitLab's objects |
 
@@ -861,8 +861,9 @@ A workflow outside those names, or a role named `awsds-<env>-wf-*`, fails as rel
 the rewritten rules, at 2026-11-16 03:57:54Z, read five failures, `OR-2`'s groups with no retention
 (`EXC-25`). Two of its checks are halves: section 7 shows run rows, while the *unattended* proof, an
 execution the schedule starts, is the stage's own, read in CloudTrail on 2026-10-25 (Stage 10 6.1); and
-`OR-8` reads the registry record after the fact, the preventive half being Stage 9 3.2's policy, which
-`deploytargets.py` `DT-3` owns.
+`OR-8` reads the registry record after the fact, the preventive half being the groups' policies, which
+`deploytargets.py` `DT-3` owns, and `<env>/studio/workflows.tf`'s denies of an approval and of a version
+not `PendingManualApproval` by a project role.
 
 ## `deploytargets.py`, written for Stage 9
 

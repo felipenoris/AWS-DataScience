@@ -5,8 +5,8 @@ decision 6 (b)), and D41's chain layer above them (OR-9): each workflow's execut
 project's (boundary, trust, the policies <env>/studio/ attaches), its NetworkConfiguration
 (present, two AZs, no default route), its log group and retention (D28 item 5), its failure
 rule, the model-approval rule, recent runs with their type, the absence of any provisioned MWAA
-environment, the definitions, and the registry's register/approve record (INT-07's registry
-half, consumed).
+environment, the definitions, and the registry's register/approve record (Stage 17 decision
+16 (b): a project role proposes, the deploy role approves).
 
 needs:    a live SSO session, and nothing else:
 
@@ -50,6 +50,10 @@ exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #     service's suffix and naming the service's detail types, which carry the "MWAA Serverless "
 #     prefix (Stage 10 step 3.1, terraform-modules/orchestration; OR-4)
 #   - the approval rule is awsds-prod-model-approval (Stage 10 step 5.3)
+#   - a registry version is proposed PendingManualApproval by a deployment project's role, a
+#     task of the application's workflow, and approved by awsds-deploy-prod alone (Stage 17
+#     decision 16 (b), production/studio/workflows.tf's denies); awsds-deploy-prod registered
+#     app-etl's versions in awsds-prod-model-app-etl until that shape retired (Stage 17 step 9.11)
 #   - the chain layer carries awsds-<env>-chain-, the group awsds-<env>-chains and the roles
 #     awsds-<env>-chain-exec and -chain-scheduler, which the module creates with no boundary and
 #     no managed policy (OR-9)
@@ -83,6 +87,11 @@ SANDBOX_PREFIX = "awsds-infra-sandbox-"
 # The contracts (see header).
 AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
+# The registry's writers (Stage 17 decision 16 (b)): the approver, and the group the retired shape
+# registered in as that role (Stage 17 step 9.11), whose events the 90-day lookup holds to 2027-01-23.
+REGISTRY_APPROVER = "awsds-deploy-prod"
+RETIRED_DEPLOY_ROLE_GROUP = "awsds-prod-model-app-etl"
+PENDING = "PendingManualApproval"
 # Each account's deployment project (Stage 19 step 4.6), whose name the CLI writes into each
 # workflow's name, and the projects bucket the CLI uploads the definitions to (sagemaker-prereqs).
 DEPLOY_PROJECTS = {"staging": "deploy-staging", "prod": "deploy-production"}
@@ -731,9 +740,10 @@ def main(argv: list) -> int:
             state = "(read failed)"
         slr_rows.append((env, state))
 
-    # -------------- the registry record: who registered, who approved (INT-07's registry half)
+    # -------------- the registry record: who registered, who approved (Stage 17 decision 16 (b))
     reg_rows: list = []  # (time, event, caller tail)
-    reg_bad: list = []  # (event, caller)
+    reg_bad: list = []  # (event, caller, why)
+    reg_retired: list = []  # (time, caller): a CreateModelPackage of the retired shape
     reg_unread: list = []  # event names whose history was not read to its last page
     if prod_live:
         cli = cli_for(PROD_PROFILE)
@@ -757,8 +767,18 @@ def main(argv: list) -> int:
                 caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
                 when = str(ev.get("eventTime") or "-")
                 reg_rows.append((when, ev_name, caller.rsplit("/", 1)[-1][:40]))
-                if "awsds-deploy-prod" not in caller:
-                    reg_bad.append((ev_name, caller))
+                params = ev.get("requestParameters") or {}
+                if ev_name == "UpdateModelPackage":
+                    if f"/{REGISTRY_APPROVER}/" not in caller:
+                        reg_bad.append((ev_name, caller, f"the approval is {REGISTRY_APPROVER}'s"))
+                    continue
+                group = str(params.get("modelPackageGroupName") or "").rsplit("/", 1)[-1]
+                if f"/{REGISTRY_APPROVER}/" in caller and group == RETIRED_DEPLOY_ROLE_GROUP:
+                    reg_retired.append((when, caller))
+                elif f"/{PROJECT_ROLE_PREFIX}" not in caller:
+                    reg_bad.append((ev_name, caller, "a version is a project role's proposal"))
+                elif str(params.get("modelApprovalStatus") or "") != PENDING:
+                    reg_bad.append((ev_name, caller, f"a version is proposed {PENDING}"))
 
     # ----------------- the blueprint configurations, read where they live (each Sandbox)
     bp_rows: list = []  # (profile, blueprint name, enabled regions)
@@ -1085,15 +1105,22 @@ def main(argv: list) -> int:
             else:
                 checks.ok("OR-7", what, f"{n}/{VERSION_QUOTA}")
 
-    # OR-8: every registry write in the record was the deploy role (INT-07's registry half;
-    # Stage 9 3.2's policy read back as behaviour).
+    # OR-8: the registry's writes read back as Stage 17 decision 16 (b) shapes them: a version
+    # proposed PendingManualApproval by a deployment project's role, approved by the deploy role.
+    if reg_retired:
+        checks.note(
+            "OR-8",
+            "the retired shape",
+            f"{len(reg_retired)} CreateModelPackage of {RETIRED_DEPLOY_ROLE_GROUP} as "
+            f"{REGISTRY_APPROVER}, the newest at {max(t for t, _c in reg_retired)} - app-etl's "
+            "model half, retired 2026-11-23 (Stage 17 step 9.11).",
+        )
     if reg_bad:
-        for ev_name, caller in sorted(set(reg_bad)):
+        for ev_name, caller, why in sorted(set(reg_bad)):
             checks.fail(
                 "OR-8",
                 f"{ev_name} caller",
-                f"{head2(caller)} is not awsds-deploy-prod - registration is the "
-                "pipeline's act (step 5.2, D17).",
+                f"{head2(caller)} - {why} (Stage 17 decision 16 (b)).",
             )
     elif reg_unread:
         checks.note(
@@ -1106,7 +1133,8 @@ def main(argv: list) -> int:
         checks.ok(
             "OR-8",
             "registry writes",
-            f"{len(reg_rows)} event(s), every caller is awsds-deploy-prod",
+            f"{len(reg_rows)} event(s): each version proposed {PENDING} by a project role, "
+            f"each approval {REGISTRY_APPROVER}'s",
         )
 
     # OR-9: the chain layer (steps 3.4-3.7), <env>/chains/'s since 2026-11-16, whose machines start
@@ -1247,7 +1275,7 @@ SECTIONS
   7. Recent runs
   8. Provisioned MWAA environments - the absence reading
   9. The service-linked role, and the definitions
- 10. The registry record: who registered, who approved (INT-07)
+ 10. The registry record: who proposed, who approved (Stage 17 decision 16 (b))
  11. The blueprint configurations in each Sandbox
  12. CHECKS
  13. The accounts nothing here is measuring
@@ -1441,7 +1469,7 @@ rendered copies under applications/ in each account's outputs bucket are not rea
 here.""")
 
         # ==============================================================================
-        rep.h1("10. The registry record: who registered, who approved (INT-07)")
+        rep.h1("10. The registry record: who proposed, who approved (Stage 17 decision 16 (b))")
         if reg_rows:
             rep.tabulate(["TIME\tEVENT\tCALLER"] + ["\t".join(r) for r in reg_rows[:25]])
             if len(reg_rows) > 25:
@@ -1454,8 +1482,10 @@ here.""")
         elif not reg_rows:
             rep.line("No Create/UpdateModelPackage event in the 90-day lookup.")
         rep.text("""
-Stage 9 3.2's policy says register-and-approve is awsds-deploy-prod alone; this
-is that sentence read back as behaviour. OR-8 fails on any other caller.""")
+A version is proposed PendingManualApproval by a deployment project's role, a task of
+the application's workflow, and approved by awsds-deploy-prod alone; this is that
+sentence read back as behaviour. OR-8 fails on any other caller and notes the
+retired shape, app-etl's versions registered as awsds-deploy-prod.""")
 
         # ==============================================================================
         rep.h1("11. The blueprint configurations in each Sandbox")
@@ -1493,7 +1523,8 @@ What the checks are, and where each comes from:
         bucket (Stage 19 step 4.6)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)
-  OR-8  every registry write was awsds-deploy-prod (INT-07, Stage 9 3.2)
+  OR-8  each registry version proposed PendingManualApproval by a project role, each
+        approval awsds-deploy-prod's (Stage 17 decision 16 (b))
   OR-9  the chain layer: the group, the machines' log group with retention, the
         chain roles (one service each, no managed policy, no job or data
         action), one machine at least, each machine's schedule and failure rule
