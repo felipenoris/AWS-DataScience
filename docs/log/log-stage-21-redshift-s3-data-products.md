@@ -1524,3 +1524,49 @@ owner. Reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times UTC.*
   18:09:13, a session `access-grants-f84bf4dd-…` of the producer's project role; `written-5-6.png` (a copy
   of `img-01.png`) uploaded, `head-object` 178 bytes, `aws:kms`, version `JBaWjkchDqVZkWHuo7CqshDORAA0obT7`,
   last modified 17:09:16.
+
+## 2026-11-23 — 5.7: the revocation with credentials vended just before, then the catalog's rollback
+
+*Claude's hand, on the same authorization. The loop ran in `test-experimentation`'s space terminal as its
+project role (`nohup bash /tmp/p57.sh`, 51 rounds about 34 s apart from 17:09:51): each round asked
+`get-data-access --permission READ --duration-seconds 900` on the scope, then read `img-02.png` with three
+held credentials. The revocation and the deletions ran in the Data Scientist User's portal session as
+`eighth-experimentation`'s owner. Times UTC.*
+
+- **[Claude] The held credentials**: `rw3600`, 5.6's `READWRITE` session, expiring 18:09:13; `r900`, a
+  `READ` session vended at 17:09:49 for 900 s, expiring 17:24:50; `late`, the loop's last answered vend,
+  17:10:26, expiring 17:25:27.
+- **[Claude] The vend door**: the rounds at 17:09:51 and 17:10:26 answered; every round from 17:11:01 to the
+  last was refused, *"An error occurred (AccessDenied) when calling the GetDataAccess operation"*. The
+  portal's revocation of `cbfstcg0z2she8` recorded `RevokeSubscription` at
+  17:11:12 and `DeleteAccessGrant` of `1b8bfd2b-…` at 17:11:14, so the refusal at 17:11:01 to 17:11:03
+  precedes both in the trail by about nine seconds. Unexplained on this reading.
+- **[Claude] The held credentials after the revocation**: `r900` read through 17:24:20 and failed from
+  17:24:55; `late` read through 17:24:55 and failed from 17:25:29. Each failure is the CLI's *"An error
+  occurred (400) when calling the HeadObject operation: Bad Request"*: `aws s3 cp` starts with a `HEAD`,
+  whose response carries no error body, so the expired token surfaces as a bare 400 and not as
+  `ExpiredToken`. `rw3600` read in every round, the last at 17:38:45, and at 17:30:36 uploaded
+  `written-5-7.txt` (16 bytes, last modified 17:30:38) under the scope, 19 minutes 24 seconds after
+  `DeleteAccessGrant`.
+- **[Claude] 5.7's answer** against the page's *"credentials can be used for 15 minutes"*: a credential
+  vended before a revocation lives its own duration, which the subscriber chooses; 5.5's call without
+  `--duration-seconds` was given 3600 s, and those credentials wrote after the revocation.
+- **[Claude] The catalog's rollback**, in `catalog.md` §A's order: the product `bgclb83agkow0g` was
+  unpublished (*"Data product unpublished successfully"*) and deleted (*"This action cannot be undone. All
+  associated metadata will be permanently removed."*); the S3 asset `dsmm79zurlnbww` unpublished (the
+  dialog: *"This asset will no longer be discoverable and all pending access requests will be canceled.
+  Users with existing access will retain their permissions."*) and deleted; the table asset
+  `c5mzcsflx389zk`, read *"This asset is unpublished"* once the product was gone, deleted. The project's
+  *Assets* page lists `house-price`, `trades`, `to-run-in-background-tytue9` and `trades_notional`, and its
+  *Asset type* filter no longer offers *S3 Object Collection*. The data source `5w1ic2yqcs5uog` stays.
+- **[Claude] Rollback item 5**, in `eighth-experimentation`: the query editor on Athena ran `DROP TABLE
+  glue_db_blerpkhn9nj7o0.stage21_images` (*"Query executed successfully"*); the database then lists `trades`
+  alone, and its Iceberg location `dev/data/catalogs/stage21_images` lists no object, with 4 noncurrent
+  versions and 7 delete markers. From a new JupyterLab terminal as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, the prefix read 23 entries (20 PNGs, `written-5-6.png`,
+  `written-5-7.txt`, the folder key) and `aws s3 rm --recursive` of `shared/stage21-images/` ran at
+  17:39:17; the prefix then lists nothing, with 23 noncurrent versions and 23 delete markers left to the
+  bucket's lifecycle. The loop was stopped and the held credentials' files removed from the space first.
+- **[Claude] The spaces**: *Code Spaces*, the card's *Delete*, the word *confirm*: eighth's
+  `default-28f1b390-…` in `d-p6gthxc82ckg` at about 17:41, test's in `d-lfgbdrjncmsu` at about 17:42, both
+  read *Deleting* and then *"You don't have any code spaces"*. Both portal tabs closed at 17:43.

@@ -581,7 +581,8 @@ An S3 bucket or prefix published from the portal's S3 browser, *Actions → Publ
 asset of type *S3 Object Collection*, which the managed list leaves out (the S3 pages, read 2026-11-17). Its
 subscription or Share is fulfilled through S3 Access Grants, read-only or read and write at the owner's
 choice; after a revocation *"a project member may still get Amazon S3 Access Grants credentials for up to 5
-minutes, and credentials can be used for 15 minutes"*, up to 20 minutes of access in all.
+minutes, and credentials can be used for 15 minutes"*, up to 20 minutes of access in all by the page; the
+measured residual is the vended session's own duration, 3600 s by default (*The revocation* below).
 
 Measured in Sandbox on 2026-11-23 (Stage 21 5.4 to 5.6; `SUP-481`), a collection under
 `eighth-experimentation`'s `shared/` subscribed by `test-experimentation`:
@@ -649,6 +650,11 @@ fulfilment of `my-data-product`'s one item read `COMPLETED` 17.5 s after it.
   --no-retain-permissions` at 01:06:30Z, three `glue:DeleteResourcePolicy` on the per-resource policies at
   01:07:09Z (the trail, read 2026-11-17), the grant not found at 01:07:32Z; then no link in the consumer's
   database, no Lake Formation row naming the table and the RAM share `DELETED` (`SUP-195`).
+- Measured on an S3 Object Collection (2026-11-23, Stage 21 5.6 and 5.7; `SUP-092`, `TM-37`): the owning
+  project's role ran `DeleteAccessGrant` 62 s after `RevokeSubscription`, and the vend was refused 31 s after
+  the delete. Credentials vended before it keep their own duration: a `READWRITE` session of 3600 s, the
+  default, read and wrote under the scope 19 minutes after the delete, against the page's 15 minutes. The
+  asset's *Unpublish* dialog says *"Users with existing access will retain their permissions."*
 
 ### What the catalog does not do
 

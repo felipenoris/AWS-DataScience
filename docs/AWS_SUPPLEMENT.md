@@ -1265,6 +1265,16 @@ entry is still true is the reading.
   stopped them. The exposure after a revocation is therefore the delete plus propagation plus the
   credential's duration, and a grantee holding a standing wider grant re-vends through it. Where:
   `log-stage-16-sandbox-lake.md`, 2026-08-26, sitting 4.
+  **Read again 2026-11-23** (Stage 21 5.6 and 5.7, a SageMaker Unified Studio subscription to an S3 Object
+  Collection): `RevokeSubscription` led to `DeleteAccessGrant` 62 s later (17:06:02, 17:07:04), and the
+  vend was refused 31 s after the delete. At the second revocation the vend was refused from 17:11:01 to
+  17:11:03, about nine seconds before `RevokeSubscription` (17:11:12) and `DeleteAccessGrant` (17:11:14),
+  unexplained. A `READWRITE` session vended at 17:09:12 for 3600 s, the duration `GetDataAccess` gives when
+  the caller names none, read and wrote under the scope 19 minutes after the delete; two 900 s sessions read
+  until their own expiry. The page's *"credentials can be used for 15 minutes"* holds only for a caller that
+  asks for 900 s. Through `aws s3 cp` the expiry surfaces as *"An error occurred (400) when calling the
+  HeadObject operation: Bad Request"*, because a `HEAD` response carries no error body. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 - `SUP-093` **The SMUS JupyterLab image ships `aws_s3_access_grants_boto3_plugin`, which vends through S3
   Access Grants under every boto3 S3 call, so a plain call from a notebook succeeds through a grant**
