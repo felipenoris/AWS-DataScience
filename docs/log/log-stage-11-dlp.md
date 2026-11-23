@@ -547,3 +547,49 @@ ran as the infrastructure user (`InfrastructureAccess`). No apply. Times are UTC
 - **[Claude] Owed**, each apply on the user's word naming it: `identity/org-policies/`, `staging/studio/`
   and `production/studio/`; then the battery's `--phase ou` and the simulation, and `agent-registry` in
   `deploytargets.py`'s `FENCED_SERVICES` in the commit after the two studio applies (Lesson 50).
+
+## 2026-11-23 — `TM-28` applied: the `Interactive` OU's SCP and the targets' fence, the battery and the simulation
+
+*Claude, in the session coordinating 2026-11-22's batch, on the branch `claude/tm28-applies` from `main` at
+`5fbaaf4f`. Every AWS call ran as the infrastructure user through `InfrastructureAccess`: the apply in Identity
+(`awsds-infra-identity`), the applies and reads in Staging and Production, the battery and reads in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), and the battery's contrast in `Policy Canary`
+(`awsds-policy-canary`, `AWSAdministratorAccess`). Terraform 1.17.2. Times are UTC.*
+
+- **[The user] The authorization**, in this session's chat, answering a question that named the three slices
+  and the battery: *"Sim, os dois"*.
+- **[Claude] The plans**, from `main` at `5fbaaf4f`, `-input=false -detailed-exitcode`, exit 2 each, saved to
+  plan files: `identity/org-policies/` `0 to add, 1 to change, 0 to destroy`, the `Interactive` document gaining
+  `DenyAgentCoreBuiltInTools` (1551 to 1874 bytes) and its description the `TM-28` sentence; `staging/studio/`
+  and `production/studio/` `0 to add, 2 to change, 0 to destroy` each, the boundary gaining `"agent-registry:*"`
+  and `person_session`'s document `(known after apply)` (`SUP-356`). The same actions as the plans of
+  2026-11-22.
+- **[Claude] The applies**, each from its saved plan: `identity/org-policies/` 00:46:17 to 00:46:26,
+  `0 added, 1 changed, 0 destroyed`; `staging/studio/` 00:46:36 to 00:46:49 and `production/studio/` 00:46:49 to
+  00:47:02, `0 added, 1 changed, 0 destroyed` each, `person_session`'s document reading back unchanged.
+- **[Claude] The re-plans**: `No changes` on all three. `awsds-staging-project-boundary` and
+  `awsds-prod-project-boundary` read default version `v5`, each naming `agent-registry` once.
+- **[Claude] The battery**, `./aws/probes/scp-battery.py --phase ou`, 00:48:17 to 00:49:41, two minutes after
+  the SCP's apply (`SUP-350`): 62 as expected, 0 unexpected, 5 not measured, 67 rows. The `TM-28` rows: in
+  `Sandbox Account 1`, `GetCodeInterpreterSession` and `GetBrowserSession` on AWS's tools and the two starts on
+  `awsds_canary_probe-0000000000` read `DENY-SCP` naming `p-tgda7n58`, the `Interactive` document; in
+  `Policy Canary` the two starts reached authorization; in `Sandbox Account 1` `GetAgentRuntime` and
+  `InvokeAgentRuntime` reached authorization. The five not measured: `athena:StartSession` in
+  `Sandbox Account 1` and Production and `athena:StartQueryExecution` in Data Governance and Identity, each
+  `DENY-NOT-SCP` since Athena names no policy, and `ec2:RunInstances` in Identity, which has no subnet in
+  `us-west-2`.
+- **[Claude] The simulation**, 00:50:52, as `eighth-experimentation`'s project role under
+  `awsds-sandbox-project-boundary` `v3`, `aws:RequestedRegion` `us-west-2` in the context (`SUP-008`), on `*`:
+  `InvokeWebSearch`, `InvokeWebAnswer`, `InvokeCodeInterpreter`, `ConnectBrowserAutomationStream`,
+  `StartCodeInterpreterSession` and `StartBrowserSession` each `explicitDeny`, `AllowedByOrganizations` false.
+  The contrast, `InvokeAgentRuntime` and `GetAgentRuntime` on `*`: `implicitDeny`, `AllowedByOrganizations`
+  true.
+- **[Claude] `DT-14`**: `agent-registry` joins `FENCED_GENERATIVE` in `aws/deploytargets.py`, and so both
+  targets' `FENCED_SERVICES`, in this commit (Lesson 50). `./aws/deploytargets.py`, ended 00:52:57: 45 verdicts
+  `pass`, none failing, `DT-14`'s fenced services reading `agent-registry` in Staging and Production. The run
+  exited 1 on section 14's calls under the persona, deploy and Control Tower profiles, whose sign-ins this
+  session does not hold.
+- **[Claude] Records**: the `TM-28` row and its channel row in `threat-model.md`, controlled; the Stage 11
+  `Status` row; `AWS_STATE.md` §C's row of the planned change, removed; the waiting list's row, taken;
+  CLAUDE.md's Stage 11 row and the battery's reading. `POLICIES.md`'s `DenyAgentCoreBuiltInTools` row, read
+  again, is still true. Stage 17's sentences that call `TM-28` unapplied are updated by 10.5's PR.
