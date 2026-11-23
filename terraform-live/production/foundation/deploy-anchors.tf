@@ -278,11 +278,11 @@ resource "aws_secretsmanager_secret_policy" "deploy_runner_token" {
 # -------------------------------------------------------------------- the deploy role (4.1)
 #
 # What it does from the runner: the CI/CD CLI's deploy into deploy-production and the leg around it
-# (Stage 19 steps 4.8 and 4.9), the governed warehouse's DDL and the model chain's jobs. It applies no
-# slice and writes no state - the pipeline never runs `make up` or `make down ENV=production`, and the
-# leg reads production/workloads-egress/ before it deploys (scripts/check-egress.py, decision 27). Its
-# grants are the inline document apply-application (apply-application.tf) and the managed policy
-# deploy-project.tf attaches.
+# (Stage 19 steps 4.8 and 4.9), the governed warehouse's DDL and the approval of app-ml's version in
+# the registry. It applies no slice and writes no state - the pipeline never runs `make up` or `make
+# down ENV=production`, and the leg reads production/workloads-egress/ before it deploys
+# (scripts/check-egress.py, decision 27). Its grants are the inline document apply-application
+# (apply-application.tf) and the managed policy deploy-project.tf attaches.
 module "deploy_role" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
   source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/deploy-role?ref=deploy-role-v0.5.0"
@@ -305,7 +305,7 @@ module "deploy_role" {
   alerts_topic_arn = aws_sns_topic.alerts.arn
 }
 
-# Production's statement in apply-application.tf's document: Stage 9 step 9.4's door to the governed
+# Production's statements in apply-application.tf's document: Stage 9 step 9.4's door to the governed
 # warehouse, the Data API with IAM authentication, the deploy runner's only path to the workgroup
 # (VPC-SharedServices and VPC-Workloads do not peer). workgroup/* because the id changes on every
 # re-create of the [E] compute, as the root SCP's DenyRedshiftCostGuardTamperingExceptInfrastructure
@@ -340,26 +340,6 @@ data "aws_iam_policy_document" "apply_application_in_this_account" {
       variable = "redshift-data:statement-owner-iam-userid"
       values   = ["$${aws:userid}"]
     }
-  }
-
-  # Stage 10 step 5.2: the version of app-etl's model registered PendingManualApproval and approved at
-  # the pipeline's manual job, read back, and named by the batch transform's model. The group's resource
-  # policy names this role for the two writes (sagemaker/registry.tf), and inside the account it is this
-  # identity policy that admits them.
-  statement {
-    sid    = "RegisterAndApproveTheModel"
-    effect = "Allow"
-    actions = [
-      "sagemaker:CreateModelPackage",
-      "sagemaker:DescribeModelPackage",
-      "sagemaker:DescribeModelPackageGroup",
-      "sagemaker:ListModelPackages",
-      "sagemaker:UpdateModelPackage",
-    ]
-    resources = [
-      "arn:${local.partition}:sagemaker:${local.region_account}:model-package-group/awsds-${var.env}-model-app-etl",
-      "arn:${local.partition}:sagemaker:${local.region_account}:model-package/awsds-${var.env}-model-app-etl/*",
-    ]
   }
 
   # Stage 17 step 9.5: app-ml's versions, which the register task proposes PendingManualApproval as the

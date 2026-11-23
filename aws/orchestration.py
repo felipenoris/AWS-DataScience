@@ -5,8 +5,8 @@ decision 6 (b)), and D41's chain layer above them (OR-9): each workflow's execut
 project's (boundary, trust, the policies <env>/studio/ attaches), its NetworkConfiguration
 (present, two AZs, no default route), its log group and retention (D28 item 5), its failure
 rule, the model-approval rule, recent runs with their type, the absence of any provisioned MWAA
-environment, the definitions, and the registry's register/approve record (INT-07's registry
-half, consumed).
+environment, the definitions, and the registry's register/approve record (Stage 17 decision
+16 (b): a project role proposes, the deploy role approves).
 
 needs:    a live SSO session, and nothing else:
 
@@ -50,6 +50,11 @@ exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #     service's suffix and naming the service's detail types, which carry the "MWAA Serverless "
 #     prefix (Stage 10 step 3.1, terraform-modules/orchestration; OR-4)
 #   - the approval rule is awsds-prod-model-approval (Stage 10 step 5.3)
+#   - a registry version is proposed PendingManualApproval by a deployment project's role, a
+#     task of the application's workflow, and approved by the target's deploy role alone,
+#     awsds-deploy-staging or awsds-deploy-prod (Stage 17 decision 16 (b), <env>/studio/
+#     workflows.tf's denies); awsds-deploy-prod registered app-etl's versions in
+#     awsds-prod-model-app-etl until that shape retired (Stage 17 step 9.11)
 #   - the chain layer carries awsds-<env>-chain-, the group awsds-<env>-chains and the roles
 #     awsds-<env>-chain-exec and -chain-scheduler, which the module creates with no boundary and
 #     no managed policy (OR-9)
@@ -83,6 +88,13 @@ SANDBOX_PREFIX = "awsds-infra-sandbox-"
 # The contracts (see header).
 AUTO_LOG_PREFIX = "/aws/mwaa-serverless/"
 APPROVAL_RULE = "awsds-prod-model-approval"
+# The registry's writers (Stage 17 decision 16 (b)): each target's approver, its deploy role
+# (<env>/sagemaker/registry.tf), and the group the retired shape registered in as Production's
+# (Stage 17 step 9.11), whose events the 90-day lookup holds to 2027-01-23.
+REGISTRY_APPROVERS = {"staging": "awsds-deploy-staging", "prod": "awsds-deploy-prod"}
+RETIRED_REGISTRAR = "awsds-deploy-prod"
+RETIRED_DEPLOY_ROLE_GROUP = "awsds-prod-model-app-etl"
+PENDING = "PendingManualApproval"
 # Each account's deployment project (Stage 19 step 4.6), whose name the CLI writes into each
 # workflow's name, and the projects bucket the CLI uploads the definitions to (sagemaker-prereqs).
 DEPLOY_PROJECTS = {"staging": "deploy-staging", "prod": "deploy-production"}
@@ -597,6 +609,103 @@ def project_home(info: dict | None) -> tuple:
     return tags.get("AmazonDataZoneDomain", ""), tags.get("AmazonDataZoneProject", "")
 
 
+def judge_registry_event(ev_name: str, ev: dict, approver: str) -> tuple:
+    """One registry write read against Stage 17 decision 16 (b): (kind, why), the kind one of ok,
+    refused (the event carries an error code and wrote nothing), retired (app-etl's shape) or bad."""
+    if ev.get("errorCode"):
+        return "refused", str(ev.get("errorCode"))
+    caller = str((ev.get("userIdentity") or {}).get("arn") or "")
+    params = ev.get("requestParameters") or {}
+    if ev_name == "UpdateModelPackage":
+        # model-package/<group>/<version>
+        group = (str(params.get("modelPackageArn") or "").split("/")[1:2] or [""])[0]
+    else:
+        group = str(params.get("modelPackageGroupName") or "").rsplit("/", 1)[-1]
+    if f"/{RETIRED_REGISTRAR}/" in caller and group == RETIRED_DEPLOY_ROLE_GROUP:
+        return "retired", ""
+    if ev_name == "UpdateModelPackage":
+        if f"/{approver}/" in caller:
+            return "ok", ""
+        return "bad", f"the approval is {approver}'s"
+    if f"/{PROJECT_ROLE_PREFIX}" not in caller:
+        return "bad", "a version is a project role's proposal"
+    if str(params.get("modelApprovalStatus") or "") != PENDING:
+        return "bad", f"a version is proposed {PENDING}"
+    return "ok", ""
+
+
+def registry_verdicts(env: str, approver: str, events: list, unread: list) -> list:
+    """OR-8's lines for one target's registry, as (verb, subject, detail), the verb ok, note or fail.
+    events holds (event name, CloudTrail event) pairs; unread the event names not read to the last
+    page. A lookup that read no write of decision 16 (b)'s shape is a note, never a pass."""
+    lines: list = []
+    kinds: dict = {"ok": [], "refused": [], "retired": [], "bad": []}
+    for ev_name, ev in events:
+        kind, why = judge_registry_event(ev_name, ev, approver)
+        caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
+        when = str(ev.get("eventTime") or "-")
+        kinds[kind].append((ev_name, caller, when, why))
+    if kinds["retired"]:
+        newest = max(w for _n, _c, w, _y in kinds["retired"])
+        lines.append(
+            (
+                "note",
+                f"{env}: the retired shape",
+                f"{len(kinds['retired'])} event(s) on {RETIRED_DEPLOY_ROLE_GROUP} as "
+                f"{RETIRED_REGISTRAR}, the newest at {newest} - app-etl's model half, retired "
+                "2026-11-23 (Stage 17 step 9.11).",
+            )
+        )
+    if kinds["refused"]:
+        codes = sorted({f"{n} {y}" for n, _c, _w, y in kinds["refused"]})
+        lines.append(
+            (
+                "note",
+                f"{env}: refused calls",
+                f"{len(kinds['refused'])} event(s) wrote nothing: {', '.join(codes)}.",
+            )
+        )
+    if kinds["bad"]:
+        for ev_name, caller, why in sorted({(n, c, y) for n, c, _w, y in kinds["bad"]}):
+            lines.append(
+                (
+                    "fail",
+                    f"{env}: {ev_name} caller",
+                    f"{head2(caller)} - {why} (Stage 17 decision 16 (b)).",
+                )
+            )
+    elif unread:
+        lines.append(
+            (
+                "note",
+                f"{env}: registry writes",
+                f"{' and '.join(unread)} not read to the last page (section 14); "
+                f"{len(events)} event(s) read.",
+            )
+        )
+    elif kinds["ok"]:
+        proposed = sum(1 for n, *_r in kinds["ok"] if n == "CreateModelPackage")
+        approved = len(kinds["ok"]) - proposed
+        lines.append(
+            (
+                "ok",
+                f"{env}: registry writes",
+                f"{proposed} version(s) proposed {PENDING} by a project role, {approved} "
+                f"approval(s) {approver}'s",
+            )
+        )
+    else:
+        lines.append(
+            (
+                "note",
+                f"{env}: registry writes",
+                "no write of decision 16 (b)'s shape in the 90 days the lookup reads - "
+                "an absence, not a pass.",
+            )
+        )
+    return lines
+
+
 def main(argv: list) -> int:
     cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
@@ -731,13 +840,15 @@ def main(argv: list) -> int:
             state = "(read failed)"
         slr_rows.append((env, state))
 
-    # -------------- the registry record: who registered, who approved (INT-07's registry half)
-    reg_rows: list = []  # (time, event, caller tail)
-    reg_bad: list = []  # (event, caller)
-    reg_unread: list = []  # event names whose history was not read to its last page
-    if prod_live:
-        cli = cli_for(PROD_PROFILE)
-        note(f"measuring {PROD_PROFILE} (registry events) ...")
+    # ------- the registry record in each target: who proposed, who approved (Stage 17 decision 16 (b))
+    reg_rows: list = []  # (env, time, event, the caller's role)
+    reg_events: dict = {}  # env -> [(event name, CloudTrail event)]
+    reg_unread: dict = {}  # env -> event names whose history was not read to its last page
+    for env, p in measured:
+        cli = cli_for(p)
+        note(f"measuring {p} (registry events) ...")
+        reg_events[env] = []
+        reg_unread[env] = []
         for ev_name in ("CreateModelPackage", "UpdateModelPackage"):
             listing = cli.pages(
                 "cloudtrail",
@@ -748,17 +859,17 @@ def main(argv: list) -> int:
                 str(LOOKUP_MAX),
             )
             if not listing.complete:
-                reg_unread.append(ev_name)
+                reg_unread[env].append(ev_name)
             for item in listing.items("Events"):
                 try:
                     ev = json.loads(item.get("CloudTrailEvent") or "")
                 except (TypeError, ValueError):
                     continue
-                caller = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)")
+                reg_events[env].append((ev_name, ev))
+                parts = str((ev.get("userIdentity") or {}).get("arn") or "(unknown)").split("/")
+                role = parts[1] if len(parts) > 2 else parts[-1]
                 when = str(ev.get("eventTime") or "-")
-                reg_rows.append((when, ev_name, caller.rsplit("/", 1)[-1][:40]))
-                if "awsds-deploy-prod" not in caller:
-                    reg_bad.append((ev_name, caller))
+                reg_rows.append((env, when, ev_name, role[:48]))
 
     # ----------------- the blueprint configurations, read where they live (each Sandbox)
     bp_rows: list = []  # (profile, blueprint name, enabled regions)
@@ -1085,29 +1196,14 @@ def main(argv: list) -> int:
             else:
                 checks.ok("OR-7", what, f"{n}/{VERSION_QUOTA}")
 
-    # OR-8: every registry write in the record was the deploy role (INT-07's registry half;
-    # Stage 9 3.2's policy read back as behaviour).
-    if reg_bad:
-        for ev_name, caller in sorted(set(reg_bad)):
-            checks.fail(
-                "OR-8",
-                f"{ev_name} caller",
-                f"{head2(caller)} is not awsds-deploy-prod - registration is the "
-                "pipeline's act (step 5.2, D17).",
-            )
-    elif reg_unread:
-        checks.note(
-            "OR-8",
-            "registry writes",
-            f"{' and '.join(reg_unread)} not read to the last page (section 14); "
-            f"{len(reg_rows)} event(s) read.",
-        )
-    elif reg_rows:
-        checks.ok(
-            "OR-8",
-            "registry writes",
-            f"{len(reg_rows)} event(s), every caller is awsds-deploy-prod",
-        )
+    # OR-8: each target's registry writes read back as Stage 17 decision 16 (b) shapes them: a
+    # version proposed PendingManualApproval by a deployment project's role, approved by the
+    # target's deploy role.
+    for env, events in reg_events.items():
+        for verb, subject, detail in registry_verdicts(
+            env, REGISTRY_APPROVERS[env], events, reg_unread[env]
+        ):
+            getattr(checks, verb)("OR-8", subject, detail)
 
     # OR-9: the chain layer (steps 3.4-3.7), <env>/chains/'s since 2026-11-16, whose machines start
     # the CLI's workflows. Every base piece, each machine's schedule and failure rule, and each
@@ -1247,7 +1343,7 @@ SECTIONS
   7. Recent runs
   8. Provisioned MWAA environments - the absence reading
   9. The service-linked role, and the definitions
- 10. The registry record: who registered, who approved (INT-07)
+ 10. The registry record: who proposed, who approved (Stage 17 decision 16 (b))
  11. The blueprint configurations in each Sandbox
  12. CHECKS
  13. The accounts nothing here is measuring
@@ -1441,21 +1537,30 @@ rendered copies under applications/ in each account's outputs bucket are not rea
 here.""")
 
         # ==============================================================================
-        rep.h1("10. The registry record: who registered, who approved (INT-07)")
+        rep.h1("10. The registry record: who proposed, who approved (Stage 17 decision 16 (b))")
         if reg_rows:
-            rep.tabulate(["TIME\tEVENT\tCALLER"] + ["\t".join(r) for r in reg_rows[:25]])
+            rep.tabulate(
+                ["ENV\tTIME\tEVENT\tCALLER'S ROLE"] + ["\t".join(r) for r in reg_rows[:25]]
+            )
             if len(reg_rows) > 25:
                 rep.line(f"... and {len(reg_rows) - 25} more event(s).")
-        if reg_unread:
+        unread = [f"{env}: {' and '.join(names)}" for env, names in reg_unread.items() if names]
+        if unread:
             rep.line(
-                f"{' and '.join(reg_unread)} not read to the last page (section 14): an "
-                "absence here proves nothing."
+                f"{'; '.join(unread)} not read to the last page (section 14): an absence here "
+                "proves nothing."
             )
+        elif not reg_events:
+            rep.line("Neither target measured.")
         elif not reg_rows:
-            rep.line("No Create/UpdateModelPackage event in the 90-day lookup.")
+            rep.line("No Create/UpdateModelPackage event in the 90-day lookup of either target.")
         rep.text("""
-Stage 9 3.2's policy says register-and-approve is awsds-deploy-prod alone; this
-is that sentence read back as behaviour. OR-8 fails on any other caller.""")
+A version is proposed PendingManualApproval by a deployment project's role, a task of
+the application's workflow, and approved by the target's deploy role alone,
+awsds-deploy-staging or awsds-deploy-prod; this is that sentence read back as
+behaviour. OR-8 fails on any other caller, notes a refused call and the retired
+shape, app-etl's versions registered as awsds-deploy-prod, and reads a lookup with
+no write of that shape as an absence, never a pass.""")
 
         # ==============================================================================
         rep.h1("11. The blueprint configurations in each Sandbox")
@@ -1493,7 +1598,9 @@ What the checks are, and where each comes from:
         bucket (Stage 19 step 4.6)
   OR-6  no provisioned MWAA environment in any account read (step 4.3)
   OR-7  workflow versions vs the 50-version quota (risk 4)
-  OR-8  every registry write was awsds-deploy-prod (INT-07, Stage 9 3.2)
+  OR-8  in each target, each registry version proposed PendingManualApproval by a
+        project role, each approval the target's deploy role's (Stage 17 decision
+        16 (b)); a lookup with no such write is a note
   OR-9  the chain layer: the group, the machines' log group with retention, the
         chain roles (one service each, no managed policy, no job or data
         action), one machine at least, each machine's schedule and failure rule

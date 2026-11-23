@@ -6373,3 +6373,84 @@ Times UTC.*
   second and third halves wait on 9.11's estate pull request. The three `awsds-prod-chain-app-etl*` schedules read
   `DISABLED` at 19:15; `app_etl_deploy_production_app_etl_train` stays `READY` and both training files stay under
   `shared/app-etl/` (`SUP-484`).
+
+## 2026-11-23 — 9.11's estate: the reads, the branch's plans and the instruments
+
+*Claude's hand, 9.11's estate session, with nothing up; reads as `awsds-infra-staging` and `awsds-infra-prod`,
+`InfrastructureAccess`, from 21:19. Times UTC.*
+
+- **[Claude] The schedules**: `awsds-staging-chains` holds eight, `awsds-prod-chains` seven, each `DISABLED`,
+  `awsds-staging-chain-app-etl-train` and `awsds-prod-chain-app-etl-train` among them.
+- **[Claude] The workflows**: `app_etl_deploy_staging_app_etl_train` and `app_etl_deploy_production_app_etl_train`
+  still listed beside each target's other workflows (`SUP-484`).
+- **[Claude] The registry**: Staging lists `awsds-staging-model-app-ml` alone, and `describe-model-package-group`
+  on `awsds-staging-model-app-etl` answers *"does not exist"*. R2's "holds no version" was `ListModelPackages`'
+  empty list over a group no slice declared (`SUP-485`), so the apply removes one group, Production's.
+  Production lists `awsds-prod-model-app-ml` and `awsds-prod-model-app-etl` (created 2026-10-18 at 19:59:03),
+  the latter holding version 1, `Approved`, `Completed`, created 2026-10-25 at 01:28:36. Its policy's
+  statements: `RegisterAndApproveAsTheProductionDeployRole`, `ReadTheVersionsAsTheStagingDeployRole`,
+  `ReadTheStatusFromSandbox`.
+- **[Claude] Whether `DeleteModelPackageGroup` refuses a group holding versions** (lxiv's second half), read in
+  the documentation, unmeasured: SageMaker's Studio page says *"You can only delete an empty model group"*, the
+  API reference names no error for it, and the AWS provider's delete calls `DeleteModelPackageGroup` alone,
+  deleting no version first (`docs/REFERENCES.md`). So version 1 is deleted by hand before the apply, as the
+  user's option (a) orders; the refusal's wording stays unread unless the user names a delete of the group
+  while it holds the version.
+- **[Claude] The registry's CloudTrail records**, the 90-day lookup: Staging's `CreateModelPackage` at 17:27:09
+  by `app-ml`'s deployment project role, `PendingManualApproval`, and `UpdateModelPackage` at 17:29:29 by
+  `awsds-deploy-staging`, `Approved`; Production's `CreateModelPackage` at 18:08:36 by its project role,
+  `PendingManualApproval`, approved at 18:33:05 by `awsds-deploy-prod`; and app-etl's retired pair, registered
+  2026-10-25 at 01:28:36 and approved at 01:29:10, both by `awsds-deploy-prod`. `requestParameters` carries
+  `modelPackageGroupName` and `modelApprovalStatus` on the create, the keys `OR-8` reads.
+- **[Claude] The files under `shared/app-etl/`** in each deployment project: Staging holds `code/app-etl-train.zip`
+  (7,043 bytes, 2026-11-22 04:11:20), `workflows/app-etl-train.yaml` (2,717 bytes, 04:12:29), `models/` with two
+  training outputs (`app-etl-train-20261116T020100`, `-20261122T043108`, each a `model.tar.gz` and an
+  `evaluation.json`) and two transform outputs (`batch.csv.out`), and `work/train/` (`batch.csv`, `train.csv`,
+  `validation.csv`, written 2026-11-23 18:42:28 by `v0.7.0`'s `transform`, whose Glue script still carries
+  `--TRAIN_PATH`). Production holds the same two retired files (7,043 bytes at 04:46:32; 2,702 bytes at
+  04:47:40) and `work/train/`'s three files (19:11:10), with no `models/`. The branch removes `--TRAIN_PATH`
+  from the application's source; `work/train/` stops growing at `app-etl`'s next release.
+- **[Claude] The branch's plans**, each from `claude/stage17-911-estate-04172a` after the merge of `main` at
+  `b0d5adfd`, `-input=false`, saved nowhere, `foundation/` with the project folder's `alerts.auto.tfvars`:
+
+  | Slice | Plan | What |
+  |---|---|---|
+  | `staging/chains` | 0 to add, 1 to change, 6 to destroy | `app-etl-train`'s state machine, schedule, two failure rules and their targets; the chain-exec role's inline policy |
+  | `production/chains` | 0 to add, 1 to change, 6 to destroy | the same in Production |
+  | `staging/sagemaker` | No changes | a comment |
+  | `production/sagemaker` | 0 to add, 0 to change, 2 to destroy | `awsds-prod-model-app-etl` and its policy |
+  | `staging/foundation` | 0 to add, 2 to change, 0 to destroy | `PassTheProjectRoleToSageMaker`; `ReadTheApprovedModelVersions`, `ListTheModelVersions`, `FindTheTrainingJobs`, `ReadTheTrainingJobs`, `ServeTheModels`; the output `registry_model_package_group_arn_prefix` |
+  | `production/foundation` | 0 to add, 2 to change, 0 to destroy | `PassTheProjectRoleToSageMaker`; `RegisterAndApproveTheModel`, `FindTheTrainingJobs`, `ReadTheTrainingJobs`, `ServeTheModels` |
+  | `staging/studio` | 2 to add, 0 to change, 2 to destroy | `awsds-staging-workflows` replaced, its description being ForceNew, and its attachment to the deployment project's role: `DescribeATrainingJobNoProjectHolds` and `TagATrainingJobWithTheCallersProject` leave |
+  | `production/studio` | 2 to add, 0 to change, 2 to destroy | the same in Production |
+
+  Between the replaced policy's destroy and its create, the deployment project's role lacks the grant; every
+  schedule is `DISABLED` and no workflow runs at an apply with nothing up.
+
+## 2026-11-23 — 9.11's estate: the hand acts
+
+*Claude's hand, 9.11's estate session, on the user's words in its chat, *"Autorizo os três atos"*, answering a
+question that listed the three deletions; as `awsds-infra-staging` and `awsds-infra-prod`, `InfrastructureAccess`.
+The orchestrating session, `r2-releases` and `n10-stage21-pass5`, running at 21:41, were told first. Times UTC.*
+
+- **[Claude] `awsds-prod-model-app-etl/1` deleted** at 21:41:47 (`delete-model-package`, exit 0). Afterwards
+  `list-model-packages` on the group reads `[]` and `describe-model-package` on the version answers *"does not
+  exist"*; `describe-model-package-group` reads the group `Completed`, which `production/sagemaker/`'s apply
+  removes.
+- **[Claude] The retired workflows deleted**: `app_etl_deploy_staging_app_etl_train` (`…-c5HHr2Hhpi`) at
+  21:42:08 and `app_etl_deploy_production_app_etl_train` (`…-Diktm0kSnx`) at 21:42:10, `delete-workflow` answering
+  each ARN. `list-workflows` then reads seven workflows in Staging and six in Production, none named `*_train`.
+- **[Claude] Their files deleted** under each deployment project's `shared/app-etl/`, the bucket versioned, so each
+  delete wrote a delete marker over the version read before it: Staging's `code/app-etl-train.zip` (7,043 bytes,
+  version `8L8Ve5Hs…`) at 21:42:24 and `workflows/app-etl-train.yaml` (2,717 bytes, `4XVn0vHG…`) at 21:42:28;
+  Production's `code/app-etl-train.zip` (7,043 bytes, `o5fyVWsO…`) at 21:42:31 and `workflows/app-etl-train.yaml`
+  (2,702 bytes, `lQ5IChPR…`) at 21:42:33.
+- **[Claude] Staging's `shared/app-etl/models/` deleted** at 21:42:47 to 21:42:49 (`s3 rm --recursive`, exit 0):
+  the six objects read before, two training outputs (`app-etl-train-20261116T020100`, `-20261122T043108`, each
+  `evaluation.json` and `output/model.tar.gz`) and two transform outputs (`transform/app-etl-v0-5-2-…`,
+  `-v0-6-0-…`, each `batch.csv.out`). The prefix then lists nothing; `shared/app-etl/` holds `code`, `glue`,
+  `inbox`, `outbox`, `src`, `tables`, `work` and `workflows`.
+- **[Claude] What `DeleteWorkflow` leaves**: each workflow's log group stays,
+  `/aws/mwaa-serverless/<domain>-<project>/app_etl_deploy_staging_app_etl_train` with 34,965 bytes and Production's
+  with 0, neither with a retention (`EXC-25`). Their deletion is the user's to decide. `work/train/` stays in
+  both targets until `app-etl`'s next release, as recommended: each `v0.7.0` run writes it again.

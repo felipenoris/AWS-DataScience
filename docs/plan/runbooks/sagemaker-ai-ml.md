@@ -64,10 +64,11 @@ checks the predictions against the holdout's labels and deletes the model. A tar
 version once the account's deploy role approved it: a job of the pipeline in Staging, a deployment
 manager's job in Production. Later releases add a workflow each (§W): a real-time endpoint created,
 invoked and deleted inside one run, in the three environments, and an ML pipeline created from a
-definition the bundle carries, in the `dev` project alone. Where a measurement is needed the example is
-`app-etl`, whose workflow `app-etl-train` trains a model in both targets and whose pipeline registers,
-approves and serves it. That is the earlier shape, and it retires after `app-ml`'s first release
-(decision 28 (a), §R).
+definition the bundle carries, in the `dev` project alone. `app-etl` had the earlier shape, its workflow
+`app-etl-train` training a model in both targets and its pipeline registering, approving and serving it;
+it retired on 2026-11-23 (decision 28 (a), step 9.11, §R), `v0.7.0` carrying no model job and 9.11's
+estate pull request removing its chain, its registry group and its grants from both targets. The
+measurements below that name it are that shape's.
 
 `app-genai` is a third application on the template, Amazon Bedrock's, with no image and no SageMaker
 job. About forty synthetic support messages travel in its bundle, with the prompt and the definition of
@@ -112,7 +113,7 @@ while nothing runs.
 | SageMaker model | `CreateModel` | a record: an image and an artifact, or a model package, with a role and a `VpcConfig` | a notebook; `app-ml`'s `resolve` task, from the candidate's archive (designed) | `app-ml`'s `resolve` task, from the approved version (designed); for `app-etl`, a pipeline job (`model-chain.py`, measured) | nothing |
 | Transform job | `CreateTransformJob` | batch inference: a model run over a file, an output line per input line | a notebook; `app-ml`'s `score` task (designed) | `app-ml`'s `score` task (designed); for `app-etl`, a pipeline job (measured) | nothing |
 | Endpoint configuration and endpoint | `CreateEndpointConfig`, `CreateEndpoint`; `InvokeEndpoint` through `sagemaker.runtime` | a model held on instances, answering requests | a notebook or the portal, deleted in its sitting (decision 6); a run of `app-ml-endpoint` in `dev` (designed) | none stands (Stage 10 decision 4). One release after the first, a run of `app-ml-endpoint` creates one, invokes it and deletes it (decision 18 (b), designed) | 0.115 USD per hour on `ml.m5.large` (price measured 2026-10-12) |
-| Model package group and model package | `CreateModelPackageGroup`, `CreateModelPackage`, `UpdateModelPackage` | the Model Registry: a group per model family, each version with an approval status | the project's own group, from a notebook or the portal (pass 3); for `app-ml`, the group `app-ml-dev`, created once from the space, where `app-ml-register` proposes the candidate (designed) | a group in each target, Terraform's: `awsds-staging-model-app-ml` and `awsds-prod-model-app-ml`. The version is the `register` task's, as the project role, and the approval is the account's deploy role's: `staging-test` in Staging, `production-approve` in Production (decision 16 (b), designed). For `app-etl` the pipeline's `production-register` proposes the version, in Production alone (measured, §R) | nothing |
+| Model package group and model package | `CreateModelPackageGroup`, `CreateModelPackage`, `UpdateModelPackage` | the Model Registry: a group per model family, each version with an approval status | the project's own group, from a notebook or the portal (pass 3); for `app-ml`, the group `app-ml-dev`, created once from the space, where `app-ml-register` proposes the candidate (designed) | a group in each target, Terraform's: `awsds-staging-model-app-ml` and `awsds-prod-model-app-ml`. The version is the `register` task's, as the project role, and the approval is the account's deploy role's: `staging-test` in Staging, `production-approve` in Production (decision 16 (b), designed). For `app-etl` the pipeline's `production-register` proposed the version, in Production alone, until its model half retired on 2026-11-23 (measured, §R) | nothing |
 | MLflow App | an environment of the `MLflowApp` blueprint | a serverless tracking service: experiments, runs, their artifacts in S3 | `ml-demo-mlflow`, created 2026-10-19; `app-ml-dev`'s, created the same way (designed) | none: a run is tracked where it trains, in `dev` (decision 17 (a), which decision 21 (b) left as the `dev` project's app alone) | no SKU in the offer read 2026-10-12; the artifacts' bytes |
 | ML pipeline | `CreatePipeline`, `UpdatePipeline`, `StartPipelineExecution` | a graph of SageMaker jobs, with its executions | a notebook or the visual editor (pass 5); one release after `app-ml`'s first, a run of `app-ml-pipeline` in `app-ml-dev` creates or updates one from a definition the bundle carries and starts an execution (decision 19 (b), designed) | none: the pipeline wraps the training, which runs in `dev` alone (decision 19's place, taken 2026-11-17) | nothing; each step bills as its job |
 | Feature group | `CreateFeatureGroup`; `PutRecord` through Feature Store's runtime | features keyed by a record identifier, in an online store, an offline store or both | none: step 6.4 reads the entry and creates nothing (decision 20 (a)) | none | the online store, while it holds records |
@@ -396,7 +397,7 @@ carries no project tag, and `AddTags` allowed for that one key with the caller's
 | Resource type | `sandbox/workflows/` | `<env>/studio/workflows.tf`, the deployment projects |
 |---|---|---|
 | Processing job | held | held |
-| Training job | written 2026-11-19 behind `training_pair_enabled`, applied 2026-11-21 after 2.2's readings (9.5) | held since 2026-11-16 for `app-etl-train`, and removed when that workflow retires (9.11): no target trains `app-ml` |
+| Training job | written 2026-11-19 behind `training_pair_enabled`, applied 2026-11-21 after 2.2's readings (9.5) | held from 2026-11-16 for `app-etl-train`, removed by 9.11's estate pull request (2026-11-23): no target trains |
 | Transform job | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | SageMaker model, the tag alone | applied 2026-11-19 (9.5) | applied 2026-11-17 (9.5) |
 | Model package, on the stage's group and its versions: `CreateModelPackage`, `ListModelPackages` and `DescribeModelPackage`, and never `UpdateModelPackage` | `CreateModelPackage` of a `PendingManualApproval` version in the application's own group, applied 2026-11-19; AWS's policy gives the list, the describe and the approval, the member's in the portal (9.5) | applied 2026-11-17 (9.5, decision 16 (b)) |
@@ -999,10 +1000,13 @@ guard's `TRAINING_SOURCE`, the deployer's own statement (§W).
 On 2026-11-16 Staging's deployment project trained as its project role and `staging-model` served that
 model, and the model jobs of `v0.5.2`'s pipeline stayed `manual`. In Staging `model-chain.py` reads
 Production's newest approved version before it serves Staging's own model, the registry half of
-`INT-07`. The user revised that decision on 2026-11-17, and the chain retires in a release of `app-etl`
-after `app-ml`'s first (decision 28 (a), step 9.11): the workflow, its chains, the four model jobs, the
-registry family and the grants behind them leave, and `model-chain.py` keeps the `approve` `app-ml`
-uses.
+`INT-07`. The user revised that decision on 2026-11-17, and the chain retired after `app-ml`'s first
+release (decision 28 (a), step 9.11): `app-etl`'s `v0.7.0` went through both targets on 2026-11-23 with
+no model job, `model-chain.py` keeping the `approve` `app-ml` uses, and 9.11's estate pull request, written
+the same day, removes the chain from both `chains/` slices, the registry family with its policy, the deploy
+roles' statements, Staging's read of Production's registry and the training pair of both `studio/`
+slices. The version `awsds-prod-model-app-etl/1` and the retired workflow with its two files are deleted
+by hand, each on the user's word (Stage 17's log).
 
 ## G. The Generative AI path
 

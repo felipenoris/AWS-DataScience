@@ -2,18 +2,13 @@
 # its resource policy written now rather than improvised in Stage 10 (D28 item 6).
 #
 # The registry is the promotion boundary: a version is approved here, on the far side of the gate
-# from the person who trained it. A family's policy takes one of two shapes, by who registers its
-# versions:
+# from the person who trained it. A task registers every family's versions, as the deployment
+# project's role (Stage 17 decision 16 (b)), and a family's policy names two readers and one writer:
 #
-#   the deploy role registers (app-etl, whose pipeline job registers)
-#     register and approve   awsds-deploy-prod alone (CreateModelPackage, UpdateModelPackage)
-#     read the versions      awsds-deploy-staging, which deploys the approved one (INT-07's registry half)
-#   a task registers (app-ml, as the deployment project's role, Stage 17 decision 16 (b))
-#     approve                awsds-deploy-prod alone (UpdateModelPackage); no Staging reader, since the
-#                            model reaches each account in the release's bundle
-#   both shapes
-#     read the status        the Sandbox readers decision 10 names, matched by aws:PrincipalArn in an
-#                            account the D35 map names, so no statement carries arn:aws:iam::*:
+#   approve           awsds-deploy-prod alone (UpdateModelPackage); no Staging reader, since the model
+#                     reaches each account in the release's bundle
+#   read the status   the Sandbox readers decision 10 names, matched by aws:PrincipalArn in an account
+#                     the D35 map names, so no statement carries arn:aws:iam::*:
 #
 # The deployment project's role registers by its identity policy (production/studio/workflows.tf).
 #
@@ -31,21 +26,15 @@
 # (./aws/catalog.py CT-6), whose trigger is the Model Registry being used.
 
 locals {
-  # Each family by name, with whether a task registers its versions and its group's description.
-  # SageMaker has no call that updates a group, so a changed description replaces the group.
+  # Each family by name, with its group's description. SageMaker has no call that updates a group,
+  # so a changed description replaces the group.
   model_families = {
-    "app-etl" = {
-      task_registers = false
-      description    = "app-etl's model versions: registered and approved by the Production deploy role alone (Stage 9 step 3.2, D28 item 6)"
-    }
     "app-ml" = {
-      task_registers = true
-      description    = "app-ml's model versions: registered by a task as the deployment project's role, approved by the Production deploy role alone (Stage 17 decision 16 (b))"
+      description = "app-ml's model versions: registered by a task as the deployment project's role, approved by the Production deploy role alone (Stage 17 decision 16 (b))"
     }
   }
 
   deploy_prod_arn    = data.terraform_remote_state.foundation.outputs.deploy_role_arns[var.account_folder]
-  deploy_staging_arn = data.terraform_remote_state.foundation.outputs.deploy_role_arns["staging"]
   sandbox_account_id = data.aws_caller_identity.sandbox.account_id
 
   status_reader_patterns = [
@@ -53,7 +42,7 @@ locals {
     "arn:${local.partition}:iam::${local.sandbox_account_id}:role/datazone_usr_role_*",
   ]
 
-  # The status readers' statement, written once for both shapes.
+  # The status readers' statement, one per family.
   read_the_status_from_sandbox = {
     for family, group in aws_sagemaker_model_package_group.this : family => {
       Sid       = "ReadTheStatusFromSandbox"
@@ -86,37 +75,9 @@ resource "aws_sagemaker_model_package_group" "this" {
   }
 }
 
-# The deploy role registers: the families whose pipeline job calls CreateModelPackage.
-resource "aws_sagemaker_model_package_group_policy" "this" {
-  for_each = { for family, group in aws_sagemaker_model_package_group.this : family => group if !local.model_families[family].task_registers }
-
-  model_package_group_name = each.value.model_package_group_name
-
-  resource_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "RegisterAndApproveAsTheProductionDeployRole"
-        Effect    = "Allow"
-        Principal = { AWS = local.deploy_prod_arn }
-        Action    = ["sagemaker:CreateModelPackage", "sagemaker:UpdateModelPackage"]
-        Resource  = "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${each.value.model_package_group_name}/*"
-      },
-      {
-        Sid       = "ReadTheVersionsAsTheStagingDeployRole"
-        Effect    = "Allow"
-        Principal = { AWS = local.deploy_staging_arn }
-        Action    = ["sagemaker:DescribeModelPackage", "sagemaker:ListModelPackages"]
-        Resource  = "arn:${local.partition}:sagemaker:${var.region}:${local.account_id}:model-package/${each.value.model_package_group_name}/*"
-      },
-      local.read_the_status_from_sandbox[each.key],
-    ]
-  })
-}
-
 # A task registers: the deploy role approves alone, and no Staging statement.
 resource "aws_sagemaker_model_package_group_policy" "task_registers" {
-  for_each = { for family, group in aws_sagemaker_model_package_group.this : family => group if local.model_families[family].task_registers }
+  for_each = aws_sagemaker_model_package_group.this
 
   model_package_group_name = each.value.model_package_group_name
 
