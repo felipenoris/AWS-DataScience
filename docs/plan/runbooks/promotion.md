@@ -11,12 +11,12 @@ record. What a step reads is recorded in that stage's log, in the sitting it ran
 Written 2026-10-23 with the environment down. Every `[Claude⚡]` apply waits for the user's word in
 chat, with the identity stated first (`CLAUDE.md`); every `[user]` act is theirs.
 
-**Where it stands, 2026-11-22**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
+**Where it stands, 2026-11-23**: §0, §H, §P, §T, §W and §V done; of §N, N.0 to N.3 ran 2026-10-25/26,
 release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15, release F's (N.8.4, `v0.5.2`, pipeline
 #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17, N.9's days 1 and 2 on 2026-11-21
-and 22, and R1 (N.11.1) on 2026-11-22: release G (N.8.5, `v0.6.0`, pipeline #138) and N.8.3. What is left is
-§N.6's order: the subscriptions with nothing up, N.9's day 3, N.10's two days, and R2 (N.11.2), the first
-releases of `app-dbt`, `app-ml` and `app-genai`; the steps that need nothing up run first.
+and 22, R1 (N.11.1) on 2026-11-22: release G (N.8.5, `v0.6.0`, pipeline #138) and N.8.3, and R2 (N.11.2) on
+2026-11-23, the first releases of `app-dbt`, `app-ml` and `app-genai`. Stages 8, 9 and 10 closed on
+2026-11-23 (N.6 item 12), and what they left waiting is N.5; N.6 item 11 and N.12's calendar hold the rest.
 
 | § | Holds |
 |---|---|
@@ -1100,28 +1100,42 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
 
 ### N.5 The items that wait on something else
 
-- **A second application**: Stage 10's chain order and xxv (decision 18). `<env>/chains/` takes it as an
-  entry of its `applications` and `chains` maps; the split of `staging/orchestration/` per application
-  (Stage 8 decision 27) retired with that slice (Stage 19 item 31). The first in the targets is Stage 17's
-  `app-ml` (9.7), then `app-genai` (10.6); Stage 20's `app-dbt` follows under its decision 9 (b), taken
-  2026-11-17: its pass 8 releases it through both targets. The three are written in `examples/` since 2026-11-17 and none is deployed. Neither of
-  Stage 17's consumes another application's marker as written, so xxv stays open on them.
+Stages 8, 9 and 10 closed on 2026-11-23 (N.6 item 12), and what they left waiting moved here, each stage
+file's row pointing at the bullet that holds it.
+
+- **An application whose chain consumes another's marker**: Stage 10's chain order (3.5, 3.6) and xxv
+  (decision 18). `<env>/chains/` takes it as an entry of its `applications` and `chains` maps; the split of
+  `staging/orchestration/` per application (Stage 8 decision 27) retired with that slice (Stage 19 item 31).
+  R2 deployed `app-ml`, `app-genai` and `app-dbt` beside `app-etl` in both targets on 2026-11-23, and each
+  chain starts from its own schedule (`production/chains/main.tf`): none consumes another application's
+  marker, so the order and xxv stay unexercised.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
-- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provoked in
-  both deployment projects on 2026-11-23, `app-etl-train` leaving `workflows/`: the CLI's deploy kept the
-  workflow `READY` and both of its files (`SUP-484`), whose deletion is an act of 9.11's estate (N.6 item
-  11). **A workflow's 50th version**: Stage 8 xxiii, read
+- **A workflow's 50th version**: Stage 8 xxiii, read
   2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin. No release deploys
   to that project since Stage 19 decision 19 (c), so its count stands; the question passes to the `dev`
   project's workflows, a version per deploy from a space, and from release F to each deployment
   project's, a version per release.
 - **A blueprint reconciliation**: Stage 8 vii's third half, read in Sandbox's trail (`UpdateDomain`,
-  `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11.
+  `UpdateStack`) at any sitting; read again 2026-10-26 with nothing up, none since 2026-10-11. 6d's log
+  records six *Update project* on 2026-11-22 (2.7 step 8), each updating the project's `Tooling` stack with
+  no resource event; whether the `EXC-26` domains' version-less attachment survived them is unread.
+- **An Amazon Linux release while the runners are up**: Stage 8 xxvii's plan half, a plan of
+  `production/runners/` after the release (decision 25 (b)). Runners created on the current image planned
+  `No changes` on 2026-11-15 (Stage 19's log).
+- **A misuse rule firing**: Stage 8 4.6's message through the rule's input transformer
+  (`deploy-role-v0.3.0`), unread since 2026-10-13.
+- **A Deployment Manager's read in a trail window**: Stage 10 decision 11's `GetTaskInstance`, absent from
+  the window of 2026-10-26, and `GetWorkflowRun` on a workflow the CI/CD CLI made, encrypted under the
+  deployment project's key (`terraform-live/production/data/README.md`). The reads of 2026-10-26 and
+  2026-11-15 were on release T's workflows.
 - **No step provokes them yet**: Stage 8 xxvii's retry (an apply that creates a role and its host
   together); Stage 9 vi's cancel (no table past 10 GB), ix's `VPC-Workloads` branch and off-endpoint
-  refusal, xv's deploy- and execution-role halves and xxvii's cancel (no statement past 300 s); Stage 10
-  xviii and xxviii's inbox marker (no task writes one).
+  refusal, xv's deploy- and execution-role halves, xxiii's managed workgroup size and the `CreateCluster`
+  half of `DenyRedshiftProvisionedClusters`, xxvii's cancel (no statement past 300 s) and xxviii's commit
+  without `glue:UpdateTable`; Stage 10 xviii and xxviii's inbox marker (no task writes one). A workflow runs
+  as its deployment project's role since Stage 19 item 31, which left no `awsds-<env>-wf-*` role in any
+  slice, so xv's execution-role half and Stage 10 xviii read the project role.
 
 ### N.6 The order of what is left, read 2026-11-20
 
@@ -1280,13 +1294,16 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
     user's words: version 1, both retired workflows and their files, and Staging's `models/`. After the merge, a
     session from `main` plans, applies on the user's words and re-plans each slice `No changes` (lxiv's third
     half); `work/train/` is deleted after `app-etl`'s next release.
-12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
-    xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
-    can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
-    user's decision, read then.
-13. **What waits on something else** (N.5): a second application in a chain that consumes another's
-    marker, a `monitoring` endpoint, Stage 11's S3 data events, a release that removes a file (item 10),
-    a workflow's 50th version, a blueprint reconciliation, and the halves no step provokes.
+12. **The stages' close**, done 2026-11-23 on the user's word (*"Sim, siga"*; the logs of Stages 8, 9 and
+    10): Stages 8, 9 and 10 closed as Stage 4 did, each Status row opening with *Done* and each moved row
+    pointing at its new home. On the same day's cards the user made Stage 8 xxviii's trust clause and 2.5's
+    trigger moot and took Stage 10 xxvii's connection clause as answered by Stage 17 lxii; Stage 8 xxvi is
+    answered by `SUP-348` and `SUP-484`. Stage 9 xvii moved to Stage 17 9.8 and the rest to N.5, Stage 8
+    xxvii's plan half with it (the waiting list's Promotion row).
+13. **What waits on something else** (N.5): an application whose chain consumes another's marker, a
+    `monitoring` endpoint, Stage 11's S3 data events, a workflow's 50th version, a blueprint
+    reconciliation, an Amazon Linux release while the runners are up, a misuse rule firing, a Deployment
+    Manager's read in a trail window, and the halves no step provokes.
 
 ### N.7 The sittings prepared 2026-10-26
 
