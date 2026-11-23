@@ -35,9 +35,11 @@ locals {
 # app_genai_inference_profile_arn as the deploy role, whose state_read_keys name this slice's state.
 # Tagged with the deployment project, the shape of the profile SageMaker Unified Studio's own model
 # subscription creates (decision 22), which DenyDataZoneSubscriptionRequests refuses in Workloads.
+# CreateInferenceProfile admits in the description only letters, digits, ':' and '.', each followed by
+# at most one space, '_' or '-'; the plan does not check it, the apply refuses it.
 resource "aws_bedrock_inference_profile" "app_genai" {
   name        = "awsds-${var.env}-app-genai"
-  description = "app-genai's model in this account: Amazon Nova Lite in this Region alone (Stage 17 decision 23 (a))."
+  description = "app-genai model in this account: Amazon Nova Lite in this Region alone. Stage 17 decision 23 a."
 
   model_source {
     copy_from = local.app_genai_model_arn
