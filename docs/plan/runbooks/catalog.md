@@ -400,8 +400,8 @@ One request for a product of one item, accepted at creation, fulfilled the item,
 product's request takes no `assetPermissions` (*"assetPermissions is only supported for
 S3ObjectCollection Listing"*), so write on a collection is asked on its own listing (`SUP-481`). The
 table, unpublished before, was published by the product's publication with a listing that reads
-`INACTIVE` and that `search-listings` omits, so `CT-17` and `CT-18` do not see it (`SUP-482`). The
-subscription is listed under the
+`INACTIVE` and that `search-listings` omits (`SUP-482`); `CT-17` and `CT-18` reach it through the product
+listing's items (§V). The subscription is listed under the
 product listing's id and under each asset listing's, and its grant under the asset listing's alone
 (measured 2026-11-14, `SUP-363`), so a join of grants to subscriptions asks under both (`CT-17`).
 
@@ -924,14 +924,16 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-14` | a deployment project's sources: Glue, one per database, publishing nothing, generating nothing |
 | `CT-15` | Staging lists nothing, and a chain application's `dev` project lists by exception |
 | `CT-16` | the access acts on a project's product, judged by the stage that owns it |
-| `CT-17` | every grant on a project's listed table explained |
-| `CT-18` | every product listing carries the `classification` form |
+| `CT-17` | every grant on a project's listed table explained, a table its data product's publication listed included: each product listing's items are read with `get-listing`, those `search-listings` omits among them (`SUP-482`) |
+| `CT-18` | every product listing carries the `classification` form, read on the table's own listing, the same tables as `CT-17`; a table with no form fails with its data product's form named |
 | `CT-19` | no listing publishes a resource link |
 | `CT-20` | every S3 Access Grant a project role holds on another project's folder explained by an approved subscription to an S3 Object Collection at that prefix |
 
-The last run: 2026-11-23 from 18:27 to 18:33 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
+The last run: 2026-11-23 from 18:55 to 19:05 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
 and none of `deploy-staging`; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object Collection
-listing(s)"*, after pass 5's rollback (Stage 21's log). `--self-check` read 47 of 47 on 2026-11-23.
+listing(s)"*, after pass 5's rollback; the two data product listings' items all returned by
+`search-listings`, so no table read through a product alone (Stage 21's log). `--self-check` read 56 of 56
+on 2026-11-23, nine cases on Stage 21 5.3's product.
 
 ### The CLI's reads, object by object
 

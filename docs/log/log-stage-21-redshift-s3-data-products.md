@@ -1658,3 +1658,34 @@ orchestrator; recorded by Claude. The recommendations went to the orchestrator a
      came early rather than late. Set aside: a support case with AWS, a re-measurement with a tighter loop.
 - **[Claude] Records**: `TM-37` and its channel row accepted in `threat-model.md`; the stage file's `Status`
   row.
+
+## 2026-11-23 — `catalog.py`'s `CT-17` and `CT-18` read a table its data product's publication listed
+
+*Claude's hand, in a session the orchestrating session started for this follow-up of the pass 5 report, with
+AWS reads alone. Times UTC.*
+
+- **[Claude] The change** (`aws/catalog.py`): `road_listings` builds the listings both ends of the catalog road
+  judge from `search-listings`' rows and `get-listing`'s answers. A data product listing's items are read from
+  its `items` and its `ownedByDataProductListing` form, the two naming the same listings in 5.3's
+  `cuilocp2vj9zbk`; each item `search-listings` did not return is read with `get-listing` and, when it holds a
+  `GlueTableForm`, judged as a listed table, owned by the project its listing names or else by the product's.
+  `CT-17` and `CT-18` name such a table in their detail. `CT-18` keeps Stage 19 decision 4's rule, the form on
+  the table's own listing, and a table with none fails with its product's form named: 5.3's product, its
+  table with no form and the product `internal`, is that case, run on samples alone. A failed `get-listing` on
+  an item leaves `CT-10`, `CT-11` and `CT-16` to `CT-19` a note.
+- **[Claude] `./aws/catalog.py --self-check`**: *"56 of 56 cases as expected"*, nine new cases on 5.3's shape:
+  the table read beside a searched one, an item in the forms alone, the owner taken from the product, a failed
+  read, a lake table on the lake's road, an S3 Object Collection on neither road, the subscriber's grant
+  explained, and both `CT-18` sentences. Five mutants of the new code each read red: no read of the omitted
+  items 49 of 56, no `ownedByDataProductListing` 55, no owner fallback 55, no product named 54, an S3 Object
+  Collection judged as a table 55.
+- **[Claude] `make check`**: *"check: OK"*.
+- **[Claude] `./aws/catalog.py`, live**, 18:55:16 to 19:05:26 as the infrastructure user, `InfrastructureAccess`
+  in Data Governance, Sandbox, Staging and Production: *"all checks passed"*, 14 `pass` and 7 `note` over 12
+  listings, no call failed. The two data product listings, `my-data-product` and `trades-notional`, carry items
+  `search-listings` returns, so no table was read through a product alone: `CT-17` *"13 grants on
+  app_etl.trades_notional, mydatabase.house-price: 1 fulfilment(s), each an approved subscription's, and 12 the
+  owning project's or the blueprint's"*, `CT-18` *"house-price public; trades_notional internal"*, the readings of
+  18:27. The self-check is the proof; whether `get-listing` answers an `INACTIVE` listing to
+  `InfrastructureAccess` in Data Governance is not measured.
+- **[Claude] Records**: `SUP-482`'s later reading; `catalog.md` §P and §V; the stage file's `Status` row.
