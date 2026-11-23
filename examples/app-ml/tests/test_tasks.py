@@ -76,11 +76,11 @@ class Clients:
     def read(self, uri: str, data: bytes):
         self.s3_stub.add_response("get_object", body(data), key(uri))
 
-    def write(self, uri: str, data=ANY, content_type: str | None = None, etag: str = '"e"'):
+    def write(self, uri: str, data=ANY, content_type: str | None = None):
         expected = {**key(uri), "Body": data}
         if content_type:
             expected["ContentType"] = content_type
-        self.s3_stub.add_response("put_object", {"ETag": etag}, expected)
+        self.s3_stub.add_response("put_object", {"ETag": '"e"'}, expected)
 
     def call(self, operation: str, response: dict, expected: dict | None = None):
         self.sm_stub.add_response(operation, response, expected)
@@ -299,7 +299,7 @@ def test_register_proposes_the_candidate_pending_manual_approval(aws, capsys):
         {"ModelPackageSummaryList": [summary("app-ml sha256:" + "0" * 64)]},
         {"ModelPackageGroupName": GROUP},
     )
-    aws.write(f"{COPY}model.tar.gz", ARCHIVE, etag='"copy-etag"')
+    aws.write(f"{COPY}model.tar.gz", ARCHIVE)
     aws.read(f"{PREFIX}evaluation.json", evaluation)
     aws.write(f"{COPY}evaluation.json", evaluation, "application/json")
     request = {
@@ -307,13 +307,7 @@ def test_register_proposes_the_candidate_pending_manual_approval(aws, capsys):
         "ModelPackageDescription": f"app-ml sha256:{DIGEST}, trained by {JOB}",
         "ModelApprovalStatus": "PendingManualApproval",
         "InferenceSpecification": {
-            "Containers": [
-                {
-                    "Image": IMAGE,
-                    "ModelDataUrl": f"{COPY}model.tar.gz",
-                    "ModelDataETag": "copy-etag",
-                }
-            ],
+            "Containers": [{"Image": IMAGE, "ModelDataUrl": f"{COPY}model.tar.gz"}],
             "SupportedContentTypes": ["text/csv"],
             "SupportedResponseMIMETypes": ["text/csv"],
             "SupportedTransformInstanceTypes": ["ml.m5.large"],
@@ -380,7 +374,7 @@ def test_no_task_holds_a_path_to_another_status():
     source = "".join(inspect.getsource(m) for m in (common, registry, scoring, training))
     assert "update_model_package" not in source
     assert "create_model_package_group" not in source
-    request = registry.package_request(GROUP, model_json(), "s3://b/k", "e", "s3://b/e", PREFIX)
+    request = registry.package_request(GROUP, model_json(), "s3://b/k", "s3://b/e", PREFIX)
     assert request["ModelApprovalStatus"] == "PendingManualApproval"
 
 

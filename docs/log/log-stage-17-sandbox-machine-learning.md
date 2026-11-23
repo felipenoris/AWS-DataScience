@@ -5038,3 +5038,762 @@ Claude on the laptop, no AWS call. Times UTC.*
 - **[Claude] Verification v: neither.** The source neither fails on the share nor ingests the group, which
   had existed for 17 hours with the project's tag: it tracks an empty list, and nothing adds to it. 3.3 is
   done.
+
+## 2026-11-22 — Day 3's sitting C: the pre-flight and the raise shared with §N.10's day 1
+
+*Claude, in the session the orchestrating session started for `promotion.md` §N.9.5's day 3, run beside the
+session of §N.10's day 1 on one raise. Claude's reads as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1` (account Sandbox Account 1); `make status` through its own profiles. The raise
+is the user's. Times UTC.*
+
+- **[Claude] The pre-flight**, 17:28 to 17:41: `make status` at 17:36:20 read nothing up, 0.0000 USD/h. The
+  tars under `$HOME/tmp/stage17-day3/` hash as the prerequisites' entry records (`app-ml.tar` `bbb1399b…`,
+  `app-genai.tar` `c63204d2…`). `sandbox/bedrock/` planned at about 17:40 from `f37ff75c` with Terraform
+  1.17.2 and `-input=false`: *"No changes."* `list-spaces` at 17:38: `code` (Code Editor, remote access
+  `ENABLED`) and `jup` (JupyterLab) `InService` in `d-m8m0uefej9kb`, none in `app-ml-dev`'s `d-hxxfi3od0xhm`
+  or `app-genai-dev`'s `d-q1bianbhckrd`.
+- **[user] The raise**, the hub and `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`,
+  the union of both sittings' groups. The first `make up` stopped at 18:01 on a lock on `sandbox/egress`
+  written at 18:01:09 and 18:01:11 with no process holding it; the user released it with `force-unlock`,
+  which this session may not run, and ran the union again. The orchestrating session read the slice's
+  state rewritten at 18:16:24.
+- **[Claude] `make status`**, about 18:22 to 18:26: `production/vpn` and `production/proxy` `UP`,
+  `sandbox/egress` `UP` with 34 resources, the warehouse's compute with 2, `sandbox/probes` with 4, `jup`
+  billing as JupyterLab on `ml.t3.medium`, GitLab's host stopped; an estimated burn of 1.7094 USD/h.
+- **[Claude] 6e 6.4 is not run today**, the user's decision relayed by the orchestrating session at about
+  18:30 (the 6e log); 7.5's announcements to §N.10's session stand.
+
+## 2026-11-22 — Day 3's sitting C: 9.6's deploy and the first `app-ml-train` run
+
+*The space's readings are the user's, pasted, from `jup-ml-dev` in `app-ml-dev` (JupyterLab on
+`ml.t3.medium`, `awsds-sandbox-dev-env` version 12, created at 18:30:49), with the account id written
+`<Sandbox Account 1>`. Claude's reads as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1`, reads alone; the CLI's code read in its cached wheel, 1.0.9, on the laptop. Times
+UTC.*
+
+- **[user] The working copy.** `~/app-ml.env` was absent from the space's home at the first `source` and
+  was uploaded. The tar carries no `.git`, and `scripts/training-source.py` exits 1 where git cannot read
+  the folder, which stops `scripts/dev-cli.sh` under `set -e`; a `git init` and one commit in the
+  unpacked folder gave `TRAINING_SOURCE` `46bd65a0ea73f8f3a7b01a55f4c793c8a63d7c104dbbb0caebaa39275d0e2b4d`,
+  the value Claude read over `examples/app-ml` on the laptop.
+- **[user] The tests and the lint**: `uv sync --locked` on CPython 3.12.14 (`/opt/awsds/venv/bin/python`),
+  18 packages; *"100 passed in 2.84s"*; ruff *"All checks passed!"* and *"20 files already formatted"*;
+  `awsds-workflows` 0.1.0 at `37cb5a6260c8348cc208988e42090caf42a3a207`, *"ok: 6 arquivo(s)"*. Then
+  `create-model-package-group app-ml-dev`, which returned the group's ARN.
+- **[user] `bundle`**, at 18:45:20 as the project role: three *"Error getting DataZone project info for
+  app-ml-dev: Failed to resolve domain"* lines on `ListDomains` `AccessDenied`; `code` 3 files, `src` 2,
+  `samples` 2, `workflows` 3; *"Warning: Connection 'default.s3_shared' not found for storage item
+  'model'"*; `./artifacts/app-ml.zip`, 15,592,181 bytes, 10 files, no `model/`; exit 0.
+- **[Claude] Why `bundle` reads no connection as the project role**, in the wheel: `commands/bundle.py`
+  copies the stage's domain `region`, `name` and `tags` into its configuration and never its `id`, then
+  calls `get_datazone_project_info`, whose `_resolve_domain_id` (`helpers/utils.py`) falls through to
+  `datazone.resolve_domain_id`, a `ListDomains` call. DataZone refuses that call to a project role, the
+  project's information comes back empty, so do its connections, and every item that names a connection
+  is skipped with the warning above, whatever its prefix holds. `scripts/dev-cli.sh` answers
+  `get_domain_id_by_name`, which `bundle` does not call. The bundle role `awsds-deploy-sandbox-test`
+  holds `datazone:ListDomains` (`sandbox/workflows/deploy-role.tf`), so the pipeline's `bundle` job takes
+  the other road. `SUP-374` gains the reading.
+- **[user] `deploy`**, 18:46:19 to 18:46:57: 12 files under `shared/app-ml/` (`code`, `src`, `inbox`,
+  `workflows`), *"No catalog assets configured"*, three workflows created as the project role in the
+  Tooling environment's subnets and security group under `alias/awsds-sandbox-project`, the account's key
+  for project resources, which `app-genai-dev`'s workflows take too: `app_ml_app_ml_dev_app_ml_train`
+  (18:46:32), `…_app_ml_register` (18:46:44) and `…_app_ml_score` (18:46:57), tagged
+  `AmazonDataZoneDomain`, `AmazonDataZoneProject`, `CreatedBy`, `Pipeline`, `STAGE` and `Target`;
+  *"Deployment completed successfully!"*
+- **[user] `run --workflow app-ml-train`** at 18:47:33: the run `8rccuyH59HXJ0RA`, with twelve warnings of
+  `ListTagsForResource` refused on other projects' workflows, since the CLI lists every workflow in the
+  account.
+- **[Claude] The jobs**, read with `describe-processing-job` and `describe-training-job`:
+  - `prepare`: `app-ml-prepare-train-20261122T184824`, created 18:48:26, the project role, the house image
+    version 12 by digest (`a6f9b5ab…`), one `ml.t3.medium`, the volume and the output under the same key, network isolation and inter-container encryption on, the project's subnets and security group,
+    inputs `app-ml/src/` and `app-ml/inbox/churn.csv`, output `app-ml/work/train/`, 1,800 s at most, tagged
+    `AmazonDataZoneProject` `5rzplmk81vma34`, `AmazonDataZoneDomain` and `AmazonDataZoneScopeName` `dev`.
+    `Completed`, 18:49:11 to 18:56:27.
+  - `train`: `app-ml-train-20261122T185913`, created 18:59:16, the project role, `sagemaker-xgboost:3.0-5`
+    by tag in `File` mode, one `ml.m5.large` with 10 GB, the volume and the output under the same key,
+    isolation and inter-container encryption on, the project's network, output `app-ml/models/`,
+    `binary:logistic`, `eval_metric` `auc`, `eta` 0.3, `max_depth` 3, `num_round` 50, the same tags.
+    `Completed`, 19:00:01 to 19:02:06, 125 billable seconds; `validation:auc` 0.8289499878883362,
+    `train:auc` 0.9929400086402893.
+- **[Claude] The run `FAILED`** at 19:05:27: `prepare` 614 s, `train` 226 s, `evaluate` 10 s and `track` 18 s
+  `SUCCESS`, `publish` `FAILED` after 12 s. Its log, `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-5rzplmk81vma34/app_ml_app_ml_dev_app_ml_train`,
+  at 19:05:22: *"the training image '<AWS registry>.dkr.ecr.us-west-2.amazonaws.com/sagemaker-xgboost:3.0-5'
+  names no digest"*, raised by `by_digest` (`code/app_ml_tasks/common.py`) before any write. The prefix
+  `app-ml/models/` held the job's `output/model.tar.gz`, its `evaluation.json` and `last-run.json`, and no
+  `latest/`.
+- **[Claude] The cause is the prerequisites' `app-ml.env`**, which exported `TRAINING_IMAGE_URI` by the tag
+  where the README and pass 9 name the image by digest in every stage. The tag has moved:
+  `ecr describe-images` on AWS's registry at about 19:11 reads `3.0-5` as `sha256:5a82a2d0f00fa1baa41aba8a95f8145b8214bc65c4c16ce12d723a30e8cc34dd`
+  (also `3.0-5-1.0.67.0` and `3.0-5-cpu-py3`, pushed 2026-11-17 19:42:09), and the digest both targets'
+  `training-image.tf` pin, `sha256:0b5d9341…3a78`, as `3.0-5-1.0.64.0` alone (pushed 2026-10-11). So the
+  job above trained on an image no target serves. The CLI 1.0.9 writes `{env.X}` into the definition as
+  `{{ params.X }}` (`helpers/context_resolver.py`) and `run` passes the stage's variables as override
+  parameters (`commands/run.py`); the deployed definition holds no image, so the correction needs no
+  deploy. The laptop's copy was corrected at 19:12:39 to the pinned digest, and the same `sed` handed to
+  the user for the space's.
+
+## 2026-11-22 — Day 3's sitting C: 9.6's second `app-ml-train` run and the refused `CreateModelPackage`
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-ml-dev`. Claude's reads are
+as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`, reads alone. Times
+UTC.*
+
+- **[user] The second run.** The space's `app-ml.env` was corrected with the same `sed` (`grep` counts one
+  line) and sourced. `run --workflow app-ml-train` started the run `hO8zhGFdi8vlso5`, with no deploy.
+- **[Claude] The run `SUCCESS`**, 19:18:29 to 19:36:05: `prepare` 610 s, `train` 225 s, `evaluate` 8 s,
+  `track` 13 s, `publish` 11 s.
+  - `prepare` is `app-ml-prepare-train-20261122T191914`.
+  - `train` is `app-ml-train-20261122T193009`, read `InProgress` at 19:30:18 on
+    `sagemaker-xgboost@sha256:0b5d9341…3a78`, the targets' pin.
+  - `latest/` was written at 19:36:05.
+  - `model.json` (962 bytes) names the job and both images by that digest, with `auc`
+    0.8289499878883362, `sha256` `852032c55a3047b66de1a2fa6c29e148e10b145cb30fab41d26c83214282d7ab`,
+    `size` 9,930, `training_source` `46bd65a0…` and `published` 19:36:04.
+  - Claude's SHA-256 of `latest/model.tar.gz` agrees. `evaluation.json` is 378 bytes.
+- **[user] `run --workflow app-ml-register`** started the run `ut8uVZghVEV5UIY`, which ended `FAILED`. Its one
+  task, `register`, ran 19:39:33 to 19:39:40.
+- **[Claude] The refusal**, read in the task's log and in the trail.
+  - `CreateModelPackage` at 19:39:35, as the project role, returned *"An error occurred
+    (ValidationException) when calling the CreateModelPackage operation: The ETag request value isn't
+    permissible."*
+  - The request named `ModelDataETag` `b5a42cff73d4153ba6731750a1831ebc`: the copy's ETag without its
+    quotes, equal to what `head-object` reads on `app-ml/models/sha256/852032c5…/model.tar.gz`. The task
+    had written that copy and `evaluation.json` before the call.
+  - `ml-demo-xgboost`'s version 1 was created at 00:34:10 by a request that named no ETag. It holds
+    `ModelDataETag` `f8783f02a8dc0bb2867b2e67b030ea30`, the ETag `head-object` reads on its `ModelDataUrl`
+    (10,727 bytes).
+  - So the service sets the field from the object, and refuses one a caller sends, even the object's own
+    (`SUP-462`).
+- **[Claude] The correction**, in `examples/app-ml`.
+  - `package_request` names no `ModelDataETag`, and the test's expected request no longer carries one.
+  - The checks: *"100 passed"*, ruff clean, *"20 files already formatted"*.
+  - The same change went to the user as a patch for the space's folder. It was checked on the tree of
+    `77fc285a`, which the tar was built from: `registry.py` goes from `441ab566…` to `8d2dedea…`, and
+    `test_tasks.py` from `9cd9a80e…` to `a139fabe…`.
+  - `TRAINING_SOURCE` covers neither file.
+
+## 2026-11-22 — Day 3's sitting C: 10.4's deploy, readings 1 to 3, and the deny applied
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-app-genai-dev` in
+`app-genai-dev` (JupyterLab on `ml.t3.medium`, `awsds-sandbox-dev-env` version 12, created at 18:58:27).
+Claude's reads are as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`,
+and the apply is Claude's on the user's word. Times UTC.*
+
+- **[user] The profile and the checks.**
+  - `DEV_MODEL_ID` was exported from `list-inference-profiles --type-equals APPLICATION`: the project's
+    Nova Lite profile, `ciceumyodl7y`.
+  - The listing holds eight application profiles: the domain's two, `eighth-experimentation`'s four and
+    `app-genai-dev`'s two.
+  - The second of `app-genai-dev`'s is an Opus 4.5 profile, `9kuvzfyn59p5`, over `us-east-1`, `us-east-2`
+    and `us-west-2`. It was created at 13:12:41 by `AmazonSageMakerBedrockModelManagementRole` in the
+    session `AWSDataZone-Subscriptions`, copied from `us.anthropic.claude-opus-4-5-20251101-v1:0`.
+  - The checks: `uv sync` on CPython 3.12.14, *"95 passed in 5.45s"*, `make_sample --check` *"40 messages,
+    the script's output"*, ruff clean, *"20 files already formatted"*, and the lint at `37cb5a6` *"ok: 3
+    arquivo(s)"*.
+- **[user] `deploy`**, 19:16:05 to 19:16:29.
+  - Four files: `code/app-genai.zip`, `samples/messages.jsonl` and the two workflows.
+  - Both workflows were created as the project role: `app_genai_app_genai_dev_app_genai_triage` at
+    19:16:17 and `…_probe` at 19:16:28.
+  - They run in `subnet-016b5a3a62c739894` and `subnet-09d3399d6b0fec93a` with `sg-04d8984595e5c73ef`,
+    under `alias/awsds-sandbox-project`.
+- **Reading 1, without the deny.**
+  - **[user] `app-genai-triage`**: the run `RV85HhhNwJjJr92`, `SUCCESS` from 19:16:55 to 19:20:08
+    (`guardrail` 15 s, `triage` 51 s, `check` 9 s).
+  - **[Claude] The guardrail** `app-genai-b8fz4ovppjijv4` (`mn3wavwk9jx7`), created at 19:17:43.
+    - Its `DRAFT` and version 1 are `READY`. The version's description is the definition's SHA-256,
+      `6b4f6876…`.
+    - It is tagged `AmazonDataZoneProject` `b8fz4ovppjijv4`, `awsds:definition-sha256` and
+      `awsds:definition-version` `1`.
+    - It has no key and no cross-Region profile.
+    - The account holds one other guardrail, `razikgicppzy`, created at 02:45:13.
+  - **[Claude] The trail, the `guardrail` task's calls**, as the project role in the session
+    `AmazonMWAAServerless`, through the `bedrock` endpoint `vpce-0edda39ecbeee2be2` from 10.20.5.45.
+    - 19:17:42: `ListGuardrails`.
+    - 19:17:43: `CreateGuardrail`, `GetGuardrail` twice, `CreateGuardrailVersion`.
+    - 19:17:49: `TagResource`, `GetGuardrail`.
+  - **[Claude] The trail, `triage`'s 40 calls**, 19:18:35 to 19:19:15, through the `bedrock-runtime`
+    endpoint `vpce-0d325931b42cbb2a4` from 10.20.105.80.
+    - Each is recorded as a management event named `Converse`, read-only.
+    - Its resource is the profile (`AWS::Bedrock::Model`).
+    - Its parameters are the profile's ARN, `maxTokens` 200, and a `guardrailConfig` that names the
+      guardrail's unversioned ARN with `guardrailVersion` `"1"` and `trace` `enabled`.
+    - Its tokens are in `additionalEventData`.
+    - No guarded call was refused. The endpoint's scope holds the two invoke actions alone, so the
+      service asked no `bedrock:ApplyGuardrail` of the caller at either layer (verification xxxviii).
+  - **[Claude] The report.**
+    - 40 messages: 38 answered, 2 blocked, 37 agreeing with the label. Accuracy 0.9737 against 0.8:
+      `passed`. Tokens: 12,001 input and 952 output.
+    - The planted messages (verification xliii): `m25`'s address and telephone `ANONYMIZED`, and the
+      message answered; `m31`'s instruction to ignore the instructions `BLOCKED` by `PROMPT_ATTACK`;
+      `m36`'s denied topic `BLOCKED`.
+    - A blocked row bills 0 input tokens and stops on `guardrail_intervened`.
+    - Each trace names `mn3wavwk9jx7` version 1.
+    - The task logs hold counts, URIs, ids and the hash alone.
+  - **[user] `app-genai-probe`** with `EXPECT_UNGUARDED` `answered`: the run `kWxQcCXLwIUEWFZ`, `SUCCESS`
+    from 19:22:31 to 19:23:23. The outcome was answered, as expected: 6 characters, 8 input and 3 output
+    tokens, `end_turn`.
+  - **[Claude] The probe's call**: one `Converse` at 19:23:22 through `vpce-0d325931b42cbb2a4` from
+    10.20.105.161, with `maxTokens` 10 and no `guardrailConfig`.
+- **Reading 2, the guardrail's life.**
+  - **[user] `app-genai-triage` over the same definition**: the run `RgOaSj3RuH62Ov1`, `SUCCESS` from
+    19:25:30 to 19:28:20 (7, 45 and 6 s).
+    - Its log: *"unchanged, version 1, definition sha256 6b4f6876…"*.
+    - 40 sent, 2 blocked, 12,001 and 959 tokens, accuracy 0.9737.
+  - **[Claude] That run's trail**, read once it had caught up to the run's end: `ListGuardrails`,
+    `GetGuardrail`, `ListTagsForResource` and the 40 `Converse`, with no write.
+  - **[user] A changed definition.**
+    - One filter's strength changed: `MISCONDUCT`'s input from `MEDIUM` to `LOW`. The rewrite also
+      reflowed the arrays' whitespace.
+    - The archive was rebuilt (8 files, 15,723 bytes) and deployed, 19:31:53 to 19:32:17. Both workflows
+      were updated (*"encryption is fixed at creation and left unchanged on update"*).
+    - `app-genai-triage`: the run `zxh6p5Uv0hJyrrx`, `SUCCESS` from 19:32:32 to 19:35:23 (8, 50 and 6 s).
+      Its log: *"updated, version 2, definition sha256 ed309c78…"*. 12,001 and 964 tokens, accuracy
+      0.9737.
+  - **[Claude] That run's trail**, worker 10.20.28.252, through `vpce-0edda39ecbeee2be2`.
+    - 19:33:10: `ListGuardrails`, `GetGuardrail`, `ListTagsForResource`, `UpdateGuardrail`.
+    - 19:33:11: `CreateGuardrailVersion`, `GetGuardrail` on version 2, `TagResource`.
+    - The 40 `Converse` name version 2, from 19:33:59 to 19:34:38. The first came 48 s after the publish,
+      and none failed (verification xlvii).
+  - **[user] The discard**: the definition was restored in the working copy and the archive rebuilt
+    (15,715 bytes).
+- **Reading 3, the operator.**
+  - **[user]** `probes/operator.yaml` was rendered with `awsds-workflows render` and imported in the
+    portal's editor as `app-genai-operator-probe`. Its run `H2SHTEFsAarnwLX` ended `SUCCESS`, 19:42:20 to
+    19:43:03.
+  - **[Claude] The task log.** The task `invoke` (`BedrockInvokeModelOperator`) ran 19:43:00 to 19:43:08.
+    It wrote the prompt and the response in full to
+    `/aws/mwaa-serverless/dzd-d8yrvx1ko7im6o-b8fz4ovppjijv4/app-genai-operator-probe`.
+    - The prompt line: *"Bedrock arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/ciceumyodl7y
+      prompt: {'inferenceConfig': {'maxTokens': 10, 'temperature': 0}, 'messages': [{'content': [{'text':
+      'Reply with the single word: ready.'}], 'role': 'user'}], …}"*
+    - The response line: *"Bedrock model response: {'output': {'message': {'content': [{'text':
+      'Ready.'}], …"*
+  - **[Claude] The trail** holds one event: `InvokeModel` at 19:43:02.
+    - It ran as the project role in the session `AmazonMWAAServerless`, through `vpce-0d325931b42cbb2a4`,
+      from 10.20.120.192, the worker's host.
+    - Its parameters are the profile's ARN alone, with no guardrail. Tokens: 8 and 3.
+    - It is a management, read-only event.
+    - Its user agent names `Airflow/3.0.6`, `Caller/BedrockInvokeModelOperator` and
+      `exec-env/AWS_ECS_FARGATE`.
+  - **Verification xl's first half reads yes**: an `InvokeModel` with no guardrail, and the prompt and the
+    response in the task log.
+- **Reading 4, the deny.**
+  - **[user]** *"Autorizo o apply"*.
+  - **[Claude]** §N.10's session was told first, then the other sessions on the laptop.
+  - The plan was saved at 19:51:22 from `7fb3724a` with `-var application_guardrail_required=true`: 0 to
+    add, 1 to change, 0 to destroy. `awsds-sandbox-bedrock-application` gains
+    `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount`.
+  - It was applied 19:55:50 to 19:56:01. The policy's default version is `v2`, updated at 19:56:00, and
+    holds the statement as planned.
+  - A re-plan with the same variable: *"No changes."*
+
+## 2026-11-22 — Day 3's sitting C: 9.6's register after the correction, and the score from the prefix
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-ml-dev` in `app-ml-dev`.
+Claude's reads are as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`,
+reads alone. Times UTC.*
+
+- **[user] The correction in the space.** The patch applied to the space's folder: `registry.py` and
+  `test_tasks.py` read `8d2dedea…` and `a139fabe…`. *"100 passed in 2.27s"*, ruff clean, *"20 files already
+  formatted"*, and the task archives rebuilt at 19:57:40.
+- **[user] `bundle` after the training run**, 19:57:48 (verification lxii's second reading).
+  - `ListDomains` was refused three times, as before the training: *"Error getting DataZone project info
+    for app-ml-dev: Failed to resolve domain"*.
+  - It printed *"Warning: Connection 'default.s3_shared' not found for storage item 'model'"* and wrote
+    `./artifacts/app-ml.zip`, 15,592,095 bytes, 10 files: code 3, src 2, samples 2, workflows 3. The zip
+    holds no `model/`, though `app-ml/models/latest/` held the candidate since 19:36:05. The exit was 0.
+  - So the project role's `bundle` skips the model item before and after a model exists (`SUP-374`).
+- **[user] `deploy`**, about 19:58: 12 files, the three workflows updated (`UpdateWorkflow` at 19:58:57,
+  19:59:12 and 19:59:24) with `sg-028f033a218b701b2` and the project key. Each `workflow.create` action
+  uploaded the three task archives to `operatorFiles/`, so the deploy wrote nine archives.
+- **[user] `run --workflow app-ml-register`**: the run `t5NzIjmLYAtSNGn`, `SUCCESS` from 19:59:35 to
+  20:00:19. Its task `register` ran 8 s and logged *"proposed
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1: sha256 852032c5…, trained by
+  app-ml-train-20261122T193009, PendingManualApproval"*.
+- **[Claude] The version `app-ml-dev/1`**, created at 20:00:18.658.
+  - `PendingManualApproval`, `ModelPackageStatus` `Completed`. `CreatedBy` names no user profile.
+  - Its container: the serving image by the digest `0b5d9341…`, `ImageDigest` filled by the service,
+    `ModelDataUrl` `app-ml/models/sha256/852032c5…/model.tar.gz`, and `IsCheckpoint` `false`, which the
+    request did not send.
+  - `ModelDataETag` `1792fa2976e38b9a5bec44860076416d`, set by the service: the ETag `head-object` reads on
+    the copy the task rewrote at 20:00:19. The copy is SSE-KMS under the project key with the bucket key on.
+  - The copy written at 19:39 by the refused run had the ETag `b5a42cff…`, and `latest/` holds the same
+    bytes under `fad76c8d…`. So an SSE-KMS object's ETag changes with each PUT of identical bytes, and
+    `aws s3 cp` of the copy hashes to `852032c5…` (`SUP-462`).
+  - `text/csv` in and out, `ml.m5.large` for transform, the model quality statistics pointing at the copy's
+    `evaluation.json` (378 bytes), and the metadata `sha256`, `source_prefix` `app-ml/models/latest/`,
+    `training_job`, `training_source` `46bd65a0…` and `validation_auc` 0.8289499878883362.
+- **[Claude] The trail of `CreateModelPackage`**, as the project role in the session `AmazonMWAAServerless`,
+  through the SageMaker API endpoint `vpce-0dc0f341029459864`: refused at 19:39:35 from 10.20.5.16, admitted
+  at 20:00:18 from 10.20.120.228 with a `ListModelPackages` in the same second. At 20:00:19
+  `sagemaker.amazonaws.com` itself recorded `CreateArtifact` three times, `CreateAction` twice and
+  `AddAssociation` five times: the version's lineage, which the task does not create.
+- **[user] `app-ml-register` a second time**: the run `7tWoxPRH5B7MMHJ`, `SUCCESS` from 20:09:11 to
+  20:09:55, task 7 s, *"app-ml-dev holds arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1 for
+  sha256 852032c5…: nothing proposed"*. The group holds version 1 alone.
+- **[user] `app-ml-score` with `MODEL_SOURCE` `prefix`**: the run `acnc3LIFhHsNGoe`, `SUCCESS` from 20:08:54
+  to 20:28:23: `prepare` 613 s (`app-ml-prepare-score-20261122T200942`), `resolve` 7 s, `score` 344 s,
+  `check` 10 s, `cleanup` 10 s.
+  - `resolve` at 20:20:24: *"created app-ml-score-5rzplmk81vma34 from
+    s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/5rzplmk81vma34/shared/app-ml/models/latest/model.tar.gz:
+    sha256 852032c5…"*, returning the source `prefix` and no version.
+  - **[Claude] `CreateModel` at 20:20:24**, as the project role in the session `AmazonMWAAServerless`,
+    through `vpce-0dc0f341029459864` from 10.20.53.111: the image by the digest `0b5d9341…`, the model data
+    `latest/model.tar.gz`, the project role as execution role, `vpcConfig` with `sg-028f033a218b701b2` and
+    the two project subnets, `enableNetworkIsolation` `true`, and the three project tags.
+  - The transform job `app-ml-score-20261122T202107`, created at 20:21:10 from 10.20.96.156, ran 20:24:45
+    to 20:26:14 on one `ml.m5.large`: input `app-ml/work/score/batch/`, output
+    `app-ml/predictions/20261122/batch.csv.out` (3,902 bytes), output and volume under the project key,
+    tagged with the project, the domain and the scope `dev`.
+  - `check`: *"app-ml-score-20261122T202107: 200 prediction(s) for 200 line(s), AUC 0.847556, MIN_AUC
+    0.7"*.
+  - `cleanup`: `DeleteModel` at 20:28:22 from 10.20.106.28, *"Model app-ml-score-5rzplmk81vma34 deleted
+    successfully."* `DescribeModel` then read *"Could not find model"*.
+- **[Claude] The run in the MLflow App.** `track` of the run `hO8zhGFdi8vlso5` logged *"tracked
+  app-ml-train-20261122T193009 as run 3533b6355fd9410f92b0d3f3c3ad3d67 of the experiment app-ml"* with
+  `validation_auc` 0.8289499878883362. The app `app-ml-dev-mlflow` keeps its artifacts under the project's
+  `dev/data/ml/mlflow` and reads `AutoModelRegistrationDisabled`.
+
+## 2026-11-22 — Day 3's sitting C: 10.4's reading 4, the runs under the deny
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-app-genai-dev`, and the
+operator's runs are the user's from the portal's editor. Claude's reads are as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`, reads alone. Times UTC.*
+
+- **[user] The operator's workflow, run from the portal before the space's commands**: the run
+  `PkCuanMhWnJcaL2`, `FAILED` from 20:08:31 to 20:09:19. Its task `invoke` logged at 20:09:14:
+  *"AccessDeniedException … User: arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_b8fz4ovppjijv4_c9sdti5d2gaqs0/AmazonMWAAServerless
+  is not authorized to perform: bedrock:InvokeModel on resource:
+  arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/ciceumyodl7y with an explicit deny in an
+  identity-based policy: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-bedrock-application"*.
+- **[user] `app-genai-triage`**: the run `RPNFldOIkDd4tVB`, `SUCCESS` from 20:10:23 to 20:13:25 (`guardrail`
+  10 s, `triage` 46 s, `check` 6 s).
+  - Its log: *"unchanged, version 2, definition sha256 ed309c78…; GetGuardrail on the version returns the
+    hash as its description: True"*. The deployed archive still held the changed definition: reading 2's
+    discard had restored the working copy alone, with no deploy.
+  - 40 sent under `mn3wavwk9jx7` version 2, 2 blocked, 12,001 and 957 tokens, accuracy 0.9737, no failure.
+- **[user] `app-genai-probe`** with the working copy's `EXPECT_UNGUARDED` set to `refused` on the `dev`
+  stage's line, read by `grep` beside the two targets' `refused`, and no deploy: the run `OrTNEd36RnUEkxp`,
+  `SUCCESS` from 20:10:35 to 20:11:16. Its log: *"the request without a guardrail: refused, refused
+  expected"*. The report names `AccessDeniedException` with the explicit deny's wording, on the profile.
+  `run` passes the stage's variables at run time, so the deployed workflow read the edited value.
+- **[user] The operator's workflow again, after the space's commands**: the run `uDsenQWO6tkBr0a`,
+  `FAILED` from 20:10:56 to 20:11:47, its task `invoke` 14 s.
+- **[Claude] The trail since 20:05**, 46 Bedrock events, read once it had caught up to the triage's end.
+  - The 40 `Converse` of the triage, admitted from 20:12:04, each naming `guardrailVersion` `2`, through
+    `vpce-0d325931b42cbb2a4` from 10.20.10.202. The `guardrail` task's `ListGuardrails`, `GetGuardrail` and
+    `ListTagsForResource` at 20:11:11 and 20:11:12 from 10.20.26.175.
+  - Three refusals, each `AccessDenied` with the explicit deny's wording, as the project role in the
+    session `AmazonMWAAServerless`: `InvokeModel` at 20:09:14 from 10.20.14.149 (the first operator run),
+    `Converse` at 20:11:15 from 10.20.89.108 (the probe) and `InvokeModel` at 20:11:41 from 10.20.83.169
+    (the second operator run).
+- **Verification xxxvii reads yes**: a guarded `Converse` through the application profile carries
+  `bedrock:GuardrailIdentifier` on every pass the deny reads, so the deny admits the triage's 40 calls.
+- **Verification xl's second half reads yes**: the deny refuses `BedrockInvokeModelOperator`'s `InvokeModel`,
+  which names no guardrail.
+
+## 2026-11-22 — Day 3's sitting C: the approval, `deploy` without an archive, reading 5's calls and the second guardrail deleted
+
+*Claude writes this entry. The space's readings are the user's, pasted, from `jup-ml-dev` and
+`jup-app-genai-dev`, and the approval is the user's from the portal. Claude's reads are as the infrastructure
+user with `InfrastructureAccess` through `awsds-infra-sandbox-1`, and the deletion is Claude's on the user's
+word. Times UTC.*
+
+- **[user] The approval.** `app-ml-dev/1` was approved from the portal: `UpdateModelPackage` at 20:39:53, as
+  `app-ml-dev`'s project role in the portal's session `28f1b390-…@5ae0dd6m1suvbk`, its source identity the
+  user's. No approval description. `sagemaker.amazonaws.com` recorded `AddAssociation` and `CreateAction` at
+  20:39:54. The version's `ModelDataETag` is unchanged.
+- **[user] The registry's path, its literal.** `sed` set `MODEL_SOURCE` to `registry` on the `dev` stage's
+  line; `grep` read `registry` on lines 80, 123 and 167, the targets' two being `registry` in the repository.
+- **[user] `deploy` without the archive** (verification lxii's last reading), about 20:41: the archive moved
+  out of `./artifacts`, then
+  `scripts/dev-cli.sh deploy --manifest manifest.yaml --targets dev --skip-validation --no-events`.
+  - It read the project (*"✅ ✅ Project 'app-ml-dev' already exists"*), printed *"Updating project
+    configuration..."*, found no environment for the target and printed the four storage items, each on
+    `default.s3_shared`, with no `model` item.
+  - It stopped: *"❌ Error: No bundle file found in ./artifacts directory"*, *"❌ Error: Deployment failed: 1"*,
+    `exit=1`. The archive was moved back.
+  - **[Claude]** The trail, caught up to 20:52:26, holds no management write from the project role between
+    20:40 and the next deploy at 20:51:40.
+  - Verification lxii's `deploy` half reads yes: the CLI stops without an archive (`SUP-374`).
+- **[user] `deploy` with the archive and `app-ml-score` in the registry's mode**: the three workflows updated at
+  20:51:43, 20:51:55 and 20:52:08 (`CreateWorkflow` answered `ConflictException`, then `UpdateWorkflow` and
+  `TagResource`; `CreateLogGroup` answered `ResourceAlreadyExistsException`), and `StartWorkflowRun` at
+  20:52:13: the run `QCRC1Im4FuKYOMS`, `RUNNING` from 20:52:16.
+- **[Claude] Reading 6's plan**, saved at 20:44:09 from `e6a7a488` with `-var application_guardrail_required=true
+  -var account_guardrail_enabled=true`: *"Plan: 3 to add, 0 to change, 0 to destroy."* The account's guardrail
+  `awsds-sandbox-account-guardrail` with the denied topic `Legal advice`, its version, and
+  `awscc_bedrock_enforced_guardrail_configuration` with `included_models` `amazon.nova-lite-v1:0` alone and both
+  content controls `COMPREHENSIVE`. Not applied.
+- **[Claude] §N.10's day 1 ended** on its side at about 20:50: no further write from that session, and the day's
+  lowering is this sitting's. What it keeps for its day 2 is in its own log.
+- **[user] Reading 5, the variants**, `variants.py` (SHA-256 `defd1e14…`) from `jup-app-genai-dev`. **[Claude]**
+  Its calls in the trail, as the project role in the space's session `SageMaker`, through
+  `vpce-0d325931b42cbb2a4`:
+  - `0`, the application's guardrail by its ARN with version `2`: admitted at 20:51:09.
+  - `a`, the `DRAFT`: refused at 20:51:09, *"… is not authorized to perform: bedrock:InvokeModel on resource:
+    arn:aws:bedrock:us-west-2:<Sandbox Account 1>:application-inference-profile/ciceumyodl7y with an explicit deny in an
+    identity-based policy: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-bedrock-application"*.
+  - `b`, the guardrail by its id `mn3wavwk9jx7` with version `2`: admitted at 20:51:10. The policy matches an
+    ARN, so the key carries the versioned ARN when the request names the id.
+  - `c`, Nova Lite's system profile `us.amazon.nova-lite-v1:0` with the guardrail: refused at 20:51:10, *"… is
+    not authorized to perform: bedrock:InvokeModel on resource:
+    arn:aws:bedrock:us-west-2:<Sandbox Account 1>:inference-profile/us.amazon.nova-lite-v1:0 with an explicit deny in a
+    service control policy: …p-tgda7n58"*, `awsds-org-scp-ou-interactive`.
+  - `d0`, the denied topic inside the guard tag, and `d1`, the same topic outside it: both admitted by the API
+    at 20:51:10 and 20:51:11. What the guardrail did with each is in the script's output.
+  - The second guardrail, `app-genai-residual-1795380671` (`djlyteclzosd`): `CreateGuardrail` and
+    `CreateGuardrailVersion` at 20:51:11 through `vpce-0edda39ecbeee2be2`, with the tag `AmazonDataZoneProject`
+    `b8fz4ovppjijv4` and one word filter; its version 1 `READY` at the second poll, 20:51:17.
+  - `e`, that guardrail's version 1 named in a `Converse`: admitted at 20:51:17, 8 tokens in and 3 out.
+    Decision 24 (b)'s residual reads as the decision says: a guardrail the role published six seconds before
+    is admitted.
+  - A refused call's event carries `requestParameters` null.
+- **[Claude] The second guardrail deleted** on the user's *"Autorizo apagar"*: `delete-guardrail` at 20:54:25,
+  exit 0. `get-guardrail` then read *"This guardrail does not exist."*, and the account holds
+  `mn3wavwk9jx7` and `razikgicppzy`.
+
+## 2026-11-22 — Day 3's sitting C: reading 5's guardrail decisions and verification lx
+
+*Claude writes this entry. The outputs are the user's, pasted from `jup-app-genai-dev` and `jup-ml-dev`;
+Claude's reads are as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`.
+Times UTC.*
+
+- **[user] Reading 5's outputs** (`variants.py`, SHA-256 `defd1e14…`): what the application's guardrail
+  `mn3wavwk9jx7`, version 2, did with each call the deny admitted, from the trace.
+  - `0`, *"Reply with the single word: ready."* in a plain text block: `stop=guardrail_intervened`, the
+    guardrail's message *"This message was not triaged: the application's guardrail blocked it."*, 0 tokens.
+    `PROMPT_ATTACK`, confidence `MEDIUM`, filter strength `HIGH`, `BLOCKED`; 34 of 34 characters guarded.
+  - `b`, the guardrail named by its id: the same block and the same trace.
+  - `d0`, the denied topic inside the guard tag: blocked by the topic `Investment advice` (`DENY`), 73 of 73
+    characters guarded.
+  - `d1`, the guard tag holding the `ready` message and the topic outside it: blocked by `PROMPT_ATTACK`
+    `MEDIUM` on the tagged text; 34 of 107 characters guarded, so the topic's 73 were not assessed.
+  - `e`, the second guardrail, one word filter: `stop=end_turn`, *"Ready."*, 8 tokens in and 3 out.
+  - The message the day's probes send reads as a prompt attack to the application's guardrail when the whole
+    message is assessed. The triage assesses its guard tag alone: 40 messages, 2 blocked (reading 4).
+  - Verification xxxix reads in full. The `DRAFT` is refused by the identity deny and the id is admitted. A
+    model outside the profile is refused by the SCP `p-tgda7n58`, the wording shown; the identity deny's part
+    is not measured (Lesson 20). A message outside the guard tag is admitted by IAM and not assessed by the
+    guardrail.
+- **[user] Verification lx** (`lx.py`, SHA-256 `b355b330…`) from `jup-ml-dev`, MLflow's client 3.17.2 against
+  the app's 3.16.0:
+  - the experiment `app-ml-lx` created (id 2); the run `c058995da0d44cb086359271b2427c61` from 20:53:34; the
+    model `models:/m-c30660f6dda246dca5558e9d71f494ad`, its artifacts under the app's store,
+    `…/dev/data/ml/mlflow/workspaces/default/2/c058995da0d44cb086359271b2427c61/artifacts`;
+  - *"Successfully registered model 'app-ml-lx'."*, *"Created version '1' of model 'app-ml-lx'."*: MLflow's
+    registry holds `app-ml-lx` version 1 `READY`;
+  - the account's groups read `app-ml-dev` and `ml-demo-xgboost` before the run and at once, 30 s and 90 s
+    after it, and the same from the laptop at 21:01 (**[Claude]**);
+  - MLflow's `uv export` exported 0 dependencies and fell back to inferring them from the installed packages,
+    logging `torch 2.13.0+cpu` as `torch==2.13.0`.
+  - Verification lx reads no. With the app's `AutoModelRegistrationDisabled`, a model logged under a
+    registered name stays in MLflow's registry and creates no SageMaker group or version, as step 3.2 read in
+    `ml-demo-mlflow`. AWS's `ml/training` example asserts the version.
+- **[user] Reading 5's portal half**: the chat playground of `app-genai-dev` on Nova Lite, *"Reply with the
+  single word: ready."*, answered *"Ready."*. **[Claude]** The trail:
+  - `ListFoundationModels` at 20:52:20, 20:52:21 and 20:52:44, and `ConverseStream` at 20:52:48, as
+    `awsds-sandbox-bedrock-model-consumption` in sessions `28f1b390-…@cty232yk8f2zyo` and
+    `28f1b390-…@d747chsyrc379s`, the second created at 20:52:47;
+  - from the browser, with no `vpcEndpointId` and the host header `bedrock-runtime.us-west-2.amazonaws.com`;
+  - `modelId` the domain's profile `csu817ovl4kz`, Nova Lite, tagged `AmazonDataZoneDomain` alone and created
+    2026-10-19; `maxTokens` 5120; no `guardrailConfig`; 8 tokens in and 3 out on the stream's service event.
+  - The deny binds the application's role. The playground calls as the domain's consumption role, which the
+    deny does not bind, so the playground answers under it with no guardrail (`SUP-300`). The account's
+    guardrail of reading 6, enforced on the model for every caller, is the layer that reaches this path.
+
+## 2026-11-22 — Day 3's sitting C: the registry's score
+
+*Claude writes this entry, from the workflow's logs, the trail and the SageMaker API, as the infrastructure
+user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The run is the user's. Times UTC.*
+
+- **The run `QCRC1Im4FuKYOMS`**, `MODEL_SOURCE` `registry` in the working copy's `dev` stage: `SUCCESS` from
+  20:52:16 to 21:11:44. `prepare` took 613 s, `resolve` 13, `score` 339, `check` 9 and `cleanup` 7.
+- **`resolve`**, 21:03:58: *"created app-ml-score-5rzplmk81vma34 from
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:model-package/app-ml-dev/1: sha256 852032c5…"*.
+  - The trail: `CreateModel` at 21:03:58 as the project role in the worker's session `AmazonMWAAServerless`,
+    through `vpce-0dc0f341029459864`.
+  - The request: `containers` one element, `modelPackageName` the version's ARN alone; `executionRoleArn` the
+    project role; the tags `AmazonDataZoneProject`, `AmazonDataZoneDomain` and `AmazonDataZoneScopeName`
+    `dev`; `vpcConfig` `sg-028f033a218b701b2` with the two subnets; `enableNetworkIsolation` true.
+  - The model read back with the container's `ModelPackageName` and `Mode` `SingleModel`.
+  - The version, `Approved`, holds the image by its digest `0b5d9341…`, `ModelDataUrl` under
+    `app-ml/models/sha256/852032c5…/`, and `ModelDataETag` `1792fa29…`, the field the service set (`SUP-462`).
+- **`score`**: the transform `app-ml-score-20261122T210440`, created at 21:04:42, ran on one `ml.m5.large`
+  from 21:08:05 to 21:09:36, its volume under the project's key `a81b1ef3-…`; the output under
+  `app-ml/predictions/20261122/`.
+- **`check`**: *"app-ml-score-20261122T210440: 200 prediction(s) for 200 line(s), AUC 0.847556, MIN_AUC
+  0.7"*, `source` `registry`, the training job `app-ml-train-20261122T193009`. The AUC is the prefix score's,
+  the same bytes.
+- **`cleanup`**: *"Model app-ml-score-5rzplmk81vma34 deleted successfully."* at 21:11:44; no model created
+  since 20:52 remains.
+- Verification lix's first half reads yes: a worker creates a model from a version's `ModelPackageName` as
+  the project role, under the D13 boundary and the `Workloads` OU, with `VpcConfig` and network isolation.
+  Its second half is not measured: the object was unchanged, so a comparison of the version's
+  `ModelDataETag` with it reads the same whether it happens or not (Lesson 13). Measuring it needs an object
+  whose ETag differs from the version's, which under SSE-KMS any rewrite of the object gives, and which
+  leaves `app-ml-dev/1` unusable if the service compares.
+- The working copy's `MODEL_SOURCE` returns to `prefix` on the `dev` stage, the user's edit, before the day
+  ends.
+
+## 2026-11-22 — Day 3's sitting C: reading 6's first apply, the account's guardrail created and its enforcement refused
+
+*Claude writes this entry; the applies are Claude's, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1`, on the user's *"Autorizo a leitura 6"* and *"Autorizo os três applies."*,
+answering a question that named the three. Times UTC.*
+
+- **21:11:25, the saved plan's apply**: refused before it began, *"No valid credential sources found"*. The
+  `awsds` session's token had expired at 21:08:53 and its refresh failed (*"InvalidGrantException"*), while
+  `aws sts get-caller-identity` still answered from cached role credentials. The user signed in again at
+  about 21:11:47; the orchestrating session relayed it at 21:12. Claude's `./aws/login.py --help`, run to read
+  the script's options, started `aws sso login --no-browser`, since the script passes no argument through; it
+  was stopped with no approval.
+- **21:17:21, the saved plan's apply again**: `aws_bedrock_guardrail.account[0]` created in 2 s
+  (`awsds-sandbox-account-guardrail`, `k1w4bpgvtnt4`) and its version in 1 s. The configuration was refused by
+  Cloud Control: *"Model validation failed (#/ModelEnforcement: required key [ExcludedModels] not found)"*. The
+  plan had shown `excluded_models = []`.
+- **21:20:42, a plan with `excluded_models` naming `amazon.titan-embed-text-v2:0`**: `1 to add`. Its apply at
+  21:21:10 was refused by Bedrock: *"If modelEnforcement is present, excludedModels can only be nonempty if
+  includedModels is ['ALL']."* (`InvalidRequest`). The code change was reverted.
+- Through `awscc` 1.106.0 the configuration cannot name Nova Lite alone (`SUP-466`). The account holds the
+  guardrail and its version 1, with no configuration (`ListEnforcedGuardrailsConfiguration` empty), and the
+  deny stands.
+
+## 2026-11-22 — Day 3's sitting C: reading 6 deferred and both switches back to `false`
+
+*Claude writes this entry; the apply is Claude's, as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1`, the third of *"Autorizo os três applies."*. Times UTC.*
+
+- **About 21:26, the user's decision**: *"Adie a leitura 6"*. Reading 6 rides with 6e 6.4's later sitting,
+  and the account guardrail's configuration is redesigned with nothing up (`SUP-466`).
+- **21:27:37, the third apply**: a plan saved at 21:27:14 from a tree identical to `origin/main`, both
+  switches `false`, *"Plan: 0 to add, 1 to change, 2 to destroy."*. The account guardrail's version and the
+  guardrail were destroyed in 1 s each, and `awsds-sandbox-bedrock-application` lost the deny's statement:
+  *"Apply complete! Resources: 0 added, 1 changed, 2 destroyed."*. The re-plan reads *"No changes."*
+  (exit 0), `ListEnforcedGuardrailsConfiguration` reads none, and the account's guardrails are
+  `mn3wavwk9jx7` (`app-genai-dev`'s) and `razikgicppzy`.
+- **Left for later**: the probe run once with `EXPECT_UNGUARDED` back on `answered` (line 55 of
+  `app-genai-dev`'s working copy), and `MODEL_SOURCE` back on `prefix` (line 80 of `app-ml-dev`'s).
+
+## 2026-11-22 — Day 3's sitting C: the probe without the deny, and the working copies restored
+
+*Claude writes this entry from the output the user pasted at 21:42 and from the run's task log, read as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The edits and the run are the
+user's, from `jup-app-genai-dev` and `jup-ml-dev`. Times UTC.*
+
+- **`app-genai-dev`'s working copy**: `EXPECT_UNGUARDED` back on `answered` at line 55 of the manifest, the
+  `dev` stage; lines 84 and 113 keep `refused`.
+- **The probe's run `oIak5MKc0ZlrMj6`**, workflow `probe-anvonKMpvI`: `SUCCESS` from 21:42:11.7 to
+  21:42:48.4. The task `unguarded` took 7 s and logged at 21:42:47.5 *"the request without a guardrail:
+  answered, answered expected"*: 6 characters, 8 input and 3 output tokens, `end_turn`, `passed` true,
+  the model `application-inference-profile/ciceumyodl7y`.
+- The CLI printed its `ListTagsForResource` warnings on 15 other workflows, as on every run since Stage 19
+  (`sagemaker-application.md` §D).
+- Reading 4's after-control reads yes: with the deny's statement removed at 21:27:37, a request naming no
+  guardrail answers again. `probe-report.json` holds the run (`ML-11`, 22:56).
+- **`app-ml-dev`'s working copy**: `MODEL_SOURCE` back on `prefix` at line 80, the `dev` stage; lines 123 and
+  167 keep `registry`.
+
+## 2026-11-22 — Day 3's sitting C: pass 5, the pipeline from the SDK (5.1, 5.2, 5.4)
+
+*Claude writes this entry from the output the user pasted, the SageMaker API and the trail, read as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. The `upsert`s and `start`s
+are the user's, from `jup` in `eighth-experimentation`; the three fixes are Claude's commits. Times UTC.*
+
+- **The space**: `jup`'s clone at `b3b900b`; `extra_values.json` names the XGBoost tag `3.0-5` and the MLflow
+  App. `awsds-workflows values --project avhvbqn37ty7m8` filled `JOB_IMAGE_URI` with the house image by its
+  digest in Production's `awsds-prod-ecr-dev-env`, `sha256:a6f9b5ab…`.
+- **The first `upsert`**, pasted at 21:56: `prepare.py` uploaded to `shared/ml-demo/pipeline/code/`, then
+  `DescribePipeline` of the free name refused at 21:56:03 through `vpce-0dc0f341029459864`, *"no
+  identity-based policy allows"*. The blueprint grants it on a pipeline tagged with the caller's project
+  alone (`SUP-267`, read again). `fc6bb0e0` makes `upsert` look the name up with `ListPipelines`.
+- **The second `upsert`**, pasted at 22:04: `CreatePipeline` refused, *"ValidationException: Unable to parse
+  pipeline definition. Model Validation failed: string '…' with length=262 cannot be greater than max=256.0
+  defined for ContainerArgument."* The 256-character limit per item is the API's documented one. `93e136ee`
+  shortens `Prepare`'s command to 191 characters with a `chown -R` of the output's parent.
+- **The third `upsert` and the first `start`**, pasted at 22:12: the pipeline created at 22:12:23, as the
+  project role in the space's session `SageMaker` through `vpce-0dc0f341029459864`. Its tags: the script's
+  `AmazonDataZoneProject` and the six others of `SUP-408`'s seven, which the space adds.
+  - The execution `epycqlyvfigz` started at 22:12:29. `Prepare` failed from 22:12:29.8 to 22:12:30.9:
+    *"ClientError: Reserved tag key prefix found for 'AmazonDataZoneProject' in Step: Prepare"*. No
+    `CreateProcessingJob` followed. The README's "What the first run decides" had named this reading.
+  - `49dde59a` removes `Tags` from the three job steps (`SUP-467`).
+- **The fourth `upsert` and the second `start`**, pasted at 22:16: the pipeline updated at 22:15:55, its
+  version 2, and the execution `w8qa46pmftoy` started at 22:15:56. `ListPipelineVersions` reads version 1
+  with `epycqlyvfigz` and version 2 with `w8qa46pmftoy`: an `UpdatePipeline` with a changed definition adds a
+  version. Whether an unchanged one does stays verification lxi's.
+  - `Prepare`, 22:15:56.8 to 22:25:59.8: `CreateProcessingJob` at 22:15:57 as the project role in the
+    session `sagemaker-pipeline-w8qa46pmftoy-Prepare`, invoked by `pipelines.sagemaker.amazonaws.com`, no
+    `vpcEndpointId`. The job `pipelines-w8qa46pmftoy-Prepare-kiB0JNeozt`: isolation and inter-container
+    encryption true, `sg-0fee1c059b82e3562` with the two private subnets, `ml.t3.medium`, the volume and the
+    output under the project key `a81b1ef3-…`. Its container log at 22:23:57: Python 3.12.14, pandas 2.3.3,
+    7032 rows split 4922, 1054 and 1056.
+  - The request's eight tags: the pipeline's seven less `AmazonDataZoneUser`, plus
+    `sagemaker:pipeline-step-name` and `sagemaker:pipeline-execution-arn`. The job reads the same eight
+    (`SUP-467`).
+  - `Train`, 22:26:00.7 to 22:28:14.7: `pipelines-w8qa46pmftoy-Train-3Qrj5R3Zrm` completed from 22:26:50.6
+    to 22:28:14.3, 84 s billed on `ml.m5.xlarge`, `validation:auc` 0.82091 and `train:auc` 0.95127, the
+    four settings, the project key and the same eight tag keys; the image `sagemaker-xgboost:3.0-5`.
+  - `CheckAuc`, 22:28:15.1 to 22:28:15.4, outcome `True`.
+  - `Register`, 22:28:16.1 to 22:28:18.0: `ml-demo-xgboost/2`, `PendingManualApproval`, created at
+    22:28:17.9 with the description *"from the pipeline ml-demo-pipeline"*. The registry held version 1
+    alone, `Approved`, so the pipeline's version is the second where 5.2 expects the third.
+- Verification xi's pipeline half reads yes: `CreatePipeline` with the project role as `RoleArn` was
+  admitted, so the role passes itself to SageMaker for a pipeline, and each step's job runs as that role
+  in the session `sagemaker-pipeline-<execution id>-<step name>`. The endpoint half is pass 4's.
+- **5.2's portal reading**, from about 22:28, through Claude in Chrome in the Data Scientist User's portal
+  session, on the user's *"faça a leitura na sessão no chrome"* (22:27:45). The *ML pipelines* page read
+  *"No pipelines"* with *"Results are cached"* until *Refresh* listed `ml-demo-pipeline`. The pipeline's
+  page has the tabs *Executions*, *Graph*, *Parameters* and *Information*, and the buttons *Execute*,
+  *Visual editor* and a menu. *Executions* lists `execution-1795385756381`, `Succeeded` in 12m 22s, and
+  `execution-1795385549186`, `Failed` in 2s: the portal names an execution by its creation time in
+  milliseconds, not by its id. The graph: `Prepare` → `Train` → `CheckAuc` → `Register` on true or
+  `AucBelowThreshold` on false, the run's four green.
+- **A download without the user's yes**, at about 22:31: Claude's click meant for *Visual editor* landed on
+  the menu's *Download pipeline definition (JSON)*, which Escape had not closed. Chrome saved
+  `execution-1795385756381_definition.json`, 13,316 bytes, to the laptop's Downloads folder. Claude told the
+  user at once. The file stays until the user decides.
+- Verification xvi reads yes: the downloaded definition equals the live `DescribePipeline` definition, and
+  `pipeline.py compare` read the live one equal to `definition.json` with its 12 placeholders filled.
+- **5.4**: `ML-6` at 22:56:05 passes `ml-demo-pipeline`: the project role, the four settings, `Succeeded`,
+  5 steps as in the committed source.
+
+## 2026-11-22 — Day 3's sitting C: verification xxiv's `Retrieve`, and pass 4 deferred
+
+*The `Retrieve` is the user's, from a notebook in `jup`; Claude writes this entry from the output the user
+pasted at 22:19 and from CloudWatch and the trail, read as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`. Times UTC.*
+
+- **The call**: `Retrieve` on the knowledge base `QWDNVYXADH` (`ACTIVE`, its data source `JXKIPOER3T`
+  holding `break-glass.md` and `buildbox.md`), the question *"Who receives the alarm when the root user
+  signs in?"*, `numberOfResults` 3. Three results, all from `break-glass.md`, scored 0.507, 0.474 and 0.465.
+- **The door**: `bedrock-agent-runtime`'s endpoint `vpce-0915f48c2198cb60b` (private DNS on, in
+  `subnet-016b5a3a62c739894` alone). Its PrivateLink counters hold one datapoint since the endpoint's
+  creation at 18:14:07, read at 22:23:53: at 22:19, `NewConnections` 1 and `BytesProcessed` 14,870.
+  `Retrieve` is a data event, absent from `lookup-events`.
+- The query's embedding: `InvokeModel` at 22:18:57 as the project role in the session
+  `BKB-Retrieve-QWDNVYXADH-<uuid>`, invoked by `bedrock.amazonaws.com` through the service's own endpoint id
+  `vpce-0cf920938fc4d8fc6` (`SUP-426`).
+- Verification xxiv's `Retrieve` half reads yes: the project role reaches the knowledge base from a space
+  through the `bedrock-agent-runtime` endpoint. Its catalog half has no object (`SUP-446`, `SUP-448`).
+- **About 22:25, the user's decision on pass 4**: *"Não, fica para depois"*. §N.10's day 1 had not run it,
+  and the orchestrating session had offered it to this sitting after xxiv. The endpoint, the transform and
+  the negatives wait for a later sitting.
+
+## 2026-11-22 — Day 3's sitting C: 5.3, the visual editor, and `ML-7`
+
+*The pipeline is Claude's, built, saved and run twice through Claude in Chrome in the Data Scientist User's
+portal session, on the user's *"Pode fazer"* at about 22:38, answering whether Claude should build 5.3's
+one-step pipeline. Claude reads the SageMaker API and the trail as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1`. Times UTC.*
+
+- **`ML-7` before the editor**: two MLflow Apps at 21:30:38, `app-ml-dev-mlflow` and `ml-demo-mlflow`. The
+  same two after the list, executions and graph pages (22:27:53, 22:30:09) and after the editor's first
+  entry (22:32:19, 22:32:41, 22:33:02).
+- **The editor over `ml-demo-pipeline`**, opened at about 22:32 (`…/pipelines/view/ml-demo-pipeline/edit`):
+  the palette holds *Code* (*Run notebook or code*, *Run callback*, *Run lambda function*), *Data
+  Preparation* (*Process data*), *Model Development* (*Train model*, *Fine tune model*), *Deployment &
+  Inference* (*Register model*, *Create model*, *Deploy model (endpoint)*, *Deploy model (batch
+  inference)*) and *Logic* (*Condition*, *Fail*).
+  - `Prepare`'s form: inputs, outputs, the image, entry point and arguments, the instance, the stopping
+    condition, and under *Advanced settings* *Caching*, *Retry* and *Security*.
+  - *Security* shows the project role, `vpc-00dca74a35159b11c`, the two subnets, `sg-0fee1c059b82e3562` and
+    the project key, greyed. No field sets network isolation or inter-container encryption.
+  - `Train`'s form is the same shape, with the algorithm's image and input mode, metrics, hyperparameters
+    and a checkpoint.
+- **A new pipeline with one *Train model* step**: the channel `train` (`…/pipeline/w8qa46pmftoy/train`,
+  `text/csv`); the output `…/shared/ml-demo/pipeline/editor/model`; `sagemaker-xgboost:3.0-5`, `File`,
+  `ml.m5.xlarge`, 30 GB; `objective` `binary:logistic`, `eval_metric` `auc`, `num_round` 20; 600 s.
+  *File* → *Save* asked for no name. `CreatePipeline` at 22:45:27 named it `Pipeline-1795387181754`, the
+  create page's opening time in milliseconds. The caller was the project role in the person's session, from
+  the laptop's browser with no `vpcEndpointId`.
+  - The pipeline's tags are the portal's four: `AmazonDataZoneProject`, `AmazonDataZoneDomain`,
+    `AmazonDataZoneScopeName` `dev` and `AmazonDataZoneUser`.
+  - The definition at 22:46:40 holds the step `Training_1C268` (display name *Train model*) with the role,
+    the algorithm, the instance, the stopping condition, the channel, the hyperparameters and the output's
+    `KmsKeyId`. It holds no `VpcConfig`, no `VolumeKmsKeyId` and neither isolation flag: *Security*'s
+    network fields and its key reach the output alone.
+- **The execution `ml-demo-editor-1`, `buk3zbhzkw6s`**, started at 22:46:10. `Training_1C268` failed from
+  22:46:11.3 to 22:46:12.5: *"ClientError: Failed to invoke sagemaker:CreateTrainingJob. Error Details: 1
+  validation error detected: Value null at 'inputDataConfig.1.member.dataSource.s3DataSource.s3DataType'
+  failed to satisfy constraint: Member must not be null"*. The channel's form showed *S3 data type*
+  `S3Prefix`, its default, without writing it. `lookup-events` holds no `CreateTrainingJob` for it.
+- **The type chosen by hand**: `ManifestFile` and back to `S3Prefix`, then *Save*. `UpdatePipeline` at
+  22:48:34 wrote version 2 with `S3DataType` `S3Prefix`.
+- **The execution `ml-demo-editor-2`, `rl26r4j8ychr`**, started at 22:49:20. `Training_1C268` failed from
+  22:49:20.9 to 22:49:22.7: *"ClientError: Failed to invoke sagemaker:CreateTrainingJob. Error Details: User:
+  arn:aws:sts::<Sandbox Account 1>:assumed-role/datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/sagemaker-pipeline-rl26r4j8ychr-Training_1C268
+  is not authorized to perform: sagemaker:CreateTrainingJob on resource:
+  arn:aws:sagemaker:us-west-2:<Sandbox Account 1>:training-job/pipelines-rl26r4j8ychr-Training-1C268-TomRXvYbLk
+  with an explicit deny in a permissions boundary: arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"*.
+  - The trail's `CreateTrainingJob` at 22:49:22: `AccessDenied` with the same text, `requestParameters`
+    null, invoked by `pipelines.sagemaker.amazonaws.com`.
+  - The request lacked `VpcConfig`, the volume key and both flags, so four of the boundary's statements
+    match it: `DenySageMakerJobsOffVpc`, `DenySageMakerJobsWithoutVolumeEncryption`,
+    `DenySageMakerJobsWithoutNetworkIsolation` and `DenySageMakerJobsWithoutInterContainerEncryption`. The
+    wording names the policy, never the statement (Lesson 20).
+- Verification xii's 5.3 half: the pipeline-step forms set none of the four settings. They show the
+  project's network and key greyed, write the key into the output alone, and offer no field for either flag.
+  The portal's pipeline create is admitted, and its training job refused by the boundary.
+- **`ML-7` after**: two apps at 22:50:08, and no `CreateMlflowApp` since 22:30. The guide's sentence that
+  *"A default MLflow application will be created when you enter the pipeline visual editor."* did not hold
+  in this project's domain.
+- **`ML-6` at 22:56:05** fails on `Pipeline-1795387181754`: no `VpcConfig`, no isolation, no inter-container
+  encryption, no volume key, the latest execution `Failed`, 1 step unlike the committed source. The pipeline
+  stands until the user decides on it.
+
+## 2026-11-22 — Day 3's sitting C: the closing reads, and 6d's remainder left
+
+*Claude writes this entry; reads as the infrastructure user with `InfrastructureAccess` through
+`awsds-infra-sandbox-1` (account Sandbox Account 1), and no AWS write. Times UTC.*
+
+- **[user] 6d's remainder** did not run: *"Vamos deixar o bloco 6d para outra sessão"* at about 23:22 (6d's
+  log). The lowering is §N.10's day 2's, which shares the raise.
+- **The spaces**: at 23:22:52 no app stands in `eighth-experimentation`'s, `app-ml-dev`'s or `app-genai-dev`'s
+  domain. `jup`'s app was deleted at 23:19:09 by the idle shutdown (`SUP-221`). `jup`, `code`, `jup-ml-dev`
+  and `jup-app-genai-dev` stand with no app.
+- **The portal**: this session's Claude in Chrome tab group no longer existed at about 23:24. Every other
+  portal tab is the user's or §N.10's.
+- **`./aws/sandbox-ml.py` at 23:28:43**: 71 passes, one fail and 89 notes, every call returned. The fail is
+  `ML-6` on the editor's `Pipeline-1795387181754`, as at 22:56:05; `ML-6` passes `ml-demo-pipeline`.
+- **`./aws/catalog.py` at 23:32:28**: 19 checks passed or noted and one failed, `CT-17`, on two grants to
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` in Production's `app_etl.trades_notional`, `DESCRIBE` and
+  `SELECT`, which §N.10 keeps. None is day 3's. §N.10's day 2 was publishing `eighth-experimentation`'s assets
+  through the portal at the time (its 2.3).
+- **Standing from day 3**: `ml-demo-pipeline` and its runs, the registry's versions, `sandbox/bedrock/`'s
+  switches `false` since 21:27:37, and the editor's pipeline until the user's word.
+
+## 2026-11-22 — Day 3's sitting C: the editor's pipeline kept, `EXC-28`
+
+*Claude's hand, recording the user's answers in chat at about 23:37 UTC; no AWS call.*
+
+- **[user] The editor's pipeline**: *"Pode manter o pipeline do editor"*. `Pipeline-1795387181754` stays in
+  `eighth-experimentation` as `SUP-468`'s record, and `ML-6` fails on it while it stands: `AWS_STATE.md`
+  `EXC-28`, the id told to §N.10's day 2.
+- **[user] The downloaded file** `execution-1795385756381_definition.json`, from 5.2's portal reading at about
+  22:31: *"O arquivo em downloads eu msm apago depois"*. It is the user's to delete.
+
+## 2026-11-22 — Day 3's sitting C: the editor's pipeline deleted, `EXC-28` closed
+
+*Claude writes this entry and ran the delete on the user's word in chat, as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1` (account Sandbox Account 1). Times UTC.*
+
+- **[user] The editor's pipeline**, at about 23:45: *"Apague entao o pipeline, pfv"*, reversing the decision
+  of about 23:37.
+- **Before the delete, at 23:44:50**: `Pipeline-1795387181754` `Active`, created 22:45:27 and last modified
+  22:49:22, its role the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; two executions,
+  `ml-demo-editor-1` (22:46:10) and `ml-demo-editor-2` (22:49:20), both `Failed`.
+- **The delete**: `aws sagemaker delete-pipeline --pipeline-name Pipeline-1795387181754` exit 0, answering the
+  pipeline's ARN. CloudTrail, read at 23:47:55: `DeletePipeline` at 23:46:38 by
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, no `errorCode`, no `vpcEndpointId`,
+  `aws-cli/2.37.12`.
+- **After it, at 23:46:38**: `describe-pipeline` answers *"ResourceNotFound … Pipeline '…:pipeline/Pipeline-1795387181754'
+  does not exist."*, and `list-pipelines` lists `ml-demo-pipeline` alone.
+- **`./aws/sandbox-ml.py` at 23:51:46**: 71 passes, no fail and 89 notes. `ML-6` passes `ml-demo-pipeline`, the
+  one pipeline listed. One call failed, `service-quotas list-aws-default-service-quotas --service-code
+  sagemaker` with a 408 and no message, so the script exited 1. That call fills the quota table's *AWS
+  DEFAULT* column, and the checks read as the re-run's below, two `ML-9` notes in another order.
+- **`./aws/sandbox-ml.py` again at 23:58:04**: *"all checks passed"*, 71 passes and 89 notes, every call
+  returned, exit 0.
+- **Records**: `AWS_STATE.md` `EXC-28` closed; the hand-over note to §N.10's day 2 corrected and day 2 told.
+  `SUP-468` stands on this log's readings of 5.3.

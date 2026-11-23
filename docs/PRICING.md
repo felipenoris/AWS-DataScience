@@ -305,6 +305,7 @@ the real bill.
 | SageMaker Studio RStudio session `ml.t3.medium` (`RStudio:RSession-ml.t3.medium` and `RStudio:RSessionGateway-ml.t3.medium`, one rate; `ml.t3.large` **0.100**) — measured 2026-10-30; the Posit Workbench licence a session needs has no AWS rate (§11) | 0.081 | **0.050** | 1.62 |
 | SageMaker processing job `ml.t3.medium` (2 vCPU, 4 GiB; `USW2-Processing:ml.t3.medium`) — `us-west-2` **measured 2026-10-10**, offer published 2026-10-09 | 0.066 | **0.050** | 1.32 |
 | SageMaker processing job `ml.m5.large` (2 vCPU, 8 GiB) — `us-west-2` measured 2026-10-10 | — | **0.115** | |
+| SageMaker Pipelines — no usage type of its own: none of the 42,868 `usagetype` values of `AmazonSageMaker` in the Price List names a pipeline (read 2026-11-22). A pipeline's steps bill as the processing and training jobs they create, the rows above | — | — | — |
 | WireGuard EC2 `t3.nano` (`t4g.nano` at 0.0067 / 0.0042 until 2026-08-20) | 0.0084 | 0.0052 | 1.62 |
 | Public IPv4 address (in use or idle) | 0.005 | 0.005 | **1.00** |
 | VPC peering data (each way) | 0.01/GB | 0.01/GB | **1.00** |

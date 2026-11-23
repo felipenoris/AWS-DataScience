@@ -2222,6 +2222,13 @@
   <https://docs.aws.amazon.com/ram/latest/APIReference/API_AssociateResourceSharePermission.html>,
   <https://docs.aws.amazon.com/ram/latest/APIReference/API_ReplacePermissionAssociations.html>.
 
+- **SageMaker Pipelines — a step's job and its tags (read 2026-11-22, for `SUP-467`).** Searched for a
+  reserved tag prefix in a step's arguments and for the tags a step's job receives; neither page names
+  either. The step metadata an execution's steps return:
+  <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_PipelineExecutionStepMetadata.html>.
+  Pipelines' IAM access management:
+  <https://docs.aws.amazon.com/en_us/sagemaker/latest/dg/build-and-manage-access.html>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
