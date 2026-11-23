@@ -5765,9 +5765,11 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   - The second, 21:21: `excluded_models` naming `amazon.titan-embed-text-v2:0`, a model outside
     `included_models`. Bedrock refused the create: *"If modelEnforcement is present, excludedModels can only be
     nonempty if includedModels is ['ALL']."* (`InvalidRequest`, 400).
-  - Through `awscc` 1.106.0 the configuration therefore enforces on every model, with no `model_enforcement`,
-    or on `ALL` less a non-empty list, never on named models alone. The guardrail and its version, which the
-    first apply created, stayed; `ListEnforcedGuardrailsConfiguration` read empty.
+  - Through `awscc` 1.106.0 a configuration therefore names no model list, or `ALL` less a non-empty list,
+    never named models alone. Neither of the two shapes left has been applied: whether Cloud Control admits a
+    configuration with no `model_enforcement` is unread. The guardrail and its version, which the first apply
+    created, stood with no configuration (`ListEnforcedGuardrailsConfiguration` empty) until the switches'
+    return to `false` destroyed both at 21:27:37.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`.
 

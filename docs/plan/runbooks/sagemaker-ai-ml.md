@@ -177,7 +177,7 @@ what the lab's portal has shown, read in `eighth-experimentation` and `app-etl-d
 | **Training Jobs** | the *Training jobs* page, reached after a JumpStart model's *Train* | *Training Jobs* | the project's training jobs: status, metrics, output | *Training jobs*, empty; no job created from a space (pass 2) |
 | **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | the entry opens *Compute → MLflow*, `ml-demo-mlflow` in `eighth-experimentation`; on 2026-10-19 it was the legacy experiments page |
 | **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | *Inference endpoints*, with *Create new endpoint*; none created (pass 4) |
-| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; a pipeline from the SDK that ran, and one from the editor whose training job the boundary refused (pass 5, 2026-11-22) |
+| **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; a pipeline from the SDK that ran, and one from the editor whose training job the boundary refused, deleted the same day (pass 5, 2026-11-22) |
 | **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group (6.4) |
 
 The Identity Center chapter also documents *HyperPod clusters* and *Partner AI apps*. Both provision
@@ -1160,14 +1160,14 @@ asks for a published guardrail of the account and cannot say which. What holds i
   (10.5).
 
 **What AWS's pages leave unsaid**, each a reading before a target holds either guardrail (10.1, 10.4):
-the IAM actions that authorize the account-level configuration's three calls; whether Terraform or
-`awscc` carries the configuration, which is the user's act by hand where neither does, as the retention
-mode is; whether the enforcement reaches a `Retrieve`, an ingestion's embeddings, a flow or AgentCore;
-whether a guarded call through an application inference profile carries the condition key on every pass
-(verification xxxvii); at which layers a guarded call asks `bedrock:ApplyGuardrail` of the caller
-(verification xxxviii); and whether the enforced guardrail fills the key for a call that names none
-(verification l). Sandbox measures the enforcement for Nova Lite alone, in one sitting of step 10.4, and
-removes it.
+the IAM actions that authorize the account-level configuration's three calls; whether the enforcement
+reaches a `Retrieve`, an ingestion's embeddings, a flow or AgentCore; and whether the enforced guardrail
+fills the key for a call that names none (verification l). Read in Sandbox on 2026-11-22 (step 10.4): a
+guarded call through an application inference profile carries the condition key on both passes
+(verification xxxvii, `SUP-463`), and no guarded call asked the caller for `bedrock:ApplyGuardrail`
+through an endpoint that admits the two invoke actions alone (verification xxxviii). `awscc` 1.106.0
+carries the configuration but cannot name Nova Lite alone (`SUP-466`), so reading 6 waits for the user's
+decision on its shape, and the targets' configuration on every model is unmeasured (10.5).
 
 **The knowledge base, one release after the first** (decision 25 (b), 10.7), designed. Retrieval over
 documents the bundle carries, in the three environments. As with the guardrail, the application creates
@@ -1341,8 +1341,8 @@ Each line names the step or the verification of Stage 17 that closes it.
   pending, and that version served once approved (verification xxxi).
 - **An endpoint created and deleted inside one run** (decision 18 (b), verification xxxv).
 - **An ML pipeline started by a task**, and whether a definition takes a parameter inside `VpcConfig`
-  and `Tags` (decision 19 (b), verification lxi); the step's job and its tags were read from the SDK's
-  pipeline on 2026-11-22 (`SUP-467`).
+  (decision 19 (b), verification lxi). A step names no `Tags`, its job taking the pipeline's, read
+  from the SDK's pipeline on 2026-11-22 (`SUP-467`).
 - **The retirement of `app-etl`'s model half** (decision 28 (a), step 9.11, verification lxiv).
 - **Any Bedrock call from a workflow task** beyond Sandbox's of 2026-11-22 (verifications xxxvii to xl
   and xliii): the models that answer inside `us-west-2` and what each account owes one (xxxvi), the

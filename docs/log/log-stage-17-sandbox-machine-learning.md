@@ -5772,3 +5772,28 @@ one-step pipeline. Claude reads the SageMaker API and the trail as the infrastru
   `EXC-28`, the id told to §N.10's day 2.
 - **[user] The downloaded file** `execution-1795385756381_definition.json`, from 5.2's portal reading at about
   22:31: *"O arquivo em downloads eu msm apago depois"*. It is the user's to delete.
+
+## 2026-11-22 — Day 3's sitting C: the editor's pipeline deleted, `EXC-28` closed
+
+*Claude writes this entry and ran the delete on the user's word in chat, as the infrastructure user with
+`InfrastructureAccess` through `awsds-infra-sandbox-1` (account Sandbox Account 1). Times UTC.*
+
+- **[user] The editor's pipeline**, at about 23:45: *"Apague entao o pipeline, pfv"*, reversing the decision
+  of about 23:37.
+- **Before the delete, at 23:44:50**: `Pipeline-1795387181754` `Active`, created 22:45:27 and last modified
+  22:49:22, its role the project role `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; two executions,
+  `ml-demo-editor-1` (22:46:10) and `ml-demo-editor-2` (22:49:20), both `Failed`.
+- **The delete**: `aws sagemaker delete-pipeline --pipeline-name Pipeline-1795387181754` exit 0, answering the
+  pipeline's ARN. CloudTrail, read at 23:47:55: `DeletePipeline` at 23:46:38 by
+  `AWSReservedSSO_InfrastructureAccess_59e5b26af457128d`, no `errorCode`, no `vpcEndpointId`,
+  `aws-cli/2.37.12`.
+- **After it, at 23:46:38**: `describe-pipeline` answers *"ResourceNotFound … Pipeline '…:pipeline/Pipeline-1795387181754'
+  does not exist."*, and `list-pipelines` lists `ml-demo-pipeline` alone.
+- **`./aws/sandbox-ml.py` at 23:51:46**: 71 passes, no fail and 89 notes. `ML-6` passes `ml-demo-pipeline`, the
+  one pipeline listed. One call failed, `service-quotas list-aws-default-service-quotas --service-code
+  sagemaker` with a 408 and no message, so the script exited 1. That call fills the quota table's *AWS
+  DEFAULT* column, and the checks read as the re-run's below, two `ML-9` notes in another order.
+- **`./aws/sandbox-ml.py` again at 23:58:04**: *"all checks passed"*, 71 passes and 89 notes, every call
+  returned, exit 0.
+- **Records**: `AWS_STATE.md` `EXC-28` closed; the hand-over note to §N.10's day 2 corrected and day 2 told.
+  `SUP-468` stands on this log's readings of 5.3.

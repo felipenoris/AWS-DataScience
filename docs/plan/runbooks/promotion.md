@@ -1238,7 +1238,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
    `<env>/studio/`, whose plans carry `TM-28`'s fence too unless its applies ran first, and the retention
-   mode the user's act in each target.
+   mode the user's act in each target. The configuration names every model, a shape no `awscc` apply has
+   measured (`SUP-466`): Staging's apply reads it first.
 9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
@@ -2478,8 +2479,9 @@ is owed to a later sitting with `bedrock-base` raised.
 **Day 3 ran on 2026-11-22** (Stage 17's log), on one raise with N.10's day 1 (N.10.3): steps 1
 and 4, and step 3 but 10.4's reading 6, which the user deferred at about 21:26 UTC to step 2's sitting
 (`SUP-466`), both switches back to `false` at 21:27:37. Pass 5's pipeline from the SDK ran to the
-registry's second version; the visual editor's two executions were refused by the project boundary, its
-definition writing none of the boundary's four settings (Stage 17 verification xii, `SUP-468`). Step 2 did not run,
+registry's second version; the visual editor's pipeline had its training job refused by the project boundary, its
+definition writing none of the boundary's four settings (Stage 17 verification xii, `SUP-468`), and was deleted on
+the user's word at 23:46:38 UTC. Step 2 did not run,
 the user's decision. Stage 17's pass 4, offered after step 4, waits for a later sitting, the user's word at
 about 22:25 UTC. Step 5 did not run either, the user's choice at about 23:22 UTC (6d's log). Step 6's reads
 ran at 23:28 and 23:32 UTC with no app standing, the idle shutdown having deleted `jup`'s at 23:19:09; the
