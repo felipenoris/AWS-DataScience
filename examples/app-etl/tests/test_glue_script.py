@@ -1,7 +1,6 @@
 """The Glue script, run over doubles of awsglue, pyspark and boto3: what it reads, the column it
 adds, the one file it writes and the files it deletes; with its options, the governed read at its
-snapshot and the record of it, the application's table and the product table read back, and the
-training sets."""
+snapshot and the record of it, and the application's table and the product table read back."""
 
 from __future__ import annotations
 
@@ -18,17 +17,8 @@ SOURCE = "s3://bucket/app-etl/inbox/"
 TARGET = "s3://bucket/app-etl/work/glue/trades.csv"
 PART = "app-etl/work/glue/part-00000-0f6a-c000.csv"
 TABLE = "s3://bucket/app-etl/tables/trades_notional/"
-TRAIN = "s3://bucket/app-etl/work/train/"
 GOVERNED = "lake.curated.trades"
 RECORD = "s3://bucket/app-etl/work/glue/trades.source.json"
-ROWS = [
-    {"notional": 11820.0, "quantity": 120, "price": 98.5},
-    {"notional": 540.0, "quantity": 500, "price": 1.08},
-    {"notional": 7980.0, "quantity": 80, "price": 99.75},
-    {"notional": 4048.0, "quantity": 40, "price": 101.2},
-    {"notional": 1355.0, "quantity": 250, "price": 5.42},
-    {"notional": 5895.0, "quantity": 60, "price": 98.25},
-]
 SCHEMA = ["trade_date", "desk", "instrument", "quantity", "price"]
 
 
@@ -40,14 +30,6 @@ class FakeColumn:
 
     def __mul__(self, other):
         return FakeColumn(f"({self.text} * {other.text})")
-
-
-class FakeRow:
-    def __init__(self, values):
-        self.values = values
-
-    def asDict(self):
-        return dict(self.values)
 
 
 class FakeWriter:
@@ -98,13 +80,6 @@ class FakeFrame:
 
     def count(self):
         return self.rows
-
-    def select(self, *names):
-        self.log["selected"] = names
-        return self
-
-    def collect(self):
-        return [FakeRow(row) for row in ROWS]
 
     @property
     def write(self):
@@ -301,23 +276,6 @@ def test_empty_product_options_write_no_table(monkeypatch):
     log = {}
     run_script(monkeypatch, log, [PART], ["--TABLE_DATABASE", "", "--TABLE_NAME", ""])
     assert "product" not in log and "described" not in log
-
-
-def test_the_training_sets_are_xgboost_csv_with_every_fifth_row_held_out(monkeypatch):
-    log = {}
-    s3 = run_script(monkeypatch, log, [PART], ["--TRAIN_PATH", TRAIN])
-    assert log["selected"] == ("notional", "quantity", "price")
-    assert sorted(s3.put) == [
-        f"{TRAIN}batch/batch.csv",
-        f"{TRAIN}train/train.csv",
-        f"{TRAIN}validation/validation.csv",
-    ]
-    assert s3.put[f"{TRAIN}validation/validation.csv"] == "1355.0,250,5.42\n"
-    assert s3.put[f"{TRAIN}train/train.csv"].splitlines()[0] == "11820.0,120,98.5"
-    assert len(s3.put[f"{TRAIN}train/train.csv"].splitlines()) == 5
-    assert s3.put[f"{TRAIN}batch/batch.csv"].splitlines() == [
-        f"{row['quantity']},{row['price']}" for row in ROWS
-    ]
 
 
 def test_the_governed_read_without_a_snapshot_reads_at_the_current_one(monkeypatch, capsys):

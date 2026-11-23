@@ -40,7 +40,7 @@ locals {
   # Staging's alone (Stage 20 step 8.2), and app-genai-probe too (Stage 17 step 10.5).
   applications = {
     "app-etl" = {
-      workflows = ["app-etl", "app-etl-train"]
+      workflows = ["app-etl"]
     }
     "app-ml" = {
       workflows = ["app-ml-register", "app-ml-score"]
@@ -62,13 +62,6 @@ locals {
       application         = "app-etl"
       workflows           = ["app-etl"]
       schedule_expression = "cron(30 6 * * ? *)"
-      schedule_enabled    = false
-    }
-    "app-etl-train" = {
-      definition_template = file("${path.module}/definitions/app-etl-train.asl.json")
-      application         = "app-etl"
-      workflows           = ["app-etl-train"]
-      schedule_expression = "cron(0 7 * * ? *)"
       schedule_enabled    = false
     }
     "app-ml-register" = {

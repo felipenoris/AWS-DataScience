@@ -7,7 +7,7 @@
 # No resource policy: no other account reads these versions, since the model reaches each account in
 # the release's bundle, and inside this account the identity policies admit the calls
 # (staging/studio/workflows.tf for the project role, staging/foundation/deploy-role.tf for the deploy
-# role). app-etl's versions stay in Production's registry (production/sagemaker/registry.tf).
+# role).
 #
 # A package group costs nothing at rest.
 

@@ -789,8 +789,8 @@ def check_samples() -> int:
             )
             fail = 1
     if (
-        workflow_name("app-etl", "deploy-staging", "app-etl-train")
-        != "app_etl_deploy_staging_app_etl_train"
+        workflow_name("app-etl", "deploy-staging", "app-etl-warehouse")
+        != "app_etl_deploy_staging_app_etl_warehouse"
     ):
         print("  FAIL  the workflow's composed name")
         fail = 1

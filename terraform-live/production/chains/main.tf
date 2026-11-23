@@ -40,7 +40,7 @@ locals {
   # reason (Stage 17 step 10.5).
   applications = {
     "app-etl" = {
-      workflows = ["app-etl", "app-etl-train", "app-etl-warehouse"]
+      workflows = ["app-etl", "app-etl-warehouse"]
     }
     "app-ml" = {
       workflows = ["app-ml-register", "app-ml-score"]
@@ -64,13 +64,6 @@ locals {
       application         = "app-etl"
       workflows           = ["app-etl"]
       schedule_expression = "cron(30 6 * * ? *)"
-      schedule_enabled    = false
-    }
-    "app-etl-train" = {
-      definition_template = file("${path.module}/definitions/app-etl-train.asl.json")
-      application         = "app-etl"
-      workflows           = ["app-etl-train"]
-      schedule_expression = "cron(0 7 * * ? *)"
       schedule_enabled    = false
     }
     "app-etl-warehouse" = {

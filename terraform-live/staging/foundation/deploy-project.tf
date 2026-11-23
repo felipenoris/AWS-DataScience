@@ -3,8 +3,7 @@
 # (decision 6 (b)). The statements are Stage 18 step 4.3's, read from the calls the CLI 1.0.9 made as
 # awsds-deploy-staging on 2026-10-21, plus the catalog import's (its helpers/catalog_import.py, read
 # 2026-11-11), which that deploy did not run, and what the leg does around the deploy (step 4.9):
-# the stage variables recorded for the chains, the model chain's pass of the project role and the
-# integration test's read of the product table.
+# the stage variables recorded for the chains and the integration test's read of the product table.
 #
 # One customer-managed policy the infrastructure user attaches: the role's inline documents share
 # 10,240 characters. It exists once the project does, since every scope below is built from the
@@ -296,22 +295,6 @@ data "aws_iam_policy_document" "deploy_project" {
     effect    = "Allow"
     actions   = ["ssm:GetParameter", "ssm:PutParameter"]
     resources = [local.deployment_stage_variables]
-  }
-
-  # The model chain's batch transform runs as the project role, whose shared prefix and key hold
-  # the model and its batch input (scripts/model-chain.py; Stage 10 steps 5.2 and 5.4). The model
-  # and transform-job actions are apply-application.tf's.
-  statement {
-    sid       = "PassTheProjectRoleToSageMaker"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
-    resources = [local.deployment_project_role_arn]
-
-    condition {
-      test     = "StringEquals"
-      variable = "iam:PassedToService"
-      values   = ["sagemaker.amazonaws.com"]
-    }
   }
 
   # The integration test reads the product table's metadata. Lake Formation decides whether the

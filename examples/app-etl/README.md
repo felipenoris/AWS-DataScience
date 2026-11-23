@@ -14,7 +14,7 @@ The cycle an application on this template follows, from a space to Production, h
 |---|---|
 | `src/app_etl/` | the code of the processing job: `pipeline.py` the transformation, `__main__.py` the command; the job reads it as its input, never from the image (D28 class 2d) |
 | `code/app_etl_tasks.py` | the worker's tasks: `summarize`, the run's report from the job's summaries; and `publish`, the product and its data product listed in the SageMaker Catalog; the pipeline zips the file as `code/app-etl.zip`, the workflow's `code` (class 2b) |
-| `glue/transform.py` | the Glue job's script, the Spark transform over the trades: the CSV the processing job reads, the application's table and the training sets (class 2c) |
+| `glue/transform.py` | the Glue job's script, the Spark transform over the trades: the CSV the processing job reads, the application's table and the product table (class 2c) |
 | `glue/load_warehouse.py` | Production's warehouse load: the product table into `trades.trades_notional` of the database `governed`, over JDBC as the project's role (class 2c) |
 | `warehouse/trades.sql` | the warehouse table's DDL, run by the pipeline's manual job `production-warehouse-ddl` through the Data API as the deploy role, its owner (Stage 9 decision 6) |
 | `workflows/` | the workflow definitions, in the CI/CD CLI's notation |
@@ -53,9 +53,7 @@ its outputs after that file, and the report replaces the previous one. The sampl
 the manifest's `samples` item, so a run in `dev` needs no input of its own.
 
 The Glue job also writes `tables/trades_notional/`, the application's table as Parquet, read back and
-counted against the rows it read, and `work/train/`, the training sets in XGBoost's CSV layout (the
-label first, no header, every fifth row held out for validation) with `batch/batch.csv`, the features
-alone. Every stage reads the inbox: the CLI deploys one definition to every project, and the workflow
+counted against the rows it read. Every stage reads the inbox: the CLI deploys one definition to every project, and the workflow
 names no governed table. The script also reads one, with `--SOURCE_TABLE`: the columns
 `GOVERNED_COLUMNS` names, on an Iceberg catalog the job's `--conf` would declare over the lake
 account's, at one snapshot, the one `--SOURCE_SNAPSHOT` names or else the table's current one, which
