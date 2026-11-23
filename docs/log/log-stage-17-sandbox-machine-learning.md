@@ -6103,3 +6103,18 @@ deploy script's checks, the mirror and both raises' plans, are in Stage 8's log 
   two the group adds.
 - **[Claude] 9.11's tree** at `684ec8b1`: `examples/app-etl/` with no `app-etl-train` and no model job, its
   lint pin `4401f91`, `--self-check` reading 8 variables a stage.
+
+## 2026-11-23 — R2: the `test` jobs of `app-ml`, `app-genai` and `app-etl`, offline before the raise
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), while the user's raise waited for 17:00 UTC. No AWS
+call and no Terraform: each `test` job's script items read from its `.gitlab-ci.yml` with the file's
+variables and run by `bash -c` on the laptop, on CPython 3.12.13, in a git copy of `examples/<app>/` at
+`origin/main` `495ebb1a`. Times UTC.*
+
+- **[Claude] `app-ml`** (9.7), 16:22: `uv sync --locked`, `uv lock --check --project code`, `ruff check`
+  and `ruff format --check` clean, `pytest` *"100 passed"*, the lint at `4401f91` with
+  `--image-repository`, `--model-item model`, the algorithm repository and the seven instance types *"ok:
+  6 arquivo(s)"*.
+- **[Claude] `app-genai`** (10.6): clean, *"95 passed"*, the lint *"ok: 3 arquivo(s)"*.
+- **[Claude] `app-etl`** (9.11's tree): clean, *"93 passed, 1 skipped"*, as on #390, the lint *"ok: 8
+  arquivo(s)"*.
