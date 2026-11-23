@@ -2644,6 +2644,8 @@ passes 2 to 4 in order" and its §5.
    `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
    five-minute wait. **Run 2026-11-22 and 23** to the closing reads, 01:53 UTC (Stage 21's log):
    passes 2 to 4 with 4.8; pass 5 not run, moved to a Sandbox sitting with no warehouse (N.12.1).
+   **Pass 5 run 2026-11-23** in this day's rest with no warehouse, from 5.1's upload to rollback item 6,
+   the lowering ending 18:23:12 UTC (Stage 21's log).
 3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, then the view and the
    tables that item names dropped, `lab` kept (6h 6.4, taken 2026-11-22); then the subscriptions of N.6 item 6
    revoked, Stage 19 4.12's (by its 2.5) and Stage 20 5.0's, each read on both sides. Then the lowering

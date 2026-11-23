@@ -1304,3 +1304,357 @@ pasted at 15:05 (5b's log). Times UTC.*
   creation (`SUP-045`); no `CreateCluster` over the sitting (Stage 9's 9.5a).
 - **[Claude] Records**: this stage's `Status` row; `SUP-474`; 6.4's price in `docs/PRICING.md` §5, written with
   the readings (5b's log).
+
+## 2026-11-23 — Pass 5's pre-flight, with nothing up
+
+*Claude, in the session "N.10 dia 2, o resto: Stage 21 pass 5", started by the orchestrating session for
+`promotion.md` §N.10's day 2's rest beside R2. Reads as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1` (`Sandbox Account 1`) and `awsds-infra-data` (Data Governance), 15:58 to
+16:10; no AWS write, nothing clicked in Chrome. Times UTC.*
+
+- **[Claude] `make status`**, 15:58 to 15:59: passive and active burns 0.0000 USD, every `[E]` slice down, no
+  Studio app billing.
+- **[Claude] The ids pass 5 names**: the domain `awsds-studio` (`dzd-d8yrvx1ko7im6o`, `AVAILABLE`); the
+  producer `eighth-experimentation` (`avhvbqn37ty7m8`) and the consumer `test-experimentation`
+  (`4gqfau9xuo6e4w`). The project database is `glue_db_blerpkhn9nj7o0`, its `LocationUri`
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/`, holding the link
+  `trades` alone; its source `5w1ic2yqcs5uog` runs daily at 21:25 UTC with `INCLUDE *` and `publishOnImport`
+  false, last run `SUCCESS` on 2026-11-22. The producer's inventory holds `house-price`, `trades`,
+  `to-run-in-background-tytue9` and `trades_notional`.
+- **[Claude] Nothing of pass 5 exists**: no object and no version under `shared/stage21` or
+  `dev/data/catalogs/stage21` (the bucket's versioning is `Enabled`, so the rollback's deletes leave
+  noncurrent versions behind delete markers); `GetTable` on `stage21_images` answers `EntityNotFoundException`
+  in the five project databases of both projects; a search for `stage21` finds no asset, no data product and
+  no listing.
+- **[Claude] The S3 Access Grants baseline**: the instance `default`, created 2026-08-22; seven locations, the
+  lake's and one per project for `eighth-experimentation`, `test-experimentation`, `app-etl-dev`,
+  `app-dbt-dev`, `app-ml-dev` and `app-genai-dev`, the last three created 2026-11-19, each with its project
+  role; five grants, none from a subscription. Among them, `READWRITE` to `DataScientistAccess` on
+  `eighth-experimentation`'s location with the scope `…/avhvbqn37ty7m8/shared/*`, since 2026-08-24 (Stage
+  16's laptop vending), which already covers the prefix pass 5 publishes; 5.4's grant is read against these
+  five.
+- **[Claude] 5.5's question, from the records**: `sandbox/egress/` declares no `s3control` interface endpoint,
+  and `SUP-091`'s reading of 2026-11-21 has a space's S3 Access Grants plugin reach
+  `<account>.s3-control.us-west-2.amazonaws.com` through the proxy (`200 TCP_TUNNEL`). The plugin falls back to
+  the project role's own credentials after a refused `GetDataAccess` (`SUP-093`), so 5.5's refusals are read in
+  the trail's `GetDataAccess`, never in the notebook's result.
+- **[Claude] The spaces**: none in any of Sandbox's nine domains. The trail holds eight `DeleteSpace` since
+  2026-11-22 20:00, each as a project role in the portal's user session: `jup8h` (`app-etl-dev`) at 20:42:36,
+  `jup-app-dbt-dev` at 21:45:01, then on 2026-11-23 `default-28f1b390-…` at 01:24:51 and `code` at 01:24:59
+  (`eighth-experimentation`'s two domains), `jup` at 01:25:06, `jup-test-experimentation` at 01:25:42,
+  `jup-app-genai-dev` at 01:26:14 and `jup-ml-dev` at 01:26:32. Pass 5 creates a JupyterLab space in each
+  project.
+- **[Claude] The approval**: the Data Scientist User owns both projects, so a request the user makes in the
+  portal is accepted at creation, as 2.5's was. 5.4's request goes from `test-experimentation`'s notebook as
+  the project role, an IAM member of that project alone, which leaves the approval and its permission to
+  `eighth-experimentation`'s owner in the portal.
+- **[Claude] Chrome**: this session holds no tab group; the user's signed-in tab is outside it.
+- **[Claude] 1.4's generator** run on the laptop with Python 3: 20 PNGs of 64 by 64, 177 to 180 bytes each, 80
+  KB in all, 13 `warm` and 7 `cold`; seeded, so the space writes the same files and the same `VALUES`.
+
+## 2026-11-23 — 5.1's copy, ahead of the raise: the images uploaded through the portal's S3 browser
+
+*Claude, in the session of §N.10's day 2's rest, on the user's word in this session's chat, *"Faça o upload
+agora"*, answering *"Faço agora o upload pelo portal ou espero a subida?"*, after the orchestrating session
+relayed the user's request to advance every write that needs nothing up. The R2 session told first. The
+portal's acts in the Data Scientist User's Chrome session, in a tab of this session's own; the reads as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. Nothing was up. Times UTC.*
+
+- **[Claude] Where 5.1's copy ran**: the plan copies the files from an `eighth-experimentation` space; with
+  no space and no endpoint, the 20 files 1.4's generator wrote on the laptop at 16:0x went up through the
+  portal instead, the generator being seeded, so the files are the ones a space writes.
+- **[Claude] The portal**: *Data → S3 buckets → Project bucket*, `shared`, *Actions* (*Create folder*,
+  *Upload files*, *Create table from contents*, *Copy*, *Publish to Catalog*, *Add business metadata*,
+  *Share*, *Delete*). *Create folder* `stage21-images`, *"Successfully created folder "stage21-images"."*; then
+  *Upload files* with the 20 PNGs, *"20 files uploaded successfully."* The tree also shows *Subscribed buckets*
+  beside *Project bucket*.
+- **[Claude] The objects**: a zero-byte folder key `shared/stage21-images/` at 16:25:12 and the 20 PNGs from
+  16:26:10 to 16:26:12, 177 to 180 bytes each, `image/png`, `aws:kms` under `alias/awsds-sandbox-project`;
+  `img-00.png` read back byte-identical to the laptop's.
+- **[Claude] The identity**: the trail's management events of the page are the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` in the session `<user id>@5hkjdsy3umpi1c`, the portal's
+  user: `GetEnvironment`, `DescribeDomain`, `ListApps`, `ListSpaces`, Glue's `GetConnections` and
+  `GetCatalogs`, then `kms:GenerateDataKey` at 16:25:11 for the folder key. The page created no space and
+  started no app: none in Sandbox's nine domains at 16:27.
+- **What 5.1 keeps for the raise**: the Athena CTAS of `stage21_images` in `glue_db_blerpkhn9nj7o0`, and the
+  two spaces.
+
+## 2026-11-23 — 5.2, the prefix published as an S3 Object Collection, ahead of the raise
+
+*Claude, in the session of §N.10's day 2's rest, on the user's word in this session's chat, *"Publique
+agora"*, answering *"Publico agora o prefixo no catálogo (5.2), com classification `internal`?"*. The R2
+session told first. The portal's acts in the Data Scientist User's Chrome session; the reads as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1` and `awsds-infra-data`.
+Nothing was up. Times UTC.*
+
+- **[Claude] The publish**: on `shared/stage21-images/`, *Actions → Publish to Catalog* opens a panel
+  *"Publish asset"* that holds one choice, *Subscription approval*, *Required* (the default, kept) or *Not
+  required*, and no name, description or form. *Publish asset*: *"S3 folder stage21-images has been
+  successfully published to the catalog."*, the page then reading *Published*, *Business name*
+  `stage21-images`, *Asset type* *S3 Object Collection*, and the tabs *Objects*, *Details*, *Lineage*,
+  *Data quality* and *Subscriptions*.
+- **[Claude] The business metadata, after the publish**: the description *"Stage 21 pass 5: 20 synthetic
+  single-colour PNG images (64x64), generated by a seeded script; their attributes are in the table
+  stage21_images."* (*"Description updated successfully"*), then *Add Form* → `classification` (*"The data
+  product's classification: public, internal, restricted or personal."*), valued `internal` (*"Form added
+  successfully"*). The page then offered *Re-publish asset* (*"New revision is available to publish."*),
+  whose panel is the publish's; re-published with *Required*.
+- **[Claude] The asset** `dsmm79zurlnbww`, type `amazon.datazone.S3ObjectCollectionAssetType` revision 17,
+  owned by `eighth-experimentation`, created by the Data Scientist User: revisions 1 at 16:34:05, 2 at
+  16:34:08 (the publish), 3 at 16:35:14 (the description) and 4 at 16:35:59 (the form). Its
+  `externalIdentifier` is the project id followed by the prefix's ARN with no separator,
+  `avhvbqn37ty7m8arn:aws:s3:::awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/`.
+  Its forms: `S3ObjectCollectionForm` (type revision 7) with `bucketName` empty, `bucketArn` the prefix's
+  ARN above, the region, and the connection `4r53hkvntmahao`, `project.s3_default_folder`, whose
+  `s3AccessGrantLocationId` is `eighth-experimentation`'s location `ef8251ea-…` with
+  `registerS3AccessGrantLocation` true; `SubscriptionTermsForm`, `approvalRequired` `YES`; `classification`,
+  `internal`.
+- **[Claude] The listing** `3rnyg9wgrg1v2o`, `ACTIVE`, created 16:34:09, updated 16:36:23, at listing
+  revision 4 over asset revision 4, carrying the three forms.
+- **[Claude] The trail**, read at 16:37: Data Governance holds `CreateAssetRevision` at 16:34:08 and 16:35:14
+  and `CreateListingChangeSet` at 16:34:09, each as `awsds-data-studio-domain-execution`, and
+  `CreateLineageNode`, `CreateLineageNodeVersion` and `UpdateLineageNode` at 16:34:09 and 16:34:22; the later
+  events had not arrived. No data source was created: `eighth-experimentation` lists the same four.
+
+## 2026-11-23 — The two spaces, 5.1's table and 5.3's data product, after the raise
+
+*Claude's hand, in the Data Scientist User's portal session, on the user's authorization in this session's
+chat of the list's acts in order ("criar os dois spaces; o CTAS; o 5.3; …"). The user raised the
+environment. Times UTC.*
+
+- **[Claude] The spaces**: opening each project's JupyterLab from the portal created its default space,
+  `default-28f1b390-0041-7068-8cc7-9ccef94277d1`, with a JupyterLab app `default` on `ml.t3.medium`:
+  `eighth-experimentation`'s in domain `d-p6gthxc82ckg` at 16:43:35, `test-experimentation`'s in
+  `d-lfgbdrjncmsu` at 16:46:40 (app 16:46:45). `list-apps` answers eighth's app `InService` with a
+  `CreationTime` of 2026-11-22 18:55:59, before its space existed.
+- **[Claude] 5.1's table**: the query editor on Athena in `eighth-experimentation`, *Limit 100* off, ran
+  the stage's `CREATE TABLE stage21_images` over the generator's 20 rows, the location
+  `<LocationUri>stage21_images/`. `StartQueryExecution` at 16:48:29 as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, session `<user id>@5hkjdsy3umpi1c`, in the workgroup
+  `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`. `glue get-table`: created 16:48:31, `EXTERNAL_TABLE` with
+  `table_type` `ICEBERG`, columns `object_key`, `tone`, `width`, `height`, `size_bytes`, located at
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/stage21_images`.
+- **[Claude] The source's run**: *Run* on `5w1ic2yqcs5uog` (Manage → Catalog management → Data sources),
+  run `4udwjanark68wg`, type `PRIORITIZED`, 16:49:45 to 16:49:48, `SUCCESS`, added 1, unchanged 1 (`trades`).
+  The asset `c5mzcsflx389zk` `stage21_images`, `amazon.datazone.GlueTableAssetType` revision 24, created
+  16:49:47, its `externalIdentifier` the Glue table's ARN followed by `.avhvbqn37ty7m8`; forms
+  `GlueTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm` (`approvalRequired` `YES`) and
+  `AssetCommonDetailsForm`. Not published (*Publish on import* off).
+- **[Claude] 5.3's product**: *Manage → Catalog management → Assets → Create → Create data product*, name
+  `sandbox-stage21-images`, the description *"Stage 21 pass 5: twenty synthetic 64x64 PNGs under
+  shared/stage21-images/ and their Iceberg table stage21_images, for one sitting."*, *Browse assets* listing
+  both (`stage21-images` as *S3 Object Collection*, `stage21_images` as *Glue Table*), *Create*: *"Data
+  product created successfully"*, the product `bgclb83agkow0g` at 16:53:14. Its page read *Publish* disabled
+  until *Add Form* → `classification` valued `internal` (*"Form added successfully"*, revision 2 at
+  16:54:05); no metadata rule is set (`catalog.md` §M), so whether the form or the page's load enabled it
+  is not separated. *Publish* → *"This data product will become discoverable to everyone in your
+  organization and they can request access to this data product."* → *Publish*.
+- **[Claude] The listings**, read at 16:54 as `awsds-infra-sandbox-1` (`awsds-infra-data`, a member of
+  neither project, is refused `GetDataProduct`): the product listing `cuilocp2vj9zbk`, `ACTIVE`, revision 1
+  over product revision 2, its items the S3 listing `3rnyg9wgrg1v2o` revision 4 and the table's new listing
+  `4m03acvondth1s` revision 1, its forms `ownedByDataProductListing` naming both and `classification`
+  `internal`. The table's listing reads `INACTIVE` on `get-asset` and `search-listings` returns it under no
+  name: the product's publication published the table reachable through the product alone (`catalog.md`
+  §P). The S3 listing stays `ACTIVE`, published on its own at 5.2.
+
+## 2026-11-23 — 5.4 to 5.6: the product subscribed, an image read, a second subscription that writes
+
+*Claude's hand, on the same authorization. The requests ran in `test-experimentation`'s space terminal as
+its project role; the revocations in the Data Scientist User's portal session as `eighth-experimentation`'s
+owner. Reads as `awsds-infra-sandbox-1` and `awsds-infra-data`. Times UTC.*
+
+- **[Claude] 5.4, the request**: `create-subscription-request` on the product listing `cuilocp2vj9zbk` for
+  the project `4gqfau9xuo6e4w`, the caller `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`, at
+  16:59:40: request `6mias4doyrhes0` answered `ACCEPTED` at creation, `reviewerId` null, its `createdBy` the
+  Data Scientist User's id, owner of both projects, and not the role; the subscription `b6uw188klp591s`
+  `APPROVED` at the same instant. No read-only approval was offered: DataZone resolved the space's
+  project-role session to the space's user, so the pre-flight's way around the shared owner did not
+  separate the identities. The Data Governance trail records the request with no `userIdentity.arn`.
+- **[Claude] 5.4, the grants**: two subscription grants by `SYSTEM`, one per item. The S3 item's
+  `41lmo2ob4vrngw` (target `dg143yovd8itu8`, the listing `3rnyg9wgrg1v2o`) `COMPLETED` at 17:00:55; the
+  table's `5b711vxrc27e34` (target `ai0iw2p6vlxw5s`, the listing `4m03acvondth1s`) `COMPLETED` at
+  17:00:32, `targetName` `stage21_images`. Neither carries `permissions` or `assetScope`.
+- **[Claude] 5.4, S3 Access Grants**: one new grant `2459c1ea-5c0f-4b23-a725-56d2296c4562`, created
+  17:00:46 by `CreateAccessGrant` as `eighth-experimentation`'s project role in session
+  `AWSDataZone-Subscriptions`, invoked by `datazone.amazonaws.com`: grantee type `IAM`,
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`, permission `READ`, location `ef8251ea-…` (the
+  producer project's, whose role is the producer's project role), scope
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/*`, no
+  application. The locations stay seven and the five baseline grants unchanged.
+- **[Claude] 5.4, the Glue item (`CT-17`'s shape)**: `SELECT` on `glue_db_blerpkhn9nj7o0.stage21_images`
+  to the account's `IAMPrincipals`, last updated 17:00:14 by the producer's project role (Stage 19
+  verification vi's shape; `list-permissions` prints no condition), and the resource link
+  `glue_db_4zojr4rr6bmnww.stage21_images` in the consumer's database.
+- **[Claude] 5.5, the notebook**, `test-experimentation`'s terminal as the project role, from 17:02:27:
+  a direct `aws s3 cp` of `img-00.png` answered *"An error occurred (403) when calling the HeadObject
+  operation: Forbidden"*; `get-data-access --permission READ` on the scope answered credentials expiring
+  18:02:29, `MatchedGrantTarget` the scope; on `shared/*`, *"You do not have READ permissions to the
+  requested S3 Prefix"*; `--permission WRITE` on the scope, *"You do not have WRITE permissions to the
+  requested S3 Prefix"*. The vended credentials are a session of the producer's project role,
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c/access-grants-32edee89-…`. With them `img-00.png`
+  downloaded, MD5 `3e79bce7e8ebb78d64ef14e0701b1b7b`, the generator's; `aws s3 ls` of the scope 21 lines;
+  `aws s3 ls` of `shared/` refused, *"not authorized to perform: s3:ListBucket … because no session policy
+  allows the s3:ListBucket action"*; an upload under the scope refused, *"not authorized to perform:
+  kms:GenerateDataKey on resource: … because no session policy allows the kms:GenerateDataKey action"*.
+  The write's refusal names KMS, so S3's decision on `s3:PutObject` is not read from it.
+- **[Claude] 5.5, the portal**: `test-experimentation`'s *Data → S3 buckets → Subscribed buckets* lists the
+  prefix with its 20 objects (177 to 180 bytes, 2026-11-23 13:26 local); opening `img-00.png` rendered the
+  image, with *Download* and *Copy*.
+- **[Claude] 5.5, the trail**: every `GetDataAccess` carries `eventSource` `s3.amazonaws.com` and the host
+  `<account>.s3-control.us-west-2.amazonaws.com`. The terminal's three (17:02:29 to 17:02:31) as
+  `…/SageMaker`, from `10.20.66.248` through `vpce-0cc3e139c1167ca83`, Sandbox's S3 gateway endpoint
+  `awsds-sandbox-s3-gateway`: the terminal sets no `HTTPS_PROXY`, `HTTP_PROXY` or `NO_PROXY`. The
+  portal's two (17:03:39 the prefix, 17:03:49 `img-00.png*`) as the consumer's project role in the user's
+  session `28f1b390-…@bi356s1sacz0cw`, from the laptop's public address, with no endpoint id.
+- **[Claude] 5.6, the revocation**: the product's *Subscriptions → Access*, the row *Shared*, *View access
+  details* (*Shared by* the Data Scientist User, no permission shown), then *Revoke* (*"To confirm revoke,
+  type 'confirm'"*, no option to keep the access). `RevokeSubscription` at 17:06:02 as
+  `awsds-data-studio-domain-execution` in the user's session; the subscription `REVOKED`, both grants
+  `REVOKE_IN_PROGRESS` at 17:06:32; `DeleteAccessGrant` at 17:07:04 by the producer's project role
+  (`AWSDataZone-Subscriptions`). At 17:07:35 `get-data-access` READ answered *"You do not have READ
+  permissions"*, while the credentials vended at 17:02:29 downloaded `img-01.png` at 17:07:36.
+- **[Claude] 5.6, the second request**: on the product listing with `--asset-permissions
+  'assetId=dsmm79zurlnbww,permissions={s3=[READ,WRITE]}'`, at 17:07:53: *"ValidationException … assetPermissions
+  is only supported for S3ObjectCollection Listing"*. On the S3 listing `3rnyg9wgrg1v2o` with the same
+  permissions, at 17:08:19: request `cka9znwbot9oy8` `ACCEPTED` at creation, subscription `cbfstcg0z2she8`
+  `APPROVED`. `CreateAccessGrant` at 17:08:36: grant `1b8bfd2b-e352-472b-9d5a-ba23787f1fe6`, the same
+  grantee, location and scope, `READWRITE`. A product's subscription grants its S3 item `READ`; write is
+  asked on the asset's own listing, and only an asset published on its own has one.
+- **[Claude] 5.6, the write**: `get-data-access --permission READWRITE` at 17:09:12, credentials expiring
+  18:09:13, a session `access-grants-f84bf4dd-…` of the producer's project role; `written-5-6.png` (a copy
+  of `img-01.png`) uploaded, `head-object` 178 bytes, `aws:kms`, version `JBaWjkchDqVZkWHuo7CqshDORAA0obT7`,
+  last modified 17:09:16.
+
+## 2026-11-23 — 5.7: the revocation with credentials vended just before, then the catalog's rollback
+
+*Claude's hand, on the same authorization. The loop ran in `test-experimentation`'s space terminal as its
+project role (`nohup bash /tmp/p57.sh`, 51 rounds about 34 s apart from 17:09:51): each round asked
+`get-data-access --permission READ --duration-seconds 900` on the scope, then read `img-02.png` with three
+held credentials. The revocation and the deletions ran in the Data Scientist User's portal session as
+`eighth-experimentation`'s owner. Times UTC.*
+
+- **[Claude] The held credentials**: `rw3600`, 5.6's `READWRITE` session, expiring 18:09:13; `r900`, a
+  `READ` session vended at 17:09:49 for 900 s, expiring 17:24:50; `late`, the loop's last answered vend,
+  17:10:26, expiring 17:25:27.
+- **[Claude] The vend door**: the rounds at 17:09:51 and 17:10:26 answered; every round from 17:11:01 to the
+  last was refused, *"An error occurred (AccessDenied) when calling the GetDataAccess operation"*. The
+  portal's revocation of `cbfstcg0z2she8` recorded `RevokeSubscription` at
+  17:11:12 and `DeleteAccessGrant` of `1b8bfd2b-…` at 17:11:14, so the refusal at 17:11:01 to 17:11:03
+  precedes both in the trail by about nine seconds. Unexplained on this reading.
+- **[Claude] The held credentials after the revocation**: `r900` read through 17:24:20 and failed from
+  17:24:55; `late` read through 17:24:55 and failed from 17:25:29. Each failure is the CLI's *"An error
+  occurred (400) when calling the HeadObject operation: Bad Request"*: `aws s3 cp` starts with a `HEAD`,
+  whose response carries no error body, so the expired token surfaces as a bare 400 and not as
+  `ExpiredToken`. `rw3600` read in every round, the last at 17:38:45, and at 17:30:36 uploaded
+  `written-5-7.txt` (16 bytes, last modified 17:30:38) under the scope, 19 minutes 24 seconds after
+  `DeleteAccessGrant`.
+- **[Claude] 5.7's answer** against the page's *"credentials can be used for 15 minutes"*: a credential
+  vended before a revocation lives its own duration, which the subscriber chooses; 5.5's call without
+  `--duration-seconds` was given 3600 s, and those credentials wrote after the revocation.
+- **[Claude] The catalog's rollback**, in `catalog.md` §A's order: the product `bgclb83agkow0g` was
+  unpublished (*"Data product unpublished successfully"*) and deleted (*"This action cannot be undone. All
+  associated metadata will be permanently removed."*); the S3 asset `dsmm79zurlnbww` unpublished (the
+  dialog: *"This asset will no longer be discoverable and all pending access requests will be canceled.
+  Users with existing access will retain their permissions."*) and deleted; the table asset
+  `c5mzcsflx389zk`, read *"This asset is unpublished"* once the product was gone, deleted. The project's
+  *Assets* page lists `house-price`, `trades`, `to-run-in-background-tytue9` and `trades_notional`, and its
+  *Asset type* filter no longer offers *S3 Object Collection*. The data source `5w1ic2yqcs5uog` stays.
+- **[Claude] Rollback item 5**, in `eighth-experimentation`: the query editor on Athena ran `DROP TABLE
+  glue_db_blerpkhn9nj7o0.stage21_images` (*"Query executed successfully"*); the database then lists `trades`
+  alone, and its Iceberg location `dev/data/catalogs/stage21_images` lists no object, with 4 noncurrent
+  versions and 7 delete markers. From a new JupyterLab terminal as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, the prefix read 23 entries (20 PNGs, `written-5-6.png`,
+  `written-5-7.txt`, the folder key) and `aws s3 rm --recursive` of `shared/stage21-images/` ran at
+  17:39:17; the prefix then lists nothing, with 23 noncurrent versions and 23 delete markers left to the
+  bucket's lifecycle. The loop was stopped and the held credentials' files removed from the space first.
+- **[Claude] The spaces**: *Code Spaces*, the card's *Delete*, the word *confirm*: eighth's
+  `default-28f1b390-…` in `d-p6gthxc82ckg` at about 17:41, test's in `d-lfgbdrjncmsu` at about 17:42, both
+  read *Deleting* and then *"You don't have any code spaces"*. Both portal tabs closed at 17:43.
+- **[Claude] The trail, re-read at 17:50** through the CLI's cached role credentials, the SSO token having
+  expired at 17:15:22: Sandbox's `GetDataAccess` at 17:11:03 carries `AccessDenied`, *"You do not have READ
+  permissions to the requested S3 Prefix"*, the grant register's wording, `durationSeconds` 900. Between the
+  last answered vend (17:10:27) and that refusal, the only S3 Control events are AWS Config's
+  `GetAccessGrant` and `ListTagsForResource` at 17:10:40; `DeleteAccessGrant` follows at 17:11:14, so no
+  write precedes the refusal in the trail. Data Governance's: the product's `UNPUBLISH` change set at
+  17:24:52, `DeleteListing` of `cuilocp2vj9zbk` at 17:27:16 in the user's session (and one by
+  `datazone.amazonaws.com` the same second), `DeleteDataProduct` at 17:27:17, the S3 asset's `UNPUBLISH` at
+  17:28:01, `DeleteAsset` at 17:28:25 and 17:29:11. `get-asset` on both ids and `get-data-product` answer
+  `ResourceNotFoundException`.
+- **[Claude] What stays**: S3 Access Grants holds the five baseline grants and the seven locations,
+  `ef8251ea` (`eighth-experimentation`'s folder) among them. The producer's project role reads
+  `MaxSessionDuration` 3600; a vend longer than 3600 s was not attempted. The projects bucket is versioned,
+  its rule `expire-noncurrent-versions` at 90 days, so the 27 noncurrent versions left by item 5 expire in
+  February 2027.
+
+## 2026-11-23 — The orchestrator's checks, the pull request and the lowering of Sandbox
+
+*Claude's hand unless an entry names another; the orchestrating session's readings are its own, relayed to
+this session and recorded here. Times UTC.*
+
+- **[orchestrator] Acts 1 and 2 read at 17:27** as the infrastructure user in Sandbox: both JupyterLab spaces
+  `InService` with their app on `ml.t3.medium` `InService`, in `d-p6gthxc82ckg` created 16:43:35 and in
+  `d-lfgbdrjncmsu` 16:46:40; `glue_db_blerpkhn9nj7o0.stage21_images` `ICEBERG`, created 16:48:31, under
+  `…/avhvbqn37ty7m8/dev/data/catalogs/stage21_images`.
+- **[Claude] The checking protocol** (a report after each act, the orchestrator's *verificado* awaited before
+  the catalog's rollback and before the lowering) reached this session after act 11, the message having
+  queued during the turn, so the catalog's rollback ran without that check. The report of acts 3 to 11 went
+  at about 17:47. At 17:48 `list-spaces` and `list-apps` read 0 and 0 in both domains.
+- **[orchestrator] Acts 3 to 11 read at 17:49**, from the state the rollback left: the nine Sandbox domains
+  hold zero spaces and zero apps; `stage21_images` answers `EntityNotFoundException`; the assets
+  `dsmm79zurlnbww` and `c5mzcsflx389zk`, the product `bgclb83agkow0g` and the listing `cuilocp2vj9zbk` answer
+  `ResourceNotFoundException`, while the positive control `bra0895x5fjzww` reads `trades`, so the absence is
+  a deletion and not a lack of visibility; S3 Access Grants holds 5 grants and 7 locations, none naming
+  `stage21`; `shared/stage21-images/` holds 0 current objects, 23 versions and 23 delete markers. Act 12
+  checked on its side, to wait on the user's login.
+- **[Claude] The pull request**: the branch synced with `origin/main` at
+  `495ebb1a15b402965ba05ffb1f72b41a21007fb4` by a merge, `make check` *"check: OK"*, `check-aws-supplement.py`
+  *"OK"*; pull request #394 opened at about 17:51, its CI passing.
+- **[user] `./aws/login.py`** at about 18:09; the `awsds` token expires at 19:08:45, and `sts` answers as
+  `InfrastructureAccess`.
+- **[Claude] `make status` at 18:09**: Sandbox's `egress` `UP` with 27 resources and 18 interface endpoints,
+  `probes` `UP` with 4, `warehouse-compute` down; no Studio app billing in any account; passive burn 0.8759
+  USD/h across the estate, the hub, GitLab, its runners and the egress of Staging and Production included.
+  R2 and the orchestrator told at 18:10, R2's copy queued behind its running turn.
+- **[Claude] The first `make down ENV=sandbox`**, 18:11:09 to 18:11:47: `sandbox/probes` planned *"Plan: 0 to
+  add, 0 to change, 4 to destroy."*, then *"Error: error asking for approval: EOF"*: the command ran with no
+  terminal to answer Terraform's prompt. *"HALTED at terraform-live/sandbox/probes: terraform destroy failed
+  above. The rows after it are untouched: terraform-live/sandbox/warehouse-compute,
+  terraform-live/sandbox/egress."* Nothing was destroyed. The second run, `make down ENV=sandbox AUTO=1`,
+  started at 18:12:50.
+- **[Claude] The second run, `make down ENV=sandbox AUTO=1`**, 18:12:50 to 18:23:12: `sandbox/probes` *"Destroy
+  complete! Resources: 4 destroyed."*, `sandbox/warehouse-compute` *"No changes. No objects need to be
+  destroyed."*, `sandbox/egress` *"Plan: 0 to add, 0 to change, 27 to destroy."* then *"Destroy complete!
+  Resources: 27 destroyed."*; the twelve `[P]` slices and `bootstrap/` refused as always; the Studio-app hook
+  found no running app in the nine domains.
+- **[Claude] §R's readings**: `make status` at 18:24:52 reads Sandbox's three `[E]` slices down with 0
+  resources, no Studio app billing and no EMR Serverless application or OpenSearch Serverless collection in
+  any account; the estate's passive burn 0.6875 USD/h and its active burn on `production/egress`,
+  `production/workloads-egress` and `staging/egress`, R2's. `./aws/egress.py awsds-infra-prod
+  awsds-infra-staging awsds-infra-sandbox-1` wrote *"all checks passed"*, Sandbox at 0 interface endpoints, 0
+  NAT gateways, 0.000 USD/h, the 34 endpoints left in Production and Staging. §R's `list-apps` loop over
+  Sandbox's domains printed nothing at 18:26:48. R2 and the orchestrator told at about 18:27.
+- **[orchestrator] Act 12 read at 18:27:48** by `make status`: `sandbox/egress` down with 0 resources (state
+  serial 566), `sandbox/probes` down with 0, `sandbox/warehouse-compute` down, no Studio app in any account,
+  the estate's passive burn 0.6875 USD/h, the hub, GitLab, its runners and the egress of Staging and
+  Production, all R2's.
+- **[Claude] `./aws/catalog.py`, live**, 18:27:16 to 18:33:01 after the lowering: *"all checks passed"*, 14
+  `pass` and 7 `note` over 12 listings; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object
+  Collection listing(s)"*, the state the rollback left. `--self-check`: 47 of 47.
+
+## 2026-11-23 — The user's decisions on pass 5's open questions
+
+*The user's hand, in the orchestrating session's chat at about 18:3x UTC, relayed to this session by the
+orchestrator; recorded by Claude. The recommendations went to the orchestrator at about 18:29.*
+
+- **[user]** *"Aceito as três recomendações do N.10."*, which takes:
+  1. **`TM-37` accepted**, option (a): the residual of sessions vended before a revocation, up to the
+     producer role's 3600 s, with Sandbox's trail as its detection; reopened if AWS ends vended sessions at a
+     revocation. Set aside: (b) IAM's *Revoke active sessions* on the producer's role at each revocation; (c)
+     leaving it to Stage 11's review.
+  2. **5.4 not run again** with a requester outside the owning project (`SUP-480`), option (a): the manual
+     approval rests on Stage 19's measurement of 2026-11-22, and the S3 Object Collection's own half, the
+     grant written on approval, was measured at 5.4 and 5.6.
+  3. **The refusal of 17:11:03 recorded as observed and closed**, option (a): one occurrence, a refusal that
+     came early rather than late. Set aside: a support case with AWS, a re-measurement with a tighter loop.
+- **[Claude] Records**: `TM-37` and its channel row accepted in `threat-model.md`; the stage file's `Status`
+  row.
