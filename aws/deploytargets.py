@@ -177,9 +177,8 @@ FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes"
 # generative ones in both targets; the warehouse's doors but redshift-serverless in Production,
 # which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging, which holds
 # no warehouse. A service joins this list in the commit after the apply that adds it to fence.tf, so
-# DT-14 is not red while that apply is owed (Lesson 50): agent-registry (TM-28) is in both fence.tf
-# files and joins here after their applies.
-FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "codewhisperer", "q")
+# DT-14 is not red while that apply is owed (Lesson 50).
+FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "agent-registry", "codewhisperer", "q")
 FENCED_SERVICES = {
     PROD_PROFILE: (*FENCED_GENERATIVE, "redshift-data", "sqlworkbench"),
     STAGING_PROFILE: (
