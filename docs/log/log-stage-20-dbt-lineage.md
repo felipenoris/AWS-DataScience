@@ -2552,3 +2552,72 @@ keychain credential; AWS reads as the infrastructure user. Times UTC.*
   code/run-dbt.sh` before `package-task` (commit `360d9a39` on this branch, `examples/app-dbt/` tree
   `1ed5058e`). The job's script, run on a copy whose `run-dbt.sh` was set to `0777`, printed both modes
   `0o100755`, exit 0; the `test` job on the tree *"86 passed"*, the lint *"ok: 4 arquivo(s)"*.
+
+## 2026-11-23 — R2: 8.7's release `v0.1.1`, the fix merged
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, *"Autorizo
+no R2: o MR e merge do fix do run-dbt.sh no app-dbt (commit 360d9a39); a tag v0.1.1 do app-dbt e os gates
+dela."* GitLab as `felipenoris` in Claude's Chrome tab; git through the keychain credential; AWS reads as the
+infrastructure user, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] The fix's merge request** `!1`: the branch `fix-run-dbt-mode` at `64c9b9a2`, `examples/app-dbt/`
+  at `360d9a39`, pushed at 16:59:21. Its pipeline #144: `secret_detection` and its gate, `pip-audit` and
+  `test` green. Merged at 17:02:43 by `felipenoris`, the merge commit `71d23ffb`, whose tree `1ed5058e` is
+  the source's (Lesson 86). The `main` pipeline #146 green.
+- **[Claude] Before the tag**, at 17:04:09: the build runner `i-015f85e903a4bfe45` running and GitLab's three
+  runners online; 2.4's `search` on `app-dbt-dev` listing `trades` (`bra0895x5fjzww`) and
+  `notional_by_desk` (`daefcycb3hhhn4`) alone.
+- **[Claude] The tag `v0.1.1`** on `71d23ffb`, pushed at 17:04:32. Pipeline #148: `pip-audit` and `test`
+  green; `build-task-code` (job 957, on `awsds-prod-runner-test`) *"code/app-dbt.zip: 5102 entries,
+  26129230 bytes, 82844337 unzipped, modes {'run-dbt.sh': '0o100755', 'app_dbt/bin/dbt': '0o100755'}"*;
+  `bundle` (job 958) *"Bundle created: ./artifacts/app-dbt.zip (25501481 bytes)"*, SHA-256
+  `3bc08854e4baa18cb55e1c3b702e2b2ad3ef8bb758ebe3399fdd87013ec7356b`, its catalog against `product.json`
+  *"assets: 2 (notional_by_desk, trades)"*, `OK`; `store-bundle` and `release` green.
+- **[Claude] Staging**: `staging-gate` played at 17:08:01. `staging-deploy` (job 963, 17:08:37 to 17:10:35)
+  created the workflows `app_dbt_deploy_staging_app_dbt` and `app_dbt_deploy_staging_app_dbt_probe` in
+  `deploy-staging`, each `READY`; *"the import created no asset, which the project's own source creates"*
+  (`SUP-369`); the stage's variables recorded in `/datascience/staging/applications/app-dbt/stage-variables`.
+  `staging-test` (job 964) started `awsds-staging-chain-app-dbt-probe`, execution `v0-1-1-964-app-dbt-probe`,
+  at 17:11:07.
+- **[Claude] `staging-test`**: the probe's execution `SUCCEEDED` at 17:14:11; `awsds-staging-chain-app-dbt`,
+  execution `v0-1-1-964-app-dbt`, started at 17:14:14 and `SUCCEEDED` at 17:21:24. The catalog answered the
+  deploy role `trades` and `notional_by_desk` `ICEBERG` and registered, the model under
+  `dev/data/catalogs/app_dbt/notional_by_desk/8ad199f2-853f-498c-a3c2-58e7b3a131fd`, with `persist_docs`'s
+  description. `ListLineageEvents` from 17:14 as `awsds-infra-staging`: six `SUCCESS` under the namespace
+  `app-dbt-staging` (`dbt-run-app_dbt` and the model's `build.run` and `build.test`, each `START` and
+  `COMPLETE`, 17:18:26 to 17:18:46), beside the Glue job's under `default`.
+- **[Claude] `staging-catalog`** (job 965, 17:23:30 to 17:26:05): the source's run *"added": 2, "failed": 0*,
+  the project holding `notional_by_desk` and `trades`; the second deploy's import *"0 created, 2 updated, 1
+  skipped (extra in target), 0 failed, 0 published"*, the extra being `app-etl`'s `trades_notional`, which the
+  import leaves. The Staging leg reads yes.
+- **[Claude] 8.9's Staging readings** as `awsds-infra-staging`, read at about 17:49. The tables: `trades`
+  created at 17:17:08 by the project role's `GlueJobRunnerSession`, `notional_by_desk` at 17:18:39 by its
+  `AmazonMWAAServerless` session, both `ICEBERG` and registered with Lake Formation. The workgroup
+  `workgroup-5ido8bej1zoeq8-d6nu5aphq1e974`: the probe's `SELECT 1` `SUCCEEDED` and its `count(*)` on `trades`
+  `FAILED` on *"TABLE_NOT_FOUND: … Table 'awsdatacatalog.app_dbt.trades' does not exist"* at 17:11:54, the
+  probe running before the chain's Glue job made the table, a first run's reading (xxii); dbt's `create
+  table`, its row-count `SELECT` and the `not_null` test `SUCCEEDED` at 17:18:37, 17:18:40 and 17:18:42,
+  each commented `"dbt_version": "1.11.16"`. The trail: the five `StartQueryExecution` by the
+  `AmazonMWAAServerless` session through `vpce-056f3f046e89e7c02`; `CreateTable` for `notional_by_desk` by the
+  same session with no `vpcEndpointId`, Athena's call on its behalf, and `trades`'s by `GlueJobRunnerSession`
+  through `vpce-0b091399f751920e5`; two `GetDataAccess` with no `vpcEndpointId`; six `PostLineageEvent` by
+  the `AmazonMWAAServerless` session at 17:18:46 to 17:18:47 through `vpce-0d1a6f9bf71812e1a`, beside the
+  Glue job's six by `GlueJobRunnerSession` through the same endpoint (xviii, xix). No call errored.
+- **[Claude] The skipped asset**, read at 18:03 by `search` on `deploy-staging` as `awsds-infra-staging`:
+  `trades_notional` (`as6m73yp8shr80`) is the Glue table `app_etl.trades_notional`, `app-etl`'s product,
+  created 2026-11-22 at 15:37 UTC in R1; `app-dbt`'s two are `trades` (`agse8rgfcfz5w0`) and
+  `notional_by_desk` (`at5whqovhlcia8`), created at 17:25:25 and 17:25:27 by `staging-catalog`'s source run.
+- **[Claude] Production**: both legs verified by the orchestrating session (the bundle, both Staging
+  executions, both tables); `production-check` (job 966) green at 17:48:21, `production-gate` (job 967)
+  played at 18:02:09.
+- **[Claude] `production-deploy`** (job 968, 18:09:55 to 18:18:00): the bootstrap ran
+  `app_dbt_deploy_production_app_dbt` (run `WwkBOQBsRtgRoX8`), `load` and `transform` exit 0, the six events
+  `SUCCESS` under `app-dbt-prod` at 18:15:37 to 18:15:57.
+- **[Claude] `production-catalog`** (job 969, 18:18:18 to 18:26:58): the source's run *"added": 2, "failed": 0*;
+  the second import *"0 created, 2 updated, 2 skipped (extra in target), 0 failed, 0 published"*, the extras
+  being `app-etl`'s data product `trades-notional` and asset `trades_notional`; its deploy ran `app-dbt` again,
+  six more events `SUCCESS` at 18:25:20 to 18:25:48, and `notional_by_desk` was created again at 18:25:37 under
+  `…/app_dbt/notional_by_desk/a4f449ef-2e8e-496d-8c26-405ec6b98bdb` (x). Read as `awsds-infra-prod` at 18:28:
+  `trades` `ICEBERG` by `GlueJobRunnerSession`, `notional_by_desk` `ICEBERG` by `AmazonMWAAServerless`, both
+  registered; the assets `trades` (`5ebvfidjbbztlc`) and `notional_by_desk` (`c96p9n24zdtr4g`) in
+  `deploy-production`. The Production leg reads yes; pipeline #148 green from end to end.

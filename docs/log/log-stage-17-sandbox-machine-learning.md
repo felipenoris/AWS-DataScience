@@ -6118,3 +6118,118 @@ variables and run by `bash -c` on the laptop, on CPython 3.12.13, in a git copy 
 - **[Claude] `app-genai`** (10.6): clean, *"95 passed"*, the lint *"ok: 3 arquivo(s)"*.
 - **[Claude] `app-etl`** (9.11's tree): clean, *"93 passed, 1 skipped"*, as on #390, the lint *"ok: 8
   arquivo(s)"*.
+
+## 2026-11-23 — R2: 9.7, `app-ml`'s first release `v0.1.0`
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, which name
+each act of the list `r2-acts-for-15h.md` in order, among them *"primeiro push do app-ml; tag v0.1.0 do
+app-ml; gates do app-ml; chain de score do app-ml; production-approve do app-ml; chain de score de novo"*.
+GitLab as its local administrator `felipenoris` in a Chrome tab of Claude's; git through the laptop's
+keychain credential; AWS reads as the infrastructure user, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] Before the push**: `staging/egress` and `production/workloads-egress` up with `bedrock` and
+  `bedrock-runtime` and no `sagemaker.mlflow` endpoint in either account (17:06:17).
+- **[Claude] The first push** (`sagemaker-application.md` §L step 1): `awsds/app-ml` cloned empty into
+  `$HOME/tmp/app-ml`, `examples/app-ml/` at `495ebb1a` extracted, the tree `8b7c14dc` on both sides (Lesson
+  86); the message naming `model.json`'s training job `app-ml-train-20261122T193009`, SHA-256
+  `852032c55a3047b66de1a2fa6c29e148e10b145cb30fab41d26c83214282d7ab` and AUC 0.8289 against `MIN_AUC` 0.70.
+  Pushed onto `main` at 16:59:47 as `a463dd54`. The `main` pipeline #145: `secret_detection` and its gate,
+  `pip-audit`, `test` and `pages` green.
+- **[Claude] The tag `v0.1.0`** on `a463dd54`, pushed at 17:03:46, after GitLab's three runners read online.
+  Pipeline #147: `pip-audit` and `test` green; `build-image` (job 941, on `awsds-prod-runner`, 17:04:15 to
+  17:07:47) pushed `awsds-prod-ecr-app-ml:v0.1.0-a463dd54`, digest `sha256:650ad15b…18da`; `scan-gate`
+  (job 943, `allow_failure`) *"FAIL: the scan ended FAILED: Number of vulnerabilities for this image exceeds
+  the maximum supported with Basic Scanning"*, as `SUP-437` reads every push of a SageMaker Distribution
+  image; `build-task-code`, `bundle`, `store-bundle` and `release` green.
+- **[Claude] Staging**: `staging-gate` played at 17:09:57, independent of `scan-gate`. `staging-deploy` (job
+  949, 17:21:32 to 17:23:30, queued behind `app-dbt`'s `staging-test` on the deploy runner) created
+  `app_ml_deploy_staging_app_ml_register` and `app_ml_deploy_staging_app_ml_score` in `deploy-staging`, the
+  stage's variables in `/datascience/staging/applications/app-ml/stage-variables`. `staging-test` (job 950)
+  started `awsds-staging-chain-app-ml-register`, execution `v0-1-0-950-app-ml-register`, at 17:26:15.
+- **[Claude] `staging-test`**: the register chain proposed `awsds-staging-model-app-ml/1`
+  `PendingManualApproval`, trained by `app-ml-train-20261122T193009`, validation AUC 0.8289, and the deploy
+  role approved it (17:29:30); `awsds-staging-chain-app-ml-score`, execution `v0-1-0-950-app-ml-score`,
+  started at 17:29:32 and `SUCCEEDED` at 17:47:56: the processing job `app-ml-prepare-score-20261123T173028`
+  (17:30:30 to 17:35:54), the model `app-ml-score-5ido8bej1zoeq8`, the transform job
+  `app-ml-score-20261123T173956` (17:39:58 to 17:45:15). The report: `"source": "registry"`, the release's
+  SHA-256, `"predictions": 200` over 200 rows, `"auc": 0.847556` against `"min_auc": 0.7`, the version
+  `awsds-staging-model-app-ml/1`. The Staging leg reads yes.
+- **[Claude] Staging's readings**, as `awsds-infra-staging`, read at about 17:50. Verification lviii: one
+  `CreateModelPackage` at 17:27:09 on `awsds-staging-model-app-ml`, `PendingManualApproval`, by the project
+  role's `AmazonMWAAServerless` session through `vpce-0c30e0a61f9cb5f09`; one `UpdateModelPackage` at 17:29:29
+  on version 1, `Approved`, by `awsds-deploy-staging`; no error. Verification lxii, the target half: the deploy
+  wrote `model.tar.gz`, `model.json` and `evaluation.json` under `shared/app-ml/bundle/model/` at 17:22:56,
+  and `register` copied the archive and its evaluation under `shared/app-ml/models/sha256/852032c5…d7ab/` at
+  17:27:09, each `aws:kms` under `alias/awsds-staging-project` with the bucket key; CloudTrail holds no S3
+  data event (`log-debugging.md`), so the principals are read from KMS's `GenerateDataKey` through S3 on
+  `awsds-staging-smus-projects` under that key: `awsds-deploy-staging` at 17:22:46, the project role's
+  `AmazonMWAAServerless` session at 17:27:08.
+- **[Claude] Production**: the orchestrating session verified the leg (the bundle, both Staging executions,
+  the approved version, the image) and sent its «verificado»; `production-check` (job 951) green at
+  17:48:40, `production-gate` (job 952) played at 18:02:10.
+
+## 2026-11-23 — R2: 10.6, `app-genai`'s first release `v0.1.0`
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, among them
+*"primeiro push do app-genai; tag v0.1.0 do app-genai; gates do app-genai; chain de triage do app-genai"*,
+and *"Um ato bloqueado não segura as outras aplicações"*, which moved these acts ahead while `app-dbt`'s and
+`app-ml`'s `production-gate` waited on the orchestrating session's «verificado». GitLab as `felipenoris` in
+Claude's Chrome tab; git through the keychain credential. Times UTC.*
+
+- **[Claude] The first push** (§L step 1): `awsds/app-genai` cloned empty into `$HOME/tmp/app-genai`,
+  `examples/app-genai/` at `495ebb1a` extracted, the tree `1dea9f49` on both sides, `scripts/dev-cli.sh` at
+  `100755`; pushed onto `main` at 17:51:38 as `9c9692dc`. The `main` pipeline #149: `secret_detection` and its
+  gate, `test` and `pages` green, no `pip-audit` (10.6).
+- **[Claude] The tag `v0.1.0`** on `9c9692dc`, pushed at 17:53:07, GitLab's three runners online. Pipeline
+  #150: `test`; `build-task-code` (job 977) *"code/app-genai.zip: 8 file(s), 15715 bytes"*; `bundle` (job 978);
+  `store-bundle` writing `app-genai/v0.1.0/app-genai.zip`, 18354 bytes, at 17:54:04; `release`.
+- **[Claude] Staging**: `staging-gate` played at 17:54:52. `staging-deploy` (job 983, 17:55:27 to 17:57:05):
+  *"the bundle of v0.1.0: 4 file(s), no catalog export"*, the workflows `app_genai_deploy_staging_app_genai_triage`
+  and `app_genai_deploy_staging_app_genai_probe`, the stage's variables `EXPECT_UNGUARDED`, `MIN_ACCURACY` and
+  `MODEL_ID`. `staging-test` (job 984): `awsds-staging-chain-app-genai-probe`, execution
+  `v0-1-0-984-app-genai-probe`, 17:57:18 to 18:00:22 `SUCCEEDED`, its report `"outcome": "refused"`,
+  `"expected": "refused"`, `"passed": true` on *"… assumed-role/datazone_usr_role_5ido8bej1zoeq8_…/AmazonMWAAServerless
+  is not authorized to perform: bedrock:InvokeModel on resource: …"* against the application inference profile
+  `cejulbydm4lk`; `awsds-staging-chain-app-genai-triage`, execution `v0-1-0-984-app-genai-triage`, 18:00:25 to
+  18:05:32 `SUCCEEDED`, its report `"accuracy": 0.9737` against `"min_accuracy": 0.8`, 37 of 38 let through
+  agreeing (`m34` answered `account`, expected `feedback`), 2 of 40 blocked, 12001 input and 948 output tokens,
+  the guardrail `app-genai-5ido8bej1zoeq8` (`ryvkg8t7mwb5`) version 1 created by the run, the planted `m25`
+  anonymized (`EMAIL`, `PHONE`) and `m31` blocked (`PROMPT_ATTACK`), `"passed": true`. The Staging leg reads yes.
+- **[Claude] Production, `app-genai`**: `production-check` (job 985) green; `production-gate` (job 986) waits on
+  the orchestrating session's «verificado».
+
+## 2026-11-23 — R2: 9.7's Production leg, the scoring chain held at `resolve`
+
+*Claude's hand, R2's session, continuing the entry above; the chain started on the user's words *"chain de
+score do app-ml"*, as `awsds-infra-prod`, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] `production-deploy`** (job 953, 18:05:39 to 18:09:54): the workflows
+  `app_ml_deploy_production_app_ml_register` and `app_ml_deploy_production_app_ml_score` in `deploy-production`;
+  the bootstrap ran the register workflow (run `0v1HPNMMpPgSTOG`), whose `register` proposed
+  `awsds-prod-model-app-ml/1` `PendingManualApproval` at 18:08:36. The trail: `CreateModelPackage` at 18:08:36
+  by the project role's `AmazonMWAAServerless` session through `vpce-02a92c8655cca030c`, no error. The version's
+  metadata: the release's SHA-256, `training_job` `app-ml-train-20261122T193009`, `validation_auc` 0.82895,
+  `source_prefix` under `shared/app-ml/bundle/model/`. Both schedules `DISABLED`.
+- **[Claude] The scoring chain, held** (verification xxxi's first half): `awsds-prod-chain-app-ml-score`,
+  execution `r2-v0-1-0-app-ml-score-pending`, started at 18:11:28, `FAILED` at 18:22:32 on
+  `WorkflowRunNotSucceeded`. The workflow run `DHnOzz9wEUElZH9`: `prepare` `SUCCESS` (the processing job
+  `app-ml-prepare-score-20261123T181218` `Completed`); `resolve` `FAILED` 18:20:25 to 18:20:32 on
+  *"RuntimeError: …model-package/awsds-prod-model-app-ml/1 is PendingManualApproval: a target serves an Approved
+  version alone"*; `score`, `check` and `cleanup` `UPSTREAM_FAILED`, no transform job. xxxi's first half reads yes.
+
+## 2026-11-23 — R2: 9.11, `app-etl`'s release retiring its model half
+
+*Claude's hand, R2's session, on the user's words in this session's chat *"MR e merge do 9.11 no app-etl; tag
+do app-etl; gates do app-etl"*, moved ahead while `app-ml`'s `production-approve` and `app-genai`'s
+`production-gate` waited on the orchestrating session's «verificado» (the user's *"Um ato bloqueado não
+segura as outras aplicações"*). Times UTC.*
+
+- **[Claude] The merge request** `!18` in `awsds/app-etl`: the branch `retire-model-half` at `c0967c90`, cut from
+  `main` `57f2fac0` (release G's), `examples/app-etl/` at `495ebb1a`, the tree `7951fc83` on both sides; six files,
+  53 insertions and 388 deletions (`workflows/app-etl-train.yaml` deleted). Pushed at 18:28:28. Its pipeline #151:
+  `secret_detection` and its gate, `pip-audit` *"1 of 1 pinned package(s) audited, 0 blocking"*, `test` *"93
+  passed, 1 skipped"* and the lint *"ok: 8 arquivo(s)"*. Merged at 18:29:32 by `felipenoris`, the merge commit
+  `3d3146bb`, the tree `7951fc83` (Lesson 86).
+- **[Claude] The tag `v0.7.0`**, the next after `v0.6.0` read from GitLab's tags at 18:30:17, on `3d3146bb`,
+  pushed at 18:30:42, the runners online and the build runner `i-015f85e903a4bfe45` running, `app-ml`'s model
+  held in both targets (`promotion.md` §N.11.2 step 3's condition). Pipeline #153.
