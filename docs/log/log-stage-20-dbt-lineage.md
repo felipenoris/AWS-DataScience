@@ -2473,3 +2473,24 @@ over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on C
   (`663aee70`), the revocation being the entry above.
 - **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
   and GitLab.
+
+## 2026-11-23 — R2: 8.6's deletion named, nothing up
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), as `awsds-infra-sandbox-1` with
+`InfrastructureAccess`; reads only. The gates' `pip-audit` on this tree is in Stage 8's log of the same
+day. Times UTC.*
+
+- **[Claude] 2.4's asset read on `app-dbt-dev`** at 16:04: three assets, `trades` (`bra0895x5fjzww`),
+  `notional_by_desk` (`daefcycb3hhhn4`) and `notional_by_desk_prod` (`5p014tr72zikcw`), each a
+  `GlueTableAssetType` over `table/app_dbt/<name>.dnl3l158mbhrio`. The source `3uof8bs4x693f4`'s scheduled
+  run `ah8tig93gjnh8w`, at 02:54:41 on 2026-11-23, created `notional_by_desk_prod` (`SUCCEEDED_CREATED`,
+  revision 1, created by `SYSTEM`, no listing) and updated the other two (`SUCCEEDED_UPDATED`, each at
+  revision 7, its description, README and form `classification` kept). Pass 5's table asset is
+  `notional_by_desk_prod`, 8.6's one deletion. No asset of the link `trades_notional` exists, and the
+  project owns no data product.
+- **[Claude] Who may delete it from the CLI**: `app-dbt-dev`'s members are the Data Scientist User as
+  `PROJECT_OWNER` and three `PROJECT_CONTRIBUTOR`s, the project's own role, `awsds-deploy-sandbox-test`'s
+  role-session group (`06d426f2-…`) and Sandbox's `InfrastructureAccess` group (`839bcde8-…`). DataZone's
+  user guide: *"To delete an asset, you must be the owner or the contributor of the project"*;
+  `DeleteAsset`'s reference refuses an asset linked to a data product. So `delete-asset` as
+  `awsds-infra-sandbox-1` is admitted on paper, unmeasured.

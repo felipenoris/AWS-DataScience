@@ -4658,3 +4658,44 @@ finding's two sides before writing it. No AWS call.*
 - **[Claude] `gitlab.md`** after R1's acts (Stage 19's log of 2026-11-22): §K's runner table lists
   `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt` on the three runners, §M step 3's allowlist holds
   them, and §U's `BUILD=1` row names every application's tag.
+
+## 2026-11-23 — R2's pre-flight, nothing up
+
+*Claude's hand, the session running `promotion.md` §N.11.2 (R2), started by the session coordinating the
+afternoon of 2026-11-23, on the branch `claude/r2-releases-c2e42c` from `main` at `684ec8b1`. As the
+infrastructure user, `InfrastructureAccess`, through `awsds-infra-prod`, `awsds-infra-staging` and
+`awsds-infra-sandbox-1`; reads only. Times UTC.*
+
+- **[Claude] `make status`** at 16:01: 0.0000 USD/h, nothing up, no Studio app billing in the five accounts.
+- **[Claude] The gates' `pip-audit` step**, its script read from this repository's
+  `ci-gates/gates.gitlab-ci.yml` and run verbatim with the job's `PIP_AUDIT_VERSION` 2.10.1, on copies of
+  `origin/main`'s trees, 16:00:38 to 16:01:53: `app-dbt` (`.`) *"78 of 78 pinned package(s) audited, 0
+  blocking vulnerability(ies)"* and `app-ml` (`code`) *"48 of 48"*, each *"No known vulnerabilities found"*,
+  exit 0. `app-genai` with `GATES_UV_PROJECTS=.`, which its pipeline leaves unset: the export holds no pin
+  and the step exits 1 at `grep -c` (Lesson 87), so its tag waits on no gates tag. A dated verdict, run
+  again before each tag (Lesson 77).
+- **[Claude] `./scripts/deploy-application.py`**: `staging --check` as `awsds-infra-staging` and
+  `production --check` as `awsds-infra-prod`, `DOMAIN_ID` and `DOMAIN_REGION` set as the pipeline sets them,
+  16:02:47 to 16:03:01, each exit 0: `deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
+  (`d7qcazihvr3s7k`) with their roles, subnets, security groups, keys and shared prefixes, and *"the caller
+  is a member of the project"*. With no `AWS_PROFILE` the script reads *"NoCredentials"*, and with either
+  variable unset it stops on it, exit 1. `--self-check` `OK`: `app-etl` at 8 variables a stage since 9.11's
+  half (#390), `app-ml` 12, `app-genai` 3, `app-dbt` 9, with their workflows' names.
+- **[Claude] `./scripts/check-gitlab-mirror.py --plan`** at 16:03: exit 0, `GM-1` to `GM-8` passing, the
+  copy at `awsds/dev-env` `9e64c6e22982` of 2026-11-22 (merge request !15), the literal and the account's
+  list 73 names, sha256 `61f1e1646df12c14` on both sides. `7f2623b6`, !16's merge, reaches the copy at R2's
+  opening.
+- **[Claude] The raises, planned and saved nowhere**, from `main` at `684ec8b1` with
+  `TF_VAR_optional_service_groups='["bedrock-base"]'`, the list the Makefile's `up` hands Terraform for
+  `GROUPS=bedrock-base` (`slices.py` takes it as `--groups`): `staging/egress/` as `awsds-infra-staging`
+  and `production/workloads-egress/` as `awsds-infra-prod`, 16:07 to 16:09, each *"Plan: 20 to add, 0 to
+  change, 0 to destroy."*: the nine DNS Firewall and query-log resources and eleven interface endpoints,
+  `bedrock` and `bedrock-runtime` beside R1's nine. Production's `init` failed once to reach
+  `registry.terraform.io`; the plan ran on the folder's earlier initialisation and read the slice's state.
+- **[Claude] The trees** at `684ec8b1`: the four applications' `.gitlab-ci.yml` pin `awsds-workflows` at
+  `4401f91` and the gates at `d0b895c8` (`gates-v0.6.0`); `examples/app-etl/` holds 9.11's half, its
+  `workflows/` `app-etl.yaml` and `app-etl-warehouse.yaml` alone and its pipeline naming none of the four
+  model jobs. The laptop's `$HOME/tmp` holds no `app-dbt`, `app-ml` or `app-genai` directory for
+  `sagemaker-application.md` §L step 1's clones; `$HOME/tmp/app-etl` exists, an earlier clone.
+- **[Claude] The project folder** read on `main` at `684ec8b1`, `origin/main`'s commit, clean, with the
+  mirror's `gitlab` remote.

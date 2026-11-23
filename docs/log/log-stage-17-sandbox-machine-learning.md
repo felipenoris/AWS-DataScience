@@ -6087,3 +6087,19 @@ No AWS call: the reads are local files.*
   An unclosed string exits 2, and a tree with no Bedrock resource reads *"OK (vacuous)"*.
 - **[Claude] Records**: `SUP-477`'s last sentence; `.pre-commit-config.yaml`, the Makefile's `check` list and
   header; `README.md`, `terraform-live/README.md` and `scripts/tfhygiene/__init__.py`.
+
+## 2026-11-23 — R2's pre-flight for 9.7, 10.6 and 9.11, nothing up
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2); reads only. The shared readings, `make status`, the
+deploy script's checks, the mirror and both raises' plans, are in Stage 8's log of the same day. Times UTC.*
+
+- **[Claude] 9.7's gate**: the gates' `pip-audit` step verbatim on `app-ml`'s `code` at 16:01, *"48 of 48
+  pinned package(s) audited, 0 blocking vulnerability(ies)"*, exit 0; run again before the tag.
+- **[Claude] 10.6's empty case**: the same step on `app-genai` with `GATES_UV_PROJECTS=.` exits 1 at
+  `grep -c` on an export that holds no pin; its pipeline sets no `GATES_UV_PROJECTS`, so no `pip-audit` job
+  runs and no gates tag comes first.
+- **[Claude] `bedrock-base` in both targets**: `staging/egress/` and `production/workloads-egress/` planned
+  with the group, *"Plan: 20 to add, 0 to change, 0 to destroy."* each, `bedrock` and `bedrock-runtime` the
+  two the group adds.
+- **[Claude] 9.11's tree** at `684ec8b1`: `examples/app-etl/` with no `app-etl-train` and no model job, its
+  lint pin `4401f91`, `--self-check` reading 8 variables a stage.
