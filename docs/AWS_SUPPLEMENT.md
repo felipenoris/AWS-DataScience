@@ -4942,6 +4942,16 @@ entry is still true is the reading.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/sandbox-ml/pipeline/definition.json`.
 
+- `SUP-485` **`ListModelPackages` answers an empty list, exit 0, for a group that does not exist** (measured
+  2026-11-23 in Staging, Stage 17 9.11, as `InfrastructureAccess`). `list-model-packages
+  --model-package-group-name awsds-staging-model-app-etl` read `"ModelPackageSummaryList": []`, and so did a
+  name no group ever carried. `describe-model-package-group` on the first answered *"ValidationException ...
+  ModelPackageGroup arn:aws:sagemaker:us-west-2:<Staging>:model-package-group/awsds-staging-model-app-etl does
+  not exist."*, and `list-model-package-groups` listed `awsds-staging-model-app-ml` alone. So a group "holding
+  no version" is read with `DescribeModelPackageGroup` first: R2's reading of 2026-11-23, "`awsds-staging-model-
+  app-etl` holds no version", was this empty list over a group no slice declared. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API

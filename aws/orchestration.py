@@ -617,12 +617,16 @@ def judge_registry_event(ev_name: str, ev: dict, approver: str) -> tuple:
     caller = str((ev.get("userIdentity") or {}).get("arn") or "")
     params = ev.get("requestParameters") or {}
     if ev_name == "UpdateModelPackage":
+        # model-package/<group>/<version>
+        group = (str(params.get("modelPackageArn") or "").split("/")[1:2] or [""])[0]
+    else:
+        group = str(params.get("modelPackageGroupName") or "").rsplit("/", 1)[-1]
+    if f"/{RETIRED_REGISTRAR}/" in caller and group == RETIRED_DEPLOY_ROLE_GROUP:
+        return "retired", ""
+    if ev_name == "UpdateModelPackage":
         if f"/{approver}/" in caller:
             return "ok", ""
         return "bad", f"the approval is {approver}'s"
-    group = str(params.get("modelPackageGroupName") or "").rsplit("/", 1)[-1]
-    if f"/{RETIRED_REGISTRAR}/" in caller and group == RETIRED_DEPLOY_ROLE_GROUP:
-        return "retired", ""
     if f"/{PROJECT_ROLE_PREFIX}" not in caller:
         return "bad", "a version is a project role's proposal"
     if str(params.get("modelApprovalStatus") or "") != PENDING:
@@ -647,7 +651,7 @@ def registry_verdicts(env: str, approver: str, events: list, unread: list) -> li
             (
                 "note",
                 f"{env}: the retired shape",
-                f"{len(kinds['retired'])} CreateModelPackage of {RETIRED_DEPLOY_ROLE_GROUP} as "
+                f"{len(kinds['retired'])} event(s) on {RETIRED_DEPLOY_ROLE_GROUP} as "
                 f"{RETIRED_REGISTRAR}, the newest at {newest} - app-etl's model half, retired "
                 "2026-11-23 (Stage 17 step 9.11).",
             )

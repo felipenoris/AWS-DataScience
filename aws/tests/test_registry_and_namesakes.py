@@ -48,8 +48,12 @@ def propose(caller: str = PROJECT_ROLE, group: str = APP_ML, status: str = "Pend
     )
 
 
-def approve(caller: str = DEPLOY_PROD):
-    return ("UpdateModelPackage", event(caller, modelApprovalStatus="Approved"))
+def approve(caller: str = DEPLOY_PROD, group: str = APP_ML):
+    arn = f"arn:aws:sagemaker:us-west-2:000000000000:model-package/{group}/1"
+    return (
+        "UpdateModelPackage",
+        event(caller, modelPackageArn=arn, modelApprovalStatus="Approved"),
+    )
 
 
 def verbs(lines: list) -> list:
@@ -118,6 +122,19 @@ def test_or8_the_retired_shape_alone_is_a_note_and_an_absence():
     assert verbs(lines) == ["note", "note"]
     assert "app-etl's model half" in lines[0][2]
     assert "an absence, not a pass" in lines[1][2]
+
+
+def test_or8_the_retired_approval_counts_with_the_retired_shape():
+    retired = [
+        propose(DEPLOY_PROD, group="awsds-prod-model-app-etl", status="PendingManualApproval"),
+        approve(group="awsds-prod-model-app-etl"),
+    ]
+    lines = orch.registry_verdicts(
+        "prod", "awsds-deploy-prod", [*retired, propose(), approve()], []
+    )
+    assert verbs(lines) == ["note", "ok"]
+    assert lines[0][2].startswith("2 event(s) on awsds-prod-model-app-etl")
+    assert "1 version(s) proposed" in lines[1][2] and "1 approval(s)" in lines[1][2]
 
 
 def test_or8_the_retired_shape_beside_app_ml_notes_and_passes():

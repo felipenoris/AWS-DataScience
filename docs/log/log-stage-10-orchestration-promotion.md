@@ -1923,3 +1923,29 @@ Times UTC.*
   `production-register`, `production-approve` and `production-transform` keep the shape taken on 2026-10-24
   until they retire, in a release of `app-etl` after `app-ml`'s first release (Stage 17 decision 28 (a),
   tapped by the user at 02:47:28; Stage 17 step 9.11). Nothing in AWS changed.
+
+## 2026-11-23 — `OR-8` reads each target's registry by Stage 17 decision 16 (b)
+
+*Claude's hand, Stage 17 9.11's estate session, which carries the change on the user's words in the orchestrating
+session's chat (*"Sobre "OR-8 e DT-8 entram no PR da sessão do 9.11.", sim pode fazer desta forma."*); reads as
+`awsds-infra-staging` and `awsds-infra-prod`, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] What failed**: R2's run of `./aws/orchestration.py` failed one `OR-8`, `app-ml`'s proposal by
+  Production's deployment project role (Stage 8's log, R2's §R). The check read `app-etl`'s retired shape, where
+  `awsds-deploy-prod` registered, in Production alone.
+- **[Claude] The change**, on 9.11's branch: `registry_verdicts()` reads each target's
+  `CreateModelPackage` and `UpdateModelPackage` events against that target's approver, `awsds-deploy-staging` or
+  `awsds-deploy-prod`. A version is proposed `PendingManualApproval` by a project role; an approval is the
+  approver's; `app-etl`'s events on `awsds-prod-model-app-etl` as `awsds-deploy-prod` are a note while the 90-day
+  lookup holds them; a refused call is a note; a lookup with no write of that shape is a note, never a pass.
+  `aws/tests/test_registry_and_namesakes.py` holds each case, the empty ones included; `requestParameters`'
+  keys `modelPackageGroupName`, `modelApprovalStatus` and `modelPackageArn` were read on the real events.
+- **[Claude] The run** at 21:32:32: *"OR-8 staging: registry writes — 1 version(s) proposed PendingManualApproval
+  by a project role, 1 approval(s) awsds-deploy-staging's"*, *"OR-8 prod: registry writes — 1 version(s) proposed
+  PendingManualApproval by a project role, 2 approval(s) awsds-deploy-prod's"*, and the note *"prod: the retired
+  shape — 1 CreateModelPackage of awsds-prod-model-app-etl as awsds-deploy-prod, the newest at
+  2026-10-25T01:28:36Z"*. The second approval counted was `app-etl`'s of 2026-10-25, which the branch now counts
+  with the retired shape. Of the four applications, `app-ml` alone writes the registry, in both targets;
+  `app-etl`, `app-dbt` and `app-genai` write none. The run read 139 passed, 1 note and 15 failed, each failure an
+  `OR-2` on a log group with no retention (`EXC-25`), `app-etl-train`'s two among them. The failed calls are the
+  opening `sts get-caller-identity` of the profiles whose SSO sessions were not signed in.
