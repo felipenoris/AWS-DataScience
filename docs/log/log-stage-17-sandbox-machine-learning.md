@@ -6332,3 +6332,21 @@ app-etl"*; reads as `awsds-infra-staging`, `InfrastructureAccess`. Times UTC.*
   The orchestrating session reads the cause as `parse_answer`, which admits a code fence and nothing after the
   object; the fix, a parse that stops at the first object's end or structured output in `Converse`, is
   `app-genai`'s follow-up after today. A new attempt waits on the user's word in R2's chat.
+
+## 2026-11-23 — R2: 10.6's triage chain again, `SUCCEEDED`
+
+*Claude's hand, R2's session, on the user's words in this session's chat, *"Autorizo rodar de novo a chain de
+triage do app-genai em Production (awsds-prod-chain-app-genai-triage), uma tentativa."*, as `awsds-infra-prod`,
+`InfrastructureAccess`. Times UTC.*
+
+- **[Claude] The one attempt**: `awsds-prod-chain-app-genai-triage`, execution `r2-v0-1-0-app-genai-triage-2`,
+  input `{}` as the first's, started at 19:04:11, `SUCCEEDED` at 19:09:13; the workflow run `2opd2tNuMU7558T`,
+  19:04:16 to 19:07:39, `SUCCESS`. The report: accuracy 0.9737 against 0.8, 37 of 38 let through agreeing (`m34`
+  `account`, expected `feedback`), 2 blocked, no failure, 12001 input and 958 output tokens, the guardrail
+  `8fwsdhtioqe8` at version 1, its hash unchanged so no version published, the planted `m25` anonymized, `m31`
+  and `m36` blocked, `"passed": true`. `m19`'s answer `{"label": "billing", "summary": "Discount code not applied
+  to order, resulting in unexpected extra charge."}`, 25 output tokens, `end_turn`: the same message and
+  inference configuration answered once with a trailing `]` and once without. The trail: 40 `Converse` through
+  `vpce-0cc38cf401b7c102f`, `GetGuardrail`, `ListGuardrails` and `ListTagsForResource` through
+  `vpce-07a18f03e17e5c132`, by the project role's `AmazonMWAAServerless` session, no error. `app-genai`'s
+  Production leg reads yes; `parse_answer`'s fix stays its follow-up.
