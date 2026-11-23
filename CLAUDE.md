@@ -443,7 +443,7 @@ The `§` numbers inside `docs/plan/` files are historical anchors, not addresses
 The chain is Sandbox → Staging → Production: no Development account, ever, and interactive compute is
 Sandbox only. D1-D41 are closed; D41 item 2 is reopened since 2026-10-31 (Stage 19 decision 6 (b)). Gates:
 `make check`, `make check-ou`. Whether anything is up is read with `make status`, never from this file:
-every sitting ends at zero burn, read 0.0000 USD/h on 2026-11-22 at 06:01 UTC after R1's downs.
+every sitting ends at zero burn, read 0.0000 USD/h on 2026-11-23 at 19:54 UTC after R2's downs.
 
 Before asking the user anything, read
 [`docs/plan/waiting-on-the-user.md`](docs/plan/waiting-on-the-user.md), and remove a row in the sitting
@@ -460,17 +460,17 @@ is `promotion.md` §N.12.
 | Stage | State | What comes next |
 |---|---|---|
 | 5b, the Sandbox warehouse | Passes 0-3 applied 2026-09-20; the items owed with the compute up done on `promotion.md` §N.10's day 1, 2026-11-22 | The bill's half of verification x after the free trial ends on 2026-12-19 |
-| 6d, Unified Studio's remainder | Steps 2, 3, 4, 8 and 9 closed: 2.7's steps 2 to 5 done 2026-11-18, step 7 in R1 and step 8 read in six projects 2026-11-22 with 2.4's after half (`SUP-380`); 5.1 read and decision 17's deny in the targets applied 2026-11-19; decision 6, 4.7 with `TM-34` (`SUP-396`) and 7.6 closed 2026-11-21 | The user's: the 1.1 and 1.2 attempts. The sitting of 2026-11-25 (§N.12.1), last, on a remote-access space of the owner's: 7.5's monitored half by the deep link alone (`SUP-398`), 7.7, 6.1 (viii). Stage 8 5.6's rule is in `awsds-workflows` `4401f91` (PR #29); each application's pin moves at its next tag |
+| 6d, Unified Studio's remainder | Steps 2, 3, 4, 8 and 9 closed: 2.7's steps 2 to 5 done 2026-11-18, step 7 in R1 and step 8 read in six projects 2026-11-22 with 2.4's after half (`SUP-380`); 5.1 read and decision 17's deny in the targets applied 2026-11-19; decision 6, 4.7 with `TM-34` (`SUP-396`) and 7.6 closed 2026-11-21 | The user's: the 1.1, 1.2 and 6.1 (xvii) attempts. The sitting of 2026-11-25 (§N.12.1), last, on a new remote-access space of the owner's (`code` deleted 2026-11-23): 7.5's monitored half by the deep link alone (`SUP-398`), 7.7, 6.1 (viii). Stage 8 5.6's rule is in `awsds-workflows` `4401f91` (PR #29); every application pins it since R2 |
 | 6e, Claude Code on Bedrock | A session answered from a space on 2026-09-12 (Haiku 4.5). Decisions 11, 13 and 17 taken; AWS refused the 5.5 three on 2026-11-22 (`EXC-08`), so the 4.5 set stays | The user's: Sonnet 4.5's successor before 2027-01-08 (`BS-8`) and decision 6's budget notification. 6.4's token volume at the sitting of 2026-11-25 (§N.12.1) |
 | 6f, the catalog over the lake | Decision 1 (b), a pilot of SMUS's native flow: step 11 done to 11.11 (2026-10-27), `curated.trades` published by `governed-lake` and subscribed by `eighth-experimentation` and, since 2026-11-22, `test-experimentation`. Decisions 2 to 6 taken; 2.1 to 2.5, 2.7 and 4.3 done and 11.12's residue accepted 2026-11-22, 2.6 moot | The user's: 11.12, the rollback, when called |
 | 6h, the Redshift connection | Passes 0-2 done: one project writes and reads the schema `lab` through the Data page and JupyterLab; decision 3 done 2026-11-19, `lineageSync` off, database `sandbox`; §N.10's day 1 ran steps 1 to 10 on 2026-11-22, 8 (a) standing and 6.4 `lab` kept | Verification x at 6.1's unwiring of a project; xii from the bill after 2026-12-19 |
-| 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes, from the first promotion on 2026-10-24 (`v0.3.3`) to release G's `v0.6.0` in R1 on 2026-11-22, and in R2 on 2026-11-23 `app-dbt` `v0.1.1`, `app-ml` and `app-genai` `v0.1.0` and `app-etl` `v0.7.0`, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | 9.11's estate pull request (`promotion.md` §N.6 item 11), then item 12's close. `OR-8` and `DT-8` read each application's shape (Lesson 87) |
+| 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes, from the first promotion on 2026-10-24 (`v0.3.3`) to release G's `v0.6.0` in R1 on 2026-11-22, and in R2 on 2026-11-23 `app-dbt` `v0.1.1`, `app-ml` and `app-genai` `v0.1.0` and `app-etl` `v0.7.0`, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | Item 12's close (`promotion.md` §N.6), the user's word on each moot mark first |
 | 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30; `EXC-13`'s Production half read in R1 on 2026-11-22: the database follows. Every decision taken | What is left, in order: `promotion.md` §N.6 |
 | 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15; since 2026-11-16 the chains of `<env>/chains/` start the CLI's workflows in both targets (Stage 19 4.11). Every decision taken | What is left, in order: `promotion.md` §N.6 |
 | 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-37`; `TM-28` controlled and `TM-37` accepted 2026-11-23 | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9 (`SUP-437`). The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; 2.2 done in R1 on 2026-11-22, `OB-3` passing in both accounts (`EXC-19` closed). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | 2.4's provocations, at a hub sitting. The user's: decision due 3 and D12's fired revision trigger |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
-| 17, machine learning in Sandbox | Pass 0 in progress (7.3, the playground answering); passes 9 and 10 decided (14 to 28). Passes 2, 3 and 5 done, pass 7 on plan B (`SUP-446`); 9.1 to 9.7, 10.1 to 10.3, 10.4's readings 1 to 5, 10.5 and 10.6 done, a trained model promoted: in R2 on 2026-11-23 `app-ml` and `app-genai` `v0.1.0` through both targets (xxxi, xlii, lviii read) and 9.11's application half as `app-etl` `v0.7.0`, no model job in either leg; `SUP-447`'s role under `EXC-27`; `TM-33` and `TM-36` accepted | The user's: reading 6's Sandbox shape (`SUP-466`). 9.11's estate pull request, option (a); `app-genai`'s `parse_answer`. Pass 4 with the Sandbox leftovers (§N.12.1), its endpoint kept up, unseen by `make status` (decisions 5, 6) |
+| 17, machine learning in Sandbox | Pass 0 in progress (7.3, the playground answering); passes 9 and 10 decided (14 to 28). Passes 2, 3 and 5 done, pass 7 on plan B (`SUP-446`); 9.1 to 9.7, 10.1 to 10.3, 10.4's readings 1 to 5, 10.5 and 10.6 done, a trained model promoted: in R2 on 2026-11-23 `app-ml` and `app-genai` `v0.1.0` through both targets (xxxi, xlii, lviii read) and 9.11's application half as `app-etl` `v0.7.0`, no model job in either leg; `SUP-447`'s role under `EXC-27`; `TM-33` and `TM-36` accepted | The user's: reading 6's Sandbox shape (`SUP-466`) and 9.11's leftovers (`waiting-on-the-user.md`). 9.11's applies from `main` (#397) and lxiv's third half; `app-genai`'s `parse_answer`. Pass 4 with the Sandbox leftovers (§N.12.1), its endpoint kept up, unseen by `make status` (decisions 5, 6) |
 | 19, a data product on SMUS's native path | Decision 6 (b), the AWS model: a deployment project per target. Passes 1 and 2 run, the product curated in `app-etl-dev` (steps 15 and 17), `TM-31` accepted and the start grant kept in Production alone. Release F's `v0.5.2` through both targets 2026-11-16, the CLI deploying and importing the catalog, and step 8's cut-over done. A data product's name is the domain's (`SUP-369`): decision 26 (b) gives it to Production's `publish` task, and release G's `v0.6.0` ran it in R1 on 2026-11-22, the product `anph2bq7uigqa8` listed as `dr8t27tte8ezdc`. Decisions 1 to 28 taken, 7 and 8 moot; 27's (d), an account-level log retention policy, waits on the AWS provider (`EXC-25`). Step 9's warehouse sitting run, xxxii yes; xvii, xxi's domain half, xxii, xxiii and xxx read. Decision 15 (d)'s `subscription-approver` approved 4.12's request 2026-11-22, xxvi yes, the fulfilment, the consumer's read and xxiv read; step 8's source runs read (`SUP-454`); pass 5 run on §N.10's days 1 and 2 and 4.12's subscription revoked 2026-11-23 | xiv's view over an external schema, at a sitting with the warehouse |
 | 20, dbt and its lineage in the catalog | Decisions 1 to 7, 9 to 11 and 13 to 17 taken; passes 1, 5 and 8 run, 4.1 to 4.4 (`TM-35`), 2.0, 2.1 and sitting A done, decision 5 kept (a), xv unanswered (`SUP-401`); pass 8 in R2 on 2026-11-23, `app-dbt` `v0.1.1` through both targets after `v0.1.0` stopped on the runner's file mode; 8.9 read, xx no (`SUP-483`) | xxi's metadata and `./aws/catalog.py`'s rows, nothing up; 7.1 and Rollback's step 6 on `SUP-401`'s identity |
 
@@ -517,7 +517,7 @@ is `promotion.md` §N.12.
 - **Module pins** are read from the callers (`grep -rn '?ref=' terraform-live`). Abandoned on origin and never
   pinned (Lesson 46): `vpc-egress` v0.9.0, v0.11.0, v0.12.0 to v0.14.0, `vpc-v0.3.0` and `wireguard-v0.8.0`.
 - **The VPN** has two client profiles, monitored and split-tunnel, on one key (`vpn.md` §C7). With the
-  tunnel down, macOS's system proxy breaks the `aws` CLI, and `NO_PROXY='*'` is the override. A CLI login
+  tunnel down, macOS's system proxy breaks the `aws` CLI and `gh`, and `NO_PROXY='*'` is the override. A CLI login
   answered in a browser that holds a portal session as another user ends that session, so `aws/login.py`
   passes `--no-browser`.
 
@@ -527,7 +527,10 @@ the log. `./scripts/check-plan-refs.py` fails this section past 12 KB.
 
 ### Standing rules
 
-- `-input=false` on every plan and apply (Lesson 47).
+- `-input=false` on every plan and apply (Lesson 47). A session runs `make` with `AUTO=1`: `-input=false` leaves
+  Terraform's approval prompt, which reads EOF with no terminal and halts the run (`SUP-304`).
+- Before a plan or an apply, the `awsds` token's `expiresAt` is read (`aws/AWS-CLI.md`): Terraform does not
+  sign in past it, whatever `aws sts get-caller-identity` answers (`SUP-465`).
 - Never pipe a command whose exit code matters (Lesson 46).
 - A module change is exercised by planning a caller, never by `validate`.
 - `-refresh=false` and `-minimal-refresh` are forbidden on `sandbox/data/`, where SMUS is a Lake Formation
@@ -557,13 +560,13 @@ The table is a first look by situation; the numbered list below it is complete.
 
 | When about to | Lessons |
 |---|---|
-| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80, 87 |
-| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82, 85, 88 |
+| Write or read a check, a probe or a proof | 2, 13, 20, 21, 22, 24, 26, 30, 31, 50, 54, 62, 71, 77, 78, 80, 87, 89 |
+| Write a policy, a grant or a role, or say what a principal can do | 5, 11, 14, 17, 18, 28, 29, 66, 67, 70, 72, 75, 80, 82, 85, 88, 89 |
 | Move, rename or share something across accounts, or borrow a session | 3, 9, 10, 25, 48 |
 | Change Terraform, a module, a host or the toolchain | 4, 8, 27, 33, 35, 47, 49, 51, 58, 59, 64, 65, 68, 69, 73, 76, 79 |
-| Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81, 88 |
+| Call an AWS API, a console wizard or a managed service | 16, 23, 36, 39, 60, 61, 63, 74, 81, 88, 90 |
 | Touch the network, the proxy or a client | 40, 42, 43, 44, 45, 53, 55, 56 |
-| Run a command or write a script | 46, 47, 52, 83, 84 |
+| Run a command or write a script | 46, 47, 52, 83, 84, 90 |
 | Write the plan, a record or a decision, or read a vendor page | 1, 6, 7, 12, 15, 19, 32, 34, 37, 38, 41, 57, 85 |
 | Act on a reply that reports an act: a merge, an apply, a membership | 38, 86 |
 
@@ -721,3 +724,7 @@ The table is a first look by situation; the numbered list below it is complete.
 87. **A gate written against the first application's shape fails on the next one's edge — run it on the new
     shape, its empty cases included, before the application rides it.**
 88. **A key handed to a platform is handed to every service it creates through.**
+89. **A grant conditioned on a session's context reaches only the engines that pass the context — and a
+    refused read through another engine leaves a success in the trail.**
+90. **A working copy reaches a run through two commands, `run` carrying its variables and `deploy` its files —
+    an edit is live only once its own command has run.**

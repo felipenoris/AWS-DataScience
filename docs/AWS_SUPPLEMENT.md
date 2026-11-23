@@ -1816,6 +1816,10 @@ entry is still true is the reading.
   key; the re-plan against one carrying it is unread. Where: `log-stage-05b-redshift-serverless.md`,
   2026-10-11 and 2026-10-18; `terraform-live/sandbox/warehouse-compute/versions.tf`;
   `docs/plan/upstream-releases.md`.
+  Read again 2026-11-22 (Stage 5b step 2): the re-plan of `warehouse-compute/` on 6.68.0, against the live
+  workgroup carrying `enable_large_strings_opt_in`, read *"No changes. Your infrastructure matches the
+  configuration."*: the provider ignores the undeclared key. Where: `log-stage-05b-redshift-serverless.md`,
+  2026-11-22.
 
 - `SUP-125` **`db_name` on a Redshift Serverless namespace adds a database, it does not replace `dev`**
   (measured 2026-09-20). A namespace created with `db_name = "warehouse"` carries both `warehouse` and `dev`
@@ -1962,7 +1966,8 @@ entry is still true is the reading.
   `log-stage-06h`, `runbooks/redshift-connection.md` §V.
 
 - `SUP-137` **The Redshift Data API does not cancel a statement when its client stops polling, and
-  `max_query_execution_time` did not stop it either** (measured 2026-09-20, and it cost 9.44 USD). A
+  `max_query_execution_time` did not stop it either: the statement read catalog tables alone, which the
+  rule does not govern** (measured 2026-09-20, and it cost 9.44 USD). A
   `count(*)` over a triple cross join was submitted through `redshift-data execute-statement`; the client
   gave up polling after 242 s and exited; the statement ran for 23,601 seconds — 6 h 33 min — at base
   capacity, and `ComputeSeconds` reported a flat 7,230 RPU-seconds per 30-minute interval throughout, which
@@ -2691,7 +2696,8 @@ entry is still true is the reading.
   2026-09-12/13; `docs/SMUS.md` §S3 item 1b.
 
 - `SUP-167` **A `Tooling` environment creates a daily DataZone data source nobody configured, every run
-  fails, and the source's `status` reads `RUNNING` throughout** (measured 2026-09-19 and 2026-10-18 in the
+  failed until the domain's RAM share with `sagemaker.amazonaws.com` (`SUP-383`), and the source's `status`
+  reads `RUNNING` throughout** (measured 2026-09-19 and 2026-10-18 in the
   domain, Stage 6f). `Tooling-default-sagemaker-modelpackagegroup-datasource` tracks
   `SageMakerModelPackageGroupAssetType` over an empty list on a cron the environment picks (`cron(32 17 * *
   ? *)` for one project, `cron(6 6 * * ? *)` for another). Each run ends `VALIDATION_EXCEPTION`, *"Failed to
@@ -2709,6 +2715,10 @@ entry is still true is the reading.
   environment creates by itself, and an associated account's case is unread. The cause is documented; the
   source, its failures and its `status` are not (`EXC-11`; `log-stage-06d-unified-studio-remainder.md`,
   2026-11-17).
+  Read again 2026-11-22 (Stage 17 3.3, verification v): `eighth-experimentation`'s source `4tb4qnmgi0iej4`, run
+  `ahyxtok17bxok0` from 17:38:11 to 17:38:24, read `SUCCESS` with `added`, `updated`, `unchanged` and `failed`
+  0, while `ml-demo-xgboost`, tagged with the project, stood `Completed` since 00:18:45. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-168` **A project update in the portal reconciles the environment's stack, and the stack writes only
   what its template changed** (measured 2026-10-18, 6d step 2.4). An `UpdateProject` with
@@ -2728,7 +2738,8 @@ entry is still true is the reading.
   `MaxIdleTimeoutInMinutes` leaves alone: the `CustomImages` entries attached by hand, which name no
   `ImageVersionNumber`, and `ExecutionRoleSessionNameMode` `USER_IDENTITY` stood, the omitted keys read as
   unchanged (`SUP-212`). Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
-  commit message carries the readings; no stage log holds them.
+  commit message carries the readings; `log-stage-06d-unified-studio-remainder.md`, 2026-11-23, records
+  them from it.
 
 - `SUP-169` **The `AmazonBedrockKnowledgeBase` blueprint's template creates its OpenSearch Serverless
   collection, Lambdas and roles only for an OpenSearch Serverless store, behind a network policy with
@@ -2918,7 +2929,8 @@ entry is still true is the reading.
   override existed at the environment's creation still differ together, `maxIdleTimeoutInMinutes` overridden
   since Stage 6a step 8.1 and `enableSpaces` the one override measured arriving after an environment's
   creation, so which of the two decides stays unmeasured. Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
-  commit message carries the readings; no stage log holds them.
+  commit message carries the readings; `log-stage-06d-unified-studio-remainder.md`, 2026-11-23, records
+  them from it.
 
 - `SUP-381` **The `SageMakerAIDomain` blueprint's deployer calls `sagemaker:ListTags` on the domain it has
   just created, which the provisioning role's managed policy does not grant, and the environment goes
@@ -3348,7 +3360,12 @@ entry is still true is the reading.
   delete and the re-create, and its `LastHealthCheckTimestamp` read that instant while `Pending` and the
   instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`.
   Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
-  commit message carries the readings; no stage log holds them.
+  commit message carries the readings; `log-stage-06d-unified-studio-remainder.md`, 2026-11-23, records
+  them from it.
+  Read again 2026-11-23 (Stage 21 pass 5): `eighth-experimentation`'s default space, deleted at 01:24:51 and
+  created again at 16:43:35, listed its JupyterLab app `InService` with a `CreationTime` of 2026-11-22 18:55:59,
+  before the space existed. Where: `log-stage-21-redshift-s3-data-products.md` and
+  `log-stage-06d-unified-studio-remainder.md`, 2026-11-23.
 
 - `SUP-468` **SageMaker Unified Studio's visual pipeline editor writes no network setting and no volume key
   into a step: its *Security* settings show the project's VPC, subnets, security group and key greyed, and
@@ -3801,6 +3818,10 @@ entry is still true is the reading.
   it. Lesson 41 with the polarity reversed: a vendor optional the implementation makes mandatory, so the
   premise that travelled was the wrong one in both directions. Where: `log-stage-06h` (2026-09-21),
   `sandbox/warehouse/iam.tf`.
+  Read again 2026-11-22 (Stage 6h step 6): for `test-experimentation`, which has no access role, *Add compute*
+  offered one role, the project's own, and at 19:05:58 answered *"Unable to assume AccessRole"*, the role
+  refused `sts:AssumeRole` on itself; Data Governance's `CreateConnection` at 19:06:01Z read
+  `ValidationException` with no message. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-202` **"IAM credentials" is not a credential type in the DataZone API at all** (read 2026-09-21 from
   `aws datazone create-connection`'s own model). `redshiftProperties.credentials` is a tagged union with
@@ -4365,15 +4386,17 @@ entry is still true is the reading.
   `notional_by_desk` `4epfbzmhyf6p74` in Staging and `dc5kf0jitjz91s` in Production, beside Sandbox's
   `6w7hp2vvi8kscw` of 2026-11-21. Each `DatasetForm`'s `alternateIdentifiers` holds the account's symlink and
   `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, which names no account.
-  The source runs then imported each target's tables as assets, and every version of both targets'
-  `notional_by_desk` asset nodes (`53i9ncbhao12ts`, `6bsflg1a3jt0r4`, two versions each, created by `SYSTEM`)
-  has one upstream node, Sandbox's `6w7hp2vvi8kscw`; the `trades` assets hang from Sandbox's `3s0gk0eg2o68pc`
-  the same way. The target's own table node has no asset downstream. Which identifier joins them is unread; the
+  The source runs then imported each target's tables as assets. Each target's `notional_by_desk` asset node
+  has two versions, Staging's `53i9ncbhao12ts` created at 17:24:05 and 17:25:40 UTC and Production's
+  `6bsflg1a3jt0r4` at 18:18:57 and 18:20:27, and each of the four has one upstream node, Sandbox's
+  `6w7hp2vvi8kscw`; the one `createdBy` read, Production's first version's, is `SYSTEM`. The current version of
+  each target's `trades` asset node has one upstream, Sandbox's `3s0gk0eg2o68pc`, its history unread. The
+  target's own table node has no asset downstream. Which identifier joins them is unread; the
   Athena name is the one the three nodes share. The lineage pages read for this project describe the asset's
   link to a dataset node by its source identifier and say nothing of a match across accounts. Consequence: a
   target's asset shows the runs of the account that first wrote a table of that name, here Sandbox's dbt runs,
   and not its own account's; the target's runs are reached from its table node, by its Glue ARN. Where:
-  `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx).
+  `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx, and the node histories recorded from R2's transcript).
 
 ## SageMaker AI spaces and images
 
@@ -5779,9 +5802,10 @@ entry is still true is the reading.
   afterwards `app_etl_deploy_staging_app_etl` read modified at 18:39:42 and
   `app_etl_deploy_staging_app_etl_train` still `READY`, modified 2026-11-22 at 04:12:30. The deploy's files
   behave the same way (`SUP-348`): `code/app-etl-train.zip` and `workflows/app-etl-train.yaml` stayed under
-  `shared/app-etl/`. Production read the same after `production-deploy` at 19:05 to 19:07 UTC:
-  `app_etl_deploy_production_app_etl` and `…_warehouse` modified at 19:07:24 and 19:07:39,
-  `app_etl_deploy_production_app_etl_train` `READY` since 2026-11-22 04:47:39, and both training files kept. The
+  `shared/app-etl/`. Production read the same at 19:14:51 UTC, after `production-deploy`'s deploy step and
+  while its bootstrap run went on: the job started at 19:05:33, `app_etl_deploy_production_app_etl` and
+  `…_warehouse` read modified at 19:07:24 and 19:07:39, `app_etl_deploy_production_app_etl_train` still `READY`,
+  modified 2026-11-22 at 04:47:39, and both training files kept, written 2026-11-22 at 04:46:32 and 04:47:40. The
   CLI's architecture page, read on 2026-10-13, has `deploy` create the workflows in MWAA Serverless and names no
   removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
   workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,
@@ -6080,6 +6104,10 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`;
   Stage 17 decision 24.
+  Read again 2026-11-22 (Stage 17 10.4, verification xxxviii): the triage's 40 guarded `Converse` through
+  `vpce-0d325931b42cbb2a4`, whose policy holds the two invoke actions alone, each with a `guardrailConfig`, were
+  admitted: the service asked no `bedrock:ApplyGuardrail` of the caller at either layer. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-466` **An account-level guardrail configuration on named models cannot be created through `awscc`
   1.106.0: the provider drops an empty `excluded_models`, Cloud Control then requires the key, and Bedrock
@@ -6114,6 +6142,10 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   `selectiveContentGuarding` `COMPREHENSIVE` for `system` and `messages`, `owner` `ACCOUNT` and no
   `modelEnforcement`, and both slices re-plan `No changes`. What the configuration assesses is verification
   l's, at the first call (10.6). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+  Read again 2026-11-23 (Stage 17 10.6, verification xlii): 40 `Converse` in Production by the deployment
+  project role's `AmazonMWAAServerless` session, each naming the application's guardrail `8fwsdhtioqe8`,
+  answered with no error, and each answer also named the account-enforced guardrail `aml52z7rpznt` version 1.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
 
 - `SUP-477` **`CreateInferenceProfile` refuses a description outside `([0-9a-zA-Z:.][ _-]?)+`, and the `aws`
   provider's plan admits it** (measured 2026-11-23 in Staging, Stage 17 10.5, as the infrastructure user). The
@@ -6165,7 +6197,8 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `log-stage-06a-unified-studio.md`, 2026-08-21; `scripts/check-provider-locks.py`.
 
 - `SUP-304` **A `terraform plan` run with no terminal and a variable missing waits on its prompt
-  indefinitely, and a 3h33m wait held no state lock** (measured 2026-09-06, Stage 6c pass 3). A backgrounded
+  indefinitely, and a 3h33m wait held no state lock; under `-input=false` a destroy's approval prompt still
+  reads stdin, and with no terminal fails on EOF** (measured 2026-09-06, Stage 6c pass 3). A backgrounded
   plan whose `peerings` variable was missing from the tfvars sat for eleven minutes while other commands
   failed with *"Error acquiring the state lock"*; two locks were force-unlocked after no `terraform` process
   was found holding them. Later the same day a plan looping over two spokes stopped at a prompt in its
@@ -6175,6 +6208,11 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   a live process before `force-unlock`. `-input=false` turns the prompt into an immediate error. Where:
   `log-stage-06c-networking-hub.md`, 2026-09-06 (two entries); `runbooks/terraform-changes.md` Recipe A;
   `lessons.md` Lesson 47.
+  Read again 2026-11-23 (Stage 21's lowering): `make down ENV=sandbox`, run by a session with no terminal,
+  planned *"Plan: 0 to add, 0 to change, 4 to destroy."* on `sandbox/probes` under `destroy -input=false`,
+  printed *"Error: error asking for approval: EOF"* and halted, nothing destroyed; with `AUTO=1`, which adds
+  `-auto-approve`, the same run destroyed. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23;
+  `scripts/slices.py`.
 
 - `SUP-305` **`terraform validate` answers `Success!` on a conditional whose branches disagree in type when
   its values come from a `for` whose keys are unknown until plan** (measured 2026-09-12, Stage 6e step 4.2).
@@ -6223,6 +6261,9 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   Read again 2026-11-23 on Terraform 1.17.2 in both `studio/` slices, on the same policy (Stage 17 10.5): the
   plans *"3 to add, 2 to change"* and *"6 to add, 2 to change"*, the applies *"3 added, 1 changed"* and *"6
   added, 1 changed"*, each re-plan `No changes`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+  Read again 2026-11-22, the apply the reading above left: `sandbox/warehouse/` from 19:18:08 to 19:18:21,
+  *"Apply complete! Resources: 7 added, 1 changed, 0 destroyed."*, `eighth-experimentation`'s policy counted
+  unchanged. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 - `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
   2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on
@@ -6532,7 +6573,8 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   `runbooks/promotion.md` §N.8.3.
 
 - `SUP-465` **`aws sts get-caller-identity` answering is no proof that Terraform can sign in: the CLI answers
-  from its cached role credentials past the SSO token's expiry, and Terraform refreshes the token itself**
+  from its cached role credentials past the SSO token's expiry, while Terraform refreshes the token itself and
+  fails**
   (measured 2026-11-22 on the laptop, Stage 19 step 6's plan). The `awsds` sso-session's token read
   `expiresAt` 21:08:53Z. At 21:09:40 a `sandbox/warehouse/` plan stopped at the S3 backend with *"No valid
   credential sources found"* and *"refresh cached SSO token failed, unable to refresh SSO token, operation
@@ -6541,6 +6583,10 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   live four hours from their vend (`SUP-012`). After a new `aws sso login --sso-session awsds` the token read
   `expiresAt` 22:11:47Z and the same plan ran. So that check proves the CLI's cache, not the token a
   Terraform run reads. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+  `SUP-015` read the same split after a sign-out (2026-09-07). Read again 2026-11-22: the CLI's refresh fails
+  too where it holds no role credentials, `awsds-scientist-sandbox` answering *"Error when retrieving token from
+  sso: Token has expired and refresh failed"* at 19:01:48 and at 21:36. Where:
+  `log-stage-06h-redshift-connection.md`, 2026-11-22.
 
 ## Clients and the egress proxy
 
@@ -6601,6 +6647,8 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   tools). With the tunnel down the same setting is consulted again, points at a host only the tunnel can
   reach, and breaks the `aws` CLI, which falls back to the system configuration: an empty `https_proxy` does
   not override it and `NO_PROXY='*'` does. Tracked as [issue #67](https://github.com/felipenoris/AWS-DataScience/issues/67).
+  Read again 2026-11-23 with the tunnel down: `gh` exited 1 at 20:40:58, *"error connecting to api.github.com"*,
+  and answered with `NO_PROXY='*'`. Where: `log-stage-08-cicd-pipelines.md`, 2026-11-23.
 
 - `SUP-335` **Linux rate-limits the ICMP errors a `REJECT` rule promises, per destination, and the rule's
   own counter does not say so** (measured 2026-09-07, 6c step 6.4). `iptables -L FORWARD -v` counted 27681

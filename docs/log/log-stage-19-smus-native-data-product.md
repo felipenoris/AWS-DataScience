@@ -5062,3 +5062,17 @@ needing nothing up (Stage 21's log). Times UTC.*
   no longer exists (`CT-19`, *"no such table"*; `SUP-197`, `SUP-365`).
 - **[Claude] The lowering** (N.10.5), in Stage 21's log: `make status` read 0.0000 USD/h at 02:27:56.
 - **What N.10's day 2 leaves of this stage**: xiv's view over an external schema, which needs a warehouse.
+
+## 2026-11-23 — Decision 4's extension, and the hands of step 6's entries of 2026-11-22, recorded with nothing up
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs. No AWS call. Times UTC.*
+
+- **[user] Decision 4 extended**: *"Accept product form"*, at 19:24:08 on 2026-11-23 in the chat of the session
+  that changed `aws/catalog.py`'s `CT-18` (pull request #395). A table reachable through a data product alone
+  takes the product's form; a table listed on its own still needs its own. The question, AWS's pages and the
+  change are in Stage 21's log, entry *Stage 19 decision 4 extended*.
+- **[Claude] Step 6's two entries of 2026-11-22**, *Step 6's access-role statement, written and planned* and
+  *Step 6's access-role statement applied*, carry no provenance line. Their hand is Claude's, the session of
+  §N.10's day 1 (pull request #382), on the user's words they quote. The apply of `sandbox/warehouse/` ran as
+  the infrastructure user with `InfrastructureAccess`, through the slice's profile `awsds-infra-sandbox-1`.

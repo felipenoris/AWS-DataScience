@@ -2994,7 +2994,8 @@ The waiting list holds each as a row. In the calendar's order:
 
   All taken by day 1, read 2026-11-21: Remote - SSH 0.128.0 and AWS Toolkit 4.20.0 with both settings,
   `proxy-on` in `~/.zshrc`, the tunnels `mbp` and `mbp-split-tunnel` in the WireGuard app.
-- **Before 6d's remainder**, last in N.6 item 7's later Sandbox sitting (N.12.1): nothing new. Chrome's
+- **Before 6d's remainder**, last in N.6 item 7's later Sandbox sitting (N.12.1): nothing new; in it, step 12's
+  item 1 makes the owner's remote-access space anew, `code` deleted on 2026-11-23 (6d's log). Chrome's
   proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
 - **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
@@ -3021,7 +3022,9 @@ The waiting list holds each as a row. In the calendar's order:
   (N.11.1 step 6), `make check` and `--self-check` passing on that commit.
 - **Before N.6 item 7's later Sandbox sitting**: `SUP-466`'s decision, then `sandbox/bedrock/`'s change
   written, planned and merged with nothing up, for Stage 17 10.4's reading 6; without it the reading stays
-  out of the sitting.
+  out of the sitting. The spaces of 2026-11-22 in `app-ml-dev` and `app-genai-dev` were deleted on 2026-11-23 (6d's log): the
+  sitting makes each anew and copies its application from `examples/` on `main`, deployed before it runs
+  (Lesson 90).
 
 #### N.12.5 What was read and built with nothing up on 2026-11-22, after R1
 
@@ -3065,6 +3068,9 @@ The quotas are above zero since 2026-10-24 (§0.2), and pass 3 is the data relea
 ```bash
 ./aws/egress.py awsds-infra-prod awsds-infra-staging awsds-infra-sandbox-1
 ```
+
+With the tunnel down, each command runs with `NO_PROXY='*'`: macOS's system proxy otherwise breaks the `aws` CLI
+and `gh` (`SUP-334`).
 
 Zero burn in every account the sitting raised, no interface endpoint left, no NAT gateway anywhere;
 then the stage's own instrument (`cicd.py`, `deploytargets.py`, `orchestration.py`, `datalake.py`,

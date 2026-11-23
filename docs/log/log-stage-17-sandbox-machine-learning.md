@@ -6454,3 +6454,30 @@ The orchestrating session, `r2-releases` and `n10-stage21-pass5`, running at 21:
   `/aws/mwaa-serverless/<domain>-<project>/app_etl_deploy_staging_app_etl_train` with 34,965 bytes and Production's
   with 0, neither with a retention (`EXC-25`). Their deletion is the user's to decide. `work/train/` stays in
   both targets until `app-etl`'s next release, as recommended: each `v0.7.0` run writes it again.
+
+## 2026-11-23 — R2: 9.11's Production leg, the workflows read at 19:14, recorded from R2's transcript
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs. No AWS call: the readings are R2's, relayed from its transcript on 2026-11-23. They time the entry *R2:
+9.11's release `v0.7.0`, the Production leg* and `SUP-484`. Times UTC.*
+
+- **[Claude] The job**: GitLab's `/pipelines/153/jobs`, read at 19:06:16, *"1015 production-deploy running
+  19:05:33"*. Its trace, read at 19:14:39, after the last workflow write:
+
+  ```text
+  2026-11-23 19:07:40,920 - smus_cicd.airflow_serverless - INFO - Successfully started workflow run: gHhoGi4GC8wHu4J
+  ```
+
+- **[Claude] The workflows**, `aws mwaa-serverless list-workflows` as `awsds-infra-prod`, `InfrastructureAccess`,
+  called at 19:14:46 and answered at 19:14:51 while the bootstrap run went on; the second column is `ModifiedAt`:
+
+  ```text
+  app_etl_deploy_production_app_etl_train  2026-11-22T04:47:39.836000+00:00  READY  manual_only
+  app_etl_deploy_production_app_etl  2026-11-23T19:07:24.926000+00:00  READY  manual_only
+  app_etl_deploy_production_app_etl_warehouse  2026-11-23T19:07:39.727000+00:00  READY  manual_only
+  ```
+
+- **[Claude] The files**, `aws s3 ls` of `shared/app-etl/` in `awsds-prod-smus-projects` in the same command, its
+  local times converted to UTC: `app-etl.zip`, `app-etl.yaml` and `app-etl-warehouse.yaml` at 19:06:24, 19:07:23
+  and 19:07:38; `code/app-etl-train.zip` (2026-11-22 04:46:32) and `workflows/app-etl-train.yaml` (04:47:40)
+  kept.
