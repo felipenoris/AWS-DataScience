@@ -4755,3 +4755,28 @@ UTC. Each application's legs are in its stage's log: `app-dbt` in Stage 20's, `a
   recomendações do R2?"*: `app-etl` `v0.7.0`'s `production-warehouse-ddl` stays unplayed, Production's
   warehouse not raised today; and R2's edits to `docs/plan/waiting-on-the-user.md` as R2 described them, in the
   smallest hunks. The third, 9.11's estate, is in Stage 17's log.
+
+## 2026-11-23 — R2: the lowering, Staging's egress, Production's workloads egress and GitLab's backup
+
+*Claude's hand, R2's session, on the user's words in this session's chat, *"make down ENV=staging; down do
+workloads-egress; backup do GitLab"*, each after the orchestrating session's «verificado», as
+`awsds-infra-staging` and `awsds-infra-prod`, `InfrastructureAccess`; the other sessions on the laptop told
+before the first. Times UTC.*
+
+- **[Claude] `make status` before** (19:15): passive burn 0.6875 USD/h, the hub (`vpn`, `proxy`), GitLab
+  (`tooling`, `runners`), `production/egress`, `production/workloads-egress` and `staging/egress` up; Sandbox at
+  zero; no Studio app billing in any account.
+- **[Claude] `make down ENV=staging AUTO=1`**, 19:27:08 to 19:33:08, exit 0: `staging/egress` *"Plan: 0 to add, 0 to
+  change, 20 to destroy."*, then *"Destroy complete! Resources: 20 destroyed."*; the `[P]` slices and `bootstrap/`
+  refused as always; no Studio app and no dormant `[D]` in Staging. Staging read no interface endpoint at 19:33.
+- **[Claude] `make down ENV=production ONLY=workloads-egress AUTO=1`**, 19:34:32 to 19:40:25, exit 0: *"Plan: 0 to
+  add, 0 to change, 20 to destroy."*, *"Destroy complete! Resources: 20 destroyed."*; the workloads VPC
+  (`vpc-06e421bd113984822`) keeps its S3 and DynamoDB gateways alone. GitLab's host is in `vpc-02fa17bfbbb0df9d5`,
+  whose own S3 gateway carries the backup's upload, so the order of this act and the next did not matter.
+- **[Claude] GitLab's backup by hand**: `aws ssm send-command` with `AWS-RunShellScript`, *"sudo gitlab-backup
+  create STRATEGY=copy"*, on `i-010c8217a1b3062dc` (`awsds-prod-gitlab`), command
+  `7a9e1d32-e122-4d14-8872-8db1ee7d60a3`, 19:40:47 to 19:41:31, `Success`, exit 0: *"Dumping database ... done"*,
+  *"Dumping repositories ... done"*, *"Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done
+  (encrypted with aws:kms)"*, *"Backup 1795462881_2026_11_23_19.4.2 is done."*. Read in the bucket:
+  `1795462881_2026_11_23_19.4.2_gitlab_backup.tar`, 22,876,160 bytes, 19:41:32, `aws:kms`, expiring 2026-12-24
+  (`expire-current-versions`), release 19.4.2.
