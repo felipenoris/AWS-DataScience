@@ -1304,3 +1304,50 @@ pasted at 15:05 (5b's log). Times UTC.*
   creation (`SUP-045`); no `CreateCluster` over the sitting (Stage 9's 9.5a).
 - **[Claude] Records**: this stage's `Status` row; `SUP-474`; 6.4's price in `docs/PRICING.md` §5, written with
   the readings (5b's log).
+
+## 2026-11-23 — Pass 5's pre-flight, with nothing up
+
+*Claude, in the session "N.10 dia 2, o resto: Stage 21 pass 5", started by the orchestrating session for
+`promotion.md` §N.10's day 2's rest beside R2. Reads as the infrastructure user with `InfrastructureAccess`
+through `awsds-infra-sandbox-1` (`Sandbox Account 1`) and `awsds-infra-data` (Data Governance), 15:58 to
+16:20; no AWS write, nothing clicked in Chrome. Times UTC.*
+
+- **[Claude] `make status`**, 15:58 to 15:59: passive and active burns 0.0000 USD, every `[E]` slice down, no
+  Studio app billing.
+- **[Claude] The ids pass 5 names**: the domain `awsds-studio` (`dzd-d8yrvx1ko7im6o`, `AVAILABLE`); the
+  producer `eighth-experimentation` (`avhvbqn37ty7m8`) and the consumer `test-experimentation`
+  (`4gqfau9xuo6e4w`). The project database is `glue_db_blerpkhn9nj7o0`, its `LocationUri`
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/`, holding the link
+  `trades` alone; its source `5w1ic2yqcs5uog` runs daily at 21:25 UTC with `INCLUDE *` and `publishOnImport`
+  false, last run `SUCCESS` on 2026-11-22. The producer's inventory holds `house-price`, `trades`,
+  `to-run-in-background-tytue9` and `trades_notional`.
+- **[Claude] Nothing of pass 5 exists**: no object and no version under `shared/stage21` or
+  `dev/data/catalogs/stage21` (the bucket's versioning is `Enabled`, so the rollback's deletes leave
+  noncurrent versions behind delete markers); `GetTable` on `stage21_images` answers `EntityNotFoundException`
+  in the five project databases of both projects; a search for `stage21` finds no asset, no data product and
+  no listing.
+- **[Claude] The S3 Access Grants baseline**: the instance `default`, created 2026-08-22; seven locations, the
+  lake's and one per project for `eighth-experimentation`, `test-experimentation`, `app-etl-dev`,
+  `app-dbt-dev`, `app-ml-dev` and `app-genai-dev`, the last three created 2026-11-19, each with its project
+  role; five grants, none from a subscription. Among them, `READWRITE` to `DataScientistAccess` on
+  `eighth-experimentation`'s location with the scope `…/avhvbqn37ty7m8/shared/*`, since 2026-08-24 (Stage
+  16's laptop vending), which already covers the prefix pass 5 publishes; 5.4's grant is read against these
+  five.
+- **[Claude] 5.5's question, from the records**: `sandbox/egress/` declares no `s3control` interface endpoint,
+  and `SUP-091`'s reading of 2026-11-21 has a space's S3 Access Grants plugin reach
+  `<account>.s3-control.us-west-2.amazonaws.com` through the proxy (`200 TCP_TUNNEL`). The plugin falls back to
+  the project role's own credentials after a refused `GetDataAccess` (`SUP-093`), so 5.5's refusals are read in
+  the trail's `GetDataAccess`, never in the notebook's result.
+- **[Claude] The spaces**: none in any of Sandbox's nine domains. The trail holds eight `DeleteSpace` since
+  2026-11-22 20:00, each as a project role in the portal's user session: `jup8h` (`app-etl-dev`) at 20:42:36,
+  `jup-app-dbt-dev` at 21:45:01, then on 2026-11-23 `default-28f1b390-…` at 01:24:51 and `code` at 01:24:59
+  (`eighth-experimentation`'s two domains), `jup` at 01:25:06, `jup-test-experimentation` at 01:25:42,
+  `jup-app-genai-dev` at 01:26:14 and `jup-ml-dev` at 01:26:32. Pass 5 creates a JupyterLab space in each
+  project.
+- **[Claude] The approval**: the Data Scientist User owns both projects, so a request the user makes in the
+  portal is accepted at creation, as 2.5's was. 5.4's request goes from `test-experimentation`'s notebook as
+  the project role, an IAM member of that project alone, which leaves the approval and its permission to
+  `eighth-experimentation`'s owner in the portal.
+- **[Claude] Chrome**: this session holds no tab group; the user's signed-in tab is outside it.
+- **[Claude] 1.4's generator** run on the laptop with Python 3: 20 PNGs of 64 by 64, 177 to 180 bytes each, 80
+  KB in all, 13 `warm` and 7 `cold`; seeded, so the space writes the same files and the same `VALUES`.
