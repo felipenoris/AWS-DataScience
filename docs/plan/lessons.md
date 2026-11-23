@@ -2119,6 +2119,15 @@ count taken in the language that reads it).
 application that uses it; bending the application to the gate, as `app-dbt`'s lock was, hides the
 assumption from the next one.
 
+**Read again 2026-11-23** (R2, the logs of Stages 8 and 20), three times on one day. `app-dbt`'s
+`build-task-code` checked that `run-dbt.sh` packs at mode `0755`, which every build on the laptop met under umask
+022; the runner's docker executor checks the file out at `0777`, so `v0.1.0`'s pipeline stopped and the tag was
+spent. After the releases, `./aws/orchestration.py`'s `OR-8` refused `app-ml`'s registration by the project role,
+the design of Stage 17's pass 9, because the check reads `app-etl`'s retired shape, where the deploy role
+registered; and `./aws/deploytargets.py`'s `DT-8` refused `app-dbt`'s own `app_dbt.trades` in Staging for sharing a
+lake table's name. A check on a file's mode is run where the file is checked out, and an instrument that names
+one application's objects is read against the next before its release.
+
 ## Lesson 88 — a key handed to a platform is handed to every service it creates through, and each brings a key contract the platform's page does not list
 
 **What happened.** The project key reaches SMUS once, as the Tooling configuration's `KmsKeyArn`, and its

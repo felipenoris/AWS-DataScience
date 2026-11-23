@@ -73,6 +73,8 @@ test:
 # with the package src/app_dbt/ and run-dbt.sh at the archive's root. `bundle` builds nothing, so the
 # archive is built here, into the folder the manifest includes. The check fails a script whose
 # executable mode the archive lost, and an archive or an unzipped size past the service's 250 MB.
+# package-task copies the file's mode from the checkout, and the runner checks out under umask 0000, so
+# run-dbt.sh arrives at 0777 whatever git stores; the chmod sets the 0755 the check reads.
 build-task-code:
   extends: .gates-uv
   stage: build
@@ -81,6 +83,7 @@ build-task-code:
   script:
     - |
       set -eu
+      chmod 0755 code/run-dbt.sh
       uvx --from "$AWSDS_WORKFLOWS" awsds-workflows package-task . code/app-dbt.zip --platform x86_64-manylinux_2_28 --include code/run-dbt.sh
       python3 - code/app-dbt.zip <<'PY'
       import os

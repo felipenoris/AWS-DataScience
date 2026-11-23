@@ -4357,6 +4357,24 @@ entry is still true is the reading.
   answers an `INACTIVE` listing to `InfrastructureAccess` in Data Governance is not measured; a refused read
   leaves both checks a note. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
+- `SUP-483` **A Glue table asset's lineage node takes as upstream the dataset node another account created for a
+  table of the same database and name, not the node keyed by its own account's table ARN** (measured
+  2026-11-23, Stage 20 8.9, `GetLineageNode` and `ListLineageNodeHistory` as `InfrastructureAccess` in Staging
+  and Production). `app-dbt`'s release ran dbt in both targets, each run posting events whose datasets carry the
+  account's symlink (`SUP-391`), and the domain wrote a table node per account keyed by its own Glue ARN:
+  `notional_by_desk` `4epfbzmhyf6p74` in Staging and `dc5kf0jitjz91s` in Production, beside Sandbox's
+  `6w7hp2vvi8kscw` of 2026-11-21. Each `DatasetForm`'s `alternateIdentifiers` holds the account's symlink and
+  `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, which names no account.
+  The source runs then imported each target's tables as assets, and every version of both targets'
+  `notional_by_desk` asset nodes (`53i9ncbhao12ts`, `6bsflg1a3jt0r4`, two versions each, created by `SYSTEM`)
+  has one upstream node, Sandbox's `6w7hp2vvi8kscw`; the `trades` assets hang from Sandbox's `3s0gk0eg2o68pc`
+  the same way. The target's own table node has no asset downstream. Which identifier joins them is unread; the
+  Athena name is the one the three nodes share. The lineage pages read for this project describe the asset's
+  link to a dataset node by its source identifier and say nothing of a match across accounts. Consequence: a
+  target's asset shows the runs of the account that first wrote a table of that name, here Sandbox's dbt runs,
+  and not its own account's; the target's runs are reached from its table node, by its Glue ARN. Where:
+  `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx).
+
 ## SageMaker AI spaces and images
 
 ### Custom images and their versions
@@ -5742,6 +5760,23 @@ entry is still true is the reading.
   since, and `unchanged: 1` every other day. Between an import and the source's next run the asset names
   another account's table, and a listing made in that window publishes that table's location and ARN.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
+- `SUP-484` **`deploy` creates or updates each workflow its manifest names and deletes none the manifest no
+  longer names** (measured 2026-11-23 in Staging and Production, Stage 17 9.11, `list-workflows` as
+  `InfrastructureAccess`). Release G's `v0.6.0` deployed `app_etl_deploy_staging_app_etl` and
+  `app_etl_deploy_staging_app_etl_train` to `deploy-staging` on 2026-11-22. `v0.7.0`'s manifest drops
+  `app-etl-train`, and its `staging-deploy` at 18:38 to 18:39 UTC printed *"Successfully created 1 workflow(s)"*;
+  afterwards `app_etl_deploy_staging_app_etl` read modified at 18:39:42 and
+  `app_etl_deploy_staging_app_etl_train` still `READY`, modified 2026-11-22 at 04:12:30. The deploy's files
+  behave the same way (`SUP-348`): `code/app-etl-train.zip` and `workflows/app-etl-train.yaml` stayed under
+  `shared/app-etl/`. Production read the same after `production-deploy` at 19:05 to 19:07 UTC:
+  `app_etl_deploy_production_app_etl` and `…_warehouse` modified at 19:07:24 and 19:07:39,
+  `app_etl_deploy_production_app_etl_train` `READY` since 2026-11-22 04:47:39, and both training files kept. The
+  CLI's architecture page, read on 2026-10-13, has `deploy` create the workflows in MWAA Serverless and names no
+  removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
+  workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,
+  by a chain or by hand, until it is deleted outside the CLI, and its archive stays in the workflow scan's root.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23 (9.11).
 
 ## Bedrock
 

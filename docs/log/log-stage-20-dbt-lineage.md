@@ -2473,3 +2473,181 @@ over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on C
   (`663aee70`), the revocation being the entry above.
 - **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
   and GitLab.
+
+## 2026-11-23 — R2: 8.6's deletion named, nothing up
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), as `awsds-infra-sandbox-1` with
+`InfrastructureAccess`; reads only. The gates' `pip-audit` on this tree is in Stage 8's log of the same
+day. Times UTC.*
+
+- **[Claude] 2.4's asset read on `app-dbt-dev`** at 16:04: three assets, `trades` (`bra0895x5fjzww`),
+  `notional_by_desk` (`daefcycb3hhhn4`) and `notional_by_desk_prod` (`5p014tr72zikcw`), each a
+  `GlueTableAssetType` over `table/app_dbt/<name>.dnl3l158mbhrio`. The source `3uof8bs4x693f4`'s scheduled
+  run `ah8tig93gjnh8w`, at 02:54:41 on 2026-11-23, created `notional_by_desk_prod` (`SUCCEEDED_CREATED`,
+  revision 1, created by `SYSTEM`, no listing) and updated the other two (`SUCCEEDED_UPDATED`, each at
+  revision 7, its description, README and form `classification` kept). Pass 5's table asset is
+  `notional_by_desk_prod`, 8.6's one deletion. No asset of the link `trades_notional` exists, and the
+  project owns no data product.
+- **[Claude] Who may delete it from the CLI**: `app-dbt-dev`'s members are the Data Scientist User as
+  `PROJECT_OWNER` and three `PROJECT_CONTRIBUTOR`s, the project's own role, `awsds-deploy-sandbox-test`'s
+  role-session group (`06d426f2-…`) and Sandbox's `InfrastructureAccess` group (`839bcde8-…`). DataZone's
+  user guide: *"To delete an asset, you must be the owner or the contributor of the project"*;
+  `DeleteAsset`'s reference refuses an asset linked to a data product. So `delete-asset` as
+  `awsds-infra-sandbox-1` is admitted on paper, unmeasured.
+
+## 2026-11-23 — 8.6: pass 5's table asset deleted, nothing up
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's word in this session's chat, *"pela
+cli. Pode adiantar apagar esse asset caso isso não tenha como pré-requisito subir o ambiente."*, answering
+which of 8.6's paths deletes `notional_by_desk_prod`. As `awsds-infra-sandbox-1`, `InfrastructureAccess`;
+the trail read as `awsds-infra-data`. Times UTC.*
+
+- **[Claude] Read first** at 16:16:25: the asset `5p014tr72zikcw`, `notional_by_desk_prod`, revision 1,
+  owned by `dnl3l158mbhrio`, no listing; the token valid to 17:15:22.
+- **[Claude] The deletion**: `aws datazone delete-asset --domain-identifier dzd-d8yrvx1ko7im6o --identifier
+  5p014tr72zikcw`, 16:16:36 to 16:16:38, exit 0 with no output. `get-asset` at 16:16:43 answered
+  `ResourceNotFoundException`, *"The given Asset doesn't exist."*, and 2.4's `search` lists `trades`
+  (`bra0895x5fjzww`) and `notional_by_desk` (`daefcycb3hhhn4`) alone. Data Governance's trail holds one
+  `DeleteAsset` at 16:16:38, by the infrastructure user's `InfrastructureAccess` session, no error code and
+  no `vpcEndpointId`. A contributor's delete is admitted, as DataZone's user guide states.
+- **[Claude] What re-imports it**: the Glue table `app_dbt.notional_by_desk_prod` stays, beside `trades` and
+  `notional_by_desk`, and the source `3uof8bs4x693f4` runs on `cron(43 2 * * ? *)`, `READY`,
+  `publishOnImport` false. Its next run creates the asset again, so the tag `v0.1.0` is pushed before 02:43
+  on 2026-11-24 (Lesson 86), and 2.4's read runs again right before the tag.
+
+## 2026-11-23 — R2: 8.7's first push, and `v0.1.0`'s pipeline stopped at `build-task-code`
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, which name
+each act of the list `r2-acts-for-15h.md` in order, among them *"primeiro push do app-dbt; tag v0.1.0 do
+app-dbt; gates do app-dbt"*, and *"Um job que falhar para a sessão no log dele."* GitLab as its local
+administrator `felipenoris`, signed in by the user in a Chrome tab of Claude's; git through the laptop's
+keychain credential; AWS reads as the infrastructure user. Times UTC.*
+
+- **[Claude] 8.7's first push** (`sagemaker-application.md` §L step 1): `awsds/app-dbt` cloned empty into
+  `$HOME/tmp/app-dbt`, `examples/app-dbt/` at `origin/main` `495ebb1a` extracted and committed, the tree
+  `71a3400d` on both sides (Lesson 86), `code/run-dbt.sh` at `100755`; pushed onto `main` at 16:48:34 as
+  `395940e8`. The `main` pipeline #141: `secret_detection` and its gate, `pip-audit` *"78 of 78 pinned
+  package(s) audited, 0 blocking vulnerability(ies)"*, and `test` *"83 passed, 3 skipped"*, ruff clean, the
+  lint *"ok: 4 arquivo(s)"*, each on `awsds-prod-runner-test`, the pipeline `success` by 16:50. The three
+  skips are the tests that read `run-dbt.sh`'s stored mode through git, as in a copy that is no git
+  repository (the pre-flight's entry).
+- **[Claude] Before the tag**, at 16:51:21: the build runner `i-015f85e903a4bfe45` running; 2.4's `search`
+  on `app-dbt-dev` listing `trades` and `notional_by_desk` alone; no tag on the project.
+- **[Claude] The tag `v0.1.0`** on `395940e8`, pushed at 16:51:36. Pipeline #143, created 16:51:40:
+  `pip-audit` and `test` green; **`build-task-code` failed** (job 909, 16:52:37 to 16:53:00, on the test
+  runner): *"code/app-dbt.zip: 5102 entries, 26129232 bytes, 82844337 unzipped, modes {'run-dbt.sh':
+  '0o100777', 'app_dbt/bin/dbt': '0o100755'}"*, then *"FATAL: run-dbt.sh at mode 0o100777"*. Every later
+  job skipped: no bundle, no release, nothing deployed, Staging and Production untouched. The tag is spent
+  (a protected tag never moves), so the release becomes `v0.1.1`. The session stopped at the job's log, the
+  user's rule.
+- **[Claude] The cause**: `package-task` copies an included file's mode from the checkout, and the runner's
+  checkout leaves `run-dbt.sh` at `0777` whatever git stores (`100755`), the umask the runner's docker
+  executor checks out under. On the laptop, under umask 022, the archive held `0o100755`, which every
+  earlier build and the bundle's rehearsal read (8.6, and the pre-flight of 02:23). Reproduced on the laptop
+  at 16:53: the same tree with `run-dbt.sh` at `0777` packages to `0o100777`, and after `chmod 0755` to
+  `0o100755` for both files. Lesson 87's class: the check was written against the laptop's umask, and no
+  other application's archive includes an executable (`app-ml`, `app-genai` and `app-etl` carry no mode
+  check).
+- **[Claude] The fix, written and run with nothing deployed**: `build-task-code` runs `chmod 0755
+  code/run-dbt.sh` before `package-task` (commit `360d9a39` on this branch, `examples/app-dbt/` tree
+  `1ed5058e`). The job's script, run on a copy whose `run-dbt.sh` was set to `0777`, printed both modes
+  `0o100755`, exit 0; the `test` job on the tree *"86 passed"*, the lint *"ok: 4 arquivo(s)"*.
+
+## 2026-11-23 — R2: 8.7's release `v0.1.1`, the fix merged
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat, *"Autorizo
+no R2: o MR e merge do fix do run-dbt.sh no app-dbt (commit 360d9a39); a tag v0.1.1 do app-dbt e os gates
+dela."* GitLab as `felipenoris` in Claude's Chrome tab; git through the keychain credential; AWS reads as the
+infrastructure user, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] The fix's merge request** `!1`: the branch `fix-run-dbt-mode` at `64c9b9a2`, `examples/app-dbt/`
+  at `360d9a39`, pushed at 16:59:21. Its pipeline #144: `secret_detection` and its gate, `pip-audit` and
+  `test` green. Merged at 17:02:43 by `felipenoris`, the merge commit `71d23ffb`, whose tree `1ed5058e` is
+  the source's (Lesson 86). The `main` pipeline #146 green.
+- **[Claude] Before the tag**, at 17:04:09: the build runner `i-015f85e903a4bfe45` running and GitLab's three
+  runners online; 2.4's `search` on `app-dbt-dev` listing `trades` (`bra0895x5fjzww`) and
+  `notional_by_desk` (`daefcycb3hhhn4`) alone.
+- **[Claude] The tag `v0.1.1`** on `71d23ffb`, pushed at 17:04:32. Pipeline #148: `pip-audit` and `test`
+  green; `build-task-code` (job 957, on `awsds-prod-runner-test`) *"code/app-dbt.zip: 5102 entries,
+  26129230 bytes, 82844337 unzipped, modes {'run-dbt.sh': '0o100755', 'app_dbt/bin/dbt': '0o100755'}"*;
+  `bundle` (job 958) *"Bundle created: ./artifacts/app-dbt.zip (25501481 bytes)"*, SHA-256
+  `3bc08854e4baa18cb55e1c3b702e2b2ad3ef8bb758ebe3399fdd87013ec7356b`, its catalog against `product.json`
+  *"assets: 2 (notional_by_desk, trades)"*, `OK`; `store-bundle` and `release` green.
+- **[Claude] Staging**: `staging-gate` played at 17:08:01. `staging-deploy` (job 963, 17:08:37 to 17:10:35)
+  created the workflows `app_dbt_deploy_staging_app_dbt` and `app_dbt_deploy_staging_app_dbt_probe` in
+  `deploy-staging`, each `READY`; *"the import created no asset, which the project's own source creates"*
+  (`SUP-369`); the stage's variables recorded in `/datascience/staging/applications/app-dbt/stage-variables`.
+  `staging-test` (job 964) started `awsds-staging-chain-app-dbt-probe`, execution `v0-1-1-964-app-dbt-probe`,
+  at 17:11:07.
+- **[Claude] `staging-test`**: the probe's execution `SUCCEEDED` at 17:14:11; `awsds-staging-chain-app-dbt`,
+  execution `v0-1-1-964-app-dbt`, started at 17:14:14 and `SUCCEEDED` at 17:21:24. The catalog answered the
+  deploy role `trades` and `notional_by_desk` `ICEBERG` and registered, the model under
+  `dev/data/catalogs/app_dbt/notional_by_desk/8ad199f2-853f-498c-a3c2-58e7b3a131fd`, with `persist_docs`'s
+  description. `ListLineageEvents` from 17:14 as `awsds-infra-staging`: six `SUCCESS` under the namespace
+  `app-dbt-staging` (`dbt-run-app_dbt` and the model's `build.run` and `build.test`, each `START` and
+  `COMPLETE`, 17:18:26 to 17:18:46), beside the Glue job's under `default`.
+- **[Claude] `staging-catalog`** (job 965, 17:23:30 to 17:26:05): the source's run *"added": 2, "failed": 0*,
+  the project holding `notional_by_desk` and `trades`; the second deploy's import *"0 created, 2 updated, 1
+  skipped (extra in target), 0 failed, 0 published"*, the extra being `app-etl`'s `trades_notional`, which the
+  import leaves. The Staging leg reads yes.
+- **[Claude] 8.9's Staging readings** as `awsds-infra-staging`, read at about 17:49. The tables: `trades`
+  created at 17:17:08 by the project role's `GlueJobRunnerSession`, `notional_by_desk` at 17:18:39 by its
+  `AmazonMWAAServerless` session, both `ICEBERG` and registered with Lake Formation. The workgroup
+  `workgroup-5ido8bej1zoeq8-d6nu5aphq1e974`: the probe's `SELECT 1` `SUCCEEDED` and its `count(*)` on `trades`
+  `FAILED` on *"TABLE_NOT_FOUND: … Table 'awsdatacatalog.app_dbt.trades' does not exist"* at 17:11:54, the
+  probe running before the chain's Glue job made the table, a first run's reading (xxii); dbt's `create
+  table`, its row-count `SELECT` and the `not_null` test `SUCCEEDED` at 17:18:37, 17:18:40 and 17:18:42,
+  each commented `"dbt_version": "1.11.16"`. The trail: the five `StartQueryExecution` by the
+  `AmazonMWAAServerless` session through `vpce-056f3f046e89e7c02`; `CreateTable` for `notional_by_desk` by the
+  same session with no `vpcEndpointId`, Athena's call on its behalf, and `trades`'s by `GlueJobRunnerSession`
+  through `vpce-0b091399f751920e5`; two `GetDataAccess` with no `vpcEndpointId`; six `PostLineageEvent` by
+  the `AmazonMWAAServerless` session at 17:18:46 to 17:18:47 through `vpce-0d1a6f9bf71812e1a`, beside the
+  Glue job's six by `GlueJobRunnerSession` through the same endpoint (xviii, xix). No call errored.
+- **[Claude] The skipped asset**, read at 18:03 by `search` on `deploy-staging` as `awsds-infra-staging`:
+  `trades_notional` (`as6m73yp8shr80`) is the Glue table `app_etl.trades_notional`, `app-etl`'s product,
+  created 2026-11-22 at 15:37 UTC in R1; `app-dbt`'s two are `trades` (`agse8rgfcfz5w0`) and
+  `notional_by_desk` (`at5whqovhlcia8`), created at 17:25:25 and 17:25:27 by `staging-catalog`'s source run.
+- **[Claude] Production**: both legs verified by the orchestrating session (the bundle, both Staging
+  executions, both tables); `production-check` (job 966) green at 17:48:21, `production-gate` (job 967)
+  played at 18:02:09.
+- **[Claude] `production-deploy`** (job 968, 18:09:55 to 18:18:00): the bootstrap ran
+  `app_dbt_deploy_production_app_dbt` (run `WwkBOQBsRtgRoX8`), `load` and `transform` exit 0, the six events
+  `SUCCESS` under `app-dbt-prod` at 18:15:37 to 18:15:57.
+- **[Claude] `production-catalog`** (job 969, 18:18:18 to 18:26:58): the source's run *"added": 2, "failed": 0*;
+  the second import *"0 created, 2 updated, 2 skipped (extra in target), 0 failed, 0 published"*, the extras
+  being `app-etl`'s data product `trades-notional` and asset `trades_notional`; its deploy ran `app-dbt` again,
+  six more events `SUCCESS` at 18:25:20 to 18:25:48, and `notional_by_desk` was created again at 18:25:37 under
+  `…/app_dbt/notional_by_desk/a4f449ef-2e8e-496d-8c26-405ec6b98bdb` (x). Read as `awsds-infra-prod` at 18:28:
+  `trades` `ICEBERG` by `GlueJobRunnerSession`, `notional_by_desk` `ICEBERG` by `AmazonMWAAServerless`, both
+  registered; the assets `trades` (`5ebvfidjbbztlc`) and `notional_by_desk` (`c96p9n24zdtr4g`) in
+  `deploy-production`. The Production leg reads yes; pipeline #148 green from end to end.
+
+## 2026-11-23 — R2: 8.9's Production trail and the nodes of both targets
+
+*Claude's hand, R2's session; reads only, as `awsds-infra-prod` and `awsds-infra-staging`, `InfrastructureAccess`,
+while `app-ml`'s and `app-etl`'s legs ran. Times UTC.*
+
+- **[Claude] Production's trail** for `production-deploy`'s and `production-catalog`'s two runs (18:10 to 18:28,
+  read at 18:47): nine `StartQueryExecution` on `workgroup-d7qcazihvr3s7k-59niwej9axztow` by
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`'s `AmazonMWAAServerless` session through
+  `vpce-0a6649b8bfd3a37b7` (`awsds-prod-workloads-athena`); `CreateTable` for `notional_by_desk` twice and for
+  `notional_by_desk__ha` and `notional_by_desk__bkp` once each, by the same session with no `vpcEndpointId`
+  (Athena's call on its behalf; the second run's swap, as 2.5 read it in Sandbox), and `trades`'s by
+  `GlueJobRunnerSession` through `vpce-076386501f127d2ae` (`awsds-prod-workloads-glue`); six `GetDataAccess` by
+  the `AmazonMWAAServerless` session, no `vpcEndpointId`; `PostLineageEvent`, 12 by that session and 28 by
+  `GlueJobRunnerSession`, all through `vpce-03eccbf7c621bbbf4` (`awsds-prod-workloads-datazone`). No call
+  errored. xviii and xix read yes in Production as in Staging.
+- **[Claude] The nodes** (xx), by 2.4's `get-lineage-node`. Each target has its own: the job nodes
+  `app-dbt-staging.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run` (`6b8sn169ga9lhs`) and
+  `app-dbt-prod.…build.run` (`6o1v0lvm655ac0`); the table nodes keyed by the account's own Glue ARN,
+  `notional_by_desk` `4epfbzmhyf6p74` and `trades` `akfm2ggbaumjo0` in Staging (created 17:18:50), and
+  `dc5kf0jitjz91s` and `c35d04bqelikuo` in Production (created 18:16:02), each `DatasetForm` holding the
+  account's symlink and the Athena name `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.<table>`.
+  The assets do not hang from them. Staging's `notional_by_desk` asset node (`53i9ncbhao12ts`) and Production's
+  (`6bsflg1a3jt0r4`, created by `SYSTEM` at 18:18:57) each have one upstream node, `6w7hp2vvi8kscw`, the node
+  `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk` created on 2026-11-21 (`SUP-391`); the two
+  `trades` asset nodes (`6209f9enfefp8w`, `angvx93e2w3ksw`) have one, `3s0gk0eg2o68pc`, Sandbox's `trades`.
+  Sandbox's node lists downstream a dbt test run of 2026-11-22 (`dedgldxzwqkya8`), Sandbox's asset node
+  (`6ljn21swt4l0y8`), Staging's and Production's. The one name the three accounts' table nodes share is the Athena one, which carries no account.
+  So xx reads no: a target's job and table nodes are its own, and its asset shows Sandbox's dbt runs upstream,
+  not its account's (`SUP-483`).
