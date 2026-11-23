@@ -4785,3 +4785,20 @@ before the first. Times UTC.*
   complete! Resources: 13 destroyed."*; `production/tooling` stopped, `i-010c8217a1b3062dc` (`awsds-prod-gitlab`)
   reading `stopped`; `production/egress` *"12 to destroy"*, *"Destroy complete! Resources: 12 destroyed."*; the
   hub's two `[D]` slices refused by the target, as written.
+- **[user] The tunnel down**, at about 19:45, during `make gitlab-down` (*"Túnel derrubado"*, in the orchestrating
+  session's chat). Every later CLI call ran with `NO_PROXY='*'`.
+- **[Claude] `make hub-down AUTO=1`**, after the orchestrating session's «verificado», 19:53:53 to 19:53:59, exit 0:
+  `awsds-prod-proxy` (`i-071bcc561f75b51d7`) and `awsds-prod-vpn` (`i-0e3ae32bacd61c9b2`) `stopped`.
+- **[Claude] §R** at 19:54 to 20:00: `make status` *"passive burn: USD 0.0000/h"*, *"active burn: USD 0.0000"*, no
+  Studio app, no EMR Serverless application and no OpenSearch Serverless collection in any account.
+  `./aws/egress.py` on the three accounts: *"all checks passed"*, no interface endpoint and no NAT gateway, 0.000
+  USD/h each. `./aws/cicd.py`: *"0 check(s) FAILED."*. `./aws/orchestration.py`: 16 failed, fifteen `OR-2` on the
+  CLI's log groups with no retention (`EXC-25`, the new applications' groups among them) and one `OR-8`,
+  *"CreateModelPackage caller … datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow/AmazonMWAAServerless is not
+  awsds-deploy-prod"*: `app-ml`'s register workflow proposes the version as the project role by design (Stage 17
+  pass 9), and the check reads `app-etl`'s retired shape, where the deploy role registered. `./aws/deploytargets.py`:
+  one failed, `DT-8` *"staging table app_dbt.trades carries a lake table's name - Staging holds no copy (decision
+  3)"*: `app-dbt`'s Glue job loads its own sample into `app_dbt.trades`, which shares the lake table's name and
+  copies nothing from it. Both checks are Lesson 87's class, owed a change that reads each application's shape.
+  The calls that failed in all three are the profiles of SSO sessions not signed in (`awsds-ctadmin`,
+  `awsds-deploy`, `awsds-devenv`, `awsds-governance`).
