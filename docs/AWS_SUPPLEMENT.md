@@ -3759,7 +3759,11 @@ entry is still true is the reading.
   connection a contributor made at 21:53:22Z carried `lineageSync` enabled on `cron(53 21 * * ? *)`, the
   minute of its creation, daily, and a job of its own, `cqsmsbqin5yr2o`, with no run at 21:55:04.
   `DeleteConnection` took the job with it: `list-job-runs` on its id answered *"The given Job doesn't
-  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22. Read again 2026-11-22
+  (Stage 21's 2.4): the connection the `RedshiftServerless` blueprint wrote for a consumer's workgroup,
+  `project.redshift`, carried `lineageSync` enabled on `cron(28 23 * * ? *)`, the minute of its creation, and a
+  job of its own, so the blueprint's path carries the default too. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -4053,6 +4057,49 @@ entry is still true is the reading.
   `svv_all_columns`, `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, limited to the schema and
   the names the include rule matched; the first is absent from `sys_query_history`. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-469` **A Redshift subscription's fulfilment fails *"Secret ARN can not be null or empty"* when the
+  producer's assets came through a connection authenticated by IAM, and both portals read the subscription as
+  shared** (measured 2026-11-22 in Sandbox and Data Governance, Stage 21's 2.5 and 2.7). The producer's view
+  and table were imported by a data source on a Redshift connection that authenticates by IAM and names no
+  secret; the consumer's target, written by the `RedshiftServerless` blueprint, names its namespace's admin
+  secret. A request accepted at creation at 23:45:56Z led to two grants created by `SYSTEM` within 1.6 s, both
+  `GRANT_FAILED` 37 s later with that `failureCause` on each asset and `targetName` null. Nothing reached
+  either namespace: no datashare, no statement, and no Redshift, Data API or Secrets Manager call in the
+  workgroups' account. The consumer's portal read *Subscription approved*, and the producer's *Access* tab
+  *Shared* with no grant status. `RevokeSubscription` (`retainPermissions` `false`) at 23:56:34Z removed the
+  failed grants: each answered `ResourceNotFoundException` 36 s later, with no call in the workgroups'
+  account. The Redshift asset's page, as `catalog.md` §S summarises it (read 2026-11-17), describes the
+  datashare and names no credential. A Redshift asset shared by subscription therefore comes from a
+  connection authenticated by a secret; which database privileges that secret's user needs is unmeasured.
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-470` **The portal's *Create table → Redshift table* uploads the file through S3 as the Redshift
+  connection's access role, under the projects bucket's default key, before any `COPY`** (measured
+  2026-11-23 at 00:02 UTC in Sandbox, Stage 21's 2.8). With a three-row CSV, the database `sandbox` and the
+  schema `lab`, *Next* answered *"Cannot infer schema"* and IAM's wording: the access role's session
+  `<Identity Center user id>@<Tooling environment id>`, created at 00:01:11Z with the portal user as
+  `sourceIdentity`, *"is not authorized to perform: kms:GenerateDataKey on resource:
+  arn:aws:kms:us-west-2:<account>:key/<id> because no identity-based policy allows the kms:GenerateDataKey
+  action"*. The trail logs the refusal at 00:02:24Z with `invokedBy` `fas.s3.amazonaws.com` and
+  `requestParameters` null, so the object's name is not in it. The key is the default key of the SageMaker
+  projects bucket and of no other bucket in the account. The access role holds no `s3:` or `kms:` action and
+  the bucket's policy only denies insecure transport; whether S3 authorized `s3:PutObject` before calling KMS
+  is not read. The same session's Query Editor V2 statements, as the per-project database user, only listed
+  databases and schemas; no `COPY` ran and no table was created, so the namespace's default role, which holds
+  no policy, was never reached. A load through this form needs the connection's role to write the projects
+  bucket under its key. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-471` **The `RedshiftServerless` blueprint's deploy creates a database role
+  `datazone_env_<environment id>` holding `sys:superuser`** (measured 2026-11-22 in Sandbox, Stage 21's 2.4,
+  read 2026-11-23 at 00:05 UTC). The provisioning role's database user, `IAMR:<provisioning role name>`, a
+  superuser, ran `CREATE ROLE "datazone_env_<environment id>"`, `GRANT USAGE ON DATABASE awsdatacatalog` to
+  it, `CREATE SCHEMA "project"`, `GRANT ALL ON SCHEMA "project"` and `GRANT ALL FOR tables IN SCHEMA project`
+  to it, and `GRANT ROLE sys:superuser TO ROLE datazone_env_<environment id>`, in 7 s ending 4 s before the
+  subscription target was written. The role is the target's `authorizedPrincipals`, and no user held it after
+  the deploy. A portal session carries `RedshiftDbRoles = datazone_env_<environment id>` (`docs/SMUS.md`, measured
+  2026-10-10 on another workgroup), so a member's portal session on this workgroup would be a superuser
+  session; that half is unmeasured. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
 
 ## SageMaker AI spaces and images
 

@@ -944,3 +944,72 @@ infrastructure told first. Times UTC.*
 - **[Claude] Sandbox's workgroups** at 23:31: `awsds-sandbox-warehouse` (4 and 8) and
   `redshift-serverless-workgroup-dahsfn6j8lqec0` (4 and 4). `test-experimentation` holds six environments, the
   new one among them, and `create-datalake-database-env-mydatabase-…` stays `VALIDATION_FAILED` from 2026-11-09.
+
+## 2026-11-22 — §N.10's day 2: 2.5 to 2.8, the subscription, its revocation and the portal's load
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Faça do
+2.5 ao  2.8 prlo chro.e"*. The portal's acts in the Data Scientist User's Chrome session, owner of
+`eighth-experimentation` and a member of `test-experimentation`; the reads as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`). Times UTC; 2.8 ran after midnight, on 2026-11-23.*
+
+- **[Claude] 2.5, the request**: from `test-experimentation`, a subscription request to the data product
+  `sandbox-trades-hot` (listing `4q8efayh74yxow`, revision 1), reason *"Stage 21 2.5: test-experimentation
+  reads the product through its Redshift Serverless workgroup."*. `CreateSubscriptionRequest` at 23:45:56Z by
+  the portal user, Data Governance's trail, answered `ACCEPTED` with no reviewer (`reviewerId` null); the
+  requester owns the publishing project. The subscription `coq9ewxmav1zf4` read `APPROVED`.
+- **[Claude] 2.5, the fulfilment**: two grants created by `SYSTEM` on the target `bbw4g031uhkopc`,
+  `5plwofai6rdwr4` for the view's listing `5t9cxrhio6c8eo` (`trades_hot_by_desk`, asset `4o4k5h7uxxsj68`) at
+  23:45:57.530 and `da65d7frv0lci8` for the table's listing `cl14qzshdc64y8` (`trades_hot`, asset
+  `cgpzdjxcumuzrk`) at 23:45:57.773. Both read `GRANT_FAILED` at 23:46:34 and 23:46:35, each asset's
+  `failureCause` *"Secret ARN can not be null or empty"*, `targetName` null. The consumer's target names its
+  namespace's admin secret (2.4); the producer's assets came from the data source on
+  `redshift-serverless.redshift` (`axsiuoykrswosw`), authenticated by IAM, which names no secret (`SUP-469`).
+- **[Claude] What the failure wrote: nothing.** Both namespaces' `svv_datashares` empty (23:57:44 and
+  23:58:23); their `sys_query_history` from 23:44 holds no `datashare`, `GRANT` or `REVOKE` statement but the
+  admin users' reads; the consumer's databases are `dev` alone. Data Governance's trail holds
+  `CreateSubscriptionRequest` and no `AcceptSubscriptionRequest`, `CreateSubscriptionGrant` or
+  `UpdateSubscriptionGrantStatus`. Sandbox's holds no `redshift-data`, `redshift-serverless`, `redshift` or
+  `secretsmanager` call from 23:44 to 23:59 but the infrastructure user's, and DataZone's only `AssumeRole`s
+  are the portal user's sessions in the two project roles (23:45:03 to 23:45:15, 23:53:06).
+- **[Claude] What the portal shows**: the consumer's side read *Subscription approved*. The producer's
+  *Subscriptions → Access* read `sandbox-trades-hot | test-experimentation | Shared | 22 de novembro de 2026 às
+  20:45`, and its *View access details* *Shared by* Data Scientist User and *Shared with*
+  `test-experimentation`, with no grant status. Neither page shows the failure.
+- **2.6 not run**: with both grants failed there is nothing to `SELECT` and no `ComputeSeconds` to compare. No
+  space was started.
+- **[Claude] 2.7, the revocation**: the producer's *Access* row, *Revoke*, the dialog *Revoke access* asking
+  for *confirm*, with no box. `RevokeSubscription` at 23:56:34Z by the portal user, `retainPermissions`
+  `false`; `coq9ewxmav1zf4` `REVOKED` (`updatedAt` 23:56:34.079); both grants answered
+  `ResourceNotFoundException`, *"subscriptionGrant entity not found"*, at 23:57:10. No call reached Sandbox and
+  neither namespace changed (above). The *Access* tab reads *No data available*. A revocation of a grant that
+  wrote a datashare stays unmeasured.
+- **[Claude] 2.8, the portal's load**: `eighth-experimentation`'s *Data → Add → Create table*, *Redshift table*,
+  the file `stage21_portal_load.csv` (a header and three rows), the compute `Redshift
+  (redshift-serverless.redshift)`, the database `sandbox` (offered `warehouse`, the namespace's default and
+  preselected, `dev` and `sandbox`), the schema `lab` (offered `public` and `lab`), the table name
+  `stage21_portal_load` filled from the file. *Next* answered *"Cannot infer schema"* with IAM's wording: the
+  access role's session `<Identity Center user id>@<Tooling environment id>` *"is not authorized to perform:
+  kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<account>:key/a81b1ef3-… because no identity-based
+  policy allows the kms:GenerateDataKey action"*.
+- **[Claude] 2.8 in the trail and the database**: the access role's session created 00:01:11Z, `sourceIdentity`
+  the portal user. Its Query Editor V2 session listed databases and schemas as user 103, 00:01:14 to 00:02:10
+  (`application_name` *Amazon Redshift Query Editor V2 - …*). `GenerateDataKey` refused at 00:02:24Z,
+  `invokedBy` `fas.s3.amazonaws.com`, `requestParameters` null. The key is `alias/awsds-sandbox-project`, the
+  default key of `awsds-sandbox-smus-projects` and of no other Sandbox bucket, so the upload went to that
+  bucket through S3; the trail names no object, and no object under `eighth-experimentation`'s prefix is newer
+  than 23:00. The access role holds no `s3:` or `kms:` action, and the bucket's policy only denies insecure
+  transport. No `COPY` ran (`sys_query_history` from 00:00 holds none, `sys_load_error_detail` empty), `lab`
+  holds no `stage21_portal_load`, and the namespace's default role `awsds-sandbox-warehouse-exec` was never
+  reached. Nothing was granted (5b decision 5). Verification vii: the refusal is KMS's, to the connection's
+  access role, at the upload, before any `COPY` (`SUP-470`).
+- **[Claude] The consumer's namespace, read 00:05Z**: `pg_user` lists `rdsdb`, `admin` and
+  `IAMR:awsds-sandbox-smus-provisioning` as superusers, and `IAMR:user-project@4gqfau9xuo6e4w` (user 102, a
+  `SHOW SCHEMAS` at 23:29:15) not. The provisioning role's user ran at the deploy, 23:28:42 to 23:28:49:
+  `CREATE ROLE "datazone_env_dahsfn6j8lqec0"`, `GRANT USAGE ON DATABASE awsdatacatalog` to it,
+  `CREATE SCHEMA "project"`, `GRANT ALL ON SCHEMA "project"` and `GRANT ALL FOR tables IN SCHEMA project` to
+  it, and `GRANT ROLE sys:superuser TO ROLE datazone_env_dahsfn6j8lqec0`. The role is the target's
+  `authorizedPrincipals` (2.4), owned by the provisioning role's user, and no user holds it (`svv_user_grants`
+  empty). A portal session carries `RedshiftDbRoles` `datazone_env_<environment id>` (`docs/SMUS.md`, read
+  2026-10-10 on the warehouse's path), so a portal session on this workgroup would be a superuser session;
+  unmeasured, 2.6 not having run (`SUP-471`).
