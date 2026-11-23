@@ -43,10 +43,11 @@ each trade's notional (quantity times price) with Spark and writes one CSV; a Sa
 turns that CSV into a Parquet table and a JSON summary, running the application's own Python code in the
 application's own container image; a small Python task on the workflow's worker reads the summaries and
 builds the run's report; and an S3 task writes the report to the application's `outbox/` prefix. The
-Glue job also writes the application's table and a training set, which a second workflow,
-`app-etl-train`, trains an XGBoost model on and evaluates. A third workflow, `app-etl-warehouse`, loads
-the application's table into the governed Redshift warehouse, in Production alone. Your application
-will have other tasks and other data, and the same shape.
+Glue job also writes the application's table. A second workflow, `app-etl-warehouse`, loads the
+application's table into the governed Redshift warehouse, in Production alone. `app-etl` carries no model
+since `v0.7.0` (Stage 17 step 9.11): an application that trains and promotes one is `app-ml`'s shape
+([`sagemaker-ai-ml.md`](sagemaker-ai-ml.md)). Your application will have other tasks and other data, and
+the same shape.
 
 **The mental model.** An application is a git repository. It is deployed three times on the way to
 Production, each time into a project, and the three deployments differ in three things: *where* it runs
@@ -161,7 +162,7 @@ and its wording is the reading to keep.
 | merge into `main` | | yes, as a Maintainer (`main` is protected) | | |
 | create the release tag `v<semver>` (the release gate, Stage 8 2.1) | | yes, as a Maintainer | | |
 | admit a release into Staging (`staging-gate`) and into Production (`production-gate`) | | yes, with the Staging leg's artifacts and `production-check`'s reading of Production's project in front of them (the jobs' artifacts, which GitLab serves; no S3 read, Stage 8 3.9) | | |
-| register and approve a model version (`production-register`, `production-approve`) | | yes | | |
+| approve a model version in Production (`production-approve`, an application with a model) | | yes | | |
 | raise and lower the hub, GitLab, the runners, Sandbox's and Staging's `egress/`, Production's `workloads-egress/` and the warehouse compute | | | yes, with `make` | |
 | create the GitLab project, its runners and its CI/CD variables (§L) | | | yes, as GitLab's local administrator, with the slices' outputs | |
 | write and apply the application's infrastructure (§S) | | | yes | |
@@ -539,7 +540,7 @@ release runs under a target's grants.
 | the worker's package | `build-task-code` on every tag | | every callable imports from the zip on the runner's Python 3.12 | the worker's own environment, which pre-installs what wins over the zip |
 | a run in `dev` | the data scientist, §D | yes, the inbox the manifest seeds, or what the developer drops there | the workflow's shape: the operators, the templates, the project's permissions, the job on the image, the tasks' XComs | the deployment project's role under the fence (Stage 19 decision 21 (b)), the target's network and endpoints, a catalog import into a second project (`SUP-369`), the warehouse load |
 | the bundle | `bundle` on every tag, after the image | | the bundle is complete (a missing include fails), the role that makes it reads the `dev` project, and the catalog it carries matches `product.json` (`scripts/check-catalog-export.py`) | every run: nothing of the tag runs in Sandbox since Stage 19 decision 19 (c), so a release that breaks a workflow is first seen in Staging |
-| Staging's leg | `staging-deploy`, `staging-test`, `staging-catalog` and `staging-model`, after the gate | yes, the inbox the bundle's `samples/` seeds (Stage 19 decision 22 (a)) | the CLI's deploy and the catalog's import into a target's project, the workflows under the deployment project's role and its fence, the chains' lookup and stage variables, the network, the image pull, the product table written in `app_etl`, counted by the job and read back as Iceberg by the leg, the model trained, served and its predictions counted | the governed read, which no stage runs (item 32); the listing and the data product, Production's alone (decisions 20 (b) and 26 (b)); nothing of Production's outputs, by design (`TM-25`); the warehouse load, which Staging has no warehouse for |
+| Staging's leg | `staging-deploy`, `staging-test` and `staging-catalog`, after the gate | yes, the inbox the bundle's `samples/` seeds (Stage 19 decision 22 (a)) | the CLI's deploy and the catalog's import into a target's project, the workflows under the deployment project's role and its fence, the chains' lookup and stage variables, the network, the image pull, the product table written in `app_etl`, counted by the job and read back as Iceberg by the leg; for an application with a model, the version its task proposed, approved by the leg and served | the governed read, which no stage runs (item 32); the listing and the data product, Production's alone (decisions 20 (b) and 26 (b)); nothing of Production's outputs, by design (`TM-25`); the warehouse load, which Staging has no warehouse for |
 | Production's first run | the `prod` stage's bootstrap inside `production-deploy`, followed to its end, and its second run in `production-catalog` after a first import (Stage 19 decisions 14 and 25) | yes, the sample, until item 32 | the release in the account it was written for, its product listed | a test it is not: a run read, with its evidence kept |
 
 **What goes where.** A function is tested where its inputs are literals, so the template keeps every
@@ -772,8 +773,8 @@ short-lived credential for that table's files, and the job's own role never hold
 lake (D13). That is why a Glue job is the task kind for governed data (D28 class 2c): it runs inside
 the project's network through *Glue connections* (the objects that put Glue's workers into a VPC's
 subnets), and it is the only task kind that reads or writes a table. The template's `transform` reads
-the trades, writes the file the processing job reads, the application's table, the product table and
-the training sets; Production's `load` writes the governed warehouse.
+the trades, writes the file the processing job reads, the application's table and the product table;
+Production's `load` writes the governed warehouse.
 
 **The script**, `glue/<script>.py`: `getResolvedOptions` for its arguments, the optional ones read only
 when present; Spark through `SparkSession.builder.getOrCreate()`; boto3 from the Glue worker for what
@@ -959,13 +960,12 @@ leg applies no Terraform (Stage 19 decision 6 (b)).
 | `staging-deploy` | `staging`, deploy runner | the bundle read as `awsds-prod-runner-deploy` and checked against `BUNDLE_SHA256`; `deploy-application.py staging` as `awsds-deploy-staging`: the bundle extracted beside the tag's manifest, the stage's variables read from the project, the CLI's `deploy --targets staging --bundle-archive-path` (the files under the project's shared prefix, the catalog imported and listed nowhere, the workflows created or updated), its log read for the workflows' network (`SUP-285`), the import's `Failed: 0` (`SUP-357`) and each bootstrap workflow found `READY`, a first import admitted (`SUP-369`); then the stage's variables recorded in `/datascience/staging/applications/<app>/stage-variables`, and `STAGING_PROJECT_ID`, `STAGING_SHARED_URI` and `STAGING_CATALOG_PENDING` as a dotenv report | the manifest's `staging` stage |
 | `staging-test` | `staging`, deploy runner | each chain's machine, `awsds-staging-chain-<key>`, started with an execution named `<tag>-<job id>-<chain>`, dots turned into dashes, and polled every 60 s to `SUCCEEDED`, the execution and its history kept as artifacts; then the report `${STAGING_SHARED_URI}<app>/outbox/report.json` read, and `glue get-table` on `app_etl.trades_notional`, which must answer `ICEBERG` (Stage 19 decision 24 (a)) | the chains, in order; the table |
 | `staging-catalog` | `staging`, deploy runner | where `STAGING_CATALOG_PENDING` is `true`, `deploy-application.py staging --catalog-follow-up`: the project's source started and followed as the deploy role, the bundle's asset found in the project, the same bundle deployed again, failing on any failed item; otherwise it ends at once (Stage 19 decision 25) | nothing |
-| `staging-model` | `staging`, deploy runner | `model-chain.py transform staging --project`: Production's newest approved version listed first, then Staging's own model, under the project's `models/` prefix, served by a batch transform as the project role and deleted | only for an application with a model |
 | `production-check` | `gate`, deploy runner | `deploy-application.py production --check` as `awsds-deploy-prod`: `deploy-production`, its Tooling values and the deploy role's membership, so the gate is asked of nobody while the deploy behind it would stop | nothing |
 | `production-gate` | `gate`, build runner, manual, blocking; `resource_group: production` | admits the tag into Production, by a `deployment-managers` member; its `needs` name the Staging leg's jobs and `production-check` | nothing |
 | `production-deploy` | `production`, deploy runner, 90 min | `check-egress.py production workloads-egress`; the bundle read and checked; `deploy-application.py production` into `deploy-production`, as `staging-deploy` does: the `prod` stage's bootstrap creates the three workflows and runs `app-etl`, following its log to the run's end, so the deploy fails with the run (Stage 19 decision 14); `PROD_*` as a dotenv report | the manifest's `prod` stage |
 | `production-catalog` | `production`, deploy runner, 90 min | where `PROD_CATALOG_PENDING` is `true`, `check-egress.py` and `deploy-application.py production --catalog-follow-up`, as `staging-catalog` does; the second bootstrap runs `app-etl` again, and its `publish` lists the asset's revision the second import wrote; otherwise it ends at once | nothing |
 | `production-warehouse-ddl` | `production`, manual, allowed to fail | `warehouse/<table>.sql` through the Data API as `awsds-deploy-prod` on `awsds-prod-warehouse`, database `governed`, each statement followed and cancelled past 300 s | only for an application that loads the warehouse |
-| `production-register`, `production-approve`, `production-transform` | `production`, manual, blocking; the transform follows the approval | `model-chain.py ... --project`: the newest completed `<app>-train` job registered `PendingManualApproval` in `awsds-prod-model-<app>` with its evaluation as `ModelMetrics`; the approval by the deployment manager; the approved version served by a batch transform | only for an application with a model |
+| `production-approve` | `production`, manual, blocking | `model-chain.py approve production --application <app> --sha256 <hash>` as `awsds-deploy-prod`: the one version of `awsds-prod-model-<app>` whose description carries the release's model hash, proposed `PendingManualApproval` by the application's task, approved by the deployment manager; the scoring chain serves it from then on | only for an application with a model, `app-ml`'s shape ([`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §R) |
 
 What the pipeline never does: raise or destroy a shared slice (`egress/`, `workloads-egress/`, the
 warehouse compute), which the infrastructure user's `make up` and `make down` own (Stage 8 decision 27);
@@ -1001,12 +1001,12 @@ Then, in order, with the readings each leaves (`promotion.md` §T and §V record
 | `test`, `build-image`, `build-task-code`, `bundle`, `store-bundle`, `release` | the pipeline | the image, the zips, the bundle made from the tag's files and the `dev` project's catalog, checked and stored, the release's notes |
 | `make up ENV=staging ONLY=egress` | infrastructure user | Staging's endpoints, before the gate |
 | `staging-gate` | deployment manager | the tag admitted |
-| `staging-check`, `staging-deploy`, `staging-test`, `staging-catalog`, `staging-model` | the pipeline | the release's first run anywhere: `deploy-staging` read, the bundle deployed and its catalog imported unlisted, the stage's variables recorded, each chain run to `SUCCEEDED`, the report and the product table read back, a first import's second deploy, the model trained in Staging served; nothing torn down |
+| `staging-check`, `staging-deploy`, `staging-test`, `staging-catalog` | the pipeline | the release's first run anywhere: `deploy-staging` read, the bundle deployed and its catalog imported unlisted, the stage's variables recorded, each chain run to `SUCCEEDED`, the report and the product table read back, a first import's second deploy, an application's model version approved in Staging's registry; nothing torn down |
 | `make up ENV=production ONLY=workloads-egress` | infrastructure user | Production's endpoints, before the gate; `ONLY=` always, since the command without it applies `runners/` without `BUILD=1` and destroys the build runner the gate runs on |
 | `production-check`, then `production-gate` | the pipeline; deployment manager | `deploy-production` and the deploy role's membership read beside Staging's artifacts; the tag admitted |
 | `production-deploy`, `production-catalog` | the pipeline | the same bundle and image into `deploy-production`, its bootstrap running `app-etl` to its end and `publish` listing the product; a first import's second deploy. The schedules stay as `production/chains/` declares them, `DISABLED` between sittings |
 | a Production run | infrastructure user, or the schedule | each chain started and followed (§X); the first run of a new workflow read before the sitting ends |
-| `production-warehouse-ddl`, `production-register`, `production-approve` | deployment manager, with the compute up for the DDL | the warehouse table, the model version registered and approved, the transform following; the model jobs stay manual until the train chain has run in `deploy-production` (§X) |
+| `production-warehouse-ddl`, `production-approve` | deployment manager, with the compute up for the DDL | the warehouse table; an application's model version approved |
 | the downs | infrastructure user | `make down ENV=staging` (`egress/`, Staging's one `[E]` slice), `make down ENV=production ONLY=workloads-egress`, `make gitlab-down`, `make hub-down`; `./aws/egress.py` reading zero burn |
 
 Nothing is recorded by hand after a promotion: each deploy records the stage's variables in its
@@ -1096,9 +1096,9 @@ within an hour; the machine's input carries the chain's key and the scheduled ti
 fills (read 2026-10-26) and no chain forwards to a run. A run the schedule starts reads `RunType`
 `ON_DEMAND` (verification xxiv). Why a chain rather than the workflow's own schedule: one object per
 chain holds the cron and the pause, one execution history records every start, and a chain of several
-workflows runs them in order without the workflows knowing each other. The template's three chains in
-Production: `app-etl` at 06:30, `app-etl-train` at 07:00 and `app-etl-warehouse` at 07:30 UTC; Staging's
-two carry the first two crons, `DISABLED`, and its leg starts them.
+workflows runs them in order without the workflows knowing each other. The template's two chains in
+Production: `app-etl` at 06:30 and `app-etl-warehouse` at 07:30 UTC; Staging's one carries the first
+cron, `DISABLED`, and its leg starts it.
 
 **The schedule is the pause lever.** `schedule_enabled` in `production/chains/main.tf`'s `chains` sets
 the schedule `ENABLED` or `DISABLED`; a change is a commit and an apply by hand as `awsds-infra-prod`
@@ -1139,16 +1139,12 @@ the sanctioned starter, and a persona's start is refused (Stage 10 6.2).
 **Concurrency.** The operator creates the Glue job with no `ExecutionProperty`, so a second run's fate
 over the first is Glue's default, unread here (release T's slice declared `max_concurrent_runs = 1`); a
 workflow admits 20 concurrent runs by the service's quota. One schedule per chain, spaced by the longest
-run measured (the `app-etl` chain took 19 minutes on 2026-10-25, the train chain 7), is the template's
-cadence.
+run measured (the `app-etl` chain took 19 minutes on 2026-10-25), is the template's cadence.
 
-**The model.** The train chain leaves a training job and its evaluation under the project's
-`shared/<app>/models/`, where the model jobs read them with `--project`; a person registers and approves
-a version through the pipeline's manual jobs, which `awsds-prod-model-approval` reports by mail, and the
-transform follows. Production's newest training job is still release T's,
-`app-etl-train-20261025T070126` under the outputs bucket, so the model jobs stay manual until
-`awsds-prod-chain-app-etl-train` runs one in `deploy-production`. A new approved version is served by the next
-`production-transform`; nothing serves a model on a schedule in the template.
+**The model.** The template trains none since `v0.7.0` (Stage 17 step 9.11, decision 28 (a)). An
+application with a model takes `app-ml`'s shape: the model trained in its `dev` project, promoted in the
+bundle, proposed in each target's registry by a task and approved by the deploy role, which
+`awsds-prod-model-approval` reports by mail ([`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §P and §R).
 
 **A teardown** of the application is not `make down`: nothing of it is `[E]`. `make down
 ENV=production` destroys the account's `[E]` slices, `workloads-egress/` among them, and leaves the
@@ -1219,7 +1215,7 @@ SageMaker Catalog holds the business view people search.
 **In a project**, `dev` and the deployment projects alike, the application reads and writes under the
 project's `shared/<app>/`, in the account's project bucket
 `awsds-<env>-smus-projects/<domain>/<project id>/` under the project key: the inbox the manifest seeds
-from `samples/`, `work/`, `outbox/`, `tables/` and `models/`. Its product table,
+from `samples/`, `work/`, `outbox/` and `tables/`, and `models/` for an application with a model. Its product table,
 `app_etl.trades_notional`, is the project's own, in the account's catalog and outside the register
 (§G): `dev`'s database was created in the portal (1.5's step 12), each deployment project's by
 `create-environment` (Stage 19 item 7, verification xix). In a target the boundary's fence denies the
@@ -1231,7 +1227,8 @@ promotes out of a project: the repository does (D21).
 **In Staging and Production**, the account's outputs bucket `awsds-<env>-outputs`, under the data key,
 held release T's tree, its result file, its table in `app_outputs` and its model artifacts. Release F
 writes nothing there, and `app_outputs` retired at Stage 19 item 31; Production's bucket keeps release
-T's training job's artifacts, which the manual model jobs read (§X). The bucket is registered with no
+T's training job's artifacts, which no job reads since `app-etl`'s model half retired (Stage 17 step
+9.11). The bucket is registered with no
 Lake Formation location, so IAM and the bucket policy govern its objects. The persona's read names
 `app-etl/outbox/` alone (`persona_read_prefixes`), a prefix release F does not write. The persona
 queries on Athena's enforced workgroup `awsds-<env>-athena` (results in `awsds-<env>-derived/results/`,
@@ -1379,7 +1376,7 @@ the divergence shows at a deploy, a chain's run or a lint, never at the edit.
 | the Glue task's shape (§G: `GlueJobOperator`, the job named `<app>-{proj.id}`, the project role, the project's two Glue network connections, the log prefix, Glue 6.0, `G.1X`, two workers, the project tag) | the Glue jobs, their `script_args` and `--conf`, the tables and their columns, the warehouse load |
 | the chain module's base in `<env>/chains/` (the roles, the log group, the schedule group, the failure rules, the module's tag) | the `applications` entry and its workflows, the `chains` entries, the ASL files |
 | the grants' shape in `foundation/`, `studio/`, `sagemaker/`, `data/`, `identity/sso/` and `registry/` | the names inside them (§S): the repository, the product database, the training and model prefixes, the package group, the outbox prefix |
-| the readings of §V and the instruments | the chains to start, the table to read back, the model jobs |
+| the readings of §V and the instruments | the chains to start, the table to read back, the model's approval |
 
 ---
 

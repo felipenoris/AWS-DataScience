@@ -223,9 +223,10 @@ The grant for the jobs is `terraform-live/sandbox/workflows/`, one policy and on
 Stage 18's deployment project in Staging held, until its removal on 2026-10-22, the same three statements from
 `terraform-live/staging/studio/workflows.tf`, for the stage's life: its first run stopped on `glue:GetJob`
 without them (2026-10-19, run `7MMhwSySe5SOWd1`). Stage 19's deployment projects hold the same statements
-in `<env>/studio/workflows.tf`, with the pair for training jobs beside the processing pair: `app-etl-train`'s
-first run in `deploy-staging` stopped on `DescribeTrainingJob` without it (2026-11-16, run
-`W373uHP9ZB5EvsW`). Sandbox's grant carries the training pair since 2026-11-21, applied after Stage 17
+in `<env>/studio/workflows.tf`. They held the pair for training jobs beside the processing pair while
+`app-etl-train` trained in each target: its first run in `deploy-staging` stopped on `DescribeTrainingJob`
+without it (2026-11-16, run `W373uHP9ZB5EvsW`). The pair leaves both targets with that workflow (Stage 17
+step 9.11), since no workflow of a target trains. Sandbox's grant carries the training pair since 2026-11-21, applied after Stage 17
 2.2's readings (a) and (b), `training_pair_enabled` defaulting to `true`; it was written 2026-11-19 with
 the transform pair, the model's tag and the registration in an application's own group, which were applied
 the same night (Stage 17 9.5).

@@ -1108,8 +1108,10 @@ on 2026-10-26 `main` lacked the 6f pilot's applied seats and grants, and its pla
   Stage 17's consumes another application's marker as written, so xxv stays open on them.
 - **A `monitoring` endpoint** as the positive control: Stage 10 xvi's metrics clause.
 - **S3 data events** (Stage 11): Stage 8 xx's writing identity.
-- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provokes in
-  both deployment projects, `app-etl-train` leaving `workflows/`. **A workflow's 50th version**: Stage 8 xxiii, read
+- **A release that removes a file**: Stage 8 xxvi, which Stage 17 9.11's release of `app-etl` provoked in
+  both deployment projects on 2026-11-23, `app-etl-train` leaving `workflows/`: the CLI's deploy kept the
+  workflow `READY` and both of its files (`SUP-484`), whose deletion is an act of 9.11's estate (N.6 item
+  11). **A workflow's 50th version**: Stage 8 xxiii, read
   2026-10-26 at 12 for the `test` project's `app-etl` and 6 for its `_train` twin. No release deploys
   to that project since Stage 19 decision 19 (c), so its count stands; the question passes to the `dev`
   project's workflows, a version per deploy from a space, and from release F to each deployment
