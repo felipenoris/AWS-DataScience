@@ -4780,3 +4780,8 @@ before the first. Times UTC.*
   (encrypted with aws:kms)"*, *"Backup 1795462881_2026_11_23_19.4.2 is done."*. Read in the bucket:
   `1795462881_2026_11_23_19.4.2_gitlab_backup.tar`, 22,876,160 bytes, 19:41:32, `aws:kms`, expiring 2026-12-24
   (`expire-current-versions`), release 19.4.2.
+- **[Claude] `make gitlab-down AUTO=1`**, after the orchestrating session's «verificado» with the backup read,
+  19:43:45 to 19:51:39, exit 0: `production/runners` *"Plan: 0 to add, 0 to change, 13 to destroy."*, *"Destroy
+  complete! Resources: 13 destroyed."*; `production/tooling` stopped, `i-010c8217a1b3062dc` (`awsds-prod-gitlab`)
+  reading `stopped`; `production/egress` *"12 to destroy"*, *"Destroy complete! Resources: 12 destroyed."*; the
+  hub's two `[D]` slices refused by the target, as written.
