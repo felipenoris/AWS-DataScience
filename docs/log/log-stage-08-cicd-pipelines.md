@@ -4800,5 +4800,7 @@ before the first. Times UTC.*
   one failed, `DT-8` *"staging table app_dbt.trades carries a lake table's name - Staging holds no copy (decision
   3)"*: `app-dbt`'s Glue job loads its own sample into `app_dbt.trades`, which shares the lake table's name and
   copies nothing from it. Both checks are Lesson 87's class, owed a change that reads each application's shape.
-  The calls that failed in all three are the profiles of SSO sessions not signed in (`awsds-ctadmin`,
-  `awsds-deploy`, `awsds-devenv`, `awsds-governance`).
+  The calls that failed in all three are the same eleven, each instrument's opening `aws sts get-caller-identity`
+  on the profiles of five SSO sessions not signed in (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`,
+  `awsds-governance`, `awsds-scientist`), *"Error loading SSO Token: Token for <session> does not exist"*; every
+  measurement ran as the infrastructure user.
