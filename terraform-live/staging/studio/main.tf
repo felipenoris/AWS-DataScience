@@ -42,7 +42,7 @@ locals {
 
 module "sagemaker_prereqs" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.11.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-prereqs?ref=sagemaker-prereqs-v0.15.0"
 
   env    = var.env
   region = var.region
@@ -66,6 +66,15 @@ module "sagemaker_prereqs" {
   fenced_secret_names     = ["awsds-*", "redshift!*"]
   fence_role_assumption   = true
   fenced_services         = var.fenced_services
+
+  # The boundary's one opening for Bedrock (Stage 17 decision 22 (a), TM-36): the application's
+  # inference profile and the model behind it, under a published guardrail of the account, and the
+  # account's own guardrail, whose writes the boundary denies. The three are genai.tf's.
+  bedrock_exception = {
+    inference_profile_arn = aws_bedrock_inference_profile.app_genai.arn
+    foundation_model_arns = [local.app_genai_model_arn]
+    account_guardrail_arn = aws_bedrock_guardrail.account.guardrail_arn
+  }
 
   blueprint_names = var.blueprint_names
 

@@ -174,11 +174,13 @@ FENCE_SIDS = (
 )
 FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes")  # one of the two
 # The services DenyServicesNoProjectUsesHere names, <env>/studio/fence.tf's fenced_services: the
-# generative ones in both targets; the warehouse's doors but redshift-serverless in Production,
-# which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging, which holds
-# no warehouse. A service joins this list in the commit after the apply that adds it to fence.tf, so
-# DT-14 is not red while that apply is owed (Lesson 50).
-FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "agent-registry", "codewhisperer", "q")
+# generative ones but Bedrock in both targets; the warehouse's doors but redshift-serverless in
+# Production, which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging,
+# which holds no warehouse. A service joins this list in the commit after the apply that adds it to
+# fence.tf, so DT-14 is not red while that apply is owed (Lesson 50), and leaves it in the commit that
+# takes it out of fence.tf. Bedrock left with Stage 17 decision 22 (a): the boundary admits the
+# application's model call in its place (TM-36), and 10.9 teaches DT-14 to read that exception.
+FENCED_GENERATIVE = ("bedrock-agentcore", "agent-registry", "codewhisperer", "q")
 FENCED_SERVICES = {
     PROD_PROFILE: (*FENCED_GENERATIVE, "redshift-data", "sqlworkbench"),
     STAGING_PROFILE: (

@@ -29,3 +29,8 @@ output "project_roles" {
   description = "The deployment project's roles this slice attaches the workflows grant and the person-session deny to, by name."
   value       = var.project_roles
 }
+
+output "app_genai_inference_profile_arn" {
+  description = "app-genai's model in this account, the application inference profile genai.tf declares (Stage 17 decision 23 (a)). scripts/deploy-application.py reads it as the deploy role and fills the application's MODEL_ID with it."
+  value       = aws_bedrock_inference_profile.app_genai.arn
+}

@@ -44,6 +44,18 @@ variable "account_folder" {
   nullable    = false
 }
 
+# Not generated: it arrives from the environment as `TF_VAR_optional_service_groups`, threaded by
+# `make up ENV=staging ONLY=egress GROUPS=<a,b>`, as production/workloads-egress/ takes it. Empty by
+# default, and the default is the decision (6c step 5.3): a group is on for one apply of this slice,
+# and the slice comes down with the session. Without the variable, Terraform ignored the environment
+# value and a Staging `make up` created no optional endpoint. The one group a workload here names so
+# far is `bedrock-base`, for app-genai's model calls and its `guardrail` task (Stage 17 step 10.6).
+variable "optional_service_groups" {
+  description = "Optional endpoint families for this apply: bedrock-base (app-genai's model calls and guardrail task, Stage 17 step 10.6), and the module's others. Empty by default. Set with `make up ENV=staging ONLY=egress GROUPS=bedrock-base`; each endpoint is ~USD 0.010/h while the slice is up."
+  type        = list(string)
+  default     = []
+}
+
 variable "project" {
   description = "Project tag. Fixed by docs/plan/conventions.md and by 1c's tag policy."
   type        = string

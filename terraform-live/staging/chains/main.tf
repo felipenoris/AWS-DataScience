@@ -37,7 +37,7 @@ locals {
   # The applications' workflows, as each manifest's content.workflows names them and the `staging`
   # stage's bootstrap creates them. The warehouse load is Production's alone: Staging has no
   # warehouse. app-ml-train runs in its dev project alone (Stage 17 step 9.2). app-dbt-probe is
-  # Staging's alone (Stage 20 step 8.2).
+  # Staging's alone (Stage 20 step 8.2), and app-genai-probe too (Stage 17 step 10.5).
   applications = {
     "app-etl" = {
       workflows = ["app-etl", "app-etl-train"]
@@ -47,6 +47,9 @@ locals {
     }
     "app-dbt" = {
       workflows = ["app-dbt", "app-dbt-probe"]
+    }
+    "app-genai" = {
+      workflows = ["app-genai-triage", "app-genai-probe"]
     }
   }
 
@@ -94,6 +97,20 @@ locals {
       application         = "app-dbt"
       workflows           = ["app-dbt-probe"]
       schedule_expression = "cron(30 9 * * ? *)"
+      schedule_enabled    = false
+    }
+    "app-genai-triage" = {
+      definition_template = file("${path.module}/definitions/app-genai-triage.asl.json")
+      application         = "app-genai"
+      workflows           = ["app-genai-triage"]
+      schedule_expression = "cron(0 10 * * ? *)"
+      schedule_enabled    = false
+    }
+    "app-genai-probe" = {
+      definition_template = file("${path.module}/definitions/app-genai-probe.asl.json")
+      application         = "app-genai"
+      workflows           = ["app-genai-probe"]
+      schedule_expression = "cron(30 10 * * ? *)"
       schedule_enabled    = false
     }
   }

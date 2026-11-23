@@ -36,7 +36,8 @@ locals {
   # The applications' workflows, as each manifest's content.workflows names them. app-etl-warehouse
   # is created by the `prod` stage's bootstrap alone (decision 16 (b)): Staging has no warehouse.
   # app-ml-train runs in its dev project alone (Stage 17 step 9.2). The `prod` stage creates app-dbt
-  # alone, its probe being Staging's (Stage 20 step 8.2).
+  # alone, its probe being Staging's (Stage 20 step 8.2), and app-genai-triage alone for the same
+  # reason (Stage 17 step 10.5).
   applications = {
     "app-etl" = {
       workflows = ["app-etl", "app-etl-train", "app-etl-warehouse"]
@@ -46,6 +47,9 @@ locals {
     }
     "app-dbt" = {
       workflows = ["app-dbt"]
+    }
+    "app-genai" = {
+      workflows = ["app-genai-triage"]
     }
   }
 
@@ -95,6 +99,13 @@ locals {
       application         = "app-dbt"
       workflows           = ["app-dbt"]
       schedule_expression = "cron(0 9 * * ? *)"
+      schedule_enabled    = false
+    }
+    "app-genai-triage" = {
+      definition_template = file("${path.module}/definitions/app-genai-triage.asl.json")
+      application         = "app-genai"
+      workflows           = ["app-genai-triage"]
+      schedule_expression = "cron(0 10 * * ? *)"
       schedule_enabled    = false
     }
   }
