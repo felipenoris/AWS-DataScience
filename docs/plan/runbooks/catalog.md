@@ -929,8 +929,9 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-19` | no listing publishes a resource link |
 | `CT-20` | every S3 Access Grant a project role holds on another project's folder explained by an approved subscription to an S3 Object Collection at that prefix |
 
-The last run: 2026-11-17 at 05:45 UTC, every check passed, 10 listings and none of `deploy-staging` (Stage
-19's log). `--self-check` read 39 of 39 on 2026-11-15.
+The last run: 2026-11-23 from 18:27 to 18:33 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
+and none of `deploy-staging`; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object Collection
+listing(s)"*, after pass 5's rollback (Stage 21's log). `--self-check` read 47 of 47 on 2026-11-23.
 
 ### The CLI's reads, object by object
 

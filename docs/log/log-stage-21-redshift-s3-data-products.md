@@ -1637,6 +1637,9 @@ this session and recorded here. Times UTC.*
   serial 566), `sandbox/probes` down with 0, `sandbox/warehouse-compute` down, no Studio app in any account,
   the estate's passive burn 0.6875 USD/h, the hub, GitLab, its runners and the egress of Staging and
   Production, all R2's.
+- **[Claude] `./aws/catalog.py`, live**, 18:27:16 to 18:33:01 after the lowering: *"all checks passed"*, 14
+  `pass` and 7 `note` over 12 listings; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object
+  Collection listing(s)"*, the state the rollback left. `--self-check`: 47 of 47.
 
 ## 2026-11-23 — The user's decisions on pass 5's open questions
 
