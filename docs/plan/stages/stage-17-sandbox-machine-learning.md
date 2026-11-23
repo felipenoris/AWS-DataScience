@@ -285,8 +285,8 @@ builds the agent's archive.
 In passes 9 and 10 Claude's reads and saved plans also run on `awsds-infra-staging`, `awsds-infra-prod`
 and `awsds-infra-identity`, and a chain's start in Production is a [Claude⚡] act on `awsds-infra-prod`.
 In pass 10 the act that enables the model in a target is the user's: the retention mode `none`
-declared in `us-west-2`, as [`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md) §M
-has it (M1). The account-level guardrail configuration of decision 27 is declared in `genai.tf`,
+declared in `us-west-2` by 10.5's commands, [`claude-code-sagemaker.md`](../runbooks/claude-code-sagemaker.md)
+§M's M1 being Sandbox's, every enabled Region on its profile. The account-level guardrail configuration of decision 27 is declared in `genai.tf`,
 `awscc` carrying it (10.1, 2026-11-17). Decision 23 (a) asks nothing of the **AWS Control Tower
 Admin**, whose act, the Region deny's exemption on `Workloads` from Management, is (b)'s.
 
@@ -335,7 +335,8 @@ pass 5's version 2, `PendingManualApproval`, and need no group, `sagemaker.runti
 endpoints. `mlflow`
 serves 1.6 and 9.6's `track`, `mwaa` the CLI's deploys and the workflows, `bedrock-base` 10.4's model and
 `guardrail` calls, and `bedrock-agent` pass 7 and day 3's `Retrieve`, as 7.1 raises it beside `bedrock-base`. A group
-lasts one apply, so each day's raise names every group its rows call. Neither day raises GitLab or
+lasts one apply, so each day's raise names every group its rows call: the later sitting of §N.6 item 7, dated
+2026-11-25, raises `bedrock-base,mwaa`, reading 6 running its two workflows. Neither day raises GitLab or
 Staging or Production egress. Each day's groups add six endpoints to Sandbox's 18, so day 3 bills about
 0.28 USD an hour with the hub before the spaces, as day 2 did since the VPN host's return (§N.9.7), and each running space
 on `ml.t3.medium` 0.050 more (`docs/PRICING.md`).
@@ -1969,7 +1970,7 @@ each run (decision 24 (b)).
   `DenyServicesNoProjectUsesHere` since that slice's `TM-28` apply (00:46 to 00:47 UTC on 2026-11-23, both
   boundaries at version 5), so no plan of this step carries it; the user's act
   in each target, the
-  retention mode `none` declared in `us-west-2` and read back there (§M's M1), with 10.1's reading that
+  retention mode `none` declared in `us-west-2` and read back there (the commands below), with 10.1's reading that
   the account owes Amazon's model no form and no agreement; `<env>/chains/`; `<env>/foundation/` with the
   alerts var-file, each deploy role's `state_read_keys` gaining `<env>/studio/` as "What pass 10 builds"
   has it, absent from both on 2026-11-20, since the script pull request #321 merged (2026-11-22) reads `MODEL_ID` from
@@ -1985,6 +1986,29 @@ each run (decision 24 (b)).
   was refused twice on 2026-11-22. Staging's apply is its first reading, and Production's waits on it.
   **Written and planned 2026-11-23** (the log), `TM-36` accepted by the user the same day: each apply waits on
   the user's word naming it.
+  **The targets' commands**, read against the code with nothing up on 2026-11-23 (the log). §M's M1 loops
+  over every enabled Region on `awsds-infra-sandbox-1`; in a target the Region ceiling exempts the call
+  nowhere but `Interactive` (§M's M5, `INV-12`), so the act is `us-west-2` alone. The infrastructure user,
+  account Staging, permission set InfrastructureAccess, expected `inherit` before and `none` after:
+
+  ```bash
+  aws bedrock get-account-data-retention --region us-west-2 --profile awsds-infra-staging --query mode --output text
+  ```
+
+  ```bash
+  aws bedrock put-account-data-retention --mode none --region us-west-2 --profile awsds-infra-staging
+  ```
+
+  Then the same two on `awsds-infra-prod`, account Production. The configuration `<env>/studio/` creates,
+  read back after each apply, is expected to list the account's guardrail and its version:
+
+  ```bash
+  aws bedrock list-enforced-guardrails-configuration --region us-west-2 --profile awsds-infra-staging
+  ```
+
+  No code orders the retention act against the slices: `<env>/chains/` reads only `project_key_arn` from
+  `<env>/studio/`, `<env>/foundation/` reads no studio state, and no model call runs before 10.6. M1's
+  reasoning, the first grant arriving with zero retention declared, puts it before each `<env>/studio/`.
 - **10.6 — [pipeline; the user] The first release, `v0.1.0`**, in a promotion sitting
   ([`promotion.md`](../runbooks/promotion.md)): the hub, GitLab, and `staging/egress` and
   `production/workloads-egress` raised with `bedrock-base`. No gates tag comes before it:

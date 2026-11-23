@@ -1231,7 +1231,11 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    **Day 3 ran 2026-11-22** (Stage 17's log): sitting C's 9.6, 10.4's readings 1 to 5, pass 5 and xxiv's
    `Retrieve`. 10.4's reading 6 rides with 6e 6.4's window, after the account guardrail's configuration
    is redesigned with nothing up (`SUP-466`); Stage 17's pass 4 and 6d's remainder wait for a later
-   sitting, each the user's choice.
+   sitting, each the user's choice. That sitting raises `GROUPS=bedrock-base,mwaa` (N.12.2): reading 6
+   runs `app-genai-triage` and `app-genai-probe` from `app-genai-dev`'s space (Stage 17 10.4 step 6), and
+   `mwaa` is their `airflow-serverless` endpoint. The redesign is a change to `sandbox/bedrock/`, whose
+   validation refuses `ALL` and whose `excluded_models` is empty today, written, planned and merged after
+   the user's decision.
    Day 3 depends on no other sitting, and its prerequisites, `app-ml-dev`'s MLflow App, `app-genai-dev`'s Nova
    Lite profile and the two tars, were done 2026-11-22 (N.12.5).
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
@@ -2613,6 +2617,11 @@ The blocks are the sections titled "The Sandbox warehouse sitting" in
 9. [user] Every space stopped and every portal tab closed, then the lowering (N.10.5). 5.1's grants, the
    copy and both subscriptions stay for day 2, whose 2.1 reads the copy and 3.3 the read in place.
 
+**Day 1 ran 2026-11-22** beside N.9's day 3, on one raise (N.6 item 9): steps 1 to 5 and 8, and step 6 to
+Stage 19's step 5, its step 6 moved to day 2 (`SUP-460`). Step 7, Stage 17's pass 4, did not run: it waits
+for N.6 item 7's later Sandbox sitting (N.12.1), which raises no warehouse. Step 9's lowering was day 2's,
+which shared the raise.
+
 #### N.10.4 Day 2: Stage 21
 
 The blocks are [Stage 21](../stages/stage-21-redshift-s3-data-products.md)'s "The Sandbox warehouse sitting:
@@ -2774,7 +2783,10 @@ N.10's day 2, which step 2's deletion of the link asset waits on (N.10.7 item 1)
    Stage 17 10.5 gives `staging/egress/` (written 2026-11-23). [Claude] the
    readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
    deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, after 5.0's revocation and
-   between two of its source's daily runs (02:43 UTC), so the bundle carries neither. The pins of
+   between two of its source's daily runs (02:43 UTC), so the bundle carries neither. [Claude] Before
+   8.6, the revocation's object read (Lesson 86): subscription `6n3yg1rsytsemo` `REVOKED` and the link
+   `app_dbt.trades_notional` gone from Sandbox's catalog, the revocation reported by N.10's day 2 at
+   02:20 UTC on 2026-11-23 (Stage 20's log of 2026-11-22 names both). The pins of
    `app-ml` and `app-genai` moved to `awsds-workflows` `4401f91` with nothing up on 2026-11-23 (Stage
    17's log), so each first push carries the pin `app-dbt` already holds.
 3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
@@ -2859,6 +2871,12 @@ minutes starts before the step that does not need it.
 - **N.10's day 2** (N.10.4): Stage 21 pass 5's five-minute revocation wait holds the closing reads.
 - **R1 and R2**: a release's legs run an hour or more each. R1's GitLab chores (N.11.1 step 3) filled the
   first leg's wait on 2026-11-22; N.6 item 6 needs nothing up and runs outside any sitting.
+- **N.6 item 7's later Sandbox sitting**: one raise, `make hub-up` then `make up ENV=sandbox
+  GROUPS=bedrock-base,mwaa`, `mwaa` for reading 6's two workflows (N.6 item 7). Pass 4's endpoint, minutes
+  to create, starts first and stays up after the sitting (Stage 17 decision 6). 6e 6.4's hour admits no
+  other Bedrock call in the account, so reading 6 follows it, after `sandbox/bedrock/`'s change is merged.
+  6d's remainder comes last, Stage 17's spaces stopped, so 7.5's window reads no terminal traffic of
+  Claude's, and 6.1 (viii)'s reading and the day's records fill 7.7's thirty minutes.
 
 #### N.12.3 What was read and built with nothing up on 2026-11-20
 
@@ -2928,7 +2946,8 @@ The waiting list holds each as a row. In the calendar's order:
 
   All taken by day 1, read 2026-11-21: Remote - SSH 0.128.0 and AWS Toolkit 4.20.0 with both settings,
   `proxy-on` in `~/.zshrc`, the tunnels `mbp` and `mbp-split-tunnel` in the WireGuard app.
-- **Before 6d's remainder** (N.9.5): nothing new. Chrome's proxy flag is typed in the window itself
+- **Before 6d's remainder**, last in N.6 item 7's later Sandbox sitting (N.12.1): nothing new. Chrome's
+  proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
 - **Before R1**: Production's free-trial balance, read 2026-11-21 at 299.18 of 300.00 (Stage 9's log);
   Stage 19 4.12's membership, which 4.12's approval needs, done 2026-11-21 (Stage 19's log).
@@ -2937,7 +2956,8 @@ The waiting list holds each as a row. In the calendar's order:
   application inference profile 10.4's `DEV_MODEL_ID` names (`examples/app-genai/README.md`). Both done
   2026-11-22 (N.12.5): the first use is the project's subscription to the model's listing, which an unsaved
   *Run* in the Bedrock IDE's prompt builder made and a playground call does not make (`SUP-445`).
-- **After N.9's day 3**: Stage 17 10.5's threat-model acceptance and each target's retention mode.
+- **After N.9's day 3**: Stage 17 10.5's threat-model acceptance, `TM-36` accepted 2026-11-23, and each
+  target's retention mode, by 10.5's commands.
 - **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half and the approvals of the two
   requests, done 2026-11-22 (N.12.5); N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` today, so
@@ -2950,6 +2970,9 @@ The waiting list holds each as a row. In the calendar's order:
 - **Before R2**: Stage 17 10.5's acts (above); the answer on GitLab's local user's password came on
   2026-11-22 (Stage 19's log). #321 was merged by the user on 2026-11-22 at 13:28:54 UTC as `81d70158`
   (N.11.1 step 6), `make check` and `--self-check` passing on that commit.
+- **Before N.6 item 7's later Sandbox sitting**: `SUP-466`'s decision, then `sandbox/bedrock/`'s change
+  written, planned and merged with nothing up, for Stage 17 10.4's reading 6; without it the reading stays
+  out of the sitting.
 
 #### N.12.5 What was read and built with nothing up on 2026-11-22, after R1
 

@@ -5900,3 +5900,36 @@ over the applications' trees at `b89b5a0f`, copied outside the worktree, on CPyt
   `production-transform` stay in `examples/app-etl/`, and `scripts/model-chain.py` still holds `register`
   and `transform`. `promotion.md` §N.11.2 step 3 says so, and `app-etl`'s pin there reads `4401f91`, as
   §N.11.1 step 6 and §N.12.5 do; it read `4613ddc`.
+
+## 2026-11-23 — 10.5's target commands and the later Sandbox sitting's raise, read with nothing up
+
+*Claude's hand, in the same side session and branch as the entry above, at the user's request in its chat
+to review the pending plan; two subagents of this session read 10.5 against the code and the sitting of
+2026-11-25 against the stage text, and Claude read each finding's two sides before writing it. No AWS
+call.*
+
+- **[Claude] 10.5's retention act**: 10.5 sent the targets to `claude-code-sagemaker.md` §M's M1, written
+  for Sandbox alone (decision 2): its loops run on `awsds-infra-sandbox-1` over every enabled Region. In a
+  target the Region ceiling exempts `bedrock:PutAccountDataRetention` nowhere but `Interactive` (§M's M5,
+  `INV-12`), so a copy of the loop on a target's profile would be refused in each Region the ceiling denies. 10.5 now
+  holds the targets' commands, `us-west-2` alone: `get-account-data-retention` before and after,
+  `put-account-data-retention --mode none` (`--mode` required, response field `mode`, CLI 2.37.12's help),
+  on `awsds-infra-staging` then `awsds-infra-prod`, and `list-enforced-guardrails-configuration` after each
+  `<env>/studio/` apply. The pass-10 paragraph that cited M1 says the same.
+- **[Claude] The order**: `<env>/chains/` reads only `project_key_arn` from `<env>/studio/`
+  (`staging/chains/main.tf` lines 20 and 127, `production/chains/main.tf` 19 and 122), and
+  `<env>/foundation/` reads no studio state, naming its key in `state_read_keys` alone. No code orders the
+  retention act; M1's reasoning puts it before each `<env>/studio/`, which grants the first invoke, and no
+  model call runs before 10.6.
+- **[Claude] Reading 6's raise**: 10.4 step 6 runs `app-genai-triage` and `app-genai-probe` from
+  `app-genai-dev`'s space, which the `mwaa` group's `airflow-serverless` endpoint serves
+  (`vpc-egress/endpoints.tf` line 70), and the 2026-11-25 row of `promotion.md` §N.12.1 raises
+  `bedrock-base` alone. §N.6 item 7, §N.12.2 and the passes' group rule now name `bedrock-base,mwaa`. The
+  §N.12.1 row and the waiting list's Sandbox row sit beside pull request #384's changed lines and are left
+  for after its merge.
+- **[Claude] Reading 6's change**: `sandbox/bedrock/` passes `included_models = var.enforced_models` and
+  `excluded_models = []` (`application.tf`), and `enforced_models`' validation refuses an empty list and
+  `ALL` (`variables.tf`). Every shape the `SUP-466` decision offers but none needs that slice changed,
+  planned and merged before the sitting; the waiting list's row and §N.12.4 say so.
+- **[Claude] The waiting list**: the Stage 17 row lost `app-ml-dev`'s model package group, which holds
+  `app-ml-dev/1` since 2026-11-22 (registered 20:00:18, approved 20:39:53, the entries above).

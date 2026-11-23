@@ -2434,3 +2434,15 @@ over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on C
   revocation.
 - **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
   and GitLab.
+
+## 2026-11-23 — R2's read of the revocation before 8.6, written with nothing up
+
+*Claude's hand, in the same side session and branch as the entry above, at the user's request in its
+chat to review the pending plan. No AWS call.*
+
+- **[Claude] The read before 8.6** (Lesson 86): the session of `promotion.md` §N.10's day 2 reported Stage
+  20 5.0's revocation at 02:20 UTC and Stage 19 4.12's at 02:18, and its pull request #384 still read *"the
+  revocations not run"* at 02:08. §N.11.2 step 2 now has Claude read the object before 8.6's deletion:
+  subscription `6n3yg1rsytsemo` `REVOKED` and the link `app_dbt.trades_notional` gone from Sandbox's
+  catalog, the names this log recorded on 2026-11-22 (the request `6oy7kvmszacaa8`, the link's
+  `glue:CreateTable` at 14:05:20).
