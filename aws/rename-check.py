@@ -1,7 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# rename-check.py - Stage 6b's instrument: is the account that used to be `Development`
-# a Workload account yet, and is anything left stranded on the way?
-#
+"""rename-check.py - Stage 6b's instrument: is the account that used to be `Development`
+a Workload account yet, and is anything left stranded on the way?
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/rename-check.py                  # every awsds-* profile
+          ./aws/rename-check.py awsds-infra-staging  # only the ones named (partial reading)
+writes:   aws/output/rename-check.txt   (untracked - see .gitignore)
+reads:    organizations:ListAccounts, ListParents, DescribeOrganizationalUnit,
+          sso-admin:ListPermissionSetsProvisionedToAccount, DescribePermissionSet,
+          datazone:ListEnvironmentBlueprintConfigurations, ListDomains,
+          ram:GetResourceShares, lakeformation:ListPermissions,
+          sts:GetCallerIdentity.  It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Stage 6b converts one account from an Interactive member of the SageMaker Unified Studio
 # domain into the headless `Staging` deployment target: a rename, an OU move, an SMUS
 # unwind, a Lake Formation share revocation and a persona swap, in that order and across
@@ -23,20 +38,6 @@
 #            `datazone:*`). Stage 6b's step order exists to make that impossible, and this
 #            file proves the order was followed.
 #
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/rename-check.py                  # every awsds-* profile
-#             ./aws/rename-check.py awsds-infra-staging  # only the ones named (partial reading)
-#   writes:   aws/output/rename-check.txt   (untracked - see .gitignore)
-#   reads:    organizations:ListAccounts, ListParents, DescribeOrganizationalUnit,
-#             sso-admin:ListPermissionSetsProvisionedToAccount, DescribePermissionSet,
-#             datazone:ListEnvironmentBlueprintConfigurations, ListDomains,
-#             ram:GetResourceShares, lakeformation:ListPermissions,
-#             sts:GetCallerIdentity.  It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
 # What it cannot see, since an empty listing and a missing read look alike:
 #   - The Account Factory provisioned product's parameters. Whether Service Catalog's
 #     `AccountName` follows an out-of-band `PutAccountName` is undocumented, and the
@@ -52,7 +53,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -91,6 +92,7 @@ FORBIDDEN_SETS = {"DataScientistAccess", "DevEnvStewardAccess"}
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

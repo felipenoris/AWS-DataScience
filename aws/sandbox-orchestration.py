@@ -1,34 +1,35 @@
 #!/usr/bin/env -S uv run --quiet
-# sandbox-orchestration.py - Stage 6i's evidence: the exercise's MWAA Serverless workflows in
-# the Sandbox project, the processing jobs they start, and the project storage they touch.
-# The workflows (role, private network, project key, where the definition and the Code object
-# live, the versions), their recent runs and task instances, each demo-devenv- processing job
-# read against the D13 boundary's four job settings and the registered house image, the log
-# groups the exercise makes, the code inputs and the shared/orchestration-demo/ prefixes, and
-# CloudTrail's record of who created each workflow and each job, and through which door.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             and an AWS CLI that knows the workflow's Code field (2.37.12 does; 2.36.18
-#             did not - Stage 6i step 0.2).
-#   run:      ./aws/sandbox-orchestration.py                        # the Sandbox profile
-#             ./aws/sandbox-orchestration.py awsds-infra-sandbox-1  # the same, named
-#             python3 aws/sandbox-orchestration.py -                # CloudShell, ambient
-#   writes:   aws/output/sandbox-orchestration.txt, and every version of each contract
-#             workflow's definition under aws/output/sandbox-orchestration/<workflow>/,
-#             once as served and once with the account ids replaced by placeholders, which
-#             is the copy Stage 6i decision 1 commits (untracked - see .gitignore)
-#   reads:    iam:ListRoles, GetRole; kms:ListAliases; mwaa-serverless:ListWorkflows,
-#             GetWorkflow, ListWorkflowVersions, ListWorkflowRuns, GetWorkflowRun,
-#             ListTaskInstances, GetTaskInstance; ec2:DescribeSubnets, DescribeRouteTables,
-#             DescribeSecurityGroups; sagemaker:DescribeImageVersion, ListProcessingJobs,
-#             DescribeProcessingJob, ListTags; logs:DescribeLogGroups; s3api:ListObjectsV2,
-#             HeadObject; cloudtrail:LookupEvents; sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""sandbox-orchestration.py - Stage 6i's evidence: the exercise's MWAA Serverless workflows in
+the Sandbox project, the processing jobs they start, and the project storage they touch.
+The workflows (role, private network, project key, where the definition and the Code object
+live, the versions), their recent runs and task instances, each demo-devenv- processing job
+read against the D13 boundary's four job settings and the registered house image, the log
+groups the exercise makes, the code inputs and the shared/orchestration-demo/ prefixes, and
+CloudTrail's record of who created each workflow and each job, and through which door.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          and an AWS CLI that knows the workflow's Code field (2.37.12 does; 2.36.18
+          did not - Stage 6i step 0.2).
+run:      ./aws/sandbox-orchestration.py                        # the Sandbox profile
+          ./aws/sandbox-orchestration.py awsds-infra-sandbox-1  # the same, named
+          python3 aws/sandbox-orchestration.py -                # CloudShell, ambient
+writes:   aws/output/sandbox-orchestration.txt, and every version of each contract
+          workflow's definition under aws/output/sandbox-orchestration/<workflow>/,
+          once as served and once with the account ids replaced by placeholders, which
+          is the copy Stage 6i decision 1 commits (untracked - see .gitignore)
+reads:    iam:ListRoles, GetRole; kms:ListAliases; mwaa-serverless:ListWorkflows,
+          GetWorkflow, ListWorkflowVersions, ListWorkflowRuns, GetWorkflowRun,
+          ListTaskInstances, GetTaskInstance; ec2:DescribeSubnets, DescribeRouteTables,
+          DescribeSecurityGroups; sagemaker:DescribeImageVersion, ListProcessingJobs,
+          DescribeProcessingJob, ListTags; logs:DescribeLogGroups; s3api:ListObjectsV2,
+          HeadObject; cloudtrail:LookupEvents; sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # One profile: the workflows, the jobs, the project role, the project bucket and the trail
 # events are all in the Sandbox account, so awsds-infra-sandbox-1 (the infrastructure user,
 # InfrastructureAccess in Sandbox) reads every one of them. The image lives in Production's
@@ -54,7 +55,7 @@ import re
 import sys
 from datetime import datetime
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -181,6 +182,7 @@ def sanitize(text: str, known: dict) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

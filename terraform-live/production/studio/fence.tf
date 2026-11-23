@@ -32,8 +32,11 @@ variable "fenced_repository_names" {
 # not on the list: the Data API and the query editor, the other doors to a database session, are.
 # The Agent Registry is a service prefix of its own, outside bedrock-agentcore, granted by AWS's ML
 # policy since v48 (TM-28).
+# Bedrock is not on the list: the boundary admits the application's model call and the guardrail task's
+# calls, and leaves every other Bedrock action outside its ceiling (Stage 17 decision 22 (a), main.tf,
+# TM-36). A deny here would win over those allows, and the module refuses the pair.
 variable "fenced_services" {
-  description = "The services the deployment project's role never calls in this account: the generative ones, the Agent Registry, and the warehouse's doors but the one the load takes."
+  description = "The services the deployment project's role never calls in this account: the generative ones but Bedrock, the Agent Registry, and the warehouse's doors but the one the load takes."
   type        = list(string)
-  default     = ["bedrock", "bedrock-agentcore", "agent-registry", "q", "codewhisperer", "redshift-data", "sqlworkbench"]
+  default     = ["bedrock-agentcore", "agent-registry", "q", "codewhisperer", "redshift-data", "sqlworkbench"]
 }

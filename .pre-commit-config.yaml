@@ -155,6 +155,17 @@ repos:
         pass_filenames: false
         files: ^aws/(catalog\.py|awslib/.*\.py)$
 
+      # Each aws/ script parses its own arguments, so one that does not call awslib.cmdline first
+      # runs whole on a mistyped option. aws/tests runs every program with -h, --help and an unknown
+      # option under an empty AWS configuration, and fails on any subprocess, name lookup,
+      # connection or write.
+      - id: aws-scripts-help
+        name: every aws/ script answers --help before it acts
+        entry: uv run --quiet pytest -q
+        language: system
+        pass_filenames: false
+        files: ^aws/.*\.py$
+
       # 8.1 - every slice on disk declares its D11 layer in scripts/tfhygiene/layers.py. The
       # direction that costs money is a slice with no row: `make down` skips it in silence,
       # and for an [E] slice that is a bill nobody is told about. It fires on any .tf under

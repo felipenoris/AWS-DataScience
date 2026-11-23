@@ -1,23 +1,24 @@
 #!/usr/bin/env -S uv run --quiet
-# import-ids.py - the exact strings `terraform import` takes, for every object Stage 2 step 5
-# brings into state. The import manifest.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/import-ids.py                    # awsds-infra-identity
-#             python3 aws/import-ids.py -            # CloudShell, ambient credentials
-#   writes:   aws/output/import-ids.txt   (untracked - see .gitignore)
-#   reads:    organizations:DescribeOrganization, ListRoots, ListOrganizationalUnitsForParent,
-#             ListAccountsForParent, ListPolicies, ListTargetsForPolicy,
-#             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
-#             ListManagedPoliciesInPermissionSet, GetInlinePolicyForPermissionSet,
-#             ListAccountsForProvisionedPermissionSet, ListAccountAssignments,
-#             identitystore:DescribeGroup, DescribeUser, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 the manifest was produced | 1 a call failed
-#
+"""import-ids.py - the exact strings `terraform import` takes, for every object Stage 2 step 5
+brings into state. The import manifest.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/import-ids.py                    # awsds-infra-identity
+          python3 aws/import-ids.py -            # CloudShell, ambient credentials
+writes:   aws/output/import-ids.txt   (untracked - see .gitignore)
+reads:    organizations:DescribeOrganization, ListRoots, ListOrganizationalUnitsForParent,
+          ListAccountsForParent, ListPolicies, ListTargetsForPolicy,
+          sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
+          ListManagedPoliciesInPermissionSet, GetInlinePolicyForPermissionSet,
+          ListAccountsForProvisionedPermissionSet, ListAccountAssignments,
+          identitystore:DescribeGroup, DescribeUser, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 the manifest was produced | 1 a call failed
+"""
+
 # It is a script of its own rather than a section in list-identities.py, because its failure mode is
 # different in kind. That file answers "who can reach what" for a person, who tolerates a stale line
 # and notices a wrong one; this one is a rendering whose only consumer is a shell. A wrong id does
@@ -60,7 +61,7 @@ import os
 import sys
 from collections import deque
 
-from awslib import context
+from awslib import cmdline, context
 from awslib.awscli import AwsCli
 from awslib.report import Report, note
 
@@ -102,6 +103,7 @@ def account_folder(account_id: str, account_name: str | None) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
     cli = AwsCli(profile=profile, region=context.REGION)
     ctx = context.locate(__file__)

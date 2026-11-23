@@ -1,21 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# tf-backends.py - the Terraform state buckets and their keys, one row per account, side by
-# side. The preflight for Stage 2 steps 2 and 3, and the standing regression after them.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/tf-backends.py                        # every awsds-* profile
-#             ./aws/tf-backends.py awsds-infra-prod       # only the ones named
-#             python3 aws/tf-backends.py -                # CloudShell, ambient credentials
-#   writes:   aws/output/tf-backends.txt   (untracked - see .gitignore)
-#   reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
-#             GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
-#             GetObjectLockConfiguration, kms:ListAliases, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""tf-backends.py - the Terraform state buckets and their keys, one row per account, side by
+side. The preflight for Stage 2 steps 2 and 3, and the standing regression after them.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/tf-backends.py                        # every awsds-* profile
+          ./aws/tf-backends.py awsds-infra-prod       # only the ones named
+          python3 aws/tf-backends.py -                # CloudShell, ambient credentials
+writes:   aws/output/tf-backends.txt   (untracked - see .gitignore)
+reads:    s3api:ListBuckets, GetBucketVersioning, GetBucketEncryption,
+          GetPublicAccessBlock, GetBucketPolicy, GetBucketLifecycleConfiguration,
+          GetObjectLockConfiguration, kms:ListAliases, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # This script is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a
 # per-account fact whose meaning is the comparison between accounts. A state bucket that is
 # versioned, encrypted under a customer-managed key and closed to the public in five accounts
@@ -50,7 +51,7 @@ from __future__ import annotations
 
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Checks, Report, note
 
@@ -58,6 +59,7 @@ OUT_NAME = "tf-backends.txt"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

@@ -47,11 +47,12 @@ variable "account_folder" {
 # Not generated: it arrives from the environment as `TF_VAR_optional_service_groups`, threaded by
 # `make up ENV=production GROUPS=<a,b>`, as sandbox/egress/ takes it. Empty by default, and the
 # default is the decision (6c step 5.3): a group is on for one apply of this slice, and the slice
-# comes down with the session. The one group a job in this VPC names so far is `redshift`
-# (`redshift-serverless`), where a Glue job or a worker calls the warehouse's API (Stage 9 step 9.1);
-# the Data API from the deploy runner takes no endpoint here.
+# comes down with the session. The groups a workload in this VPC names are `redshift`
+# (`redshift-serverless`), where a Glue job or a worker calls the warehouse's API (Stage 9 step 9.1),
+# and `bedrock-base`, for app-genai's model calls and its `guardrail` task (Stage 17 step 10.6); the
+# Data API from the deploy runner takes no endpoint here.
 variable "optional_service_groups" {
-  description = "Optional endpoint families for this apply: redshift (the warehouse's API from a job inside VPC-Workloads, Stage 9 step 9), mwaa (reserved, empty), and the module's others. Empty by default. Set with `make up ENV=production GROUPS=redshift`; each endpoint is ~USD 0.010/h while the slice is up."
+  description = "Optional endpoint families for this apply: redshift (the warehouse's API from a job inside VPC-Workloads, Stage 9 step 9), bedrock-base (app-genai's model calls and guardrail task, Stage 17 step 10.6), mwaa (reserved, empty), and the module's others. Empty by default. Set with `make up ENV=production GROUPS=redshift`; each endpoint is ~USD 0.010/h while the slice is up."
   type        = list(string)
   default     = []
 }

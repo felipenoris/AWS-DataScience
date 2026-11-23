@@ -6,6 +6,7 @@
     profiles   which awsds-* profiles exist, and which of them authenticate right now
     cidr       IPv4 CIDR overlap, needed by the networking scripts
     policydoc  what plays the part of a ``Sid`` in each of the four policy types
+    cmdline    the command line: ``-h``/``--help`` and an unknown option exit before any call
 
 Nothing imported from here creates, updates or deletes anything in AWS. The one write this
 package performs is the report file under ``aws/output/``, which is untracked.

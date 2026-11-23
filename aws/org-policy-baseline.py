@@ -1,26 +1,27 @@
 #!/usr/bin/env -S uv run --quiet
-# org-policy-baseline.py - the ceiling that already exists: every organization node, the
-# policies attached to it, the Control Tower controls enabled on it, and the quota that
-# says how much more will fit.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers every profile in ~/.aws/config that declares
-#             `sso_session = awsds` (see aws/INDEX.md).
-#
-#   run:      ./aws/org-policy-baseline.py                   # awsds-infra-identity
-#             ./aws/org-policy-baseline.py awsds-infra-staging   # a different profile
-#             python3 aws/org-policy-baseline.py -           # no --profile: CloudShell on
-#                                                            # MANAGEMENT, as CT Admin (no
-#                                                            # uv there; bring aws/)
-#   writes:   aws/output/org-policy-baseline.txt   (untracked - see .gitignore)
-#   reads:    organizations:DescribeOrganization, ListRoots,
-#             ListOrganizationalUnitsForParent, ListPoliciesForTarget, DescribePolicy,
-#             controltower:ListEnabledControls, servicequotas:ListServiceQuotas,
-#             sts:GetCallerIdentity. This script never creates, updates or deletes anything.
-#
+"""org-policy-baseline.py - the ceiling that already exists: every organization node, the
+policies attached to it, the Control Tower controls enabled on it, and the quota that
+says how much more will fit.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers every profile in ~/.aws/config that declares
+          `sso_session = awsds` (see aws/INDEX.md).
+
+run:      ./aws/org-policy-baseline.py                   # awsds-infra-identity
+          ./aws/org-policy-baseline.py awsds-infra-staging   # a different profile
+          python3 aws/org-policy-baseline.py -           # no --profile: CloudShell on
+                                                         # MANAGEMENT, as CT Admin (no
+                                                         # uv there; bring aws/)
+writes:   aws/output/org-policy-baseline.txt   (untracked - see .gitignore)
+reads:    organizations:DescribeOrganization, ListRoots,
+          ListOrganizationalUnitsForParent, ListPoliciesForTarget, DescribePolicy,
+          controltower:ListEnabledControls, servicequotas:ListServiceQuotas,
+          sts:GetCallerIdentity. This script never creates, updates or deletes anything.
+"""
+
 # Stage 1c step 7.0 is a preflight: five measurements that every policy in 7.5-7.8 needs as
 # input, collected in one pass *before* the first `create-policy`. By hand they are a dozen
 # commands with ids threaded between them, at the start of the one landing-zone step that has
@@ -78,7 +79,7 @@ import sys
 from collections import deque
 from dataclasses import dataclass
 
-from awslib import context
+from awslib import cmdline, context
 from awslib.awscli import AwsCli, head2
 from awslib.report import Report, note
 
@@ -104,6 +105,7 @@ class Node:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
     cli = AwsCli(profile=profile, region=context.REGION)
     ctx = context.locate(__file__)

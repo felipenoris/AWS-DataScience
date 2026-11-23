@@ -1,36 +1,37 @@
 #!/usr/bin/env -S uv run --quiet
-# deploytargets.py - Stage 9's evidence, producer and targets side by side: the Production
-# data platform (buckets, CMK, the enforced workgroup), the runtime (the job role under
-# D13, the model package groups with their resource policies), the Lake Formation settings
-# in every account that has any (DT-5), the write share with its links and invitations
-# (INT-03), the drop-box contract from both sides (INT-10), Staging's read-only share and the
-# absence of any copy (decision 3), the escape hatch with its alarm, the persona sets' owed
-# allows read back through the delegated admin, the job settings on the Workloads OU (DT-11), and,
-# since Stage 19 gave each target a SageMaker Unified Studio project, Lake Formation's full-table
-# flag there (DT-13) and what stands between that project's role and the rest of the account (DT-14).
-#
-#   needs:    a live SSO session, and nothing else:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/deploytargets.py                    # every awsds-* profile
-#             ./aws/deploytargets.py awsds-infra-prod   # only the ones named
-#             python3 aws/deploytargets.py -            # CloudShell, ambient credentials
-#   writes:   aws/output/deploytargets.txt   (untracked - see .gitignore)
-#   reads:    s3api get-bucket-*, kms list-aliases/get-key-policy/list-grants,
-#             athena get-work-group, logs describe-log-groups,
-#             sagemaker list-model-package-groups /
-#             get-model-package-group-policy, iam get-role/list-role-policies/
-#             get-role-policy, lakeformation get-data-lake-settings/list-permissions,
-#             glue get-databases/get-tables, ram get-resource-share-invitations,
-#             events list-rules, cloudtrail lookup-events, sso-admin (reads only),
-#             resourcegroupstaggingapi get-resources, secretsmanager list-secrets (names and
-#             tag keys, never a value), s3control list-access-grants-locations,
-#             organizations list-roots/list-organizational-units-for-parent/
-#             list-policies-for-target/describe-policy, sts get-caller-identity. It never
-#             creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""deploytargets.py - Stage 9's evidence, producer and targets side by side: the Production
+data platform (buckets, CMK, the enforced workgroup), the runtime (the job role under
+D13, the model package groups with their resource policies), the Lake Formation settings
+in every account that has any (DT-5), the write share with its links and invitations
+(INT-03), the drop-box contract from both sides (INT-10), Staging's read-only share and the
+absence of any copy (decision 3), the escape hatch with its alarm, the persona sets' owed
+allows read back through the delegated admin, the job settings on the Workloads OU (DT-11), and,
+since Stage 19 gave each target a SageMaker Unified Studio project, Lake Formation's full-table
+flag there (DT-13) and what stands between that project's role and the rest of the account (DT-14).
+
+needs:    a live SSO session, and nothing else:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/deploytargets.py                    # every awsds-* profile
+          ./aws/deploytargets.py awsds-infra-prod   # only the ones named
+          python3 aws/deploytargets.py -            # CloudShell, ambient credentials
+writes:   aws/output/deploytargets.txt   (untracked - see .gitignore)
+reads:    s3api get-bucket-*, kms list-aliases/get-key-policy/list-grants,
+          athena get-work-group, logs describe-log-groups,
+          sagemaker list-model-package-groups /
+          get-model-package-group-policy, iam get-role/list-role-policies/
+          get-role-policy, lakeformation get-data-lake-settings/list-permissions,
+          glue get-databases/get-tables, ram get-resource-share-invitations,
+          events list-rules, cloudtrail lookup-events, sso-admin (reads only),
+          resourcegroupstaggingapi get-resources, secretsmanager list-secrets (names and
+          tag keys, never a value), s3control list-access-grants-locations,
+          organizations list-roots/list-organizational-units-for-parent/
+          list-policies-for-target/describe-policy, sts get-caller-identity. It never
+          creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # The subject is the producer path between accounts, so this script is multi-profile: the
 # lake and the drop-box live in Data Governance while the only principal allowed to write
 # them lives in Production (D22, D25), Staging's value is what it does not reach (D20), and
@@ -67,7 +68,7 @@ import datetime as _dt
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -174,11 +175,13 @@ FENCE_SIDS = (
 )
 FENCE_ASSUME_SIDS = ("DenyAssumingAnyRole", "DenyAssumingAnyRoleButTheNamedOnes")  # one of the two
 # The services DenyServicesNoProjectUsesHere names, <env>/studio/fence.tf's fenced_services: the
-# generative ones in both targets; the warehouse's doors but redshift-serverless in Production,
-# which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging, which holds
-# no warehouse. A service joins this list in the commit after the apply that adds it to fence.tf, so
-# DT-14 is not red while that apply is owed (Lesson 50).
-FENCED_GENERATIVE = ("bedrock", "bedrock-agentcore", "agent-registry", "codewhisperer", "q")
+# generative ones but Bedrock in both targets; the warehouse's doors but redshift-serverless in
+# Production, which the load takes (Stage 19 decision 16 (b)); every Redshift service in Staging,
+# which holds no warehouse. A service joins this list in the commit after the apply that adds it to
+# fence.tf, so DT-14 is not red while that apply is owed (Lesson 50), and leaves it in the commit that
+# takes it out of fence.tf. Bedrock left with Stage 17 decision 22 (a): the boundary admits the
+# application's model call in its place (TM-36), and 10.9 teaches DT-14 to read that exception.
+FENCED_GENERATIVE = ("bedrock-agentcore", "agent-registry", "codewhisperer", "q")
 FENCED_SERVICES = {
     PROD_PROFILE: (*FENCED_GENERATIVE, "redshift-data", "sqlworkbench"),
     STAGING_PROFILE: (
@@ -210,6 +213,7 @@ def _as_list(value) -> list:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

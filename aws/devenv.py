@@ -1,21 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# devenv.py - the dev-env image's proxy contract, compared against the account that generates it.
-#
-#   needs:    a live SSO session, and nothing else:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/devenv.py                 # sandbox, the only account with an interactive image
-#             ./aws/devenv.py staging         # another account folder, once one has a dev-env
-#   writes:   aws/output/devenv.txt   (untracked - see .gitignore)
-#   reads:    s3:GetObject on the account's own state bucket (the egress slice's outputs) with the
-#             kms:Decrypt that bucket's CMK requires; sagemaker:DescribeImageVersion, and
-#             ecr:BatchGetImage and ecr:GetDownloadUrlForLayer on the registry the image version
-#             names, followed by an HTTPS GET of the one presigned URL that returns the image's
-#             config blob; and sts:GetCallerIdentity. It never creates, updates or deletes
-#             anything, pulls no layer, and runs no terraform.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""devenv.py - the dev-env image's proxy contract, compared against the account that generates it.
+
+needs:    a live SSO session, and nothing else:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/devenv.py                 # sandbox, the only account with an interactive image
+          ./aws/devenv.py staging         # another account folder, once one has a dev-env
+writes:   aws/output/devenv.txt   (untracked - see .gitignore)
+reads:    s3:GetObject on the account's own state bucket (the egress slice's outputs) with the
+          kms:Decrypt that bucket's CMK requires; sagemaker:DescribeImageVersion, and
+          ecr:BatchGetImage and ecr:GetDownloadUrlForLayer on the registry the image version
+          names, followed by an HTTPS GET of the one presigned URL that returns the image's
+          config blob; and sts:GetCallerIdentity. It never creates, updates or deletes
+          anything, pulls no layer, and runs no terraform.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # Why this script exists. Since 6d decision 8 (2026-09-10) the house image carries the estate's six
 # proxy variables as ENV, and NO_PROXY - the list that keeps AWS calls on the VPC endpoints - is a
 # LITERAL in the recipe's dev-env/Dockerfile, read here from this repository's copy of the GitLab
@@ -79,7 +80,7 @@ import sys
 import urllib.error
 import urllib.request
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.devenvrecipe import (
     APPLIED_OUTPUT,
@@ -129,6 +130,7 @@ def fetch(url: str) -> bytes:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

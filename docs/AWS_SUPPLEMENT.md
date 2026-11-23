@@ -5864,6 +5864,12 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
     return to `false` destroyed both at 21:27:37.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`.
+  A later reading (2026-11-23, 01:31Z, `describe-type` for Stage 17 10.5): the schema's `required` names
+  `GuardrailIdentifier` and `GuardrailVersion` alone, and `ModelEnforcement`'s description reads *"If not
+  present, the configuration is enforced on all models"*; `IncludedModels` and `ExcludedModels` are required
+  only inside it. `awscc` 1.106.0 plans a configuration with no `model_enforcement` as `(known after apply)`
+  (`terraform-live/staging/studio/genai.tf` and its Production copy). Whether its apply succeeds is unread:
+  Staging's is the first.
 
 ## Terraform
 

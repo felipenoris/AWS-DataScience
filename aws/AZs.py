@@ -1,20 +1,21 @@
 #!/usr/bin/env -S uv run --quiet
-# AZs.py - the availability-zone name -> zone ID mapping, one listing per account, plus the
-# comparison across them.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers every profile below: the cached token is keyed by the
-#             sso-session name, not by profile or account (see aws/INDEX.md).
-#
-#   run:      ./aws/AZs.py                       every awsds-* profile in ~/.aws/config
-#             ./aws/AZs.py awsds-infra-staging ...   only the profiles named
-#   writes:   aws/output/AZs.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeAvailabilityZones and sts:GetCallerIdentity. This script never
-#             creates, updates or deletes anything.
-#
+"""AZs.py - the availability-zone name -> zone ID mapping, one listing per account, plus the
+comparison across them.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers every profile below: the cached token is keyed by the
+          sso-session name, not by profile or account (see aws/INDEX.md).
+
+run:      ./aws/AZs.py                       every awsds-* profile in ~/.aws/config
+          ./aws/AZs.py awsds-infra-staging ...   only the profiles named
+writes:   aws/output/AZs.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeAvailabilityZones and sts:GetCallerIdentity. This script never
+          creates, updates or deletes anything.
+"""
+
 # AWS maps AZ *names* (`us-west-2a`) to physical datacenters independently per account, so the
 # same name can be a different datacenter in two accounts. The AZ *ID* (`usw2-az1`) is the
 # stable identifier. The distinction has a bill attached: the two peerings into Production
@@ -39,7 +40,7 @@ from __future__ import annotations
 
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import ErrorLog
 from awslib.report import Report, note
 
@@ -47,6 +48,7 @@ OUT_NAME = "AZs.txt"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

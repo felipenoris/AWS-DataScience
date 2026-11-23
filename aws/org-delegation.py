@@ -1,21 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# org-delegation.py - can the Identity account manage the organization's policies, and exactly
-# which of them? The standing instrument for INT-20.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/org-delegation.py                 # awsds-infra-identity
-#             python3 aws/org-delegation.py -         # no --profile: CloudShell on
-#                                                     # Management, as CT Admin (no uv
-#                                                     # there; bring the aws/ folder)
-#   writes:   aws/output/org-delegation.txt   (untracked - see .gitignore)
-#   reads:    organizations:DescribeResourcePolicy, DescribeOrganization, ListRoots,
-#             ListOrganizationalUnitsForParent, ListPoliciesForTarget,
-#             sts:GetCallerIdentity. It never creates, updates or deletes anything.
-#   exits:    0 the report was produced | 1 a call failed unexpectedly | 2 a check FAILED
-#
+"""org-delegation.py - can the Identity account manage the organization's policies, and exactly
+which of them? The standing instrument for INT-20.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/org-delegation.py                 # awsds-infra-identity
+          python3 aws/org-delegation.py -         # no --profile: CloudShell on
+                                                  # Management, as CT Admin (no uv
+                                                  # there; bring the aws/ folder)
+writes:   aws/output/org-delegation.txt   (untracked - see .gitignore)
+reads:    organizations:DescribeResourcePolicy, DescribeOrganization, ListRoots,
+          ListOrganizationalUnitsForParent, ListPoliciesForTarget,
+          sts:GetCallerIdentity. It never creates, updates or deletes anything.
+exits:    0 the report was produced | 1 a call failed unexpectedly | 2 a check FAILED
+"""
+
 # Permission sets reach the Identity account through the IAM Identity Center delegated
 # administrator (Stage 1b step 1). SCPs, RCPs, tag policies and declarative policies do not: they
 # are AWS Organizations objects, and reaching them needs a resource-based delegation policy on the
@@ -51,7 +52,7 @@ import os
 import sys
 from collections import deque
 
-from awslib import context
+from awslib import cmdline, context
 from awslib.awscli import AwsCli, head2
 from awslib.report import Checks, Report, note
 
@@ -251,6 +252,7 @@ def decompose(doc: dict, org_id: str, root_id: str, identity_acct: str) -> dict:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     profile = argv[0] if argv else os.environ.get("AWSDS_PROFILE", "awsds-infra-identity")
     cli = AwsCli(profile=profile, region=context.REGION)
     ctx = context.locate(__file__)

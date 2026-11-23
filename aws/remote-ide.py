@@ -1,21 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# remote-ide.py - the remote-IDE channel's standing facts: what a laptop's VS Code session into a
-#                 Sandbox space rests on, and who opened one from where.
-#
-#   needs:    a live SSO session for the infrastructure user; one login covers the three profiles:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/remote-ide.py
-#             ./aws/remote-ide.py --days 30      # how far back RI-5 reads StartSession (default 7)
-#   writes:   aws/output/remote-ide.txt   (untracked - see .gitignore)
-#   reads:    in Sandbox - ec2:DescribeVpcEndpoints, sagemaker:ListDomains, ListSpaces, DescribeSpace,
-#             ec2:DescribeInstanceTypes, iam:GetRole, ListAttachedRolePolicies, GetPolicy,
-#             GetPolicyVersion, cloudtrail:LookupEvents; in Identity - sso-admin:ListInstances,
-#             ListPermissionSets, DescribePermissionSet, GetInlinePolicyForPermissionSet; in
-#             Production - ec2:DescribeAddresses; and sts:GetCallerIdentity. Every one is a read.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""remote-ide.py - the remote-IDE channel's standing facts: what a laptop's VS Code session into a
+                Sandbox space rests on, and who opened one from where.
+
+needs:    a live SSO session for the infrastructure user; one login covers the three profiles:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/remote-ide.py
+          ./aws/remote-ide.py --days 30      # how far back RI-5 reads StartSession (default 7)
+writes:   aws/output/remote-ide.txt   (untracked - see .gitignore)
+reads:    in Sandbox - ec2:DescribeVpcEndpoints, sagemaker:ListDomains, ListSpaces, DescribeSpace,
+          ec2:DescribeInstanceTypes, iam:GetRole, ListAttachedRolePolicies, GetPolicy,
+          GetPolicyVersion, cloudtrail:LookupEvents; in Identity - sso-admin:ListInstances,
+          ListPermissionSets, DescribePermissionSet, GetInlinePolicyForPermissionSet; in
+          Production - ec2:DescribeAddresses; and sts:GetCallerIdentity. Every one is a read.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # WHAT THE CHANNEL IS, as Stage 6d step 7 measured it (2026-09-07/11). `sagemaker:StartSession` is
 # called by the client AS THE PROJECT ROLE, so the persona sets' deny pair never evaluates on it. What scopes the call is therefore AWS's managed policy on the project role -
 # an Allow conditioned on two tag pairs - and that policy is AWS's, versioned, and moves without this
@@ -48,7 +49,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatchcase
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -129,6 +130,7 @@ def recorded_rate(pricing_text: str, instance_type: str) -> str | None:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, valued=("--days",), positional=False)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

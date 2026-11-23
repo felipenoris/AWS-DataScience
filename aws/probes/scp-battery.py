@@ -1,43 +1,46 @@
 #!/usr/bin/env -S uv run --quiet
-# scp-battery.py - run the SCP probe battery of docs/plan/runbooks/scp-battery.md.
-#
-#   run:      ./aws/probes/scp-battery.py              # every phase
-#             ./aws/probes/scp-battery.py --phase ou   # one phase
-#             ./aws/probes/scp-battery.py --list       # what would run, and where
-#   probes:   aws/probes/probes.py - the data. Amending the battery means editing THAT file.
-#   writes:   aws/output/scp-battery-<stamp>.txt (untracked), account ids masked.
-#   exit:     0 when every probe met its expectation; 1 on a regression, an overreach or
-#             a broken floor; 2 when the run could not be trusted (dead SSO session).
-#
-# This script never attaches, detaches, creates or updates a policy. The human attaches
-# from the Management console; the script only measures what the attached ceiling does. A
-# script that could both change the ceiling and report on it would be able to report on a
-# ceiling it had just changed.
-#
-# Whether anything is created is a declared field, not a judgement. Every probe in probes.py
-# carries a mandatory `safety` value and the driver refuses to run one that does not:
-#   ro       read-only; changes nothing even if fully allowed
-#   dryrun   carries --dry-run, which the driver verifies is actually there
-#   blocked  mutating, but a prerequisite named in the command does not exist, so removing
-#            the deny only moves the failure one step later
-#   creates  would really do something if the deny lifted. Five probes in the root phase
-#            and four in `decl`, and the driver refuses to run them outside Policy Canary,
-#            the one place this project accepts the residual risk of an "allowed".
-#
-# What the driver encodes, against a hand-run battery:
-#   1. A dead SSO session makes every probe come back looking exactly like a deny, so the
-#      session is checked per account per phase and a non-answer aborts the run instead of
-#      being recorded (exit 2). Only an expired token aborts: credentials can also fail to
-#      vend because the ceiling denied the sign-in, which is the most serious finding this
-#      battery can make rather than a reason to stop, so ensure_session reads the wording
-#      too (Lesson 24).
-#   2. The outcome is read from the error wording, never from the exit code, and an
-#      explicit-deny message names the policy id, which is the attribution. A refusal that
-#      names no policy but carries an authorization id is attributed by the evaluation AWS
-#      recorded for it (IAM's Access Troubleshooter): STS's AssumeRole refusals name none.
-#   3. "The service validates before authorizing" is a property of the action, not of the
-#      service (Lesson 21), so each probe declares the wording that proves authorization
-#      was reached for that action. Anything else is untested - never silently "allowed".
+"""scp-battery.py - run the SCP probe battery of docs/plan/runbooks/scp-battery.md.
+
+  run:      ./aws/probes/scp-battery.py                 # every phase
+            ./aws/probes/scp-battery.py --phase ou      # one phase
+            ./aws/probes/scp-battery.py --list          # what would run, and where
+            ./aws/probes/scp-battery.py --no-readback   # every phase, no read-back first
+  probes:   aws/probes/probes.py - the data. Amending the battery means editing THAT file.
+  writes:   aws/output/scp-battery-<stamp>.txt (untracked), account ids masked.
+  exit:     0 when every probe met its expectation; 1 on a regression, an overreach or
+            a broken floor; 2 when the run could not be trusted (dead SSO session) or
+            the command line was refused, before any probe.
+
+This script never attaches, detaches, creates or updates a policy. The human attaches
+from the Management console; the script only measures what the attached ceiling does. A
+script that could both change the ceiling and report on it would be able to report on a
+ceiling it had just changed.
+
+Whether anything is created is a declared field, not a judgement. Every probe in probes.py
+carries a mandatory `safety` value and the driver refuses to run one that does not:
+  ro       read-only; changes nothing even if fully allowed
+  dryrun   carries --dry-run, which the driver verifies is actually there
+  blocked  mutating, but a prerequisite named in the command does not exist, so removing
+           the deny only moves the failure one step later
+  creates  would really do something if the deny lifted. Five probes in the root phase
+           and four in `decl`, and the driver refuses to run them outside Policy Canary,
+           the one place this project accepts the residual risk of an "allowed".
+
+What the driver encodes, against a hand-run battery:
+  1. A dead SSO session makes every probe come back looking exactly like a deny, so the
+     session is checked per account per phase and a non-answer aborts the run instead of
+     being recorded (exit 2). Only an expired token aborts: credentials can also fail to
+     vend because the ceiling denied the sign-in, which is the most serious finding this
+     battery can make rather than a reason to stop, so ensure_session reads the wording
+     too (Lesson 24).
+  2. The outcome is read from the error wording, never from the exit code, and an
+     explicit-deny message names the policy id, which is the attribution. A refusal that
+     names no policy but carries an authorization id is attributed by the evaluation AWS
+     recorded for it (IAM's Access Troubleshooter): STS's AssumeRole refusals name none.
+  3. "The service validates before authorizing" is a property of the action, not of the
+     service (Lesson 21), so each probe declares the wording that proves authorization
+     was reached for that action. Anything else is untested - never silently "allowed".
+"""
 
 from __future__ import annotations
 
@@ -53,6 +56,7 @@ from pathlib import Path
 # probes.py and readback.py sit beside this script, which Python puts on sys.path.
 import probes as probes_data
 import readback
+from awslib import cmdline
 
 # The recognizer for "a token vended, just not for this human". It lives in awslib because
 # three callers need it and the wording is the datum in all three.
@@ -573,31 +577,23 @@ class Battery:
 
 
 def main(argv: list) -> int:
+    cmdline.check(
+        argv, __doc__, flags=("--list", "--no-readback"), valued=("--phase",), positional=False
+    )
     phase_filter = ""
     list_only = False
     do_readback = True
 
+    # cmdline.check has refused every other token, and a --phase with no value.
     args = list(argv)
     while args:
         a = args.pop(0)
         if a == "--phase":
-            phase_filter = args.pop(0) if args else ""
+            phase_filter = args.pop(0)
         elif a == "--list":
             list_only = True
         elif a == "--no-readback":
             do_readback = False
-        elif a in ("-h", "--help"):
-            # The header comment is the manual; the slice below is lines 2-41.
-            header = Path(__file__).read_text(encoding="utf-8").splitlines()[1:41]
-            print(
-                "\n".join(
-                    line[2:] if line.startswith("# ") else line.lstrip("#") for line in header
-                )
-            )
-            return 0
-        else:
-            print(f"unknown argument: {a}", file=sys.stderr)
-            return 64
 
     battery = Battery(phase_filter, do_readback)
 

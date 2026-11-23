@@ -40,6 +40,7 @@ COPIES = (
         for name in (
             "backend.tf",
             "data.tf",
+            "genai.tf",
             "main.tf",
             "notebook-run.tf",
             "outputs.tf",

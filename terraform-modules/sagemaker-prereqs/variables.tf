@@ -117,7 +117,7 @@ variable "fenced_repository_names" {
 }
 
 variable "fenced_services" {
-  description = "IAM service prefixes denied whole to the project roles, for services the account's projects have no use for (bedrock, for example)."
+  description = "IAM service prefixes denied whole to the project roles, for services the account's projects have no use for (bedrock-agentcore, for example)."
   type        = list(string)
   default     = []
   nullable    = false
@@ -125,6 +125,33 @@ variable "fenced_services" {
   validation {
     condition     = alltrue([for s in var.fenced_services : can(regex("^[a-z0-9-]+$", s))])
     error_message = "Each entry is an IAM service prefix: lowercase letters, digits and hyphens, with no colon and no action."
+  }
+}
+
+# The boundary's one opening for Bedrock (Stage 17 decision 22 (a), TM-36): where it is set, the ceiling
+# leaves bedrock:* out and boundary.tf admits three sets of calls in its place. A model call on the named
+# inference profile and the model behind it, under a published guardrail of the account. ApplyGuardrail on
+# the account's guardrails. The calls an application's task makes to keep its own guardrail (decision
+# 24 (b)), with a deny of the three writes on the account's guardrail (decision 27 (a)). Every other
+# Bedrock action, the account-level enforcement's calls and one AWS adds later included, is outside the
+# ceiling. null keeps the document as it was.
+variable "bedrock_exception" {
+  description = "Stage 17 decision 22 (a): the inference profile and the foundation models behind it that a project role may invoke under a published guardrail of the account, and the account's own guardrail, which no project role writes. null, the default, keeps bedrock:* inside the ceiling."
+  type = object({
+    inference_profile_arn = string
+    foundation_model_arns = list(string)
+    account_guardrail_arn = string
+  })
+  default = null
+
+  validation {
+    condition     = var.bedrock_exception == null || !contains(var.fenced_services, "bedrock")
+    error_message = "bedrock is in fenced_services: DenyServicesNoProjectUsesHere would refuse every call the exception admits, since an explicit deny wins over the allows."
+  }
+
+  validation {
+    condition     = var.bedrock_exception == null || try(length(var.bedrock_exception.foundation_model_arns) > 0, false)
+    error_message = "The exception names at least one foundation model: a call through an inference profile is authorized on the profile and on the model it routes to (SUP-300)."
   }
 }
 

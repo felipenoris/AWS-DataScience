@@ -1,23 +1,24 @@
 #!/usr/bin/env -S uv run --quiet
-# dns-allowlist.py - re-resolve every name on the proxy's source-scoped allow-lists and report what
-# each one answers with, which entries collide under Squid's matching rules, and what the committed
-# lists say against what the estate is actually serving them from.
-#
-#   needs:    nothing in the default mode - no SSO session, no profile, no AWS call. It
-#             reads this repository's own .tf and asks a resolver. `dig` must be on PATH.
-#             `--from-api PROFILE` is the AWS mode and needs a live session:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/dns-allowlist.py                    the planes as code declares them
-#             ./aws/dns-allowlist.py --whois            + who owns each answer address
-#             ./aws/dns-allowlist.py --from-api awsds-infra-prod
-#                                                       + the deployed parameter, compared
-#             ./aws/dns-allowlist.py --resolver 1.1.1.1 ask a specific resolver
-#   writes:   aws/output/dns-allowlist.txt   (untracked - see .gitignore)
-#   reads:    DNS, and `whois` only with --whois. With --from-api, one read-only call:
-#             ssm:GetParameter. This script never creates, updates or deletes anything.
-#
+"""dns-allowlist.py - re-resolve every name on the proxy's source-scoped allow-lists and report what
+each one answers with, which entries collide under Squid's matching rules, and what the committed
+lists say against what the estate is actually serving them from.
+
+needs:    nothing in the default mode - no SSO session, no profile, no AWS call. It
+          reads this repository's own .tf and asks a resolver. `dig` must be on PATH.
+          `--from-api PROFILE` is the AWS mode and needs a live session:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/dns-allowlist.py                    the planes as code declares them
+          ./aws/dns-allowlist.py --whois            + who owns each answer address
+          ./aws/dns-allowlist.py --from-api awsds-infra-prod
+                                                    + the deployed parameter, compared
+          ./aws/dns-allowlist.py --resolver 1.1.1.1 ask a specific resolver
+writes:   aws/output/dns-allowlist.txt   (untracked - see .gitignore)
+reads:    DNS, and `whois` only with --whois. With --from-api, one read-only call:
+          ssm:GetParameter. This script never creates, updates or deletes anything.
+"""
+
 # The lists read here are the proxy's, not the Route 53 Resolver DNS Firewall lists in the two
 # Interactive `egress/` slices: 6c step 5.1 removed the last default route (D38) and step 5.7 cut
 # those lists from sixty-three entries to ten - AWS's own namespaces and this estate's private
@@ -72,7 +73,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import ErrorLog
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -399,6 +400,7 @@ def owner_of(addr: str) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, flags=("--whois", "--from-api"), valued=("--resolver",))
     argv = list(argv)
     do_whois = "--whois" in argv
     if do_whois:

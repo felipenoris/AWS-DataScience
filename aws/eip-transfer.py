@@ -1,7 +1,24 @@
 #!/usr/bin/env -S uv run --quiet
-# eip-transfer.py - Stage 6c step 4.2. Can the WireGuard Elastic IP move from Sandbox to
-# Production, and what exactly are the two calls that would move it?
-#
+"""eip-transfer.py - Stage 6c step 4.2. Can the WireGuard Elastic IP move from Sandbox to
+Production, and what exactly are the two calls that would move it?
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers both profiles below: the cached token is keyed by the
+          sso-session name, not by profile or account (see aws/INDEX.md).
+
+run:      ./aws/eip-transfer.py
+writes:   aws/output/eip-transfer.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeAddresses, ec2:DescribeAddressTransfers, ec2:DescribeInstances,
+          servicequotas:GetServiceQuota, sts:GetCallerIdentity.  It never creates,
+          updates or deletes anything - including the transfer it prints.
+exits:    0 every check passed - the transfer would be accepted
+          1 a call failed
+          2 a check FAILED - the transfer would be refused, and the row says which refusal
+"""
+
 # An Elastic IP transfer has four documented refusals, and they do not fire at the same
 # moment: three are visible on the source address before anything is called, and the fourth -
 # the destination account being at its Elastic IP quota - is invisible from the source. The
@@ -19,22 +36,6 @@
 # It prints the two write commands and runs neither: `aws/` is a read-only folder
 # (CLAUDE.md). The two calls are [Claude+] acts the user authorizes in chat, one at a time,
 # printed with the ids already resolved so that neither is retyped from prose (Lesson 38).
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers both profiles below: the cached token is keyed by the
-#             sso-session name, not by profile or account (see aws/INDEX.md).
-#
-#   run:      ./aws/eip-transfer.py
-#   writes:   aws/output/eip-transfer.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeAddresses, ec2:DescribeAddressTransfers, ec2:DescribeInstances,
-#             servicequotas:GetServiceQuota, sts:GetCallerIdentity.  It never creates,
-#             updates or deletes anything - including the transfer it prints.
-#   exits:    0 every check passed - the transfer would be accepted
-#             1 a call failed
-#             2 a check FAILED - the transfer would be refused, and the row says which refusal
 #
 # Exit 2 is the expected reading before step 4.4 (Lesson 50). ET-2 fails while the address is
 # still associated with the Sandbox host, which is a true statement about the transfer: run
@@ -57,7 +58,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -89,6 +90,7 @@ def _addresses(cli: AwsCli) -> list:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

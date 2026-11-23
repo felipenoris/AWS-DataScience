@@ -1,30 +1,31 @@
 #!/usr/bin/env -S uv run --quiet
-# dlp.py - Stage 11's evidence, per account, side by side: Macie's per-account state and
-# its delegation, the Lake Formation data cells filters, the data-event trails (data-only,
-# validated, delivering into the governed logs bucket), the EventBridge rules + alarms +
-# SNS topics of the exfiltration patterns, the two GuardDuty paid features (expected
-# DISABLED before step 4 and ENABLED everywhere after it), the CloudTrail-tampering
-# Sid in the baseline SCP, and Bedrock's model invocation logging, per account and
-# routed Region (step 5.6, decision 11).
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/dlp.py                     # every awsds-* profile
-#             ./aws/dlp.py awsds-infra-data    # only the ones named
-#             python3 aws/dlp.py -             # CloudShell, ambient credentials
-#   writes:   aws/output/dlp.txt   (untracked - see .gitignore)
-#   reads:    macie2:GetMacieSession, cloudtrail:DescribeTrails, GetTrailStatus,
-#             GetEventSelectors, events:ListRules, cloudwatch:DescribeAlarms,
-#             sns:ListTopics, s3api:ListBuckets, lakeformation:ListDataCellsFilter,
-#             guardduty:ListDetectors, GetDetector,
-#             bedrock:GetModelInvocationLoggingConfiguration,
-#             organizations:ListDelegatedAdministrators, ListPolicies, DescribePolicy,
-#             sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""dlp.py - Stage 11's evidence, per account, side by side: Macie's per-account state and
+its delegation, the Lake Formation data cells filters, the data-event trails (data-only,
+validated, delivering into the governed logs bucket), the EventBridge rules + alarms +
+SNS topics of the exfiltration patterns, the two GuardDuty paid features (expected
+DISABLED before step 4 and ENABLED everywhere after it), the CloudTrail-tampering
+Sid in the baseline SCP, and Bedrock's model invocation logging, per account and
+routed Region (step 5.6, decision 11).
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/dlp.py                     # every awsds-* profile
+          ./aws/dlp.py awsds-infra-data    # only the ones named
+          python3 aws/dlp.py -             # CloudShell, ambient credentials
+writes:   aws/output/dlp.txt   (untracked - see .gitignore)
+reads:    macie2:GetMacieSession, cloudtrail:DescribeTrails, GetTrailStatus,
+          GetEventSelectors, events:ListRules, cloudwatch:DescribeAlarms,
+          sns:ListTopics, s3api:ListBuckets, lakeformation:ListDataCellsFilter,
+          guardduty:ListDetectors, GetDetector,
+          bedrock:GetModelInvocationLoggingConfiguration,
+          organizations:ListDelegatedAdministrators, ListPolicies, DescribePolicy,
+          sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # It is multi-profile, which aws/INDEX.md admits only for a reason: the stage's subject is
 # detection across accounts. The lake and drop-box live in Data Governance while the derived zone,
 # where governed data re-surfaces (D19, the SMUS project path), lives in the Interactive accounts,
@@ -55,7 +56,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
@@ -102,6 +103,7 @@ REGION_CEILING_DENY = "explicit deny in a service control policy"
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
