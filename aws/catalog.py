@@ -16,8 +16,9 @@ reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
           ListPolicyGrants, lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
           lakeformation:ListLFTags; in each account read - lakeformation:ListPermissions and
           cloudtrail:LookupEvents; in the account a project's environments live in -
-          datazone:Search over that project's assets and glue:GetTable; and
-          sts:GetCallerIdentity. Every one is a read.
+          datazone:Search over that project's assets and glue:GetTable; in Sandbox -
+          s3:ListAccessGrants and ListAccessGrantsLocations; and sts:GetCallerIdentity. Every
+          one is a read.
 exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self-check case
           read otherwise
 """
@@ -135,6 +136,14 @@ exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self
 #         another owner's table under the consumer's name. CT-4 keeps every source from
 #         publishing on import, and this check reads what a person published: a listed link
 #         fails, and an inventory link is a note, a member's publish being one act away.
+#   CT-20 every S3 Access Grant a project role holds on another project's folder is explained by
+#         an APPROVED subscription of that project to an S3 Object Collection the folder's project
+#         lists, at exactly the collection's prefix (Stage 21 6.3). DataZone fulfils a collection
+#         with a grant on the owning project's location to the subscriber's project role, written
+#         by the owner's role in session AWSDataZone-Subscriptions, READ for a product's
+#         subscription and what the request asked for on the collection's own listing (Stage 21
+#         5.4, 5.6). A grant to a person's role, or on a location no project owns, is the
+#         sandbox lake's and outside this check.
 #
 # CT-7 and CT-8 read every page of ListPermissions in the registry, in the Interactive account
 # and, since their projects exist, in both deployment targets: the CLI has no paginator for that
@@ -248,6 +257,13 @@ SMUS_ROLE_MARKERS = (
     "AmazonDataZone",
 )
 IAM_PRINCIPALS_SUFFIX = ":IAMPrincipals"
+
+# A SMUS project's S3 Access Grants location, `s3://<projects bucket>/<domain id>/<project id>/`
+# (SMUS.md, the vending surface), and a project role by the project id its name carries (CT-20).
+PROJECT_LOCATION = re.compile(r"s3://[^/]+/dzd[-_][a-z0-9]+/([a-z0-9]+)/")
+PROJECT_ROLE = re.compile(r":role/" + PROJECT_ROLE_MARKER + r"([a-z0-9]+)_[a-z0-9]+$")
+S3_COLLECTION_TYPE = "S3ObjectCollectionAssetType"
+S3_COLLECTION_FORM = "S3ObjectCollectionForm"
 
 # The shape of a DataZone user profile id. A request's requester or reviewer of another shape, an
 # absent reviewer among them, is not looked up.
@@ -721,6 +737,32 @@ def judge_start(body: dict, source_project: dict, deploy_projects: dict) -> tupl
     return ("cross", caller, source, owner)
 
 
+def collection_scope(bucket_arn: str) -> str:
+    """The grant scope DataZone writes for an S3 Object Collection's prefix ARN (Stage 21 5.4)."""
+    prefix = "arn:aws:s3:::"
+    return f"s3://{bucket_arn[len(prefix) :]}*" if bucket_arn.startswith(prefix) else ""
+
+
+def explain_access_grant(location: str, grantee: str, scope: str, collections: dict) -> str | None:
+    """CT-20's verdict on one S3 Access Grant. None when the check does not judge it: a location no
+    project owns, or a grantee that is no project role. The reason when the grantee is the
+    location's own project role, or another project's role that an APPROVED subscription to an S3
+    Object Collection of the location's project, at exactly this scope, explains; empty when
+    nothing does. collections maps a grant scope to (listing name, owning project, subscribed
+    projects) for each S3 Object Collection listing whose prefix it is."""
+    owned = PROJECT_LOCATION.fullmatch(location)
+    role = PROJECT_ROLE.search(grantee)
+    if not owned or not role:
+        return None
+    owner, holder = owned.group(1), role.group(1)
+    if holder == owner:
+        return "the location's own project role"
+    for name, listing_owner, subscribed in collections.get(scope, ()):
+        if listing_owner == owner and holder in subscribed:
+            return f"the fulfilment of {holder}'s approved subscription to {name}"
+    return ""
+
+
 def self_check() -> int:
     """The product road's rules on sample records: the cases the estate cannot show before
     Production lists a product (Stage 19 step 4.12), and the ones it must never show."""
@@ -931,6 +973,54 @@ def self_check() -> int:
             "a deploy role whose project is not listed",
             judge_start(start_by("awsds-deploy-staging", "s-own"), owners, deploying)[0],
             "other",
+        ),
+    ]
+
+    # CT-20: what explains an S3 Access Grant on a project's folder, and what does not.
+    folder = f"s3://projects-bucket/dzd-domain/{own}/"
+    images = f"{folder}shared/images/*"
+    reader = f"arn:aws:iam::{sbx}:role/{PROJECT_ROLE_MARKER}{con}_env"
+    approved = {images: [("images", own, {con})]}
+    cases += [
+        (
+            "a subscriber's grant at the collection's scope",
+            explain_access_grant(folder, reader, images, approved),
+            f"the fulfilment of {con}'s approved subscription to images",
+        ),
+        (
+            "the scope DataZone writes for a collection's prefix",
+            collection_scope("arn:aws:s3:::projects-bucket/dzd-domain/p/shared/images/"),
+            "s3://projects-bucket/dzd-domain/p/shared/images/*",
+        ),
+        (
+            "a grant with no subscription",
+            explain_access_grant(folder, reader, images, {images: [("images", own, set())]}),
+            "",
+        ),
+        (
+            "a grant wider than the collection",
+            explain_access_grant(folder, reader, f"{folder}shared/*", approved),
+            "",
+        ),
+        (
+            "a collection another project owns at the same scope",
+            explain_access_grant(folder, reader, images, {images: [("images", lab, {con})]}),
+            "",
+        ),
+        (
+            "the location's own project role",
+            explain_access_grant(folder, owner_role.replace(prd, sbx), images, {}),
+            "the location's own project role",
+        ),
+        (
+            "a person's role on a project's folder",
+            explain_access_grant(folder, admin_role, images, {}),
+            None,
+        ),
+        (
+            "a project role on a location no project owns",
+            explain_access_grant("s3://lake-bucket/", reader, "s3://lake-bucket/team/*", {}),
+            None,
         ),
     ]
 
@@ -2341,6 +2431,122 @@ def main(argv: list) -> int:
             ct19,
             f"{len(products)} listed project table(s) and {len(inventory)} Glue table asset(s) "
             f"in {len(projects)} inventories, none a resource link",
+        )
+
+    # ---------------------------------------------------------------- CT-20 the S3 Access Grants
+    # An S3 Object Collection is fulfilled by an S3 Access Grant in the account that holds the
+    # bucket, written by the owning project's role (Stage 21 5.4). Each collection is read from its
+    # listing, those a product carries and SearchListings omits included, and each subscription
+    # from DataZone, under the collection's listing and every product listing that carries it.
+    ct20 = "every S3 Access Grant a project role holds on another project's folder is explained"
+    s3_unread: list = []
+    owner_of = {lid: owner for lid, _, _, owner, _ in listings}
+    collection_ids = {lid for lid, _, etype, _, _ in listings if etype == S3_COLLECTION_TYPE}
+    collection_ids |= set(bundles) - set(owner_of)
+    collections: dict = {}  # grant scope -> [(listing name, owning project, subscribed projects)]
+    for lid in sorted(collection_ids):
+        res = dat.run(
+            "datazone",
+            "get-listing",
+            "--domain-identifier",
+            domain_id,
+            "--identifier",
+            lid,
+            "--output",
+            "json",
+            tolerate="AccessDeniedException",
+        )
+        if res.tolerated or not res.ok:
+            s3_unread.append(f"GetListing {lid}")
+            continue
+        body = json_or_none(res.stdout) or {}
+        form = listing_forms(body).get(S3_COLLECTION_FORM)
+        if not isinstance(form, dict):
+            continue
+        scope = collection_scope(form.get("bucketArn") or "")
+        carriers = bundles.get(lid, [])
+        owner = owner_of.get(lid) or next((owner_of[c] for c in carriers if c in owner_of), "-")
+        subscribed: set = set()
+        for asked in [lid, *carriers]:
+            res = dat.run(
+                "datazone",
+                "list-subscriptions",
+                "--domain-identifier",
+                domain_id,
+                "--subscribed-listing-id",
+                asked,
+                "--status",
+                "APPROVED",
+                "--output",
+                "json",
+            )
+            if not res.ok:
+                s3_unread.append(f"list-subscriptions {asked}")
+                continue
+            for item in (json_or_none(res.stdout) or {}).get("items", []):
+                project = (item.get("subscribedPrincipal") or {}).get("project") or {}
+                subscribed.add(project.get("id", "-"))
+        collections.setdefault(scope, []).append((body.get("name", lid), owner, subscribed))
+
+    access_grants: list = []  # (grant id, location scope, grantee, permission, grant scope)
+    if live[SANDBOX_PROFILE].live:
+        located = sbx.run(
+            "s3control",
+            "list-access-grants-locations",
+            "--account-id",
+            consumer_account,
+            "--output",
+            "json",
+        )
+        granted = sbx.run(
+            "s3control", "list-access-grants", "--account-id", consumer_account, "--output", "json"
+        )
+        if located.ok and granted.ok:
+            scope_of = {
+                loc.get("AccessGrantsLocationId"): loc.get("LocationScope", "-")
+                for loc in (json_or_none(located.stdout) or {}).get("AccessGrantsLocationsList", [])
+            }
+            for g in (json_or_none(granted.stdout) or {}).get("AccessGrantsList", []):
+                access_grants.append(
+                    (
+                        g.get("AccessGrantId", "-"),
+                        scope_of.get(g.get("AccessGrantsLocationId"), "-"),
+                        (g.get("Grantee") or {}).get("GranteeIdentifier", "-"),
+                        g.get("Permission", "-"),
+                        g.get("GrantScope", "-"),
+                    )
+                )
+        else:
+            s3_unread.append("the S3 Access Grants of the consumer account")
+    else:
+        s3_unread.append("the consumer account")
+
+    verdicts = [(g, explain_access_grant(g[1], g[2], g[4], collections)) for g in access_grants]
+    judged = [(g, why) for g, why in verdicts if why is not None]
+    unexplained = [g for g, why in judged if not why]
+    fulfilled = [(g, why) for g, why in judged if why.startswith("the fulfilment")]
+    if unexplained:
+        checks.fail(
+            "CT-20",
+            ct20,
+            "; ".join(f"{short_principal(g[2])} {g[3]} on {g[4]}" for g in unexplained)
+            + " - a project reads another's folder with no approved subscription to a collection "
+            "at that scope",
+        )
+    elif s3_unread:
+        checks.note("CT-20", ct20, f"not read: {', '.join(s3_unread)}")
+    elif not fulfilled:
+        checks.note(
+            "CT-20",
+            ct20,
+            f"no fulfilment among {len(access_grants)} grant(s); "
+            f"{sum(len(v) for v in collections.values())} S3 Object Collection listing(s)",
+        )
+    else:
+        checks.ok(
+            "CT-20",
+            ct20,
+            "; ".join(f"{g[3]} on {g[4]}: {why}" for g, why in fulfilled),
         )
 
     # ---------------------------------------------------------------- the LF-Tag ontology

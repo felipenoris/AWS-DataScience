@@ -1250,9 +1250,15 @@ roles, with the drop-box `PutObject` on the dated prefix as the one sanctioned d
 ([`GOVERNANCE.md`](GOVERNANCE.md) §Drop-box, INT-10).
 
 **4. Existing buckets as catalog assets.** An existing bucket or prefix can be published into the
-catalog as an **S3 Object Collection** asset — a curated, versioned *metadata* object under
-subscription rules. No stage uses it: this lake's path into the catalog is tables on the LF
-substrate, not object collections.
+catalog as an **S3 Object Collection** asset, a versioned metadata object under subscription rules
+that S3 Access Grants fulfils. Stage 21 pass 5 ran one in Sandbox on 2026-11-23 and removed it the same
+day: `eighth-experimentation`'s `shared/stage21-images/`, published from the portal's S3 browser,
+packaged with a Glue table in a data product and subscribed by `test-experimentation`. Each subscription
+wrote one grant on the producer project's location to the consumer's project role at the prefix, `READ`
+for the product and `READWRITE` when the request on the collection's own listing asked for write, and
+`GetDataAccess` vends sessions of the producer's project role (`SUP-481`;
+[`catalog.md`](plan/runbooks/catalog.md) §S). This lake's path into the catalog stays tables on the LF
+substrate.
 
 Three things in a member account all answered to "working storage" — **two buckets and a workgroup**.
 Since 2026-08-26/27 there is one: the other two were destroyed with D19's revision, and their rows are
