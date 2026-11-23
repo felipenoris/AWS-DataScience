@@ -1239,7 +1239,7 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
    `<env>/studio/`, and the retention mode the user's act in each target. The configuration names every
    model, a shape no `awscc` apply has measured (`SUP-466`): Staging's apply reads it first. Written and
-   planned 2026-11-23 (Stage 17's log), `TM-36` waiting on the user's acceptance.
+   planned 2026-11-23 (Stage 17's log), `TM-36` accepted by the user the same day.
 9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
