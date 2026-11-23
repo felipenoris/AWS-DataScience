@@ -1279,3 +1279,28 @@ login had expired at 02:56, so no trail was read. Times UTC, the shell's clock r
   `trades_notional`; a search of the entire catalog for `trades_hot` and for `sandbox-trades-hot` answers *No
   results found*. The tab closed at 03:14.
 - **What is left of this stage**: pass 5 with its own rollback; 6.5's bill.
+
+## 2026-11-23 — 6.5's Redshift half and 6.4's price of the managed workgroup, read with nothing up
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", on the user's *"Sim, registre"* in that session's
+chat. The reads as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1` (`Sandbox
+Account 1`), from 15:14 to 15:35: CloudWatch, Sandbox's trail and the user's reading of the trial's balance,
+pasted at 15:05 (5b's log). Times UTC.*
+
+- **[Claude] The managed workgroup's meter**: its `AWS/Redshift-Serverless` metrics publish under its own
+  `workgroupId`, `fe7eb678-d356-477a-9f3a-1a4055bde9dc`, which `DeleteManagedWorkgroup`'s response gives
+  `<account>:stage21_warehouse`: 23,040 `ChargedSeconds` and 4 `ComputeSeconds`, in the 01:30 interval alone.
+  `redshift-data.amazonaws.com` called `GetCredentials` on that workgroup for
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` at 01:41:06, 01:41:57 and 01:43:26, one call per preview of
+  4.6.
+- **[Claude] The consumer's workgroup** `redshift-serverless-workgroup-dahsfn6j8lqec0`: 960 `ChargedSeconds` and
+  126 `ComputeSeconds`, in the 23:30 and 00:00 intervals.
+- **[Claude] The bill**: 2.30 USD and 0.10 at 0.0001 USD per RPU-second, both absorbed by the free trial, whose
+  balance fell 3.22 USD after day 1's reading against 3.144 of `ChargedSeconds` over the warehouse and these
+  two (5b's log, the user's *"$282.94 out of $300.00"*). xii's bill is answered; the base capacity stays unread.
+  Cost Explorer's bill by service, the rest of 6.5, waits until it holds both days (`SUP-142`).
+- **[Claude] The trail**: `CreateManagedWorkgroup` at 01:39:23 and `DeleteManagedWorkgroup` at 01:48:49, each in
+  the infrastructure user's session with `invokedBy` `glue.amazonaws.com`, where the read at 01:44 found no
+  creation (`SUP-045`); no `CreateCluster` over the sitting (Stage 9's 9.5a).
+- **[Claude] Records**: this stage's `Status` row; `SUP-474`; 6.4's price in `docs/PRICING.md` §5, written with
+  the readings (5b's log).
