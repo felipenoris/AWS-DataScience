@@ -1260,7 +1260,7 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    the four metadata reads were applied the same evening. **Day 2 ran 2026-11-22 and 23** (the Stage 21, 19
    and 20 logs): Stage 21's passes 2 to 4 with 4.8, Stage 19's 5.4 with Stage 21's rollback item 5, `lab`
    kept (6h 6.4, taken 2026-11-22), both subscriptions revoked, then the lowering and rollback item 1 for
-   pass 2's data product; Stage 21's pass 5 moved to a Sandbox sitting with no warehouse (N.12.1).
+   pass 2's data product; Stage 21's pass 5 moved to a Sandbox sitting with no warehouse, run 2026-11-23 (N.12.1).
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
     orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
     mirror: `app-dbt`'s first release,
@@ -2846,7 +2846,7 @@ bound it stay N.6's.
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-22 and 23, ran | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 to 4 with 4.8 and the closing reads by 01:53 UTC, then Stage 19's 5.4 with Stage 21's rollback item 5 by 01:58 UTC (#384), N.6 item 6's revocations at 02:18 and 02:20 UTC, and the lowering from 02:15 to 02:28 UTC | the raise of the row above | day 1 |
 | 2026-11-23, ran | Stage 17 10.5 with nothing up (N.6 item 8), its applies the same day | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
-| 2026-11-23, from 17:00 UTC | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make up ENV=sandbox` in the user's raise: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
+| 2026-11-23, ran | N.10's day 2's rest: Stage 21's pass 5 with rollback items 1, 5 and 6, the lowering from 18:12:50 to 18:23:12 UTC; pass 2's data product deleted 2026-11-23; nothing left for 2026-11-25 | `make up ENV=sandbox` in the user's raise: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
 | 2026-11-23, from 17:00 UTC, beside the row above | R2 (N.11.2) | one command of the user's for both: `make hub-up`, `make up ENV=sandbox`, `make gitlab-up BUILD=1`, Staging's and Production's egress with `GROUPS=bedrock-base` | 10.5's applies and N.10's day 2's revocation of Stage 20 5.0's subscription, both done 2026-11-23 |
 | 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` (N.12.2) | `SUP-466`'s decision and `sandbox/bedrock/`'s change merged, for reading 6 |
 

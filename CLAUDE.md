@@ -454,8 +454,8 @@ up with what each closes, and the dated deadlines.
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6g, 6i, 7, 16 and 18. Not started: 13, which waits on
 the domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
-pass 1 was done 2026-11-18 with nothing up, 1.3's wizard and decision 4 on 2026-11-22, its passes 2-5 on
-§N.10's day 2. The calendar is `promotion.md` §N.12.
+passes 1 to 5 ran 2026-11-18 to 2026-11-23, `TM-37` accepted; left: 6.5's bill by service (xix). The calendar
+is `promotion.md` §N.12.
 
 | Stage | State | What comes next |
 |---|---|---|
@@ -467,7 +467,7 @@ pass 1 was done 2026-11-18 with nothing up, 1.3's wizard and decision 4 on 2026-
 | 8, the pipelines | Passes 0-3 done; pass 4 ran with Stage 10's passes: the first promotion on 2026-10-24 (`v0.3.3`), release T's `v0.4.7` on 2026-11-15, release F's `v0.5.2` on 2026-11-16, release G's `v0.6.0` in R1 on 2026-11-22, the CI/CD CLI deploying each leg (Stage 19 4.10); xv read yes. Every decision taken | R2 (`promotion.md` §N.11.2): the first releases of `app-dbt`, `app-ml` and `app-genai`, whose `scan-gate` reads nothing (`SUP-437`). What is left, in order: §N.6 |
 | 9, the deployment targets | Passes 1, 2, 3 and 5 applied; the producer path (2.4), the governed warehouse and its datashare (9.1 to 9.7) run and read to 2026-10-30; `EXC-13`'s Production half read in R1 on 2026-11-22: the database follows. Every decision taken | What is left, in order: `promotion.md` §N.6 |
 | 10, orchestration | Passes 1-3 done in Staging and Production; the schedules read starting both chains unattended (6.1, 2026-10-25); xx and decision 11's Staging half read 2026-11-15; since 2026-11-16 the chains of `<env>/chains/` start the CLI's workflows in both targets (Stage 19 4.11). Every decision taken | What is left, in order: `promotion.md` §N.6 |
-| 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-36`; `TM-28` controlled 2026-11-23 | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9 (`SUP-437`). The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
+| 11, data protection | Pass 0 read; pass 1's data cells filters written, creating nothing. The threat model holds `TM-01`..`TM-37`; `TM-28` controlled and `TM-37` accepted 2026-11-23 | The user's: decision 12 (the filtered principal), `TM-17`, decisions 1, 2, 5 and 9 (`SUP-437`). The internal-access analyzer, created after a 1st and deleted before the next: it bills on each 1st |
 | 12, observability and FinOps | Both observability slices applied 2026-10-18; 2.2 done in R1 on 2026-11-22, `OB-3` passing in both accounts (`EXC-19` closed). The bill reads above D12's ceiling: 53.31 USD in August and 74.48 in September | 2.4's provocations, at a hub sitting. The user's: decision due 3 and D12's fired revision trigger |
 | 14, Sandbox vending | The pre-vend half done 2026-10-18 (`./aws/vending.py`, `VN-1`..`VN-6`); the rest blocked on the account quota | The user's: the account quota and D34's rung |
 | 17, machine learning in Sandbox | Pass 0 in progress (7.3, the playground answering); passes 9 and 10 decided (14 to 28). Passes 2, 3 and 5 done, pass 7 on plan B (`SUP-446`); 9.1 to 9.4, 9.6, 10.1 to 10.3 and 10.4's readings 1 to 5 done, 9.5's targets applied, a trained model promoted; `app-ml-dev`, `app-genai-dev` and their Sandbox slices; `SUP-447`'s role under `EXC-27`. 10.5 applied 2026-11-23 with both retention modes, the `studio/` slices from `SUP-477`'s fix; `TM-33` and `TM-36` accepted | The user's: reading 6's Sandbox shape (`SUP-466`, whose every-model shape both targets applied). Pass 4 with the Sandbox leftovers (§N.12.1), its endpoint kept up, unseen by `make status` (decisions 5, 6). R2: 9.7, 10.6, 9.11 |
