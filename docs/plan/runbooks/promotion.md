@@ -2805,15 +2805,18 @@ bound it stay N.6's.
 | 2026-11-22, ran | R1 (N.11.1) beside day 2, its steps 6 and 7 left to R2 | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress, Production's warehouse compute after the leg | the rotation |
 | 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.9's day 3 beside N.10's day 1: 10.4's reading 6, 6e 6.4 and 6d's remainder left to a later sitting (N.6 item 7) | one raise with N.10's day 1 (the next row) | nothing: its prerequisites done 2026-11-22 (N.12.5) |
-| 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
-| 2026-11-25 | N.10's day 2 | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | day 1 |
-| 2026-11-26 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | day 3; 10.5's applies; N.10's day 1 |
+| 2026-11-22 | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 and 3, run by 01:06 UTC (#384), then pass 4 from 01:20 UTC with its 4.8, the closing reads and the lowering, which starts by 02:40 UTC on 2026-11-23 | the raise of the row above | day 1 |
+| 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
+| 2026-11-23 | N.10's day 2's rest: what 2026-11-22 leaves of Stage 21's pass 4, its pass 5, Stage 19's 5.4 with Stage 21's rollback item 5, then the subscriptions of N.6 item 6 revoked | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | nothing: day 1 ran 2026-11-22 |
+| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2, whose revocation of Stage 20 5.0's subscription comes before 8.6 |
+| 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base` | `SUP-466`'s decision, for reading 6 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
 days wait on no result of each other, so either comes first; R2 waits on day 3 and on N.10's day 1, whose
-pass 5 Stage 20 orders before pass 8.
+pass 5 Stage 20 orders before pass 8, and on N.10's day 2, whose end revokes the subscription behind the
+link asset 8.6 deletes.
 
 R2 can share a day with N.10's day 2, the user's choice, since it keeps the user on two surfaces at once:
 R2's acts sit between its pipelines' legs, an hour or more each, and the hub starts once. R1 shared N.9's
