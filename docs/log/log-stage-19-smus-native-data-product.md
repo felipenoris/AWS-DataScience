@@ -4983,3 +4983,82 @@ From 19:11 to 20:21; times UTC. §N.9's day 3, the other sitting, told of the wr
   0 fail, 6 note, as at 19:19.
 - **Left of step 6**: the data source `c4n05wth04ll3k` stands `FAILED_CREATION`; deleting it and creating
   it again is §N.10's day 2's, with the compute up.
+
+## 2026-11-22 — Step 6 again on §N.10's day 2: the source created, its run refused
+
+*Claude, in the session of `promotion.md` §N.10's day 2, recording a step whose full reading is Stage 21's log of
+the same day (2.2). Times UTC.*
+
+- **[Claude] Step 6**: `c4n05wth04ll3k` deleted at about 22:58 and the source created again with day 1's rules as
+  `brnatob4h2kwb4`, `READY` at 22:59:17, the four Data API reads applied at 21:23 admitting its validation. Its
+  run at 22:59:30 was refused on `redshift-data:ExecuteStatement` for the access role, nothing imported, so the
+  asset 5.3 publishes does not exist yet; the statement is written in `sandbox/warehouse/iam.tf` and waits for
+  the user's word.
+
+## 2026-11-22 — Step 6's run on §N.10's day 2
+
+*Claude, in the session of `promotion.md` §N.10's day 2, recording a step whose full reading is Stage 21's log of
+the same day. Times UTC.*
+
+- **[Claude] Step 6's run** at 23:10:44, after the access role's `ExecuteStatement` was applied at 23:09 on the
+  user's word: `SUCCESS`, 3 assets added, `lab.trades_hot` as `cgpzdjxcumuzrk`,
+  `amazon.datazone.RedshiftTableAssetType` revision 18, unlisted. *Publish* waits for the user's word with
+  Stage 21's 2.3.
+
+## 2026-11-23 — 5.4 on §N.10's day 2: 5.1's grants revoked and the copy dropped
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Pode avançar no
+5.4"*, answering whether to run 5.4 with Stage 21's rollback item 5 before the lowering. The SQL as the Sandbox
+warehouse's admin through the Data API; Lake Formation as the infrastructure user with `InfrastructureAccess`,
+`awsds-infra-prod` and `awsds-infra-sandbox-1`. Times UTC.*
+
+- **[Claude] The reads**, 01:57:00: user 103 is `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`
+  (`svv_user_info`), the one holder of `USAGE` on `awsdatacatalog` (`svv_database_privileges`); `lab.trades_hot`
+  present, and no materialized view in `sandbox` (`svv_mv_info`), 5.2's never having been created (`SUP-459`).
+- **[Claude] The SQL half**: `REVOKE USAGE ON DATABASE awsdatacatalog FROM
+  "IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c"` at 01:57:31, `FINISHED`; `svv_database_privileges`
+  holds no row for `awsdatacatalog` after it.
+- **[Claude] The copy**: `DROP TABLE lab.trades_hot` at 01:57:42, after Stage 21's view and tables over it
+  (Stage 21's log, rollback item 5).
+- **[Claude] The Lake Formation half**: `DESCRIBE` and `SELECT` on Production's `app_etl.trades_notional`
+  revoked from `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` at 01:58:24, and `DESCRIBE` on Sandbox's link
+  `glue_db_blerpkhn9nj7o0.trades_notional` at 01:58:25. Read back: Production's table keeps the deployment
+  project role's grants and DataZone's two `IAMPrincipals` `SELECT`, 4.12's and Stage 20 5.0's subscriptions;
+  the link keeps DataZone's `IAMPrincipals` `DESCRIBE` and its creator's, the project role's.
+- **What 5.4 leaves**: `make down`, with the lowering (N.10.5), and 4.12's revocation.
+
+## 2026-11-23 — 4.12's subscription revoked, before Stage 20 5.0's
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Descer e
+revogar"*, answering *"Desço agora (`make down ENV=sandbox` e `make hub-down`) e revogo as duas
+assinaturas, ou só desço?"*. As the infrastructure user with `InfrastructureAccess`: the revocation by the CLI
+as `awsds-infra-prod`, as Stage 18 revoked its own, rather than in the portal; the reads as `awsds-infra-prod`
+and `awsds-infra-sandbox-1`, the trails read after. The revocations ran while `make down ENV=sandbox` did,
+needing nothing up (Stage 21's log). Times UTC.*
+
+- **[Claude] The ids**: the subscription request `6gtjmvdzma9n9s`, `eighth-experimentation`'s of 2026-11-22,
+  became the subscription `3yzd1cn5n0sumo` at its approval, and its fulfilment the subscription grant
+  `5wcj37nf8fh4wg`. The revocation acts on the subscription; the request keeps `ACCEPTED`, the record of who
+  asked and who approved.
+- **[Claude] The revocation**: `aws datazone revoke-subscription --identifier 3yzd1cn5n0sumo
+  --no-retain-permissions` at 02:18:14 (the trail's `RevokeSubscription`, `retainPermissions` `false`); the
+  subscription answered `REVOKED`.
+- **[Claude] The grant** `5wcj37nf8fh4wg`: `PENDING` at 02:18:15 and 02:18:26, `IN_PROGRESS` from 02:18:38 to
+  02:19:11, no longer returned from 02:19:22; `ResourceNotFoundException` read at 02:20:45.
+- **[Claude] The calls**, from the trails, each by a project role in an `AWSDataZone-Subscriptions` session
+  through `datazone.amazonaws.com`: `deploy-production`'s `BatchRevokePermissions` at 02:18:56, one entry, the
+  `SELECT` to Sandbox's `IAMPrincipals` on `app_etl.trades_notional` (Production); `eighth-experimentation`'s
+  `DeleteTable` on the link `glue_db_blerpkhn9nj7o0.trades_notional` at 02:19:05 (Sandbox). No RAM or Glue
+  policy call: 5.0's subscription still held the share.
+- **[Claude] Both sides at 02:20:45**: Production's table holds the deployment project role's two rows and
+  one `IAMPrincipals` `SELECT`, under `app-dbt-dev`'s `dnl3l158mbhrio`; the row under `avhvbqn37ty7m8` is
+  gone. Sandbox's link answers `EntityNotFoundException`. The share `LakeFormation-V5-2Y5MBO5ADP` reads
+  `ACTIVE`.
+- **[Claude] 5.0's revocation** followed at 02:20:52, the last subscription to Sandbox's account: with it the
+  share went `DELETED` and Production's three per-resource catalog policies were deleted (Stage 20's log).
+- **[Claude] `catalog.py`**, 02:29:25 to 02:32:30, all checks passed. `CT-17` reads 13 grants on the two
+  listed tables: on `app_etl.trades_notional` the owning project's and the blueprint's alone, no fulfilment.
+  The asset `eighth-experimentation`'s source imported from the link stays in its inventory over a table that
+  no longer exists (`CT-19`, *"no such table"*; `SUP-197`, `SUP-365`).
+- **[Claude] The lowering** (N.10.5), in Stage 21's log: `make status` read 0.0000 USD/h at 02:27:56.
+- **What N.10's day 2 leaves of this stage**: xiv's view over an external schema, which needs a warehouse.

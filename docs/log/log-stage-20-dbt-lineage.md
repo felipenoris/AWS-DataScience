@@ -2407,6 +2407,39 @@ are not copied. Times UTC.*
   before R2's tag (8.6). `jup-app-dbt-dev` was left `InService` under its idle timeout, with `~/app-dbt`
   and the tar in its home; its JupyterLab tab was closed at 20:14.
 
+## 2026-11-23 — 5.0's subscription revoked, the last to Sandbox's account
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Descer e
+revogar"*, answering *"Desço agora (`make down ENV=sandbox` e `make hub-down`) e revogo as duas
+assinaturas, ou só desço?"*. As the infrastructure user with `InfrastructureAccess`: the revocation by the CLI
+as `awsds-infra-prod`, after Stage 19 4.12's (that stage's log); the reads as `awsds-infra-prod`,
+`awsds-infra-sandbox-1` and `awsds-infra-data`, the trails read after. Times UTC.*
+
+- **[Claude] The ids**: the subscription request `6oy7kvmszacaa8`, `app-dbt-dev`'s of 2026-11-22, became the
+  subscription `6n3yg1rsytsemo` at its approval, and its fulfilment the subscription grant `5c4l81od6jm3o0`.
+  The revocation acts on the subscription; the request keeps `ACCEPTED`.
+- **[Claude] The revocation**: `aws datazone revoke-subscription --identifier 6n3yg1rsytsemo
+  --no-retain-permissions` at 02:20:52 (the trail's `RevokeSubscription`, `retainPermissions` `false`); the
+  subscription answered `REVOKED`. The grant read `COMPLETED` at 02:20:53 and `ResourceNotFoundException` at
+  02:21:04.
+- **[Claude] The calls**, from the trails, each by a project role in an `AWSDataZone-Subscriptions` session
+  through `datazone.amazonaws.com`. In Production, `deploy-production`'s `BatchRevokePermissions` (the `SELECT`
+  to Sandbox's `IAMPrincipals` under `dnl3l158mbhrio`) and `ram:DeleteResourceShare` on
+  `LakeFormation-V5-2Y5MBO5ADP` at 02:20:55, then `glue:DeleteResourcePolicy` on `catalog`, `database/*` and
+  `table/*/*` at 02:20:56, each repeated in the same second and answering `EntityNotFoundException`. In
+  Sandbox, `app-dbt-dev`'s `DeleteTable` on the link `app_dbt.trades_notional` at 02:20:56.
+- **[Claude] Both sides at 02:21:20**: no `IAMPrincipals` row on Production's `app_etl.trades_notional`;
+  `app_dbt.trades_notional` answers `EntityNotFoundException`; the share reads `DELETED`, and
+  `glue get-resource-policies` an empty list in Production. At 02:23:13 both subscriptions read `REVOKED`, and
+  Sandbox's account receives three Lake Formation shares, all Data Governance's. `catalog.py` at 02:32:30, all
+  checks passed, `CT-17` with no fulfilment on the table.
+- **[Claude] 8.6's link asset never existed**: the project's source `3uof8bs4x693f4` over `app_dbt`
+  (`cron(43 2 * * ? *)`) ran three times, at 04:34 and 05:09 on 2026-11-21, each started by hand, and at
+  02:54:41 on 2026-11-22, its schedule's; none fell between the link's creation at 14:05:21 on 2026-11-22
+  and its delete. `catalog.py` lists `app-dbt-dev`'s two assets, `trades` and `notional_by_desk`. The
+  scheduled run of 2026-11-23 starts after the delete, so of 8.6's two deletions only pass 5's table asset
+  remains, if that run imports `notional_by_desk_prod`. That run is read at the next login.
+
 ## 2026-11-23 — R2's pre-flight for `app-dbt` with nothing up, and the read before its tag
 
 *Claude's hand, a side session of the session coordinating 2026-11-22's batch, on the branch
