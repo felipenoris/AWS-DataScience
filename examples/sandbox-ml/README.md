@@ -43,8 +43,9 @@ lab".
 
 Every object has a name starting with `ml-demo-` and carries the tag `AmazonDataZoneProject` with the
 project's id, but a model package version, which takes no tag and is authorized against its group's
-(`SUP-409`). `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live pipeline's steps with
-`pipeline/definition.json`.
+(`SUP-409`). A pipeline's jobs take the tag from the pipeline, since a step's arguments may name no
+`AmazonDataZone*` key (`SUP-467`). `./aws/sandbox-ml.py` reads them from the laptop; `ML-6` compares the live
+pipeline's steps with `pipeline/definition.json`.
 
 ## The values
 
@@ -174,15 +175,23 @@ and its price, every sitting. A transform job and a training job cannot be delet
 These parts of the scripts follow AWS's documentation or the SDK's serialization, and no run has read them
 in this estate:
 
-- **The pipeline definition's references**: `Steps.Prepare.ProcessingOutputConfig.Outputs['train'].S3Output.S3Uri`,
-  `Steps.Train.ModelArtifacts.S3ModelArtifacts`, and the condition's
-  `Steps.Train.FinalMetricDataList['validation:auc'].Value`. A wrong one fails at `upsert` or at the step
-  that resolves it, and `pipeline.py status` prints which.
-- **`Tags` inside the pipeline's step arguments**, which `SageMakerCreatePermissions` needs on each job;
-  whether the service accepts them there and passes them to the jobs is read on the first execution, by
-  `ML-3` and `ML-6`.
 - **`mlflow.register_model` on an `s3://` URI** into a registry `sagemaker-mlflow` backs, the recipe's call;
   the plugin's `arn` registry store sends it to the MLflow App, and whether the version then reaches
   `ml-demo-xgboost`, which `package` created outside MLflow, is step 3.2's reading.
 - **The transform's join**: `InputFilter` `$[1:]` drops the label, `JoinSource` `Input` with
   `OutputFilter` `$[0,-1]` writes the label and the score on each line, from which the AUC is recomputed.
+
+## What the first pipeline runs read
+
+The pipeline's first runs, on 2026-11-22 from `jup` (Stage 17's log):
+
+- **The definition's references resolve**: the execution `w8qa46pmftoy` ran `Train` on `Prepare`'s outputs,
+  `CheckAuc` on `validation:auc` and `Register` on the trained artifacts, and `pipeline.py compare` read the
+  live definition equal to the committed one.
+- **No step names `Tags`**: steps naming `AmazonDataZoneProject` passed `upsert` and failed the first step
+  when it started (`SUP-467`). The jobs take the pipeline's tags, the project's among them, which
+  `SageMakerCreatePermissions` needs on each create.
+- **A `ContainerArguments` item holds at most 256 characters**, the API's documented limit: the first
+  `upsert` was refused at 262, and `Prepare`'s command now takes 191.
+- **`upsert` finds the pipeline with `ListPipelines`**: the project role's `DescribePipeline` is granted on a
+  pipeline tagged with its project, so it is refused on a name that does not exist yet (`SUP-267`).

@@ -28,7 +28,7 @@
             "-c"
           ],
           "ContainerArguments": [
-            "sudo -n chown \"$(id -u)\" /opt/ml/processing/output/train /opt/ml/processing/output/validation /opt/ml/processing/output/test && exec /opt/awsds/venv/bin/python /opt/ml/processing/code/prepare.py --input /opt/ml/processing/input --output /opt/ml/processing/output"
+            "sudo -n chown -R \"$(id -u)\" /opt/ml/processing/output && exec /opt/awsds/venv/bin/python /opt/ml/processing/code/prepare.py --input /opt/ml/processing/input --output /opt/ml/processing/output"
           ]
         },
         "RoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/<PROJECT_ROLE_NAME>",
@@ -136,13 +136,7 @@
               "<PROJECT_SG>"
             ]
           }
-        },
-        "Tags": [
-          {
-            "Key": "AmazonDataZoneProject",
-            "Value": "<PROJECT_ID>"
-          }
-        ]
+        }
       }
     },
     {
@@ -224,13 +218,7 @@
           ]
         },
         "EnableNetworkIsolation": true,
-        "EnableInterContainerTrafficEncryption": true,
-        "Tags": [
-          {
-            "Key": "AmazonDataZoneProject",
-            "Value": "<PROJECT_ID>"
-          }
-        ]
+        "EnableInterContainerTrafficEncryption": true
       }
     },
     {
@@ -277,13 +265,7 @@
                   "ml.m5.large"
                 ]
               },
-              "ModelApprovalStatus": "PendingManualApproval",
-              "Tags": [
-                {
-                  "Key": "AmazonDataZoneProject",
-                  "Value": "<PROJECT_ID>"
-                }
-              ]
+              "ModelApprovalStatus": "PendingManualApproval"
             }
           }
         ],

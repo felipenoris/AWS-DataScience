@@ -4882,3 +4882,20 @@ the same profiles. Times are UTC.*
   condition left unseparated. `dev-env.md` §B step 6, 2.4 and 2.7 step 8 carry the reading. No domain names
   version 11 any more; `jup` and `code` in `d-m8m0uefej9kb` still do (`describe-space`, after the presses), so
   `retire` keeps it (`dev-env.md` §B, *The retirement*).
+
+## 2026-11-22 — Day 3: the remainder not run, the user's choice
+
+*Claude's hand, in the session the orchestrating session started for `promotion.md` §N.9.5, recording the
+user's answer in chat; Claude's reads through `awsds-infra-sandbox-1` (Sandbox Account 1, the infrastructure
+user with `InfrastructureAccess`). Times are UTC.*
+
+- **[user] The remainder**: *"Vamos deixar o bloco 6d para outra sessão"* at about 23:22, answering whether
+  7.5's monitored half, 7.7 and 6.1 (viii)'s Code Editor half run at the end of §N.9's day 3 (§N.9.5 step 5).
+  They wait for a later Sandbox sitting with the hub and `sandbox/egress/` up; the remainder calls no group.
+  The session of §N.10's day 2, which shared the raise and had offered a pause for 7.5's window, was told
+  at 23:22.
+- **[Claude] The owner's remote-access space** `code` (Code Editor, remote access `ENABLED`) reads
+  `InService` with no app in `d-m8m0uefej9kb` at 23:22:52 (`list-spaces`, `list-apps`), beside `jup`, whose
+  app the idle shutdown deleted at 23:19:09 (`DeleteApp` by `AWSServiceRoleForAmazonSageMakerNotebooks`
+  through `global.workflows.looseleaf.im.amazonaws.com`, `SUP-221`). No app stands in any of Stage 17's
+  three domains.

@@ -74,7 +74,8 @@ groups of `vpc-egress`: `bedrock-base` (`bedrock`, `bedrock-runtime`) and `bedro
 The house image's `NO_PROXY` carries every group's names, so a call to a group left down times out instead
 of leaving through the proxy. The builder needs no door of its own: DataZone's creates and the project role's
 `CreateEvaluationJob` and `StartIngestionJob` carry no `vpcEndpointId` (§V, 2026-11-22). A notebook's call
-takes one, the `Retrieve` of §U among them.
+takes one: a `Retrieve` from `jup` on 2026-11-22 counted on the `bedrock-agent-runtime` endpoint (Stage 17
+verification xxiv).
 
 **The models a project reaches** pass three layers ([`sagemaker-ai-ml.md`](sagemaker-ai-ml.md) §G):
 
@@ -303,12 +304,12 @@ reads only.
 | The definition a flow runs | `aws bedrock-agent get-flow --flow-identifier <id>`, which reads the last test's deploy (`SUP-448`); the saved definition is the app's file in the projects bucket |
 | Whether the guardrail intervened, on which policy and which side | `aws cloudwatch get-metric-statistics --namespace AWS/Bedrock/Guardrails --metric-name InvocationsIntervened`, with the dimensions `GuardrailArn` and `GuardrailVersion`, or `GuardrailContentSource`, `GuardrailPolicyType` and `Operation=ApplyGuardrail`; `Invocations` counts two per answered question and one per blocked input |
 | The door of a flow's model calls | the event's `vpcEndpointId` against `aws ec2 describe-vpc-endpoints`: a knowledge base's calls carry an id the account does not hold (`SUP-426`) |
+| The door of a data event, a `Retrieve` among them, which no `lookup-events` returns | the endpoint's `AWS/PrivateLinkEndpoints` metrics `NewConnections` and `BytesProcessed` by the dimension `VPC Endpoint Id`, one-minute datapoints some four minutes late: the `Retrieve` of 2026-11-22 counted one connection and 14,870 bytes at 22:19 UTC |
 
 ## U. What is unmeasured
 
 | What | Closed by |
 |---|---|
-| `Retrieve` on the knowledge base from a space, through `bedrock-agent-runtime` | verification xxiv |
 | A shared app's snapshot in the project's catalog, and answers that cite the runbooks' chunks | none in this account: the chat agent app is refused (`SUP-446`), a flow app has no *Share* (`SUP-448`), and a knowledge base node returns no citation |
 | A flow's `InvokeFlow` and its knowledge base's `Retrieve` and `RetrieveAndGenerate`: data events, which `lookup-events` never returns | none planned |
 | Which metadata key exceeds 2 KB in the 18 failed runbooks | none planned (`SUP-411`) |

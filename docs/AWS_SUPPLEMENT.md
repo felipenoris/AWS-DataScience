@@ -3265,6 +3265,40 @@ entry is still true is the reading.
   instant of each call once `InService`, so an app's start is timed from CloudTrail's `CreateApp`. Where:
   `log-stage-06d-unified-studio-remainder.md`, 2026-11-22.
 
+- `SUP-468` **SageMaker Unified Studio's visual pipeline editor writes no network setting and no volume key
+  into a step: its *Security* settings show the project's VPC, subnets, security group and key greyed, and
+  the definition carries the key in the output alone; a channel's displayed *S3 data type* default is not
+  written either** (measured 2026-11-22 in Sandbox, Stage 17 5.3, in `eighth-experimentation`'s portal as
+  the Data Scientist User).
+  - The forms: a step's *Advanced settings* hold *Caching*, *Retry* and *Security*. *Security* shows the
+    project role, `vpc-00dca74a35159b11c`, the two subnets, `sg-0fee1c059b82e3562` and the project key,
+    greyed. No field sets network isolation or inter-container encryption.
+  - A pipeline with one *Train model* step: *File* → *Save* asked for no name, and `CreatePipeline` at
+    22:45:27Z named it `Pipeline-1795387181754`, the create page's opening time in epoch milliseconds. The
+    caller was the project role in the person's session, from the browser with no `vpcEndpointId`, and the
+    pipeline carries the portal's four tags, `AmazonDataZoneProject`, `AmazonDataZoneDomain`,
+    `AmazonDataZoneScopeName` and `AmazonDataZoneUser`. The definition holds `OutputDataConfig.KmsKeyId`, and
+    no `VpcConfig`, no `VolumeKmsKeyId` and neither flag.
+  - The first execution's step failed with no job request: *"ClientError: Failed to invoke
+    sagemaker:CreateTrainingJob. Error Details: 1 validation error detected: Value null at
+    'inputDataConfig.1.member.dataSource.s3DataSource.s3DataType' failed to satisfy constraint: Member must
+    not be null"*. The channel's form had shown `S3Prefix`, its default. Another type chosen and `S3Prefix`
+    again, then *Save*, wrote it: `UpdatePipeline` at 22:48:34Z, version 2.
+  - The second execution's training job was refused at 22:49:22Z: *"… is not authorized to perform:
+    sagemaker:CreateTrainingJob on resource: …:training-job/pipelines-rl26r4j8ychr-Training-1C268-TomRXvYbLk
+    with an explicit deny in a permissions boundary:
+    arn:aws:iam::<Sandbox Account 1>:policy/awsds-sandbox-project-boundary"*. The request lacked the four
+    settings, so four of the boundary's statements match it, and the wording names none (Lesson 20).
+  - Entering the editor created no MLflow App: two apps before and after it (`ML-7`) and no
+    `CreateMlflowApp`, where the SageMaker AI guide's *Add integration* page, read 2026-11-21, says *"A
+    default MLflow application will be created when you enter the pipeline visual editor."* AWS's pages
+    were not read for the forms' fields.
+  - Under a boundary that requires the four settings, a pipeline authored in the editor is admitted and its
+    jobs are refused. The path that carries them is a definition from a notebook
+    (`examples/sandbox-ml/pipeline/definition.json`, `SUP-467`).
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
+
 ### Catalog, data sources and subscriptions
 
 - `SUP-191` **The portal's *Publish to Catalog* on a Glue table writes a data source with business-name
@@ -4542,6 +4576,72 @@ entry is still true is the reading.
   with the project.
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
+- `SUP-462` **`CreateModelPackage` refuses a `ModelDataETag` that its caller sends, even the object's
+  own ETag, and sets the field itself from the object the version names** (measured 2026-11-22 in
+  Sandbox, Stage 17 9.6, as `app-ml-dev`'s project role from an MWAA Serverless worker, through the
+  `sagemaker` API endpoint).
+  - The documentation: `ModelPackageContainerDefinition` describes the field as *"The ETag associated with
+    Model Data URL"* and says nothing of who sets it. CreateModelPackage lists it in its request syntax
+    with no prose.
+  - The refusal: a versioned `CreateModelPackage` at 19:39:35 named `ModelDataETag`
+    `b5a42cff73d4153ba6731750a1831ebc`, the ETag `head-object` read on its `ModelDataUrl` without the
+    quotes. It was refused: *"An error occurred (ValidationException) when calling the CreateModelPackage
+    operation: The ETag request value isn't permissible."*
+  - The service sets it: the same request with no `ModelDataETag`, at 20:00:18, created `app-ml-dev/1`,
+    whose `ModelDataETag` reads `1792fa2976e38b9a5bec44860076416d`, the object's ETag at that moment.
+    `ml-demo-xgboost/1`, created at 00:34:10 by a request with none, reads
+    `f8783f02a8dc0bb2867b2e67b030ea30`, its own object's ETag.
+  - The service also fills `ImageDigest` and sets `IsCheckpoint` to `false`.
+  - Under the bucket's SSE-KMS encryption the ETag is no digest of the bytes. The same 9,930 bytes
+    (SHA-256 `852032c5…`) read `b5a42cff…` after the PUT at 19:39 and `1792fa29…` after the PUT at 20:00.
+    The candidate they were copied from reads `fad76c8d…`.
+  - So a version's `ModelDataETag` names one PUT of its object, and rewriting identical bytes changes the
+    object's ETag. Whether `CreateModel` from the version compares the two is verification lix.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/app-ml/code/app_ml_tasks/registry.py`.
+
+- `SUP-464` **AWS republishes the SageMaker XGBoost algorithm image under its short tag: `sagemaker-xgboost:3.0-5`
+  named a new image from 2026-11-17, and the image it named before keeps its long tag alone** (read
+  2026-11-22 in AWS's `us-west-2` algorithm registry with `ecr describe-images`, Stage 17 9.6, as the
+  infrastructure user).
+  - The reading, at about 19:11 UTC: `3.0-5` names
+    `sha256:5a82a2d0f00fa1baa41aba8a95f8145b8214bc65c4c16ce12d723a30e8cc34dd`, with `3.0-5-1.0.67.0` and
+    `3.0-5-cpu-py3`, pushed 2026-11-17 19:42:09. The digest both targets' `training-image.tf` pin,
+    `sha256:0b5d9341baa09ab2432fc9efbc329425e69325ba33562b1e2a015fd6f16e3a78`, carries `3.0-5-1.0.64.0` alone,
+    pushed 2026-10-11 05:39:43.
+  - No page read for this project says the short tag moves. The image table of `sagemaker-core` 2.21.0, read for
+    pass 0 on 2026-10-17, names the image by `3.0-5`.
+  - A training job created with the tag at 18:59:16 ran on the republished image. `app-ml`'s `publish` then
+    refused its candidate before any write, the training image naming no digest. The job created at 19:30:09
+    with the pinned digest ran on the pin.
+  - So `3.0-5` is a release, as Lesson 68 says of what a host reads unpinned. An image named by the short tag
+    today is not the one the targets serve.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/*/ml/training-image.tf`.
+
+- `SUP-467` **A SageMaker pipeline fails a step whose arguments name an `AmazonDataZone*` tag key when the
+  step starts, after `CreatePipeline` accepted the definition, and gives each step's job the pipeline's tags
+  but `AmazonDataZoneUser`, with `sagemaker:pipeline-step-name` and `sagemaker:pipeline-execution-arn`
+  added** (measured 2026-11-22 in Sandbox, Stage 17 5.1 and 5.2: `ml-demo-pipeline`, created from a space in
+  `eighth-experimentation` as its project role, which is also the pipeline's `RoleArn`).
+  - The refusal: the definition's three job steps each named `Tags` with `AmazonDataZoneProject`.
+    `CreatePipeline` accepted it at 22:12:23. The execution `epycqlyvfigz`, started at 22:12:29, failed its
+    first step in about a second: *"ClientError: Reserved tag key prefix found for 'AmazonDataZoneProject'
+    in Step: Prepare"*. The trail holds no `CreateProcessingJob` for that execution, so the step stopped
+    before any job request.
+  - The tags a job gets: with no step naming `Tags` (the pipeline's version 2), the execution
+    `w8qa46pmftoy`'s `CreateProcessingJob` at 22:15:57 and `CreateTrainingJob` at 22:26:01 ran as the
+    pipeline's role in the session `sagemaker-pipeline-<execution id>-<step name>`, invoked by
+    `pipelines.sagemaker.amazonaws.com`, with no `vpcEndpointId`. Each request carried eight tags: the
+    pipeline's seven, `SUP-408`'s set, less `AmazonDataZoneUser`, plus `sagemaker:pipeline-step-name` and
+    `sagemaker:pipeline-execution-arn`. Each job reads the same eight.
+  - The documentation: a search of AWS's pages on 2026-11-22 found none naming a reserved prefix in a step's
+    arguments or the tags a step's job receives.
+  - So a pipeline gives its jobs the project's tag through its own tags, and its steps name none. A step tag
+    passes `CreatePipeline` and fails only when the pipeline runs.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `examples/sandbox-ml/pipeline/definition.json`.
+
 ## MWAA
 
 ### MWAA Serverless: workflows and the API
@@ -4812,6 +4912,13 @@ entry is still true is the reading.
   the pair grants `AddTags` too, so the pass does not separate whether `CreateTrainingJob` with its tag
   is authorized as `AddTags`, as the processing job's create is. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-15.
+  Read again 2026-11-22 in Sandbox (Stage 17 5.1, the first `pipeline.py upsert`, from `jup` as
+  `eighth-experimentation`'s role): `DescribePipeline` of the free name `ml-demo-pipeline` was refused at
+  21:56:03, *"no identity-based policy allows the sagemaker:DescribePipeline action"*. v48's
+  `SageMakerDescribeUpdateDeletePermissions` scopes `DescribePipeline`, `UpdatePipeline` and
+  `StartPipelineExecution` to the caller's project tag, while `SageMakerListPermissions` grants
+  `ListPipelines` on the principal tag alone, so the script looks the name up with `ListPipelines`. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-268` **The Amazon provider 9.32.0's SageMaker and Glue operators read the job name before they create
   the job, and count only one error code as absent** (read in the provider's code at
@@ -5026,6 +5133,12 @@ entry is still true is the reading.
   list and the version operator publishes a version at every run, so a task that keeps one calls boto3
   (decision 24 (b)). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-16; Stage 17 step 10 and
   decisions 24 to 27; `runbooks/sagemaker-ai-ml.md` §W and §G.
+  **Measured on a worker 2026-11-22** (Stage 17 10.4 step 3): `probes/operator.yaml`, imported in the portal's
+  editor, ran as `app-genai-dev`'s project role. Its one `InvokeModel`, at 19:43:02, named the application
+  inference profile alone, with no guardrail, and its user agent `Caller/BedrockInvokeModelOperator`. The task
+  log held the prompt and the response in full: *"Bedrock <profile ARN> prompt: {…}"* and *"Bedrock model
+  response: {…}"*. With `SUP-463`'s deny applied, both later runs failed on that call's `AccessDeniedException`.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 ### Provisioned MWAA
 
@@ -5071,6 +5184,12 @@ entry is still true is the reading.
   DataZone call, the service calling `kms:GenerateDataKey` and `kms:Decrypt` on the project key under the
   starter's session. Where: `log-stage-10-orchestration-promotion.md`, 2026-10-26;
   `log-stage-18-staging-deployment-project.md`, 2026-10-19.
+  **Read again 2026-11-22** (Stage 17 9.6 and 10.4): a value changed in the working copy reaches the next
+  `run` with no deploy. `TRAINING_IMAGE_URI` corrected to the pinned digest in the sourced `.env` made the next
+  `app-ml-train` job run on the digest, and `EXPECT_UNGUARDED` set to `refused` on the manifest's `dev` stage
+  made `app-genai-probe` expect the refusal. The files a deploy wrote stay as deployed: the guardrail definition
+  restored in the working copy alone left the deployed one in force. Where:
+  `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-283` **`aws-smus-cicd-cli` 1.0.9's `bundle` reads an `include` entry as a file or folder, never a
   glob, and exits 0 when it matches nothing** (measured 2026-10-16 offline, Stage 8 2.5). With the
@@ -5256,6 +5375,24 @@ entry is still true is the reading.
   a target. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-17; Stage 17 pass 9, "The model
   in the bundle, and what the CLI does with it", and verification lxii; `runbooks/sagemaker-ai-ml.md`
   §B.
+  **Read again 2026-11-22** (Stage 17 9.6, `bundle --targets dev` from a space as `app-ml-dev`'s project
+  role through `scripts/dev-cli.sh`):
+  - `bundle` never reads the connection. It copies the stage's domain `region`, `name` and `tags` into its
+    configuration, not its `id`.
+  - `get_datazone_project_info` then resolves the domain through `datazone.resolve_domain_id`, a
+    `ListDomains` that DataZone refuses to a project role: *"User is not permitted to perform operation:
+    ListDomains"*, logged three times as `ERROR`.
+  - The project's connections come back empty. The `model` item, which names `default.s3_shared`, is
+    skipped with the warning above. This happened before the training run (18:45:20) and after it
+    (19:57:48), with `latest/` present in the prefix.
+  - The archive held the 10 files of the items read from the manifest's folders (15,592,181 and 15,592,095
+    bytes), and the command exited 0.
+  - `scripts/dev-cli.sh` answers `get_domain_id_by_name`, which this path does not call. The bundle role
+    holds `datazone:ListDomains`.
+  - `deploy` with no archive in `./artifacts`, as the same role at about 20:41, read the project and its
+    connections, printed the storage items and stopped with *"❌ Error: No bundle file found in ./artifacts
+    directory"* and *"❌ Error: Deployment failed: 1"*, exit 1. The trail holds no management write from it.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-375` **`aws-smus-cicd-cli` 1.0.9's `deploy` adds a stage's `owners` and `contributors` to an
   existing project at every run and removes no member, and acts on the project role only under
@@ -5499,6 +5636,11 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   `ListPrompts` 11, `GetPrompt` 3, `CreatePromptVersion` 2, `ListIngestionJobs` 4, `GetIngestionJob` 11,
   `StartIngestionJob` 1, `ListEvaluationJobs` 3 and `ConverseStream` 2, every one answered. The consumption
   role's 15 `ListFoundationModels` came the same way. Where: `log-stage-06e-claude-code-bedrock.md`,
+  2026-11-22. Read again 2026-11-22 (Stage 17 10.4 reading 5): with `awsds-sandbox-bedrock-application`'s
+  deny on `app-genai-dev`'s project role, a chat on Nova Lite in that project's playground answered
+  *"Ready."*. Its `ConverseStream` at 20:52:48 ran as the consumption role, from the browser, through the
+  domain's profile `csu817ovl4kz` (tagged with the domain alone), with no `guardrailConfig`. An identity
+  deny on a project role does not reach the playground. Where: `log-stage-17-sandbox-machine-learning.md`,
   2026-11-22.
 
 - `SUP-301` **CloudWatch publishes a Bedrock call through an application inference profile under the
@@ -5578,6 +5720,58 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   `invoke-web-search` and no `invoke-web-answer`, and drops `invoke-code-interpreter`, an event stream, so
   the SCP battery cannot attempt those three. Where: `log-stage-11-dlp.md`, 2026-11-22; `scp-battery.md`,
   the `TM-28` amendment.
+
+- `SUP-463` **A guarded `Converse` through an application inference profile carries `bedrock:GuardrailIdentifier`
+  on both of its authorization passes, so an `ArnNotLike` deny over the key admits it and refuses a call that
+  names no guardrail on the profile's pass** (measured 2026-11-22 in Sandbox, Stage 17 10.4 step 4,
+  verification xxxvii, as `app-genai-dev`'s project role from MWAA Serverless workers, through the
+  `bedrock-runtime` endpoint).
+  - The documentation: Bedrock's page on enforcing a guardrail gives the condition key for `InvokeModel` and
+    `Converse`. It does not say whether a call through an inference profile carries the key on the profile's
+    pass, on the foundation model's pass, or on both (`SUP-300`'s two passes).
+  - The deny: `DenyAnInvocationWithNoPublishedGuardrailOfTheAccount` on `bedrock:InvokeModel` and
+    `bedrock:InvokeModelWithResponseStream`, resource `*`, `ArnNotLike` `bedrock:GuardrailIdentifier`
+    `arn:aws:bedrock:us-west-2:<account>:guardrail/*:*`, in `awsds-sandbox-bedrock-application`, applied at
+    19:56:00.
+  - Admitted: the 40 `Converse` of `app-genai-triage` from 20:12:04, each with a `guardrailConfig` that names
+    the application's guardrail by its unversioned ARN with `guardrailVersion` `2`. A negated operator matches
+    an absent key and the deny's resource is `*`, so the key was present on both passes.
+  - Refused, each `AccessDenied`: a `Converse` with no `guardrailConfig` at 20:11:15, and
+    `BedrockInvokeModelOperator`'s `InvokeModel` at 20:09:14 and 20:11:41. Each reads *"… is not authorized to
+    perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-west-2:<account>:application-inference-profile/ciceumyodl7y
+    with an explicit deny in an identity-based policy: arn:aws:iam::<account>:policy/awsds-sandbox-bedrock-application"*.
+    The refusal names the profile, the first pass.
+  - A refused call's event carries `requestParameters` null, so the trail does not show what a refused request
+    named.
+  - Read again 2026-11-22 (10.4 step 5, from `app-genai-dev`'s space). The guardrail named by its id
+    `mn3wavwk9jx7` with version `2` was admitted, so the key carries the versioned ARN when a request names the
+    id. Its `DRAFT` was refused with the wording above. A second guardrail, created and published by the role
+    six seconds earlier, was admitted.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`;
+  Stage 17 decision 24.
+
+- `SUP-466` **An account-level guardrail configuration on named models cannot be created through `awscc`
+  1.106.0: the provider drops an empty `excluded_models`, Cloud Control then requires the key, and Bedrock
+  refuses a non-empty one unless `includedModels` is `ALL`** (measured 2026-11-22 in Sandbox, Stage 17 10.4
+  step 6, as the infrastructure user).
+  - The documentation: Cloud Control's schema for `AWS::Bedrock::EnforcedGuardrailConfiguration`, read with
+    `describe-type` the same day, gives `ModelEnforcement` the arrays `IncludedModels` (`minItems` 1, `ALL` or
+    model ids) and `ExcludedModels` (`minItems` 0), the latter *"If a model is in both lists, it is
+    excluded"*. It does not say that Bedrock refuses a non-empty `ExcludedModels` beside named models.
+  - The first apply, 21:17: the plan showed `excluded_models = []` beside `included_models`
+    `amazon.nova-lite-v1:0`. Cloud Control refused: *"Model validation failed (#/ModelEnforcement: required key
+    [ExcludedModels] not found)"*.
+  - The second, 21:21: `excluded_models` naming `amazon.titan-embed-text-v2:0`, a model outside
+    `included_models`. Bedrock refused the create: *"If modelEnforcement is present, excludedModels can only be
+    nonempty if includedModels is ['ALL']."* (`InvalidRequest`, 400).
+  - Through `awscc` 1.106.0 a configuration therefore names no model list, or `ALL` less a non-empty list,
+    never named models alone. Neither of the two shapes left has been applied: whether Cloud Control admits a
+    configuration with no `model_enforcement` is unread. The guardrail and its version, which the first apply
+    created, stood with no configuration (`ListEnforcedGuardrailsConfiguration` empty) until the switches'
+    return to `false` destroyed both at 21:27:37.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-22; `terraform-live/sandbox/bedrock/application.tf`.
 
 ## Terraform
 
