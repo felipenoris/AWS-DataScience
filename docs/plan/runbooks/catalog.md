@@ -229,6 +229,18 @@ schema, include rules alone, and an *Import data lineage* that needs a connectio
 Amazon Redshift secret. A Redshift asset is published only when both clusters meet Redshift data sharing's
 requirements (the curation page). No record in this estate holds a Redshift data source; unmeasured.
 
+### An S3 Object Collection
+
+On a folder of the project's bucket in the portal's S3 browser, *Actions → Publish to Catalog* opens
+*Publish asset*, whose one choice is *Subscription approval*, *Required* or *Not required*: no name,
+description or form, and no data source is created. The asset takes the folder's name, the type
+`amazon.datazone.S3ObjectCollectionAssetType`, an `externalIdentifier` that is the project id followed by
+the prefix's ARN with no separator, and the forms `S3ObjectCollectionForm` (`bucketName` empty,
+`bucketArn` the prefix's ARN, the connection `project.s3_default_folder` with the project's S3 Access
+Grants location and `registerS3AccessGrantLocation` true) and `SubscriptionTermsForm`. A description and
+a form are added after the publish, then *Re-publish asset* (measured 2026-11-23, Stage 21 5.2;
+`SUP-479`). Its subscription is §S's.
+
 ### An asset created by hand, and a custom asset type
 
 The page on an asset by hand (read 2026-11-16) calls the creation *"a one-time operation"*: the asset
@@ -382,7 +394,14 @@ product.
 ### What one request gives
 
 One request for a product of one item, accepted at creation, fulfilled the item, `GRANTED` (read
-2026-11-14, Stage 19 vii); a product of several items is unread. The subscription is listed under the
+2026-11-14, Stage 19 vii). A product of an S3 Object Collection and a Glue table (2026-11-23, Stage 21
+5.4): one request accepted at creation, one subscription grant per item by `SYSTEM`, the table's
+`COMPLETED` 52 s after the request and the collection's 75 s, the collection's S3 Access Grant `READ`. A
+product's request takes no `assetPermissions` (*"assetPermissions is only supported for
+S3ObjectCollection Listing"*), so write on a collection is asked on its own listing (`SUP-481`). The
+table, unpublished before, was published by the product's publication with a listing that reads
+`INACTIVE` and that `search-listings` omits, so `CT-17` and `CT-18` do not see it (`SUP-482`). The
+subscription is listed under the
 product listing's id and under each asset listing's, and its grant under the asset listing's alone
 (measured 2026-11-14, `SUP-363`), so a join of grants to subscriptions asks under both (`CT-17`).
 
@@ -488,7 +507,9 @@ API, `create-listing-change-set --action UNPUBLISH` (measured 2026-11-14 from th
   *Approve*, the default, or *Reject*, an optional decision comment of up to 150 characters, *Data
   permission* *"Read-only"*, and *Save*.
 - Automatic, by the same page: when the listing requires no approval, and when the requester is Owner or
-  Contributor of both the owning and the requesting project.
+  Contributor of both the owning and the requesting project. A request from a space's terminal as the
+  consumer's project role is recorded as the space's user, so it is automatic when that user owns both
+  projects (measured 2026-11-23, Stage 21 5.4; `SUP-480`).
 - Measured (6f 11.8, 2026-10-26): requested 21:34:55Z, approved 21:36:15Z, `COMPLETED` 21:37:18Z, each
   portal call as the domain execution role in the person's session. By API, `accept-subscription-request`
   as `awsds-infra-staging`, Staging's `InfrastructureAccess`, a member of Stage 18's deployment project in
@@ -560,8 +581,27 @@ An S3 bucket or prefix published from the portal's S3 browser, *Actions → Publ
 asset of type *S3 Object Collection*, which the managed list leaves out (the S3 pages, read 2026-11-17). Its
 subscription or Share is fulfilled through S3 Access Grants, read-only or read and write at the owner's
 choice; after a revocation *"a project member may still get Amazon S3 Access Grants credentials for up to 5
-minutes, and credentials can be used for 15 minutes"*, up to 20 minutes of access in all. The pages name
-neither the grantee nor how a subscriber reads; Stage 21 pass 5 measures both.
+minutes, and credentials can be used for 15 minutes"*, up to 20 minutes of access in all.
+
+Measured in Sandbox on 2026-11-23 (Stage 21 5.4 to 5.6; `SUP-481`), a collection under
+`eighth-experimentation`'s `shared/` subscribed by `test-experimentation`:
+
+- **The grant**: `CreateAccessGrant` by the owning project's role in session `AWSDataZone-Subscriptions`,
+  invoked by DataZone, 66 s and 17 s after the two requests: grantee type `IAM`, the subscriber's project role;
+  the owning project's location; the scope the prefix followed by `*`; `READ` for a product's
+  subscription, `READWRITE` for a request on the collection's listing with `--asset-permissions
+  'assetId=<asset>,permissions={s3=[READ,WRITE]}'`. The subscription grant shows no permission.
+- **Reading it**: the subscriber's role alone is refused the objects (`403` on `HeadObject`). `aws
+  s3control get-data-access --permission READ --target '<scope>'` answers credentials for 3,600 s
+  (900 s with `--duration-seconds 900`), sessions of the owning project's role named
+  `access-grants-<uuid>` under a session policy: they read and list inside the scope and are refused
+  `s3:ListBucket` outside it, and a `READ` session's upload is refused at `kms:GenerateDataKey`. A
+  target wider than the scope answers *"You do not have READ permissions to the requested S3 Prefix"*,
+  and `WRITE` on a `READ` grant the same with *WRITE*. The portal reads the same grant in the subscriber's *Data →
+  S3 buckets → Subscribed buckets*, which lists the objects and renders an image.
+- **The door**: `GetDataAccess` goes to `<account>.s3-control.us-west-2.amazonaws.com`. From a space's
+  terminal, which sets no proxy variables, it rides the spoke's S3 gateway endpoint; the JupyterLab
+  plugin goes through the proxy (`SUP-091`).
 
 ### Reading through a subscription
 
@@ -881,6 +921,7 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-17` | every grant on a project's listed table explained |
 | `CT-18` | every product listing carries the `classification` form |
 | `CT-19` | no listing publishes a resource link |
+| `CT-20` | every S3 Access Grant a project role holds on another project's folder explained by an approved subscription to an S3 Object Collection at that prefix |
 
 The last run: 2026-11-17 at 05:45 UTC, every check passed, 10 listings and none of `deploy-staging` (Stage
 19's log). `--self-check` read 39 of 39 on 2026-11-15.

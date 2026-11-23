@@ -1249,6 +1249,11 @@ entry is still true is the reading.
   proxy, the path `SUP-042` records with the hub's gateway endpoint, not the spoke's. Verification iii's ranged read on
   2026-11-22 showed the same tunnel at 00:12:57Z. Where: `log-stage-17-sandbox-machine-learning.md`,
   2026-11-21 and 2026-11-22.
+  **Read again 2026-11-23** (Stage 21 5.5): a JupyterLab terminal sets no `HTTPS_PROXY`, `HTTP_PROXY` or
+  `NO_PROXY`, so the `aws` CLI's `get-data-access` from it carried the space's address `10.20.66.248` and
+  `vpce-0cc3e139c1167ca83`, Sandbox's own S3 gateway endpoint `awsds-sandbox-s3-gateway`, not the proxy. The
+  door depends on the client's environment: the plugin's calls take the proxy, a terminal's the spoke's
+  endpoint. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 - `SUP-092` **Deleting an S3 Access Grants grant leaves `GetDataAccess` answering for up to about 19
   seconds, and credentials already vended work until their own expiry** (measured 2026-08-26 in Sandbox,
@@ -3615,6 +3620,10 @@ entry is still true is the reading.
   owning project, which AWS's approval page approves at creation, was not made, so whether it leaves
   the same record is unread. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-14, whose
   entries on pass 2 cite it as `SUP-360`.
+  **Read 2026-11-23** (Stage 21 5.4, `SUP-480`): a consumer's own request recorded as a member of the
+  owning project leaves the same record, `ACCEPTED` at creation, `createdAt` equal to `updatedAt`, no
+  `reviewerId`, the subscription `APPROVED` with that request's id; only its `requestReason` is the
+  requester's text. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 - `SUP-363` **A subscription to a data product is listed under each asset listing the product
   carries, and its grant under the asset listing alone** (measured 2026-11-14, Stage 19 step
   6.1). The data product `trades-notional` carries one asset listing, `trades_notional`, and holds
@@ -4265,6 +4274,65 @@ entry is still true is the reading.
   (`SUP-473`), so the two never join. The form's *Import data lineage* box is the connection's setting, checked
   when the form opens on that connection, and the run reports *Lineage import status: Completed*. Where:
   `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-479` **The portal's *Publish to Catalog* on an S3 folder asks only for the approval switch, and the S3
+  Object Collection it creates carries an `externalIdentifier` with no separator and an empty `bucketName`**
+  (measured 2026-11-23 in Sandbox, Stage 21 5.2). On `eighth-experimentation`'s `shared/stage21-images/` in the
+  S3 browser, *Actions → Publish to Catalog* opened *"Publish asset"* with one choice, *Subscription approval*,
+  *Required* or *Not required*: no name, description or form, which the S3 pages had led the plan to expect at
+  the publish. The asset `dsmm79zurlnbww`, `amazon.datazone.S3ObjectCollectionAssetType` revision 17, took the
+  folder's name; its `externalIdentifier` is the project id followed by the prefix's ARN,
+  `avhvbqn37ty7m8arn:aws:s3:::awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/shared/stage21-images/`;
+  its `S3ObjectCollectionForm` holds `bucketName` `""`, `bucketArn` the prefix's ARN, and the connection
+  `project.s3_default_folder` with the project's S3 Access Grants location id and
+  `registerS3AccessGrantLocation` true. The description and the `classification` form were added afterwards,
+  each a revision, then *Re-publish asset*. No data source was created. Code that keys a collection by bucket
+  reads `bucketArn`, never `bucketName`. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-480` **DataZone records a request made from a SageMaker Unified Studio space's terminal as the space's
+  user, not as the project role that signed it** (measured 2026-11-23 in Sandbox and Data Governance, Stage 21
+  5.4). `test-experimentation`'s space, its terminal's caller
+  `assumed-role/datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw/SageMaker`, sent `CreateSubscriptionRequest`
+  for its project on a listing `eighth-experimentation` owns, `approvalRequired` `YES`. The request read
+  `ACCEPTED` at creation with `createdBy` the Data Scientist User's id, the space's owner and owner of both
+  projects, and no `reviewerId`; the Data Governance trail records the call with no `userIdentity.arn`. AWS's
+  approval page makes a request automatic when the requester is Owner or Contributor of both projects; the
+  space's role is a member of its own project alone, so the automatic approval came from the user DataZone
+  attributed the call to. A test that sends a request from a space to force an approval step needs a space
+  whose user is no member of the owning project. Where: `log-stage-21-redshift-s3-data-products.md`,
+  2026-11-23.
+
+- `SUP-481` **DataZone fulfils an S3 Object Collection with an S3 Access Grant on the owning project's
+  location to the subscriber's project role, `READ` for a data product's subscription, and the credentials it
+  vends are sessions of the owning project's role** (measured 2026-11-23 in Sandbox, Stage 21 5.4 to 5.6).
+  `CreateAccessGrant` ran as `eighth-experimentation`'s project role in session `AWSDataZone-Subscriptions`,
+  invoked by `datazone.amazonaws.com`, 66 s after the request: grantee type `IAM`,
+  `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`; location `ef8251ea-…`, the owning project's, whose IAM
+  role is the owning project's role; scope the prefix followed by `*`; permission `READ`; no application. The
+  subscription grant carries no `permissions`. `CreateSubscriptionRequest` on the product listing with
+  `--asset-permissions 'assetId=dsmm79zurlnbww,permissions={s3=[READ,WRITE]}'` answered *"ValidationException
+  … assetPermissions is only supported for S3ObjectCollection Listing"*; on the collection's own listing it
+  was accepted and the grant written `READWRITE` 17 s later, the request's listing item carrying `permissions`
+  `{"s3": ["READ", "WRITE"]}`. `get-data-access` returns sessions named `access-grants-<uuid>` of the owning
+  project's role, 3,600 s by default: the subscriber's own role was refused the object (`403`), and a `READ`
+  session's upload was refused at *"kms:GenerateDataKey … because no session policy allows"*, so S3's decision
+  on `s3:PutObject` is not read from it. AWS's S3 pages say the owner chooses read-only or read and write;
+  they name no grantee, no permission for a product, and no identity for the vended session, which is the one
+  a data-event trail records. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23; `aws/catalog.py`
+  `CT-20`.
+
+- `SUP-482` **A table published by its data product's publication carries a listing that reads `INACTIVE` and
+  that `SearchListings` omits** (measured 2026-11-23 in Data Governance, Stage 21 5.3). The product
+  `sandbox-stage21-images` held the S3 listing `3rnyg9wgrg1v2o`, published on its own, and the table asset
+  `c5mzcsflx389zk`, unpublished. Its publication answered the product listing `cuilocp2vj9zbk` `ACTIVE`, its
+  items both asset listings and its forms `ownedByDataProductListing` naming them; the table's new listing
+  `4m03acvondth1s` reads `INACTIVE` on `get-asset`, and `search-listings --search-text stage21` returned the S3
+  and product listings alone. A subscription to the product was fulfilled for the table all the same. AWS's
+  product page says such an asset is reachable through the product alone; the status and the search's
+  omission are not stated. A check that enumerates listings with `SearchListings` misses the table:
+  `catalog.py` `CT-17` and `CT-18` read nothing of it on 2026-11-23, while the product listing carried the
+  `classification` form and the table's listing none. Where: `log-stage-21-redshift-s3-data-products.md`,
+  2026-11-23.
 
 ## SageMaker AI spaces and images
 
