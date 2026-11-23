@@ -6287,3 +6287,31 @@ app-ml"* after the orchestrating session's «verificado», the chain started on 
   `"source": "registry"`, the version `…/awsds-prod-model-app-ml/1`, the SHA-256 Staging named,
   `training_job` `app-ml-train-20261122T193009`, `transform_job` `app-ml-score-20261123T184437`. xxxi's second
   half reads yes, and `app-ml`'s Production leg reads yes.
+
+## 2026-11-23 — R2: 9.11's release `v0.7.0`, the Staging leg
+
+*Claude's hand, R2's session, continuing 9.11's entry; `staging-gate` played on the user's words *"gates do
+app-etl"*; reads as `awsds-infra-staging`, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] Pipeline #153 before the legs**: `pip-audit`, `test`, `build-image`, `build-task-code`, `bundle`,
+  `store-bundle` and `release` green from 18:30:45 to 18:35:51, the image `awsds-prod-ecr-app-etl`
+  `v0.7.0-3d3146bb` (`sha256:7b12c0fb…e003b`, 3,796,514,985 bytes) pushed at 18:33:42. `scan-gate` (job 1004,
+  `allow_failure`) read *"FAIL: the scan ended FAILED: Number of vulnerabilities for this image exceeds the
+  maximum supported with Basic Scanning. Please upgrade to Enhanced Scanning to cover all vulnerabilities in
+  the image."* at 18:40:09, as `app-ml`'s `scan-gate` (job 943) did at 17:09:59 on its 3,745,677,773-byte
+  image (`SUP-437`).
+- **[Claude] Staging**: `staging-gate` (job 1008) played at 18:37:30; `staging-check` green at 18:37:57;
+  `staging-deploy` (job 1010, 18:38:00 to 18:39:50) *"Successfully created 1 workflow(s)"*,
+  `app_etl_deploy_staging_app_etl`, `READY` at 18:39:42, and the stage's variables recorded; `staging-test`
+  (job 1011, 18:39:53 to 18:55:31) started `awsds-staging-chain-app-etl`, execution `v0-7-0-1011-app-etl`,
+  `SUCCEEDED` at 18:55:24, the run's report 10 rows from `trades.csv` (SHA-256 `a84e2ff3…2dac`) and
+  `trades_notional` `ICEBERG` as the catalog answers the deploy role; `staging-catalog` (job 1012) *"staging-deploy's
+  import was whole: no second import"*. The pipeline carries no model job: lxiv's first half reads yes in
+  Staging.
+- **[Claude] What the release left behind**, read at 18:59: `list-workflows` in Staging still holds
+  `app_etl_deploy_staging_app_etl_train`, `READY`, modified 2026-11-22 at 04:12:30 by release G's deploy;
+  `v0.7.0`'s deploy, whose manifest no longer names it, neither updated nor deleted it (`SUP-484`). Under
+  `shared/app-etl/` the deploy wrote `code/app-etl.zip`, `glue/`, `src/` and `workflows/app-etl.yaml` and
+  `app-etl-warehouse.yaml` at 18:38 to 18:39, and left `code/app-etl-train.zip` (2026-11-22 04:11:20) and
+  `workflows/app-etl-train.yaml` (04:12:29) (`SUP-348`), with the `models/` prefix of the retired training
+  and transform jobs. 9.11's estate pull request owes their deletion, an act the user names.
