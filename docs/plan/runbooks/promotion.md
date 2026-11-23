@@ -2049,7 +2049,7 @@ Production raise after release G's leg, step 4's backup with GitLab already up. 
 (Stage 19's log): the rotation with no workgroup, 01:11:55 to 01:17:08 UTC; `--sql` through the rotated secret
 at 05:42, 13 pass and 4 notes, so `EXC-13`'s Production half is read and the database follows; the backup by
 hand at 02:48:08 and the timer's at 03:00:50, both expiring 2026-12-23. The free trial's readings around it are the user's:
-299.18 before, 299.16 after, read 2026-11-22 at 17:41 UTC (Stage 9's log), and the next day's.
+299.18 before, 299.16 after, read 2026-11-22 at 17:41 UTC (Stage 9's log), and 299.16 again the next day, read 2026-11-23.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22 UTC. `TZ=UTC` keeps
    the CLI from printing the dates in the laptop's zone (`SUP-435`):
@@ -2683,7 +2683,9 @@ At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
 With the warehouse's queries running, a day bills about 1.7 USD/h. The days come to about 4.5 and 5 USD,
 some 9.5 USD for the sitting, between 6.5 and 13, the managed compute the widest term and 4.1's endpoint
 apart. The trial absorbs the
-warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading.
+warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading. **Read
+2026-11-23** (5b's log): it covers both, the consumer's workgroup's 960 RPU-seconds (0.10 USD) and the managed
+compute's 23,040 (2.30 USD), of the 3.22 USD the balance fell after day 1's reading.
 
 #### N.10.7 What follows the sitting
 

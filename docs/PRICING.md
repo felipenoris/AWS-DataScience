@@ -577,14 +577,15 @@ whoever reads this file: an **unclosed transaction** burns RPUs until `SESSION T
 optimization* is enabled, which has its own meter
 (`ExtraComputeForAutomaticOptimizationChargedSeconds`).
 
-**One item is named unpriced on purpose, and it is the one that could break the profile.** A Lake Formation
+**One item could break the profile, and one reading prices it.** A Lake Formation
 **federated catalog** with *"Access this catalog from Iceberg compatible engines"* enabled makes **AWS Glue
 create a managed Amazon Redshift cluster** — AWS's own words, read 2026-09-20 — with *"the compute and storage
-resources required to perform read and write operations"*. A cluster, not a serverless workgroup: always-on in
-shape, of unstated size, and therefore the one thing in this family that bills by the hour of existence rather
-than the hour of query. It is priced **before** the switch is enabled, never after
-([Stage 9](plan/stages/stage-09-deployment-targets.md) 9.5a, whose recommendation is the mechanism that needs
-no cluster), and it is why `DenyRedshiftProvisionedClusters` and that switch collide.
+resources required to perform read and write operations"*. What Glue created in Sandbox on 2026-11-23 is a
+Redshift Serverless managed workgroup, no cluster, so `DenyRedshiftProvisionedClusters` had nothing to refuse
+(`SUP-474`, Stage 21's pass 4). Its nine minutes with three failed reads charged 23,040 RPU-seconds, 2.30 USD,
+against 4 `ComputeSeconds`, inside the free trial; its base capacity is unread
+([log](log/log-stage-05b-redshift-serverless.md), 2026-11-23). The mechanism that needs no switch is
+[Stage 9](plan/stages/stage-09-deployment-targets.md) 9.5a's recommendation (b), the datashare.
 
 **The free trial makes this stage's own cost readings unattributable while it runs.** AWS offers *"$300
 credit, which can be used within 90 days of sign-up toward your compute and usage"*, *"if your account has not

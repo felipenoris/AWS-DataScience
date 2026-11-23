@@ -1413,6 +1413,14 @@ entry is still true is the reading.
   the catalog, and no capacity field; the account's trail records no creation of it. `DataLakeAccess` false
   removes it within 16 seconds, before `DeleteCatalog`. Where: `log-stage-21-redshift-s3-data-products.md`,
   2026-11-23.
+  Read again 2026-11-23 at about 15:20 in Sandbox (`log-stage-05b-redshift-serverless.md`, 2026-11-23): the
+  trail holds the creation a read at 01:44 did not show, `CreateManagedWorkgroup` at 01:39:23 and
+  `DeleteManagedWorkgroup` at 01:48:49, each in the infrastructure user's session with `invokedBy`
+  `glue.amazonaws.com`. The delete's response names the managed workgroup's own workgroup and namespace, each a
+  UUID. Its `AWS/Redshift-Serverless` metrics publish under that workgroup UUID, not the `ManagedWorkgroupName`:
+  23,040 `ChargedSeconds` and 4 `ComputeSeconds` in the 01:30 interval, after three `GetCredentials` on it by
+  `redshift-data.amazonaws.com` for the project role, one per Athena preview. The free trial absorbed them,
+  2.30 USD.
 
 ## Lake Formation
 
@@ -2066,6 +2074,11 @@ entry is still true is the reading.
   and R1's of 2026-11-22 (240, 0.024, against 0.02), and over-reads the early 2026-10-26 sitting (720, 0.072,
   against 0.05). `ComputeSeconds` read 139, 78, 0 and 79. `ChargedSeconds` is the closer meter, and which one
   the trial draws on is still not settled.
+  Read again 2026-11-23 in Sandbox against the balance after `promotion.md` §N.10's two days
+  (`log-stage-05b-redshift-serverless.md`, 2026-11-23): 4.16 USD of credit, 287.10 to 282.94, against 41,396
+  `ChargedSeconds` (4.1396 USD) over three workgroups and 2,530 `ComputeSeconds` (0.253 USD); the reading after
+  day 1 stood 0.06 USD under its meter, and the next took it up. Production read 299.16 again the day after R1,
+  with no `ChargedSeconds` since. The trial draws on what `ChargedSeconds` counts, within 0.02 USD over 4.16.
 
 - `SUP-144` **Sandbox's Redshift Serverless audit export carried nothing while a workgroup existed, and
   Production's carried its first session** (measured 2026-10-17 over the groups' 30-day retention).

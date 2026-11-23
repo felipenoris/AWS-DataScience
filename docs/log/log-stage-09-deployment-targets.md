@@ -3190,3 +3190,18 @@ and relayed to this session verbatim (`promotion.md` §N.8.3); Claude read AWS a
   3,120 RPU-seconds (0.312 USD) against the balance's 0.32; xxiv's of 2026-10-26, 1,680 (0.168) against
   0.16; the early 2026-10-26 sitting, 720 (0.072) against 0.05. `ComputeSeconds` read 139, 78 and 79.
   Appended to `SUP-143`.
+
+## 2026-11-23 — the free trial's Production balance the day after R1
+
+*The user's hand in the Redshift Serverless console, pasted in the session "Applies e infraestrutura SSO" at 15:05
+UTC with Sandbox's (5b's log); Claude read AWS as the infrastructure user with `InfrastructureAccess` in
+`Production Account` (`awsds-infra-prod`) at about 15:17, reads alone.*
+
+- **[user]** *"Production Account"*, *"Free trial credits remaining"*, *"$299.16 out of $300.00"*, *"Free
+  trial expiration"*, *"January 21, 2027"*.
+- **[Claude] The compute since R1**: `list-workgroups` and `list-managed-workgroups` empty. The trail holds no
+  `CreateWorkgroup` and no `CreateNamespace` since 2026-11-22 06:00. `awsds-prod-warehouse`'s `ChargedSeconds`
+  since 05:00 that day is R1's 240 in the 05:30 interval alone, and the `default` dimension reads 0 each day
+  since 2026-11-09.
+- **[Claude] The reading**: unchanged since 17:41 on 2026-11-22, about 33 hours after R1's delete, so R1's
+  0.02 USD is its whole cost and nothing landed late. R1's three readings are done (`promotion.md` §N.8.3).

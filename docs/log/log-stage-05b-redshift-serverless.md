@@ -1472,3 +1472,41 @@ finding's two sides before writing it. No AWS call.*
   of about 22:14 is day 1's alone, and the readings after day 2 and the next day are each set against both
   days' `ChargedSeconds` per workgroup (the waiting list's row, and its 2026-12-19 date, which still read
   287.51).
+
+## 2026-11-23 — The trial's balance after day 2, set against each workgroup's `ChargedSeconds`
+
+*The user's reading in the Redshift Serverless console, pasted in the session "Applies e infraestrutura SSO" at
+15:05 with Production's (Stage 9's log); Claude read the meters and the trail as the infrastructure user,
+permission set `InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), from 15:14 to
+15:21, reads alone. Times are UTC.*
+
+- **[user] The trial's balance**, verbatim: *"Sandbox Account"*, *"Free trial credits remaining"*, *"$282.94 out of
+  $300.00"*, *"Free trial expiration"*, *"December 19, 2026"*. 3.22 USD below the 286.16 of about 22:14 on
+  2026-11-22, and 4.16 below the 287.10 read before day 1 (computed).
+- **[Claude] The meters**: `list-metrics` names four `Workgroup` dimensions of `AWS/Redshift-Serverless` in
+  Sandbox. Their half-hour sums after day 1's reading, from 22:30:
+
+  | Workgroup | Intervals with data | `ChargedSeconds` | `ComputeSeconds` |
+  |---|---|---|---|
+  | `awsds-sandbox-warehouse` | 22:30 to 02:00 | 7,440 | 906 |
+  | `redshift-serverless-workgroup-dahsfn6j8lqec0`, Stage 21's consumer workgroup | 23:30 and 00:00 | 960 | 126 |
+  | `fe7eb678-d356-477a-9f3a-1a4055bde9dc`, Stage 21's managed workgroup | 01:30 | 23,040 | 4 |
+
+  The warehouse's intervals read 960, 480, 480, 960, 1,920, 720, 1,680 and 240, and none after its destroy at the
+  lowering (02:15:48 to 02:26:52); day 1's sum is 9,956, as read at 22:15. The fourth dimension, `default`, reads
+  0 in its two intervals of 2026-11-22. `list-workgroups` and `list-managed-workgroups` answer empty.
+- **[Claude] The managed workgroup's dimension**, from Sandbox's trail between 01:38 and 01:50: `CreateManagedWorkgroup`
+  at 01:39:23 and `DeleteManagedWorkgroup` at 01:48:49, each in the infrastructure user's session with `invokedBy`
+  `glue.amazonaws.com`. The delete's response gives `<account>:stage21_warehouse` the `workgroupName` and
+  `workgroupId` `fe7eb678-d356-477a-9f3a-1a4055bde9dc`. `redshift-data.amazonaws.com` called `GetCredentials` on
+  that workgroup for `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` at 01:41:06, 01:41:57 and 01:43:26, one
+  call per preview of Stage 21's 4.6. Stage 21's log read no creation in the trail at 01:44 (`SUP-474`).
+- **[Claude] The reading**: day 2's three workgroups charged 31,440 RPU-seconds, 3.144 USD at 0.0001 USD per
+  RPU-second, against the balance's 3.22; both days charged 41,396, 4.1396 USD, against 4.16, so the 0.06 by
+  which day 1's reading stood under its meter landed in this one. `ComputeSeconds` sums 2,530 over both days,
+  0.253 USD. The balance follows `ChargedSeconds` within 0.02 USD. The trial absorbs Stage 21's two compute
+  objects with the warehouse (`promotion.md` §N.10.6): the managed workgroup's nine minutes, 2.30 USD for 4
+  `ComputeSeconds`, and the consumer's workgroup, 0.10. Read 12.6 hours after the lowering; the next day's
+  reading is owed.
+- **[Claude] Records**: this stage's `Status` row; `SUP-143`, `SUP-474`; `docs/PRICING.md` §5's federated
+  catalog paragraph; `promotion.md` §N.10.6; the waiting list's two trial rows and its 2026-12-19 date.
