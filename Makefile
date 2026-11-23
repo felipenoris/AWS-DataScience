@@ -28,8 +28,8 @@
 #
 # The `check` list, each offline and failing on one mistake: check-tf-conventions (9.1),
 # check-iam-wildcards (9.2), check-bootstrap-parity (3.5: the five bootstrap slices are one slice
-# copied), check-copies (Stage 8 4.1: files copied across slices), model-chain.py --check (Stage 10
-# steps 5.2 and 5.4: the model chain's requests carry the settings the Workloads OU's document demands), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
+# copied), check-copies (Stage 8 4.1: files copied across slices), model-chain.py --check (Stage 17
+# pass 9: the approval finds the release's version by its model hash in the application's group), deploy-application.py --self-check (Stage 19 step 4.9: the leg's
 # deploy fills every variable a target stage of each application's manifest reads), aws/catalog.py --self-check (Stage 19 step 6.1: the product road's rules hold on sample records), pytest (aws/tests: every aws/ script answers -h, --help and an unknown option before any call), slices.py check (8.1), check-tfvars-shape, check-index (9.4), check-network-doc, check-plan-refs (the plan's
 # relative links, stable IDs and the two size budgets),
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three

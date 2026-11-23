@@ -37,7 +37,6 @@ content:
     - name: code
       include:
         - code/app-etl.zip
-        - code/app-etl-train.zip
     - name: src
       include:
         - "src/"
@@ -64,9 +63,6 @@ content:
     - workflowName: app-etl
       connectionName: default.workflow_serverless
       code: code/app-etl.zip
-    - workflowName: app-etl-train
-      connectionName: default.workflow_serverless
-      code: code/app-etl-train.zip
     - workflowName: app-etl-warehouse
       connectionName: default.workflow_serverless
 
@@ -84,7 +80,6 @@ stages:
       SUBNET_AZ2: ${SUBNET_AZ2}
       PROJECT_SG: ${DEV_PROJECT_SG}
       PROJECT_KEY_ARN: ${DEV_PROJECT_KEY_ARN}
-      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
       PUBLISH_LISTING: "false"
       ACCOUNT_ID: ${ACCOUNT_ID}
@@ -92,8 +87,6 @@ stages:
       actions:
         - type: workflow.create
           workflowName: app-etl
-        - type: workflow.create
-          workflowName: app-etl-train
     deployment_configuration:
       storage:
         - name: code
@@ -125,7 +118,6 @@ stages:
       SUBNET_AZ2: ${STAGING_SUBNET_AZ2}
       PROJECT_SG: ${STAGING_PROJECT_SG}
       PROJECT_KEY_ARN: ${STAGING_PROJECT_KEY_ARN}
-      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
       PUBLISH_LISTING: "false"
       ACCOUNT_ID: ${STAGING_ACCOUNT_ID}
@@ -133,8 +125,6 @@ stages:
       actions:
         - type: workflow.create
           workflowName: app-etl
-        - type: workflow.create
-          workflowName: app-etl-train
     deployment_configuration:
       storage:
         - name: code
@@ -166,7 +156,6 @@ stages:
       SUBNET_AZ2: ${PROD_SUBNET_AZ2}
       PROJECT_SG: ${PROD_PROJECT_SG}
       PROJECT_KEY_ARN: ${PROD_PROJECT_KEY_ARN}
-      TRAINING_IMAGE_URI: ${TRAINING_IMAGE_URI}
       PRODUCT_DATABASE: app_etl
       PUBLISH_LISTING: "true"
       ACCOUNT_ID: ${PROD_ACCOUNT_ID}
@@ -174,8 +163,6 @@ stages:
       actions:
         - type: workflow.create
           workflowName: app-etl
-        - type: workflow.create
-          workflowName: app-etl-train
         - type: workflow.create
           workflowName: app-etl-warehouse
         - type: workflow.run
