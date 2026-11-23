@@ -3249,3 +3249,19 @@ the infrastructure user, `InfrastructureAccess`. Times UTC.*
   (a))"*. Staging's local databases: `app_dbt`, `app_etl`, `default`. The run read 45 passed, 1 note, 0 failed;
   the eleven failed calls are the opening `sts get-caller-identity` of the profiles whose SSO sessions were not
   signed in.
+
+## 2026-11-23 — the stage's close (`promotion.md` §N.6 item 12), with no AWS call
+
+*Claude's hand, the records pass the orchestrating session started on the user's path in its chat. No item
+of this stage was proposed moot, so no card was asked for it. No AWS call. Times UTC.*
+
+- **[user] The path**, at 20:59:03 in the orchestrating session's chat: *"Sim, siga"*, on closing Stages 8, 9
+  and 10 as Stage 4 closed, what waits moved to its trigger or to the stage that provides its subject.
+- **[Claude] Moved to Stage 17 9.8**: xvii, whose subject returns with the endpoint increment (decision 18
+  (b)), which brings `sagemaker.runtime` back into both targets' sets.
+- **[Claude] Moved to `promotion.md` §N.5**, *No step provokes them yet*: vi's cancel, ix's `VPC-Workloads`
+  branch and off-endpoint refusal, xv's deploy- and execution-role halves, xxiii's managed workgroup size and
+  the `CreateCluster` half of `DenyRedshiftProvisionedClusters`, xxvii's cancel and xxviii's commit without
+  `glue:UpdateTable`. xv's execution role is the deployment project's since Stage 19 item 31, which left no
+  `awsds-<env>-wf-*` role in any slice. Each moved row points at its new home, and the stage file's Status
+  row opens with *Done 2026-11-23*.

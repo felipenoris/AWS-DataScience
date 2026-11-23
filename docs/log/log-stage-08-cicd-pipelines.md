@@ -4829,3 +4829,26 @@ logs; R2's session read its words from its own chat and relayed them. No AWS cal
 - **[Claude] `gh` with the tunnel down**: at 20:40:58 a `gh` call exited 1, *"error connecting to
   api.github.com check your internet connection or https://githubstatus.com"*; with `NO_PROXY='*'` it
   answered (`SUP-334`).
+
+## 2026-11-23 — the stage's close (`promotion.md` §N.6 item 12), with no AWS call
+
+*Claude's hand, the records pass the orchestrating session started on the user's path of 20:59:03 in its
+chat, *"Sim, siga"* (the entry before this one). This session asked one card per item proposed moot. No AWS
+call. Times UTC, each answer's from the session's transcript.*
+
+- **[user] Verification xxviii's trust clause**, at 22:15:13, on the card whose question ends *"Marco a
+  cláusula como moot, pela decisão 29 (b), e fecho a xxviii?"*: *"Sim, moot (Recommended)"*. The card stated
+  that decision 29 (b)'s `DenyDeployRoleAssumptionOutsideTheRegion`, applied 2026-10-27, refused the
+  global-endpoint call on 2026-10-30 and 2026-11-15, and that no deploy role's trust pins the Region.
+- **[user] Step 2.5's trigger**, a job role per application, at 22:15:27, on the card whose question ends
+  *"Marcar como moot significa que você aceita esse compartilhamento como está. Marco o gatilho do 2.5 como
+  moot?"*: *"Sim, aceito (moot) (Recommended)"*. The card stated that R2 put four applications in each
+  target and that every template workflow runs as its deployment project's role since release F, so the four
+  share one role per target.
+- **[Claude] Verification xxvi answered** from the records: a deploy deletes nothing a release drops, in the
+  `dev` stage's project (`SUP-348`, 2026-11-10) and in both deployment projects (`SUP-484`, R2).
+- **[Claude] Moved to `promotion.md` §N.5**: vii's third half (*A blueprint reconciliation*), xx's writing
+  identity (*S3 data events*), xxiii's 50th version (*A workflow's 50th version*), xxvii's plan half (*An
+  Amazon Linux release while the runners are up*, the waiting list's Promotion row) and its retry (*No step
+  provokes them yet*), and 4.6's transformed message (*A misuse rule firing*). Each moved row points at its
+  bullet, and the stage file's Status row opens with *Done 2026-11-23*.

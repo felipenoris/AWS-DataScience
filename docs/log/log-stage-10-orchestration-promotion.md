@@ -1954,3 +1954,30 @@ session's chat (*"Sobre "OR-8 e DT-8 entram no PR da sessão do 9.11.", sim pode
   newest at 2026-10-25T01:29:10Z"*, and each target's *"registry writes — 1 version(s) proposed
   PendingManualApproval by a project role, 1 approval(s)"* its deploy role's, `awsds-deploy-staging` and
   `awsds-deploy-prod`. 143 passed, 1 note, 15 failed, each an `OR-2` (`EXC-25`); exit 2, no call failed.
+
+## 2026-11-23 — the stage's close (`promotion.md` §N.6 item 12), with no AWS call
+
+*Claude's hand, the records pass the orchestrating session started on the user's path in its chat. This
+session asked the card on xxvii, proposed moot, and a second card correcting its premise. No AWS call. Times
+UTC, each answer's from the session's transcript.*
+
+- **[user] The path**, at 20:59:03 in the orchestrating session's chat: *"Sim, siga"*, on closing Stages 8, 9
+  and 10 as Stage 4 closed, what waits moved to its trigger or to the stage that provides its subject.
+- **[user] Verification xxvii's connection clause**, at 22:15:43, on the card whose question ends *"O lint do
+  Stage 8 5.6 recusa todo manifesto com um item de content.storage que nomeia uma conexão, então nenhuma
+  aplicação do template chega a esse caso. Marco a cláusula como moot e fecho a xxvii?"*: *"Sim, moot
+  (Recommended)"*. **[Claude]** The card's premise was wrong: since 2026-11-17 the lint admits, under
+  `--model-item`, the one item that carries the model (`awsds-workflows` `37cb5a6`, Stage 17 9.3), and
+  `app-ml`'s `model` item names `default.s3_shared`. This answer is not used.
+- **[user] The same clause**, at 22:22:23, on the correction card whose question ends *"A cláusula foi
+  exercitada, não está sem objeto. Como registro?"*: *"Respondida pelo Stage 17 (Recommended)"*. The card
+  stated that `app-ml` `v0.1.0`'s bundle (pipeline #147, R2) carried `app-ml-dev`'s `app-ml/models/latest/`,
+  which Staging's deploy wrote under `shared/app-ml/bundle/model/`, the candidate's SHA-256 `852032c5…`
+  (Stage 17 lxii, `SUP-374`).
+- **[Claude] Moved to `promotion.md` §N.5**: the chain's order (3.5, 3.6) and xxv (decision 18) to *An
+  application whose chain consumes another's marker*, since every chain of R2's four applications starts from
+  its own schedule and none consumes another's marker; xvi's metrics clause to *A `monitoring` endpoint*;
+  decision 11's `GetTaskInstance` and its `GetWorkflowRun` on a workflow the CI/CD CLI made to *A Deployment
+  Manager's read in a trail window*; xviii and xxviii's inbox marker to *No step provokes them yet*. `OR-2`'s
+  15 failures of 2026-11-23 are `EXC-25`'s, accepted by Stage 19 decision 27 until its (d). Each moved row
+  points at its new home, and the stage file's Status row opens with *Done 2026-11-23*.
