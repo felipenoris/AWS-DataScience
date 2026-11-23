@@ -307,7 +307,8 @@ load-bearing against principle 4.
     against the USD 50 ceiling. **The list stopped reaching spaces on 2026-09-07**
     (`sagemaker-denies-v0.2.0`, the user's decision for the remote-IDE floor): idle shutdown is what
     remains on that path, and jobs keep the list. Since 2026-11-22 a member sets a space's idle timeout
-    anywhere from 60 minutes to 365 days (the user's decision), so the timeout is the member's choice and
+    anywhere from 60 minutes to 365 days (the user's decision), in a project whose owner has run *Update
+    project* since, `app-etl-dev` alone as of 2026-11-23 (`SUP-380`), so the timeout is the member's choice and
     `make down ENV=sandbox`'s app sweep is what bounds a forgotten space. Also confirms rather than changes D7/D28: **SMUS
     workflows are MWAA**, serverless or provisioned, so Stage 10's orchestrator and this feature are one
     surface, not two.
@@ -933,7 +934,11 @@ policy set lives in code, which is Stage 2 step 5's mandate.
       into the Production registry except a pipeline that re-trains it, and nothing has ever said which
       is intended. One step over, the same seam: a dependency installed in a running JupyterLab is not
       in the image, and D17's *"promote only the code"* holds only if the runtime is identical by
-      construction.
+      construction. **The model half answered 2026-11-17** ([Stage 10](stages/stage-10-orchestration-promotion.md)
+      decision 22): a model trained in Sandbox is promoted, and no target trains it. Measured in R2 on
+      2026-11-23: `app-ml` `v0.1.0`'s register workflow proposed version 1 of `awsds-prod-model-app-ml` as
+      Production's deployment project role, and its `production-approve` approved it (Stage 8's and Stage
+      17's logs).
     - **Whether the derived zone is deliberately a dead end.** D19's containment argument is that the
       copy is tolerable because the destination is managed and the perimeter contains it. If nothing
       promotable ever leaves the project path except through a repository CI reads, state that as a

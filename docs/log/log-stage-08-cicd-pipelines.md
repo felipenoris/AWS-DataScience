@@ -4804,3 +4804,28 @@ before the first. Times UTC.*
   on the profiles of five SSO sessions not signed in (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`,
   `awsds-governance`, `awsds-scientist`), *"Error loading SSO Token: Token for <session> does not exist"*; every
   measurement ran as the infrastructure user.
+
+## 2026-11-23 — R2's words recovered, and the path of `promotion.md` §N.6 item 12
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs; R2's session read its words from its own chat and relayed them. No AWS call. Times UTC.*
+
+- **[user] The raise**, which the entry *R2: the opening and the four releases' pipelines* gives no time: run
+  in the user's terminal between *"Eu rodo no terminal"*, at 16:16:28 in the chat of §N.10's day 2's rest, and
+  that session's reading of the environment up at 16:41:14. In R2's chat at 16:41:30: *"o ambiente já está no
+  ar. Verifique a aba do chrome para o gitlab."*
+- **[user] The words naming three of R2's acts**, in R2's chat at 16:47:06, the message that named the acts of
+  `r2-acts-for-15h.md` in order: *"MR e merge do README do dev-env"* (`!17`, opened at 16:47:55); *"make
+  gitlab-down"*; *"make hub-down, este depois que o Sandbox ler zero e o N.10 relatar a descida dele."* The
+  session of §N.10's day 2's rest reported Sandbox at zero at 18:31:37, before the orchestrating session's
+  «verificado».
+- **[user] Item 12's path**, the close of Stages 8, 9 and 10, in the orchestrating session's chat:
+  - *"Sobre "OR-8 e DT-8 entram no PR da sessão do 9.11.", sim pode fazer desta forma."* at 20:48:02: the two
+    checks the entry of the lowering leaves failing, `OR-8` and `DT-8` (Lesson 87), are fixed in Stage 17
+    9.11's estate pull request, #397. The 9.11 session was told at 20:55.
+  - *"Sim, siga"* at 20:59:03, on the path: after #397's merge, a records pass asks the user's word on each
+    item proposed moot (this stage's xxviii and 2.5, Stage 10's xxvii), moves the others to §N.5 or their
+    stages, and closes Stages 8, 9 and 10 as Stage 4 closed.
+- **[Claude] `gh` with the tunnel down**: at 20:40:58 a `gh` call exited 1, *"error connecting to
+  api.github.com check your internet connection or https://githubstatus.com"*; with `NO_PROXY='*'` it
+  answered (`SUP-334`).

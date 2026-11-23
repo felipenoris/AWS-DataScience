@@ -1718,3 +1718,21 @@ AWS reads alone. Times UTC.*
   reachable through a product alone in the estate.
 - **[Claude] Records**: Stage 19 decision 4's extension; `catalog.md` §M and §V; `GOVERNANCE.md`'s business
   metadata row; `SUP-482`'s later reading; the stage file's `Status` row.
+
+## 2026-11-23 — The raise's time, the lowering's words and the decision's time, recovered with nothing up
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs; the session that ran pass 5 read the words and times from its own chat and relayed them. No AWS call.
+Times UTC.*
+
+- **[user] The raise**, which the entry *The two spaces, 5.1's table and 5.3's data product, after the raise*
+  gives no time: run in the user's terminal, after *"Eu rodo no terminal"* at 16:16:28 in pass 5's chat and
+  before that session's first reading of the environment up at 16:41:14; `make status` ended at 16:42:49.
+  Sandbox's `CreateVpcEndpoint` events hold the exact time, unread.
+- **[user] The words behind both `make down ENV=sandbox`** of the entry *The orchestrator's checks, the pull
+  request and the lowering of Sandbox*: *"Autorizo 1 a 12"* at 16:41:06; the list of acts in order at 16:46:55,
+  ending *"o make down, avisado ao R2 antes e depois do meu ./aws/login.py."*; *"Login feito"* at 18:09:00.
+- **[user] *"Accept product form"***, in the entry *Stage 19 decision 4 extended*, was given at 19:24:08 in the
+  chat of the session that changed `CT-18` (pull request #395). Stage 19's log points to that entry.
+- **[Claude] The spaces of earlier sittings** deleted in Sandbox before this day's raise, from 20:42:36 on
+  2026-11-22 to 01:26:32, are in 6d's log.

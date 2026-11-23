@@ -4918,3 +4918,35 @@ plan. No AWS call.*
   which holds none of them; their `Where:` names pull request #380 (`df632a3b`), whose commit message
   carries them. `SUP-380`'s *"only the parameter differs"* now says the override's presence at the
   environment's creation differs with it, which reading 2 and the entry of 2026-11-22 also leave open.
+
+## 2026-11-23 — The idle range's acts of 2026-11-22 and the spaces deleted after them, recorded with nothing up
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs. No AWS call. The idle range's acts are read from pull request #380 (`df632a3b`), its description and
+commit message, and from `SUP-380` and `SUP-456`, which name no log. The `DeleteSpace` events are from the
+CloudTrail read of the session that ran §N.10's day 2's rest, relayed on 2026-11-23. Times UTC.*
+
+- **[Claude] The idle range applied**, by #380's session on 2026-11-22: `data-governance/governance/` from
+  18:59:56 to 19:00:22, *"0 added, 4 changed, 0 destroyed."*, re-planned *"No changes"*; six values from 120
+  to 525600 in the profiles `experimentation`, `lake-publishing`, `deployment-staging` and
+  `deployment-production`. The pull request says *"The user authorized the apply in this session's chat."*
+  without the words, and that session is no longer listed.
+- **[user] Idle shutdown kept** `ENABLED` with its 60-minute default: the user declined to turn it off after
+  reading what a forgotten space costs (#380's description).
+- **[Claude] `app-etl-dev`'s *Update project***, as its owner: `UpdateProject` at 19:19:49, the project
+  `ACTIVE` again at 19:23:40, every deployment `UPDATE` `SUCCESSFUL`, its `Tooling` environment storing
+  `maxIdleTimeoutInMinutes` `"525600"` (`SUP-380`). The five other projects' *Update project* is a row of
+  `waiting-on-the-user.md`.
+- **[Claude] The space `jup8h`** in `app-etl-dev`, JupyterLab on `ml.t3.medium` and `awsds-sandbox-dev-env`
+  version 12: created at 19:26:15 with 480 minutes; its owner's save of 1440 ran from 19:43:45 to 19:53:58,
+  deleting its app and creating it again (`SUP-456`).
+- **[Claude] Eight `DeleteSpace`** in the trail, each through a project's user role in the Data Scientist
+  User's portal session: on 2026-11-22 `jup8h` at 20:42:36 and `jup-app-dbt-dev` at 21:45:01; on 2026-11-23
+  `default-28f1b390-…` at 01:24:51, `code` at 01:24:59, `jup` at 01:25:06, `jup-test-experimentation` at
+  01:25:42, `jup-app-genai-dev` at 01:26:14 and `jup-ml-dev` at 01:26:32. No log records the act, and the
+  trail does not separate the user's hand from a Claude session in the user's browser.
+- **[Claude] `code`**, read `InService` at 23:22:52 by the entry *Day 3: the remainder not run, the user's
+  choice*, is among them: the remainder's sitting of 2026-11-25 creates the owner's remote-access space
+  first.
+- **[Claude] 6.1 (xvi)**, the grant the portal writes when it fulfils a subscription, answered from 6f's
+  log of 2026-11-22 (2.2 inside Sandbox, 4.3 across accounts): the owning project's role grants `SELECT` on the table to the consumer account's `IAMPrincipals` under `context.datazone.projectId=="<consumer project>"`, no grant option, and the consumer project's role creates a resource link and grants `DESCRIBE` on it under the same condition; the manage-access role makes no call, and across accounts the grant carries `CROSS_ACCOUNT_VERSION` `5` with no RAM or Glue policy call.

@@ -2651,3 +2651,15 @@ while `app-ml`'s and `app-etl`'s legs ran. Times UTC.*
   (`6ljn21swt4l0y8`), Staging's and Production's. The one name the three accounts' table nodes share is the Athena one, which carries no account.
   So xx reads no: a target's job and table nodes are its own, and its asset shows Sandbox's dbt runs upstream,
   not its account's (`SUP-483`).
+
+## 2026-11-23 — `jup-app-dbt-dev` deleted on 2026-11-22, recorded with nothing up
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs. No AWS call; the event is from the CloudTrail read of the session that ran §N.10's day 2's rest,
+relayed on 2026-11-23. Times UTC.*
+
+- **[Claude] `jup-app-dbt-dev`**, which the entry *5.2 and 5.3: the model over the subscription, its run, and
+  one graph across the accounts* left `InService` with `~/app-dbt` and the tar in its home, was deleted at
+  21:45:01 on 2026-11-22 by a `DeleteSpace` through `app-dbt-dev`'s user role in the Data Scientist User's
+  portal session. No log records the act; 6d's log holds that night's eight `DeleteSpace`. R2 tagged
+  `app-dbt` from `examples/app-dbt/` on `main`, not from the space.
