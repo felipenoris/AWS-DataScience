@@ -6265,3 +6265,25 @@ orchestrating session's «verificado», the chain started on *"chain de triage d
   `vpce-07a18f03e17e5c132` (`awsds-prod-workloads-bedrock`), then `GetGuardrail` and `CreateGuardrailVersion`;
   the guardrail `app-genai-d7qcazihvr3s7k`, no customer key, version 1, hash `6b4f6876…cf78`. Each answer names
   the account-enforced guardrail `aml52z7rpznt` version 1 beside the request's. xlii reads yes for Production.
+
+## 2026-11-23 — R2: 9.7's approval and the scoring chain from the registry
+
+*Claude's hand, R2's session; `production-approve` played on the user's words *"production-approve do
+app-ml"* after the orchestrating session's «verificado», the chain started on *"chain de score de novo"*, as
+`awsds-infra-prod`, `InfrastructureAccess`. Times UTC.*
+
+- **[Claude] `production-approve`** (job 954, 18:32:49 to 18:33:09): *"…model-package/awsds-prod-model-app-ml/1:
+  PendingManualApproval, trained by app-ml-train-20261122T193009"*, then *"…/awsds-prod-model-app-ml/1:
+  Approved"*. The trail: `UpdateModelPackage` at 18:33:05 by `awsds-deploy-prod`, no `vpcEndpointId`,
+  `modelApprovalStatus` `Approved`, *"approved by felipenoris at the promotion pipeline's production leg"*, no
+  error. Version 1 alone was approved. lviii's Production half reads: the version proposed by the project
+  role's workflow (18:08:36) and approved by the deploy role.
+- **[Claude] The scoring chain again**: execution `r2-v0-1-0-app-ml-score-approved`, started at 18:34:22,
+  `SUCCEEDED` at 18:53:27. The workflow run `O7sOLeTvjRC2Lgl` (18:34:32 to 18:52:01): `prepare` 18:35:22 to
+  18:43:03, `resolve` 18:43:38 to 18:43:47 *"created app-ml-score-d7qcazihvr3s7k from
+  …model-package/awsds-prod-model-app-ml/1: sha256 852032c55a3047b66de1a2fa6c29e148e10b145cb30fab41d26c83214282d7ab"*,
+  `score` 18:44:29 to 18:50:13, `check` *"app-ml-score-20261123T184437: 200 prediction(s) for 200 line(s), AUC
+  0.847556, MIN_AUC 0.7"*, `cleanup` 18:51:51 to 18:52:00, each `SUCCESS`. `shared/app-ml/outbox/score-report.json`:
+  `"source": "registry"`, the version `…/awsds-prod-model-app-ml/1`, the SHA-256 Staging named,
+  `training_job` `app-ml-train-20261122T193009`, `transform_job` `app-ml-score-20261123T184437`. xxxi's second
+  half reads yes, and `app-ml`'s Production leg reads yes.

@@ -2621,3 +2621,33 @@ infrastructure user, `InfrastructureAccess`. Times UTC.*
   `trades` `ICEBERG` by `GlueJobRunnerSession`, `notional_by_desk` `ICEBERG` by `AmazonMWAAServerless`, both
   registered; the assets `trades` (`5ebvfidjbbztlc`) and `notional_by_desk` (`c96p9n24zdtr4g`) in
   `deploy-production`. The Production leg reads yes; pipeline #148 green from end to end.
+
+## 2026-11-23 — R2: 8.9's Production trail and the nodes of both targets
+
+*Claude's hand, R2's session; reads only, as `awsds-infra-prod` and `awsds-infra-staging`, `InfrastructureAccess`,
+while `app-ml`'s and `app-etl`'s legs ran. Times UTC.*
+
+- **[Claude] Production's trail** for `production-deploy`'s and `production-catalog`'s two runs (18:10 to 18:28,
+  read at 18:47): nine `StartQueryExecution` on `workgroup-d7qcazihvr3s7k-59niwej9axztow` by
+  `datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow`'s `AmazonMWAAServerless` session through
+  `vpce-0a6649b8bfd3a37b7` (`awsds-prod-workloads-athena`); `CreateTable` for `notional_by_desk` twice and for
+  `notional_by_desk__ha` and `notional_by_desk__bkp` once each, by the same session with no `vpcEndpointId`
+  (Athena's call on its behalf; the second run's swap, as 2.5 read it in Sandbox), and `trades`'s by
+  `GlueJobRunnerSession` through `vpce-076386501f127d2ae` (`awsds-prod-workloads-glue`); six `GetDataAccess` by
+  the `AmazonMWAAServerless` session, no `vpcEndpointId`; `PostLineageEvent`, 12 by that session and 28 by
+  `GlueJobRunnerSession`, all through `vpce-03eccbf7c621bbbf4` (`awsds-prod-workloads-datazone`). No call
+  errored. xviii and xix read yes in Production as in Staging.
+- **[Claude] The nodes** (xx), by 2.4's `get-lineage-node`. Each target has its own: the job nodes
+  `app-dbt-staging.awsdatacatalog.app_dbt.app_dbt.notional_by_desk.build.run` (`6b8sn169ga9lhs`) and
+  `app-dbt-prod.…build.run` (`6o1v0lvm655ac0`); the table nodes keyed by the account's own Glue ARN,
+  `notional_by_desk` `4epfbzmhyf6p74` and `trades` `akfm2ggbaumjo0` in Staging (created 17:18:50), and
+  `dc5kf0jitjz91s` and `c35d04bqelikuo` in Production (created 18:16:02), each `DatasetForm` holding the
+  account's symlink and the Athena name `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.<table>`.
+  The assets do not hang from them. Staging's `notional_by_desk` asset node (`53i9ncbhao12ts`) and Production's
+  (`6bsflg1a3jt0r4`, created by `SYSTEM` at 18:18:57) each have one upstream node, `6w7hp2vvi8kscw`, the node
+  `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/notional_by_desk` created on 2026-11-21 (`SUP-391`); the two
+  `trades` asset nodes (`6209f9enfefp8w`, `angvx93e2w3ksw`) have one, `3s0gk0eg2o68pc`, Sandbox's `trades`.
+  Sandbox's node lists downstream a dbt test run of 2026-11-22 (`dedgldxzwqkya8`), Sandbox's asset node
+  (`6ljn21swt4l0y8`), Staging's and Production's. The one name the three accounts' table nodes share is the Athena one, which carries no account.
+  So xx reads no: a target's job and table nodes are its own, and its asset shows Sandbox's dbt runs upstream,
+  not its account's (`SUP-483`).
