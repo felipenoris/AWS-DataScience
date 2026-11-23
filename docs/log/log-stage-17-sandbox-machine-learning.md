@@ -5797,3 +5797,54 @@ one-step pipeline. Claude reads the SageMaker API and the trail as the infrastru
   returned, exit 0.
 - **Records**: `AWS_STATE.md` `EXC-28` closed; the hand-over note to §N.10's day 2 corrected and day 2 told.
   `SUP-468` stands on this log's readings of 5.3.
+
+## 2026-11-23 — 10.5 written and planned: the boundary's exception, `TM-36` and the targets' slices
+
+*Claude's hand, a subagent of the session coordinating 2026-11-22's batch, on the branch `claude/stage17-10-5`
+from `main` at `5fbaaf4f`, brought to `a42e4c9d` (`TM-28`'s applies) before its first commit. Reads and saved
+plans as the infrastructure user with `InfrastructureAccess` in `Staging Account` (`awsds-infra-staging`) and
+`Production Account` (`awsds-infra-prod`); no AWS write. Terraform 1.17.2. Times UTC.*
+
+- **[Claude] The module**: `sagemaker-prereqs`' input `bedrock_exception`, null by default. Where it is set,
+  the ceiling's allow becomes `NotAction` `bedrock:*` and five statements follow: the invoke on the profile and
+  its model under `ArnLike` `bedrock:GuardrailIdentifier` `guardrail/*:*`, `ApplyGuardrail` on the account's
+  guardrails, the `guardrail` task's seven calls in two statements, and the deny of `CreateGuardrailVersion`,
+  `TagResource` and `UpdateGuardrail` on the account's own guardrail. A validation refuses the input beside
+  `bedrock` in `fenced_services`.
+- **[Claude] The boundary's diff**, read before the tag from each target's plan against the local path, the
+  profile's and the guardrail's ARNs replaced by placeholders since both are known only after the apply
+  (01:11 and 01:14): the ceiling, `bedrock:*` out of `DenyServicesNoProjectUsesHere` and the five statements,
+  nothing else. Staging's boundary goes from 14 statements to 19 and 4,785 characters, Production's from 15 to
+  20 and 5,112, of IAM's 6,144. Both prior documents name `agent-registry:*`, so no plan carries `TM-28`'s
+  fence.
+- **[Claude] The tag**, by Recipe B: the module's commit `ad2a6e0d` at 01:16:54; `git ls-remote --tags origin`
+  read `sagemaker-prereqs-v0.14.0` as origin's newest; `sagemaker-prereqs-v0.15.0` tagged and pushed with the
+  branch, origin answering `ad2a6e0d` for it.
+- **[Claude] The account-level configuration's shape**, decision 27 (a) on every model: no `model_enforcement`,
+  since `awscc` 1.106.0 cannot send named models alone (`SUP-466`). Cloud Control's schema, read with
+  `describe-type` at 01:31:57, requires `GuardrailIdentifier` and `GuardrailVersion` alone and says a
+  configuration without `ModelEnforcement` is enforced on all models; the plans show `model_enforcement`
+  `(known after apply)`. No other model call runs in a target: Claude Code and the scoped models are Sandbox's.
+- **[Claude] The plans**, each `-input=false` and saved to a plan file:
+  - `staging/studio/` at 01:19 and `production/studio/` at 01:20, at `v0.15.0`: *"Plan: 6 to add, 2 to change,
+    0 to destroy."* each. The profile `awsds-<env>-app-genai` copied from `amazon.nova-lite-v1:0` and tagged
+    with the deployment project; the guardrail `awsds-<env>-account-guardrail` with 10.4 step 6's topic, its
+    version and the configuration; the policy `awsds-<env>-app-genai` and its attachment to the project role;
+    the boundary; and `person_session`'s document `(known after apply)` (`SUP-356`).
+  - `staging/chains/` at 01:21, *"Plan: 12 to add, 1 to change, 0 to destroy."*: for `app-genai-triage` and
+    `app-genai-probe` a machine, a schedule `DISABLED`, two failure rules and their targets each, and the chain
+    role's statements gaining both workflows' names and `app-genai`'s stage-variables parameter.
+    `production/chains/` at 01:22, *"Plan: 6 to add, 1 to change, 0 to destroy."*, `app-genai-triage` alone.
+  - `staging/foundation/` at 01:23 and `production/foundation/` at 01:24, with the alerts var-file: *"Plan: 0 to
+    add, 1 to change, 0 to destroy."* each, the deploy role's state statement gaining `<env>/studio/`'s key.
+  - `staging/egress/` and `production/workloads-egress/`, both down, from 01:25 to 01:26: *"Plan: 18 to add, 0
+    to change, 0 to destroy."* with no group, and *"Plan: 20 to add, 0 to change, 0 to destroy."* with
+    `TF_VAR_optional_service_groups='["bedrock-base"]'`, `bedrock-runtime`'s policy naming
+    `bedrock:ApplyGuardrail` and `bedrock:InvokeModel`, `bedrock`'s the `guardrail` task's seven calls.
+- **[Claude] `bedrock:ApplyGuardrail` on the runtime endpoint**: the triage's calls did not need it in Sandbox
+  (xxxviii). It stands for the account's enforced guardrail, whose ask of the caller is verification l, as the
+  boundary's and the role's statements do.
+- **[Claude] Records**: `TM-36` and its channel row, open; `TM-30` amended with its `DT-14` trigger;
+  `FENCED_GENERATIVE` in `aws/deploytargets.py` without `bedrock`; `docs/NETWORK.md`; the Makefile's help;
+  `SUP-466`'s later reading; `promotion.md` §N.6 item 8 and §N.11.2 step 2; this stage's `TM-28` sentences,
+  that apply having run at 00:46 to 00:47.

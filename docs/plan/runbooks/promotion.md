@@ -1237,9 +1237,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
 8. **With nothing up, after N.9's day 3**: Stage 17 10.5, the exception and the application's names in
    the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
-   `<env>/studio/`, whose plans carry `TM-28`'s fence too unless its applies ran first, and the retention
-   mode the user's act in each target. The configuration names every model, a shape no `awscc` apply has
-   measured (`SUP-466`): Staging's apply reads it first.
+   `<env>/studio/`, and the retention mode the user's act in each target. The configuration names every
+   model, a shape no `awscc` apply has measured (`SUP-466`): Staging's apply reads it first. Written and
+   planned 2026-11-23 (Stage 17's log), `TM-36` waiting on the user's acceptance.
 9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
@@ -2763,9 +2763,8 @@ whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 20
    `GATES_UV_PROJECTS`, so its pipeline runs no `pip-audit` and no gates tag comes first. `make up
    ENV=staging ONLY=egress` before the first tag and `make down ENV=staging` after the last Staging leg;
    `make up ENV=production ONLY=workloads-egress` before the first `production-gate`. Each raise names
-   `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's once Stage 17 10.5 gives `staging/egress/` the
-   `optional_service_groups` variable, absent there and present in `production/workloads-egress/` on
-   2026-11-20. [Claude] the
+   `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's through the `optional_service_groups` variable
+   Stage 17 10.5 gives `staging/egress/` (written 2026-11-23). [Claude] the
    readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
    deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, between two of its source's
    daily runs (02:43 UTC), so the bundle carries neither.
