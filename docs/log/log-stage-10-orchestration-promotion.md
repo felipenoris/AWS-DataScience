@@ -1949,3 +1949,8 @@ session's chat (*"Sobre "OR-8 e DT-8 entram no PR da sessão do 9.11.", sim pode
   `app-etl`, `app-dbt` and `app-genai` write none. The run read 139 passed, 1 note and 15 failed, each failure an
   `OR-2` on a log group with no retention (`EXC-25`), `app-etl-train`'s two among them. The failed calls are the
   opening `sts get-caller-identity` of the profiles whose SSO sessions were not signed in.
+- **[Claude] Again at 21:40:15**, on `awsds-infra-staging` and `awsds-infra-prod`, after the retired approval joined
+  the retired shape: *"prod: the retired shape — 2 event(s) on awsds-prod-model-app-etl as awsds-deploy-prod, the
+  newest at 2026-10-25T01:29:10Z"*, and each target's *"registry writes — 1 version(s) proposed
+  PendingManualApproval by a project role, 1 approval(s)"* its deploy role's, `awsds-deploy-staging` and
+  `awsds-deploy-prod`. 143 passed, 1 note, 15 failed, each an `OR-2` (`EXC-25`); exit 2, no call failed.
