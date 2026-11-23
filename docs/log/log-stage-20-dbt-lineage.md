@@ -2465,8 +2465,11 @@ over `examples/app-dbt/`'s tree at `b89b5a0f`, copied outside the worktree, on C
   (2.4's read), since `bundle`'s guard, `scripts/check-catalog-export.py`, fails on any asset
   `product.json` does not list, and a protected tag never moves (Lesson 86). 5.0's subscription
   `6n3yg1rsytsemo` (request `6oy7kvmszacaa8`) was revoked before any import of its link, by §N.10's day 2
-  (pull request #384), so 8.6 deletes pass 5's table asset alone.
+  (pull request #384), so 8.6's one deletion left is pass 5's table asset, if the source's scheduled run of
+  2026-11-23 imported it (the entry above).
 - **[Claude] `SUP-391`** gains 5.2's reading of 2026-11-22 (this log), the subscription target's node joining
   the graph across the accounts; the entry held the one-account reading of 2026-11-21.
+- **[Claude] The Status** loses *"Left: 5.0's revocation with 4.12's"* after pull request #384's merge
+  (`663aee70`), the revocation being the entry above.
 - **Not run here**: `secret_detection`, GitLab's analyzer; `bundle` and every leg, which need Sandbox
   and GitLab.

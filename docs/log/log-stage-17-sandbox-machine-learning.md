@@ -5925,8 +5925,8 @@ call.*
   `app-genai-dev`'s space, which the `mwaa` group's `airflow-serverless` endpoint serves
   (`vpc-egress/endpoints.tf` line 70), and the 2026-11-25 row of `promotion.md` §N.12.1 raises
   `bedrock-base` alone. §N.6 item 7, §N.12.2 and the passes' group rule now name `bedrock-base,mwaa`. The
-  §N.12.1 row and the waiting list's Sandbox row sit beside pull request #384's changed lines and are left
-  for after its merge.
+  §N.12.1 row and the waiting list's Sandbox row, beside pull request #384's changed lines, followed after
+  its merge (`663aee70`).
 - **[Claude] Reading 6's change**: `sandbox/bedrock/` passes `included_models = var.enforced_models` and
   `excluded_models = []` (`application.tf`), and `enforced_models`' validation refuses an empty list and
   `ALL` (`variables.tf`). Every shape the `SUP-466` decision offers but none needs that slice changed,

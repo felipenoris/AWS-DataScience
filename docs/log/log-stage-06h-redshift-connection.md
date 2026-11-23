@@ -2902,3 +2902,6 @@ finding's two sides before writing it. No AWS call.*
   text records the apply.
 - **[Claude] xi** answered *"yes, a contributor can"* to a question asking whether anything stops one; it
   now reads *"no, nothing stops a contributor"*, the entry of 2026-11-22's wording.
+- **[Claude] 6.4 in `promotion.md` §N.6 item 9**: its plan put 6.4 on §N.10's day 2, and the day's record,
+  pull request #384's, did not name it; after that pull request's merge (`663aee70`) the record says
+  `lab` kept (6.4, taken 2026-11-22), as §N.10.4 step 3 does.

@@ -1256,9 +1256,9 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    and Stage 20's pass 5. Stage 17's pass 4 is not among them. Stage 19's step 6, whose data source failed
    creation for want of the access role's `redshift-data:ListDatabases` (`SUP-460`), runs again on day 2;
    the four metadata reads were applied the same evening. **Day 2 ran 2026-11-22 and 23** (the Stage 21, 19
-   and 20 logs): Stage 21's passes 2 to 4 with 4.8, Stage 19's 5.4 with Stage 21's rollback item 5, both
-   subscriptions revoked, then the lowering and rollback item 1 for pass 2's data product; Stage 21's pass 5
-   moved to a Sandbox sitting with no warehouse (N.12.1).
+   and 20 logs): Stage 21's passes 2 to 4 with 4.8, Stage 19's 5.4 with Stage 21's rollback item 5, `lab`
+   kept (6h 6.4, taken 2026-11-22), both subscriptions revoked, then the lowering and rollback item 1 for
+   pass 2's data product; Stage 21's pass 5 moved to a Sandbox sitting with no warehouse (N.12.1).
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
     orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
     mirror: `app-dbt`'s first release,
@@ -2844,7 +2844,7 @@ bound it stay N.6's.
 | 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
 | 2026-11-23 | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make hub-up`, `make up ENV=sandbox`: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
 | 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2's revocation of Stage 20 5.0's subscription, done 2026-11-23 |
-| 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base` | `SUP-466`'s decision, for reading 6 |
+| 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` (N.12.2) | `SUP-466`'s decision and `sandbox/bedrock/`'s change merged, for reading 6 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
