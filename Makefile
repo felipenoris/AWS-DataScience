@@ -35,8 +35,9 @@
 # check-identifiers (no account id or e-mail in a tracked file), check-provider-locks (6.3: three
 # platforms in every committed lock file), check-gitlab-ci (no job named after a GitLab CI global
 # keyword, no `needs:` naming a job its pipeline lacks, no script item `bash -n` refuses),
-# check-sg-descriptions (no security group or rule description EC2 refuses at apply) and
-# check-aws-supplement (docs/AWS_SUPPLEMENT.md's ids are unique, every SUP-nnn cited elsewhere
+# check-sg-descriptions (no security group or rule description EC2 refuses at apply),
+# check-bedrock-descriptions (no inference profile or guardrail description Bedrock refuses at
+# apply) and check-aws-supplement (docs/AWS_SUPPLEMENT.md's ids are unique, every SUP-nnn cited elsewhere
 # exists, and CLAUDE.md indexes its sections).
 
 SHELL := /bin/bash
@@ -234,6 +235,7 @@ check:
 	         "./scripts/check-provider-locks.py" \
 	         "./scripts/check-gitlab-ci.py" \
 	         "./scripts/check-sg-descriptions.py" \
+	         "./scripts/check-bedrock-descriptions.py" \
 	         "./scripts/check-gitlab-pins.py"; do \
 	  printf '\n\033[1m--- %s\033[0m\n' "$$c"; \
 	  $$c || fail=1; \

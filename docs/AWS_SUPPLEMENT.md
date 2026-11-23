@@ -5948,8 +5948,10 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   1 validation error detected: Value at 'description' failed to satisfy constraint: Member must satisfy
   regular expression pattern: ([0-9a-zA-Z:.][ _-]?)+"* (400). The refusal came after the plan's resources that
   do not follow the profile were created: the account's guardrail, its version and the enforced configuration
-  (`SUP-466`). Without the apostrophe and the parentheses the profile was created. The pre-commit check that
-  holds EC2's description set (`SUP-064`) holds no Bedrock one.
+  (`SUP-466`). Without the apostrophe and the parentheses the profile was created. Since 2026-11-23
+  `./scripts/check-bedrock-descriptions.py` holds every inference profile and guardrail description's literal
+  text to its create's rule, read from AWS CLI 2.37.12's model, in `make check` and the commit gate, as
+  `SUP-064`'s check does for EC2.
 
   Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23; `terraform-live/staging/studio/genai.tf`.
 

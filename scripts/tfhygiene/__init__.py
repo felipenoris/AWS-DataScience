@@ -2,7 +2,8 @@
 
 The library behind ``check-tf-conventions.py``, ``check-iam-wildcards.py``,
 ``gen-backend-hcl.py``, ``gen-tfvars.py``, ``check-ou-coverage.py`` (its authored-map half),
-``check-index.py``, ``check-sg-descriptions.py`` and ``check-gitlab-pins.py``:
+``check-index.py``, ``check-sg-descriptions.py``, ``check-bedrock-descriptions.py`` and
+``check-gitlab-pins.py``:
 
     scan         collect ``.tf`` files with ``.terraform/`` pruned, and the comment-aware
                  line scanner the convention checks share

@@ -156,7 +156,10 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   pipeline, mistakes GitLab otherwise reports only when it creates the pipeline, behind the VPN.
   `check-sg-descriptions.py` reads every security group and rule description in the Terraform trees: a
   character outside the set EC2 accepts fails it, a mistake `validate` catches only on inline rules and
-  EC2 otherwise reports at apply, after the resources ahead of it exist. `check-gitlab-pins.py` reads the
+  EC2 otherwise reports at apply, after the resources ahead of it exist. `check-bedrock-descriptions.py`
+  holds every Bedrock inference profile and guardrail description to the rule its create takes, the
+  profile's pattern among them, which the `aws` provider's plan admits and Bedrock refuses at apply
+  (`SUP-477`). `check-gitlab-pins.py` reads the
   two GitLab release pins, `production/tooling/`'s `gitlab_ce_version` and `production/runners/`'s
   `gitlab_runner_version`, and fails when their major.minor differ: GitLab keeps a runner's major.minor
   with the server's. `check-copies.py` compares the files one slice keeps as a copy of another's, the deploy

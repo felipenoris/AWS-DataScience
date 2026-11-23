@@ -6061,3 +6061,29 @@ the six applies, each on the user's words in the session's chat. Terraform 1.17.
   xlix; `SUP-466`'s later reading and `SUP-477`; `AWS_STATE.md` `INV-18`; `threat-model.md`'s `TM-30` and
   `TM-36`; `promotion.md` §N.6 item 8, §N.11.2, §N.12.1 and §N.12.4; `sagemaker-ai-ml.md`'s target list;
   `claude-code-sagemaker.md`'s state line; the waiting list; `CLAUDE.md`'s Stage 17 row and Bedrock bullet.
+
+## 2026-11-23 — `check-bedrock-descriptions.py`, the commit gate for `SUP-477`'s refusal, nothing up
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", on the branch `claude/applies-infra-sso-dccfb0`.
+No AWS call: the reads are local files.*
+
+- **[The user] The request**, in this session's chat: *"Sim, adicione."*, answering the offer of a commit gate for
+  the profile's description.
+- **[Claude] The rule**, read from AWS CLI 2.37.12's model of `bedrock` 2023-04-20: `CreateInferenceProfile`'s
+  `InferenceProfileDescription` takes 1 to 200 characters matching `([0-9a-zA-Z:.][ _-]?)+`;
+  `CreateGuardrail`, `CreateGuardrailVersion` and `UpdateGuardrail` take `GuardrailDescription`, 1 to 200
+  characters and no pattern. All three shapes are `sensitive`.
+- **[Claude] The check**: `scripts/check-bedrock-descriptions.py`, one rule per resource type, in the commit gate
+  and `make check`, and so in the offline gates. `literal_text` moved from `check-sg-descriptions.py` into
+  `scripts/tfhygiene/hcl.py`; the EC2 check's output over the tree is byte-identical before and after.
+- **[Claude] The tree**: 494 `.tf` files, 8 descriptions, 8 `ok`, exit 0: each target's profile, guardrail and
+  guardrail version, and Sandbox's guardrail and guardrail version.
+- **[Claude] The fixtures**, in the session's scratchpad: the description `staging/studio/` planned before
+  `ca069391` reads *"FAIL ... outside the set: ' ( )"*; on a profile, a double separator, a separator first, an
+  en dash, a comma, an empty string, 201 characters and a template's apostrophe fail too; on a guardrail or a
+  version, 201 characters, a template whose literal text alone is 202 characters and an empty string fail. 11
+  `FAIL`, exit 1. The corrected description, a trailing separator, a guardrail's apostrophe and a heredoc read
+  `ok`, a template `partial`, a reference and a directive `unchecked`, a missing description `absent`, exit 0.
+  An unclosed string exits 2, and a tree with no Bedrock resource reads *"OK (vacuous)"*.
+- **[Claude] Records**: `SUP-477`'s last sentence; `.pre-commit-config.yaml`, the Makefile's `check` list and
+  header; `README.md`, `terraform-live/README.md` and `scripts/tfhygiene/__init__.py`.

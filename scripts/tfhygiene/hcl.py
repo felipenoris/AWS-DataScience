@@ -84,6 +84,20 @@ def parse(text: str) -> list:
     return _Parser(text, _Lexer(text).tokens()).body(nested=False)
 
 
+def literal_text(parts: list) -> str:
+    """The literal text of a template's parts, after the ~ strip markers beside each ${...}."""
+    texts, strip_next = [], False
+    for kind, text in parts:
+        if kind == LITERAL:
+            texts.append(text.lstrip() if strip_next else text)
+            strip_next = False
+            continue
+        if text.startswith("${~") and texts:
+            texts[-1] = texts[-1].rstrip()
+        strip_next = text.endswith("~}")
+    return "".join(texts)
+
+
 class _Lexer:
     def __init__(self, text: str, line: int = 1):
         self.text = text
