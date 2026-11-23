@@ -2494,3 +2494,23 @@ day. Times UTC.*
   user guide: *"To delete an asset, you must be the owner or the contributor of the project"*;
   `DeleteAsset`'s reference refuses an asset linked to a data product. So `delete-asset` as
   `awsds-infra-sandbox-1` is admitted on paper, unmeasured.
+
+## 2026-11-23 — 8.6: pass 5's table asset deleted, nothing up
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's word in this session's chat, *"pela
+cli. Pode adiantar apagar esse asset caso isso não tenha como pré-requisito subir o ambiente."*, answering
+which of 8.6's paths deletes `notional_by_desk_prod`. As `awsds-infra-sandbox-1`, `InfrastructureAccess`;
+the trail read as `awsds-infra-data`. Times UTC.*
+
+- **[Claude] Read first** at 16:16:25: the asset `5p014tr72zikcw`, `notional_by_desk_prod`, revision 1,
+  owned by `dnl3l158mbhrio`, no listing; the token valid to 17:15:22.
+- **[Claude] The deletion**: `aws datazone delete-asset --domain-identifier dzd-d8yrvx1ko7im6o --identifier
+  5p014tr72zikcw`, 16:16:36 to 16:16:38, exit 0 with no output. `get-asset` at 16:16:43 answered
+  `ResourceNotFoundException`, *"The given Asset doesn't exist."*, and 2.4's `search` lists `trades`
+  (`bra0895x5fjzww`) and `notional_by_desk` (`daefcycb3hhhn4`) alone. Data Governance's trail holds one
+  `DeleteAsset` at 16:16:38, by the infrastructure user's `InfrastructureAccess` session, no error code and
+  no `vpcEndpointId`. A contributor's delete is admitted, as DataZone's user guide states.
+- **[Claude] What re-imports it**: the Glue table `app_dbt.notional_by_desk_prod` stays, beside `trades` and
+  `notional_by_desk`, and the source `3uof8bs4x693f4` runs on `cron(43 2 * * ? *)`, `READY`,
+  `publishOnImport` false. Its next run creates the asset again, so the tag `v0.1.0` is pushed before 02:43
+  on 2026-11-24 (Lesson 86), and 2.4's read runs again right before the tag.

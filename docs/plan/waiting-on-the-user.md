@@ -38,7 +38,6 @@ own Decisions-due table keeps the reasoning and the recommendation.
 | The persona's refused job and its implicit-deny attempt | 6d 1.1, 1.2 |
 | The domain name | [Stage 13](stages/stage-13-public-web-tier.md) |
 | Stage 17 passes 9 and 10's acts: a deployment manager's merge requests, tags and approvals (9.7, 10.6) | [Stage 17](stages/stage-17-sandbox-machine-learning.md) |
-| Stage 20 8.6: before a tag after 5.0, pass 5's table asset deleted in `app-dbt-dev`; 5.0's link, revoked 2026-11-23, was never imported | [Stage 20](stages/stage-20-dbt-lineage.md) 8.6 |
 | Stage 20 8.7: `awsds/app-dbt` (project id 9), created by R1 on 2026-11-22 with the infrastructure job-token allowlist (§N.11.1 step 3); the mirror push at R2's opening, #321 merged on 2026-11-22 as `81d70158` (§N.11.2 step 1), and the first push in its step 2 | [Stage 20](stages/stage-20-dbt-lineage.md) 8.7 |
 | The account quota, D34's rung (recommended: the auto-enrollment rung), and the Account Factory product's reading in Management | [Stage 14](stages/stage-14-sandbox-vending.md) |
 | 6d 6.1 (xvii), the `GetEnvironmentCredentials` attempt | [6d](stages/stage-06d-unified-studio-remainder.md) |
