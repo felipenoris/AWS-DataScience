@@ -260,6 +260,19 @@ repos:
         pass_filenames: false
         files: (\.tf|scripts/check-sg-descriptions\.py|scripts/tfhygiene/hcl\.py)$
 
+      # CreateInferenceProfile takes a description of letters, digits, ':' and '.', each followed
+      # by at most one space, '_' or '-'; the guardrail creates take 1 to 200 characters. The AWS
+      # provider plans a profile description outside the pattern, and Bedrock refuses it at apply,
+      # after the resources ahead of it exist: staging/studio/'s apply stopped there on an
+      # apostrophe and parentheses (2026-11-23, SUP-477). The hook fires on the script and its HCL
+      # reader too.
+      - id: check-bedrock-descriptions
+        name: Bedrock inference profile and guardrail descriptions the service accepts
+        entry: ./scripts/check-bedrock-descriptions.py
+        language: system
+        pass_filenames: false
+        files: (\.tf|scripts/check-bedrock-descriptions\.py|scripts/tfhygiene/hcl\.py)$
+
       # GitLab keeps a runner's major.minor with the server's. The server's release is
       # production/tooling/'s gitlab_ce_version (Stage 7 decision 10), the runners' is
       # production/runners/'s gitlab_runner_version (Stage 8 decision 24), and an upgrade moves

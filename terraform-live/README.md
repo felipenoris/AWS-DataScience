@@ -137,8 +137,8 @@ lake, and the local re-grants without which a held share cannot be used by anybo
   Production and Staging at Stage 9.
 
 **Checks stand over this tree — Stage 2 steps 9, 3.5 and 8.1, Stage 4's, `check-identifiers.py`
-(2026-08-17), `check-provider-locks.py` (2026-08-21), `check-sg-descriptions.py` (2026-10-14) and
-`check-gitlab-pins.py` (2026-10-16).**
+(2026-08-17), `check-provider-locks.py` (2026-08-21), `check-sg-descriptions.py` (2026-10-14),
+`check-gitlab-pins.py` (2026-10-16) and `check-bedrock-descriptions.py` (2026-11-23).**
 The surfaces are `pre-commit`, the repository's `Makefile` and the CI,
 [`.github/workflows/offline-gates.yml`](../.github/workflows/offline-gates.yml) (Stage 8 step 6.2),
 which runs the other two on every pull request; all three call the same scripts:
@@ -147,7 +147,7 @@ which runs the other two on every pull request; all three call the same scripts:
 make check      # offline: region literals, indexed AZs, account-level BPA, wildcard ARNs,
                 #          bootstrap parity, slice layers, tracked tfvars shape, the policy index,
                 #          account ids and e-mails, provider locks, security group descriptions,
-                #          the GitLab release pins
+                #          Bedrock descriptions, the GitLab release pins
 make check-ou   # needs an SSO session as the infrastructure user on Identity
 ```
 

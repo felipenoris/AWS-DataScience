@@ -1243,8 +1243,10 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    the targets, once 10.4 read a first answer from Nova Lite through Sandbox's in-Region profile; its
    threat-model entry accepted before its applies, the account's guardrail configuration applied by
    `<env>/studio/`, and the retention mode the user's act in each target. The configuration names every
-   model, a shape no `awscc` apply has measured (`SUP-466`): Staging's apply reads it first. Written and
-   planned 2026-11-23 (Stage 17's log), `TM-36` accepted by the user the same day.
+   model (`SUP-466`). Written and planned 2026-11-23 (Stage 17's log), `TM-36` accepted by the user the same
+   day. **Applied 2026-11-23** (Stage 17's log): both retention modes on the user's word, the configuration on
+   every model created in both targets, both `studio/` slices from `ca069391` after `CreateInferenceProfile`
+   refused the description `main` carried (`SUP-477`).
 9. **N.10's two days** (N.10.3, N.10.4), no GitLab, before 2026-12-19 so the trial absorbs the
    warehouse: 5b, 6h, Stage 19's pass 5, Stage 17's pass 4 and Stage 20's pass 5 on its day 1,
    `GROUPS=redshift,mwaa`; Stage 21's passes 2 to 5, Stage 19's 5.4 and 6h's 6.4 on its day 2,
@@ -2047,7 +2049,7 @@ Production raise after release G's leg, step 4's backup with GitLab already up. 
 (Stage 19's log): the rotation with no workgroup, 01:11:55 to 01:17:08 UTC; `--sql` through the rotated secret
 at 05:42, 13 pass and 4 notes, so `EXC-13`'s Production half is read and the database follows; the backup by
 hand at 02:48:08 and the timer's at 03:00:50, both expiring 2026-12-23. The free trial's readings around it are the user's:
-299.18 before, 299.16 after, read 2026-11-22 at 17:41 UTC (Stage 9's log), and the next day's.
+299.18 before, 299.16 after, read 2026-11-22 at 17:41 UTC (Stage 9's log), and 299.16 again the next day, read 2026-11-23.
 
 1. **[Claude] The rotation**, with nothing up, expected `LastRotatedDate` on 2026-11-22 UTC. `TZ=UTC` keeps
    the CLI from printing the dates in the laptop's zone (`SUP-435`):
@@ -2681,7 +2683,9 @@ At [`cost-model.md`](../cost-model.md)'s "Per session" rates:
 With the warehouse's queries running, a day bills about 1.7 USD/h. The days come to about 4.5 and 5 USD,
 some 9.5 USD for the sitting, between 6.5 and 13, the managed compute the widest term and 4.1's endpoint
 apart. The trial absorbs the
-warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading.
+warehouse's share to 2026-12-19; whether it covers the two other compute objects is a reading. **Read
+2026-11-23** (5b's log): it covers both, the consumer's workgroup's 960 RPU-seconds (0.10 USD) and the managed
+compute's 23,040 (2.30 USD), of the 3.22 USD the balance fell after day 1's reading.
 
 #### N.10.7 What follows the sitting
 
@@ -2764,7 +2768,7 @@ so step 4 now reads it before the tag.
 
 #### N.11.2 R2: the first releases of `app-ml`, `app-genai` and `app-dbt`, and `app-etl`'s model half
 
-After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies, N.10's day 1,
+After N.9's day 3 (9.6's candidate published, 10.4's readings), Stage 17 10.5's applies (2026-11-23), N.10's day 1,
 whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22, and
 [pull request #390](https://github.com/felipenoris/AWS-DataScience/pull/390) merged, whose `examples/` trees
 steps 2 and 3 push; before 2026-12-18, since it carries
@@ -2841,9 +2845,9 @@ bound it stay N.6's.
 | 2026-11-22, ran | N.9's day 3 beside N.10's day 1: 10.4's reading 6, 6e 6.4 and 6d's remainder left to a later sitting (N.6 item 7) | one raise with N.10's day 1 (the next row) | nothing: its prerequisites done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-22 and 23, ran | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 to 4 with 4.8 and the closing reads by 01:53 UTC, then Stage 19's 5.4 with Stage 21's rollback item 5 by 01:58 UTC (#384), N.6 item 6's revocations at 02:18 and 02:20 UTC, and the lowering from 02:15 to 02:28 UTC | the raise of the row above | day 1 |
-| 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
+| 2026-11-23, ran | Stage 17 10.5 with nothing up (N.6 item 8), its applies the same day | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
 | 2026-11-23 | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make hub-up`, `make up ENV=sandbox`: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
-| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2's revocation of Stage 20 5.0's subscription, done 2026-11-23 |
+| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies and N.10's day 2's revocation of Stage 20 5.0's subscription, both done 2026-11-23 |
 | 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` (N.12.2) | `SUP-466`'s decision and `sandbox/bedrock/`'s change merged, for reading 6 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
@@ -2969,7 +2973,7 @@ The waiting list holds each as a row. In the calendar's order:
   2026-11-22 (N.12.5): the first use is the project's subscription to the model's listing, which an unsaved
   *Run* in the Bedrock IDE's prompt builder made and a playground call does not make (`SUP-445`).
 - **After N.9's day 3**: Stage 17 10.5's threat-model acceptance, `TM-36` accepted 2026-11-23, and each
-  target's retention mode, by 10.5's commands.
+  target's retention mode, by 10.5's commands, declared 2026-11-23 on the user's word.
 - **Before N.10's day 1**: N.6 item 6's, Stage 19's xxvi portal half and the approvals of the two
   requests, done 2026-11-22 (N.12.5); N.10.1's acts, and 6h decision 8 (a)'s merge, done 2026-11-22. `sandbox/warehouse/`'s security group
   admits port 5439 from the spaces of the projects in `projects` alone, `eighth-experimentation` alone

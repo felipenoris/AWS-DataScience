@@ -448,7 +448,9 @@ repository on 2026-11-16 or 2026-11-17:
 Pass 10's design answers each for one call (§G): an exception in the boundary, the `bedrock-base`
 endpoint group, a model that answers inside `us-west-2` and asks for no form, the application's
 guardrail kept by its own task, and a guardrail of the account's own enforced on every invocation
-(decisions 22 (a), 23 (a), 24 (b) and 27 (a)). Until its applies the six stand.
+(decisions 22 (a), 23 (a), 24 (b) and 27 (a)). 10.5's applies of 2026-11-23 put the exception, the retention
+mode `none` in `us-west-2` and the account's guardrail in both targets; the endpoint group rises with 10.6's
+sitting, and the application's guardrail with its first run.
 
 **The endpoints of each account.** With no default route in any VPC, a call from a space, a worker or
 a job leaves through an interface endpoint or does not leave.

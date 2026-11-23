@@ -3190,3 +3190,39 @@ and relayed to this session verbatim (`promotion.md` §N.8.3); Claude read AWS a
   3,120 RPU-seconds (0.312 USD) against the balance's 0.32; xxiv's of 2026-10-26, 1,680 (0.168) against
   0.16; the early 2026-10-26 sitting, 720 (0.072) against 0.05. `ComputeSeconds` read 139, 78 and 79.
   Appended to `SUP-143`.
+
+## 2026-11-23 — the free trial's Production balance the day after R1
+
+*The user's hand in the Redshift Serverless console, pasted in the session "Applies e infraestrutura SSO" at 15:05
+UTC with Sandbox's (5b's log); Claude read AWS as the infrastructure user with `InfrastructureAccess` in
+`Production Account` (`awsds-infra-prod`) at about 15:17, reads alone.*
+
+- **[user]** *"Production Account"*, *"Free trial credits remaining"*, *"$299.16 out of $300.00"*, *"Free
+  trial expiration"*, *"January 21, 2027"*.
+- **[Claude] The compute since R1**: `list-workgroups` and `list-managed-workgroups` empty. The trail holds no
+  `CreateWorkgroup` and no `CreateNamespace` since 2026-11-22 06:00. `awsds-prod-warehouse`'s `ChargedSeconds`
+  since 05:00 that day is R1's 240 in the 05:30 interval alone, and the `default` dimension reads 0 each day
+  since 2026-11-09.
+- **[Claude] The reading**: unchanged since 17:41 on 2026-11-22, about 33 hours after R1's delete, so R1's
+  0.02 USD is its whole cost and nothing landed late. R1's three readings are done (`promotion.md` §N.8.3).
+
+## 2026-11-23 — 9.5a and xxiii read from Stage 21's federated catalog in Sandbox, nothing up
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", on the user's *"Sim, registre"* in that session's
+chat, answering whether to carry the managed workgroup's reading to 9.5a and to Stage 21's `Status`. Sandbox's
+trail and CloudWatch read as the infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`,
+from 15:14 to 15:35. Times UTC.*
+
+- **[Claude] What the switch creates**: Stage 21's pass 4 turned data lake access on for the federated catalog
+  `stage21_warehouse` at 01:39:21 on 2026-11-23 and off at 01:48:49 (Stage 21's log). Sandbox's trail holds
+  `CreateManagedWorkgroup` at 01:39:23 and `DeleteManagedWorkgroup` at 01:48:49, each in the infrastructure
+  user's session with `invokedBy` `glue.amazonaws.com`. The delete's response names a Redshift Serverless
+  workgroup and namespace, each a UUID, under `AWS_OWNED_KMS_KEY`, with no capacity field. The trail holds no
+  `CreateCluster` from 2026-11-22 18:00 to 2026-11-23 03:00, and `DescribeClusters` is the only cluster call
+  between 01:38 and 01:50.
+- **[Claude] The verdict**: 9.5a's collision does not occur, since the path calls none of
+  `DenyRedshiftProvisionedClusters`' three actions, and xxiii's `CreateCluster` half stays unexercised. Decision
+  5 (b) is unchanged.
+- **[Claude] Its bill**: 23,040 `ChargedSeconds`, 2.30 USD, for 4 `ComputeSeconds`, inside Sandbox's free trial
+  (5b's log, 2026-11-23).
+- **[Claude] Records**: this stage's 9.5a and xxiii; `SUP-474`.

@@ -5975,3 +5975,115 @@ logs and the code, and Claude read each finding's two sides before writing it. N
   Stage 8 xxvi after each leg (§N.5).
 - **[Claude] `SUP-464`**'s path corrected to `terraform-live/*/sagemaker/training-image.tf`, and **`SUP-466`**'s
   reading of 2026-11-23 given its log, the entry on 10.5's writing above.
+
+## 2026-11-23 — 10.5's applies: the retention mode, both `studio/` slices, both `chains/` and both `foundation/`
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", on the branch `claude/applies-infra-sso-dccfb0`
+from `main` at `d4a8fb9e`, as the infrastructure user with `InfrastructureAccess` in `Staging Account`
+(`awsds-infra-staging`) and `Production Account` (`awsds-infra-prod`). The writes are the two retention calls and
+the six applies, each on the user's words in the session's chat. Terraform 1.17.2, `aws` 6.69.1, `awscc`
+1.106.0. Times UTC.*
+
+- **[The user] The authorization**, in this session's chat: *"Pode prosseguir com os applies e tudo o que pode
+  ser feito conforme planejamento e sem a minha intervenção. Autorizo os applies necessários."*; then, answering
+  two questions, *"Sim, execute os dois"* for the retention calls the plan gives the user, and *"Autorizo os
+  seis"* for the six applies named, from `main`. After the profile's refusal (below), *"Aplique do branch
+  agora"* for both `studio/` slices from the correcting commit.
+- **[Claude] The plans**, from `main` at `d4a8fb9e`, 12:50:50 to 12:52:18, each as at 10.5's writing:
+  `staging/studio/` and `production/studio/` *"Plan: 6 to add, 2 to change, 0 to destroy."*, `staging/chains/`
+  *"12 to add, 1 to change"*, `production/chains/` *"6 to add, 1 to change"*, both `foundation/` with the alerts
+  var-file *"0 to add, 1 to change"*. The one Terraform change on `main` since #388 is `sandbox/warehouse/iam.tf`.
+- **[Claude] Before**, 12:52:49 to 12:52:51: `get-account-data-retention` `inherit` and
+  `list-enforced-guardrails-configuration` `{"guardrailsConfig": []}` in both targets; `awsds-staging-project-boundary`
+  and `awsds-prod-project-boundary` at `v5`, 14 and 15 statements.
+- **[Claude] Staging's retention**: `put-account-data-retention --mode none` in `us-west-2` answered `"mode":
+  "none"`, `updatedAt` 12:53:21.832; read back `none`.
+- **[Claude] `staging/studio/`'s first apply**, 12:53:33 to 12:53:52, exit 1: the guardrail
+  `awsds-staging-account-guardrail` (`l1gy5nt85y9v`), its version and the enforced configuration `dastwpv6xpqh`
+  created; the profile refused: *"ValidationException: 1 validation error detected: Value at 'description' failed
+  to satisfy constraint: Member must satisfy regular expression pattern: ([0-9a-zA-Z:.][ _-]?)+"* (`SUP-477`).
+  The policy, its attachment, the boundary and `person_session`, which follow the profile, did not run.
+- **[Claude] The configuration read back** at 12:56:44: `dastwpv6xpqh`, guardrail `l1gy5nt85y9v` version `1`,
+  `selectiveContentGuarding` `COMPREHENSIVE` for `system` and `messages`, `owner` `ACCOUNT`, created
+  12:53:49.175, no `modelEnforcement`: the every-model shape's first apply (`SUP-466`).
+- **[Claude] The correction**, commit `ca069391`: the description without the apostrophe and the parentheses in
+  both `studio/` slices, a comment naming the pattern; every hook passed. Re-planned at 12:56:15 and 12:56:37:
+  Staging *"Plan: 3 to add, 2 to change, 0 to destroy."*, Production *"6 to add, 2 to change, 0 to destroy."*.
+- **[Claude] `staging/studio/`'s second apply**, from `ca069391`, 14:22:07 to 14:22:24: *"Apply complete!
+  Resources: 3 added, 1 changed, 0 destroyed."*, the profile `cejulbydm4lk` and `awsds-staging-app-genai`
+  attached to the deployment project's role; `person_session`'s document, `(known after apply)` in the plan
+  (`SUP-356`), resolved to the one it held. Re-planned `No changes` at 14:22:59. The boundary at `v6`, 19
+  statements, 4,764 characters minified; against `v5`, the ceiling's `Action` `*` became `NotAction`
+  `bedrock:*`, `bedrock:*` left `DenyServicesNoProjectUsesHere`, and
+  `AllowTheApplicationsModelUnderAPublishedGuardrail`, `AllowApplyingTheAccountsGuardrails`,
+  `AllowListingAndCreatingAGuardrail`, `AllowKeepingAGuardrailOfTheAccount` and
+  `DenyWritingTheAccountsGuardrail` joined; nothing else changed.
+- **[Claude] Production's retention**: `inherit` before, `none` after, `updatedAt` 14:23:15.088.
+- **[Claude] `production/studio/`**, from `ca069391`, 14:23:24 to 14:23:48: *"Apply complete! Resources: 6
+  added, 1 changed, 0 destroyed."*: the profile `33nugu2skjt9`, the guardrail `awsds-prod-account-guardrail`
+  (`aml52z7rpznt`) and its version, the enforced configuration `ah6oaw4xn6k6` (created 14:23:40.829, the fields
+  of Staging's), the policy `awsds-prod-app-genai` and its attachment. Re-planned `No changes` at 14:24:20. The
+  boundary at `v6`, 20 statements, 5,091 characters, Staging's diff.
+- **[Claude] The `chains/` and `foundation/` applies**, from the saved plans of 12:51, the four slices' code
+  `main`'s: `staging/chains/` 14:24:47 to 14:25:22, *"12 added, 1 changed, 0 destroyed"*; `production/chains/`
+  14:25:23 to 14:25:37, *"6 added, 1 changed, 0 destroyed"*; `staging/foundation/` 14:25:48 to 14:25:59 and
+  `production/foundation/` 14:25:59 to 14:26:11, *"0 added, 1 changed, 0 destroyed"* each. Re-planned `No
+  changes` from 14:26:27 to 14:27:30, the foundations with the var-file. The schedules
+  `awsds-staging-chain-app-genai-probe`, `awsds-staging-chain-app-genai-triage` and
+  `awsds-prod-chain-app-genai-triage` read `DISABLED`.
+- **[Claude] 10.1's simulation on the applied boundaries**, 14:29:37 to 14:32:34: `simulate-principal-policy`
+  as each target's deployment project role, the Region and the project tag in the context (`SUP-008`), 31
+  cases a target, 0 unexpected, `AllowedByOrganizations` `true` throughout. `allowed` by
+  `awsds-<env>-app-genai`: the invoke on the profile and on the model naming a numbered version of the
+  project's guardrail or of the account's; `ApplyGuardrail`; `ListGuardrails`; `CreateGuardrail` with the
+  project's tag; `GetGuardrail`, `UpdateGuardrail`, `CreateGuardrailVersion` and the `awsds:` `TagResource` on
+  the project's guardrail. `implicitDeny`: the invoke with the `DRAFT`, with no guardrail and on another
+  profile, the boundary refusing; `CreateGuardrail` with another project's tag or none and `UpdateGuardrail`
+  on an untagged guardrail, the role's policy refusing; `InvokeModelWithResponseStream`, `DeleteGuardrail`,
+  `PutEnforcedGuardrailConfiguration`, `InvokeAgent` and `Retrieve`, outside the ceiling. `explicitDeny`, the
+  boundary's: `UpdateGuardrail`, `CreateGuardrailVersion` and `TagResource` on the account's guardrail, and
+  `TM-30`'s `bedrock-agentcore:StartCodeInterpreterSession`, `bedrock-agentcore:StartBrowserSession`,
+  `q:SendMessage` and `codewhisperer:GenerateRecommendations`.
+- **[Claude] The instruments**: `./aws/deploytargets.py` on every profile at 14:32:51, *"0 check(s) FAILED"*
+  and exit 1 from section 14 alone, the `sts` calls of the five SSO sessions with no token (`awsds-ctadmin`,
+  `awsds-deploy`, `awsds-devenv`, `awsds-governance`, `awsds-scientist`); on the five infrastructure profiles,
+  14:35:28 to 14:37:42, exit 0 and 45 checks `pass`, `DT-14`'s fenced services
+  `agent-registry, bedrock-agentcore, codewhisperer, q, redshift-data, sqlworkbench` in Production and the same
+  with `redshift` and `redshift-serverless` in Staging. `./aws/bedrock.py` on the five at 14:39:20, exit 0,
+  `BR-2` *"retention mode is none"* in Staging and Production, `BR-7`'s note as on 2026-10-20.
+  `./aws/bedrock-scope.py` on each target at 14:45:56 and 14:46:55, exit 2: `BS-6` reads `us-west-2` `none` and
+  the other sixteen Regions unreadable, the Region ceiling refusing the read there, and `BS-5` the three scoped
+  Anthropic models with no agreement, both a target's expected readings.
+- **[Claude] Lesson 79**: both `studio/` slices hold `ca069391`'s description until its pull request merges; a
+  plan of either from `main` before then proposes replacing the profile with the description
+  `CreateInferenceProfile` refuses.
+- **[Claude] Records**: this stage's `Status` row, step 10.5, the table of what a target lacked and verification
+  xlix; `SUP-466`'s later reading and `SUP-477`; `AWS_STATE.md` `INV-18`; `threat-model.md`'s `TM-30` and
+  `TM-36`; `promotion.md` §N.6 item 8, §N.11.2, §N.12.1 and §N.12.4; `sagemaker-ai-ml.md`'s target list;
+  `claude-code-sagemaker.md`'s state line; the waiting list; `CLAUDE.md`'s Stage 17 row and Bedrock bullet.
+
+## 2026-11-23 — `check-bedrock-descriptions.py`, the commit gate for `SUP-477`'s refusal, nothing up
+
+*Claude's hand, in the session "Applies e infraestrutura SSO", on the branch `claude/applies-infra-sso-dccfb0`.
+No AWS call: the reads are local files.*
+
+- **[The user] The request**, in this session's chat: *"Sim, adicione."*, answering the offer of a commit gate for
+  the profile's description.
+- **[Claude] The rule**, read from AWS CLI 2.37.12's model of `bedrock` 2023-04-20: `CreateInferenceProfile`'s
+  `InferenceProfileDescription` takes 1 to 200 characters matching `([0-9a-zA-Z:.][ _-]?)+`;
+  `CreateGuardrail`, `CreateGuardrailVersion` and `UpdateGuardrail` take `GuardrailDescription`, 1 to 200
+  characters and no pattern. All three shapes are `sensitive`.
+- **[Claude] The check**: `scripts/check-bedrock-descriptions.py`, one rule per resource type, in the commit gate
+  and `make check`, and so in the offline gates. `literal_text` moved from `check-sg-descriptions.py` into
+  `scripts/tfhygiene/hcl.py`; the EC2 check's output over the tree is byte-identical before and after.
+- **[Claude] The tree**: 494 `.tf` files, 8 descriptions, 8 `ok`, exit 0: each target's profile, guardrail and
+  guardrail version, and Sandbox's guardrail and guardrail version.
+- **[Claude] The fixtures**, in the session's scratchpad: the description `staging/studio/` planned before
+  `ca069391` reads *"FAIL ... outside the set: ' ( )"*; on a profile, a double separator, a separator first, an
+  en dash, a comma, an empty string, 201 characters and a template's apostrophe fail too; on a guardrail or a
+  version, 201 characters, a template whose literal text alone is 202 characters and an empty string fail. 11
+  `FAIL`, exit 1. The corrected description, a trailing separator, a guardrail's apostrophe and a heredoc read
+  `ok`, a template `partial`, a reference and a directive `unchecked`, a missing description `absent`, exit 0.
+  An unclosed string exits 2, and a tree with no Bedrock resource reads *"OK (vacuous)"*.
+- **[Claude] Records**: `SUP-477`'s last sentence; `.pre-commit-config.yaml`, the Makefile's `check` list and
+  header; `README.md`, `terraform-live/README.md` and `scripts/tfhygiene/__init__.py`.

@@ -93,20 +93,6 @@ def refused(text: str) -> list[str]:
     return why
 
 
-def literal_text(parts: list) -> str:
-    """The literal text of a template, after the ~ strip markers beside each ${...}."""
-    texts, strip_next = [], False
-    for kind, text in parts:
-        if kind == hcl.LITERAL:
-            texts.append(text.lstrip() if strip_next else text)
-            strip_next = False
-            continue
-        if text.startswith("${~") and texts:
-            texts[-1] = texts[-1].rstrip()
-        strip_next = text.endswith("~}")
-    return "".join(texts)
-
-
 def judge(arg: hcl.Argument) -> tuple[str, str, str]:
     """(verdict, detail, the text a FAIL is about) for a description or a rules argument."""
     if arg.name in RULE_BLOCKS:
@@ -117,7 +103,7 @@ def judge(arg: hcl.Argument) -> tuple[str, str, str]:
     if any(kind == hcl.DIRECTIVE for kind, _ in parts):
         return UNCHECKED, "a %{...} directive decides its literal text: " + visible(arg.source), ""
     sequences = [text for kind, text in parts if kind == hcl.INTERPOLATION]
-    text = literal_text(parts)
+    text = hcl.literal_text(parts)
     why = refused(text)
     if why and sequences:
         return FAIL, "its literal text: " + "; ".join(why), visible(arg.source)

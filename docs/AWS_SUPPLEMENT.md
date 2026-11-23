@@ -1401,7 +1401,8 @@ entry is still true is the reading.
   `log-stage-20-dbt-lineage.md`, 2026-11-22 (5.1).
 
 - `SUP-474` **Glue's `UpdateCatalog` refuses on a federated catalog the `CustomProperties` its `GetCatalog`
-  returns, and data lake access creates a Redshift Serverless workgroup that only `ListManagedWorkgroups` shows**
+  returns, and data lake access creates a Redshift Serverless workgroup that only `ListManagedWorkgroups` shows,
+  metered under its own UUID**
   (measured 2026-11-23 in Sandbox, Stage 21's 4.5 and 4.8). The catalog `stage21_warehouse`, federated over the
   Sandbox namespace's datashare, reads back `CatalogProperties.CustomProperties` `{"aws:PermissionsModel":
   "LAKEFORMATION"}`. An `UpdateCatalog` passing the whole `CatalogInput` with them, as Lesson 60 asks, is refused:
@@ -1410,9 +1411,18 @@ entry is still true is the reading.
   `KmsKey` `AWS_OWNED_KMS_KEY`, `ManagedWorkgroupName` `<account>:<catalog>`, `RedshiftDatabaseName` `dev` and
   `ManagedWorkgroupStatus` `CREATING`, `AVAILABLE` within 40 seconds. The workgroup is absent from
   `ListWorkgroups` and `ListNamespaces`; `ListManagedWorkgroups` lists it with its creation time, its `sourceArn`
-  the catalog, and no capacity field; the account's trail records no creation of it. `DataLakeAccess` false
-  removes it within 16 seconds, before `DeleteCatalog`. Where: `log-stage-21-redshift-s3-data-products.md`,
-  2026-11-23.
+  the catalog, and no capacity field. A read of the trail at 01:44, under five minutes after it, found no
+  creation, which the reading below finds (`SUP-045`). `DataLakeAccess` false removes it within 16 seconds,
+  before `DeleteCatalog`.
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+  Read again 2026-11-23 at about 15:20 in Sandbox (`log-stage-05b-redshift-serverless.md` and
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23): the trail holds `CreateManagedWorkgroup` at 01:39:23
+  and `DeleteManagedWorkgroup` at 01:48:49, each in the infrastructure user's session with `invokedBy`
+  `glue.amazonaws.com`, and no `CreateCluster` over the sitting. The delete's response names the managed
+  workgroup's own workgroup and namespace, each a UUID. Its `AWS/Redshift-Serverless` metrics publish under that
+  workgroup UUID, not the `ManagedWorkgroupName`: 23,040 `ChargedSeconds` and 4 `ComputeSeconds` in the 01:30
+  interval, after three `GetCredentials` on it by `redshift-data.amazonaws.com` for the project role, one per
+  Athena preview. The free trial absorbed them, 2.30 USD.
 
 ## Lake Formation
 
@@ -2048,9 +2058,16 @@ entry is still true is the reading.
   the 2026-11-14 sitting's hour after midnight alone bills 19"*. Read less than two days after it ends, a
   day can be absent or partial, and a whole-day line below its usual value is the tell. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-17, the entry on `SUP-368`'s line.
+  Read again 2026-11-22 and 23 against `ChargedSeconds` in both accounts (`log-stage-09-deployment-targets.md`
+  and `log-stage-05b-redshift-serverless.md`, 2026-11-23): Production's balance read 299.16 twelve hours after
+  R1's last charged interval and again 33 hours after it. Sandbox's, read at about 22:14 with the workgroup up
+  and idle, stood 0.06 USD under `ChargedSeconds`, about the 20:00 interval's 0.048, 1 hour 44 minutes after
+  that interval closed; the next reading carried it. A balance read 12 hours after the last charge has been
+  final, and one read within two hours has not.
 
-- `SUP-143` **Redshift Serverless publishes a `ChargedSeconds` metric beside `ComputeSeconds`, and the two
-  diverge for a session held open** (read 2026-10-18 in CloudWatch, Stage 5b). AWS's metric list does not
+- `SUP-143` **Redshift Serverless publishes a `ChargedSeconds` metric beside `ComputeSeconds`; the two diverge
+  for a session held open, and the free trial draws on `ChargedSeconds`** (read 2026-10-18 in CloudWatch, Stage
+  5b). AWS's metric list does not
   name `ChargedSeconds`. For the 18:00Z hour of 2026-10-10 it read 480 against `ComputeSeconds`' 13,733,
   inside a 60-minute plateau at 4 RPU (17:57 to 18:56Z) in which no query of ten seconds or more completed
   and which ended on no call, 3,600 s being the idle-session timeout; the hours of a running 23,601-second
@@ -2066,6 +2083,12 @@ entry is still true is the reading.
   and R1's of 2026-11-22 (240, 0.024, against 0.02), and over-reads the early 2026-10-26 sitting (720, 0.072,
   against 0.05). `ComputeSeconds` read 139, 78, 0 and 79. `ChargedSeconds` is the closer meter, and which one
   the trial draws on is still not settled.
+  Read again 2026-11-23 in Sandbox against the balance after `promotion.md` §N.10's two days
+  (`log-stage-05b-redshift-serverless.md`, 2026-11-23): 4.16 USD of credit, 287.10 to 282.94, against 41,396
+  `ChargedSeconds` (4.1396 USD) over three workgroups and 2,530 `ComputeSeconds` (0.253 USD), the fourth
+  `Workgroup` dimension being `SUP-478`'s `default`. The reading after day 1 stood 0.06 USD under its meter, and
+  the next took it up. Production read 299.16 again the day after R1, with no `ChargedSeconds` since. The trial
+  draws on what `ChargedSeconds` counts, within 0.02 USD over 4.16.
 
 - `SUP-144` **Sandbox's Redshift Serverless audit export carried nothing while a workgroup existed, and
   Production's carried its first session** (measured 2026-10-17 over the groups' 30-day retention).
@@ -2151,6 +2174,19 @@ entry is still true is the reading.
   workgroup's answer, in Redshift's name for the catalog. A read from another warehouse is unmeasured.
   `DeregisterNamespace` answers `Deregistering`, and the datashare stays `AUTHORIZED` for seconds, gone within
   three minutes. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-478` **Redshift Serverless publishes its workgroup metrics under a `Workgroup` dimension `default` that
+  names no workgroup, a zero each minute, and stops it within two minutes of a workgroup's creation** (read
+  2026-11-23 in CloudWatch and the trail, in Sandbox and Production). `list-metrics` names `ChargedSeconds`,
+  `ComputeSeconds`, `ComputeCapacity` and `DatabaseConnections` under `Workgroup` `default` in both accounts,
+  neither of which has held a workgroup of that name. `ChargedSeconds` there reads 0, one sample a minute: 1,439
+  or 1,440 a day on each day read since 2026-11-09 that the gaps below leave whole. The samples stopped at 03:46
+  on 2026-11-16 and 05:41 on 2026-11-22 in Production, after `CreateWorkgroup` at 03:45:46 and 05:39:48, and at
+  18:18 on 2026-11-22 in Sandbox, after `CreateWorkgroup` at 18:16:42. They came back once, in Production at
+  12:25 on 2026-11-17, 31 hours after that account's `DeleteWorkgroup` at 05:33; after the latest deletes, 05:48
+  on 2026-11-22 in Production and 02:17 on 2026-11-23 in Sandbox, neither had come back at 15:35 on 2026-11-23.
+  A sweep over every `Workgroup` dimension meets `default` as one more workgroup reading 0, and its silence is
+  no evidence that a workgroup exists. Where: `log-stage-05b-redshift-serverless.md`, 2026-11-23.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -5908,8 +5944,8 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
 
 - `SUP-466` **An account-level guardrail configuration on named models cannot be created through `awscc`
   1.106.0: the provider drops an empty `excluded_models`, Cloud Control then requires the key, and Bedrock
-  refuses a non-empty one unless `includedModels` is `ALL`** (measured 2026-11-22 in Sandbox, Stage 17 10.4
-  step 6, as the infrastructure user).
+  refuses a non-empty one unless `includedModels` is `ALL`; one with no `model_enforcement` is created**
+  (measured 2026-11-22 in Sandbox, Stage 17 10.4 step 6, as the infrastructure user).
   - The documentation: Cloud Control's schema for `AWS::Bedrock::EnforcedGuardrailConfiguration`, read with
     `describe-type` the same day, gives `ModelEnforcement` the arrays `IncludedModels` (`minItems` 1, `ALL` or
     model ids) and `ExcludedModels` (`minItems` 0), the latter *"If a model is in both lists, it is
@@ -5933,6 +5969,27 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   only inside it. `awscc` 1.106.0 plans a configuration with no `model_enforcement` as `(known after apply)`
   (`terraform-live/staging/studio/genai.tf` and its Production copy). Whether its apply succeeds is unread:
   Staging's is the first. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+  A later reading (2026-11-23, Stage 17 10.5's applies): the configuration with no `model_enforcement` is
+  created, in Staging at 12:53:49 after 2 s (`dastwpv6xpqh`) and in Production at 14:23:40 after 6 s
+  (`ah6oaw4xn6k6`). `ListEnforcedGuardrailsConfiguration` reads each with its guardrail's version `1`,
+  `selectiveContentGuarding` `COMPREHENSIVE` for `system` and `messages`, `owner` `ACCOUNT` and no
+  `modelEnforcement`, and both slices re-plan `No changes`. What the configuration assesses is verification
+  l's, at the first call (10.6). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+
+- `SUP-477` **`CreateInferenceProfile` refuses a description outside `([0-9a-zA-Z:.][ _-]?)+`, and the `aws`
+  provider's plan admits it** (measured 2026-11-23 in Staging, Stage 17 10.5, as the infrastructure user). The
+  pattern admits letters, digits, `:` and `.`, each followed by at most one space, `_` or `-`.
+  `aws_bedrock_inference_profile` at `aws` 6.69.1 planned the description *"app-genai's model in this account:
+  Amazon Nova Lite in this Region alone (Stage 17 decision 23 (a))."*, and the apply refused it: *"ValidationException:
+  1 validation error detected: Value at 'description' failed to satisfy constraint: Member must satisfy
+  regular expression pattern: ([0-9a-zA-Z:.][ _-]?)+"* (400). The refusal came after the plan's resources that
+  do not follow the profile were created: the account's guardrail, its version and the enforced configuration
+  (`SUP-466`). Without the apostrophe and the parentheses the profile was created. Since 2026-11-23
+  `./scripts/check-bedrock-descriptions.py` holds every inference profile and guardrail description's literal
+  text to its create's rule, read from AWS CLI 2.37.12's model, in `make check` and the commit gate, as
+  `SUP-064`'s check does for EC2.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23; `terraform-live/staging/studio/genai.tf`.
 
 ## Terraform
 
@@ -5941,7 +5998,8 @@ Serverless workgroup's `config_parameter`), `SUP-120` (an Athena workgroup's `fo
 `SUP-101` (`aws_lakeformation_data_lake_settings` and the settings it replaces), `SUP-150` and `SUP-153`
 (DataZone blueprint configurations through `awscc`), `SUP-353` (DataZone policy grants created at once, and
 `-parallelism=1`), `SUP-064` (security group descriptions at `validate`),
-`SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-060` (`jsonencode` and an EventBridge
+`SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-477` (a Bedrock inference profile's
+description at apply), `SUP-060` (`jsonencode` and an EventBridge
 Scheduler placeholder), `SUP-061` (`instance_type` and user data), `SUP-213` (`aws_sagemaker_image_version`
 and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation id after a transfer).
 
@@ -6023,6 +6081,9 @@ and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation
   gains the instance `4gqfau9xuo6e4w`. The plan read *"7 to add, 2 to change"*, the existing project's
   policy the second change: the deferral follows the resource, not the instance. The apply half is read at
   the Sandbox warehouse sitting. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+  Read again 2026-11-23 on Terraform 1.17.2 in both `studio/` slices, on the same policy (Stage 17 10.5): the
+  plans *"3 to add, 2 to change"* and *"6 to add, 2 to change"*, the applies *"3 added, 1 changed"* and *"6
+  added, 1 changed"*, each re-plan `No changes`. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
 
 - `SUP-403` **A saved plan file is refused by every Terraform version but the one that wrote it** (measured
   2026-11-21, the laptop's move to 1.17.2). `sandbox/workflows/`'s training-pair plan, saved by 1.16.6 on
