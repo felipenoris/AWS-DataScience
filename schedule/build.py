@@ -167,7 +167,7 @@ STRIP_TRACKS = [
     # track label, then (start, end, segment label, kind)
     (
         "Hub",
-        [(14.0, 22.25, "uma subida às 14:00; desce por último, pela sessão do R2", "release")],
+        [(14.0, 22.25, "um comando seu sobe tudo às 14:00; o hub desce por último", "release")],
     ),
     (
         "N.10 · Sandbox",
@@ -250,7 +250,7 @@ N10 = [
         14.0,
         14 + 25 / 60,
         "",
-        "<b>Subida do Sandbox, depois do hub.</b> Avisos; você, ou Claude⚡ na sua palavra: <code>make up ENV=sandbox</code>, sem grupos, porque o pass 5 não usa o warehouse; <code>make status</code>. JupyterLab em <code>ml.t3.medium</code> no <code>eighth-experimentation</code> e no <code>test-experimentation</code>, pelo Chrome.",
+        "<b>Subida, pelo seu comando</b> (a linha do R2 abaixo): o Sandbox sem grupos, porque o pass 5 não usa o warehouse; <code>make status</code>. JupyterLab em <code>ml.t3.medium</code> no <code>eighth-experimentation</code> e no <code>test-experimentation</code>, pelo Chrome.",
         ["infra", "21"],
         "você · Claude⚡",
     ),
@@ -293,7 +293,7 @@ R2 = [
         14.0,
         14 + 40 / 60,
         "",
-        "<b>Subida.</b> A sessão do R2 avisa as outras; você: <code>make hub-up</code>, depois <code>make gitlab-up BUILD=1</code> e o túnel. O build runner é lido rodando antes de cada tag.",
+        "<b>Subida, um comando seu</b>: <code>./aws/login.py</code>, <code>make hub-up</code>, <code>make up ENV=sandbox</code>, <code>make gitlab-up BUILD=1</code>, os egress de Staging e de Production com <code>GROUPS=bedrock-base</code>, <code>make status</code>; depois o túnel. O build runner é lido rodando antes de cada tag.",
         ["infra", "7"],
         "você · Claude",
     ),
@@ -309,7 +309,7 @@ R2 = [
         15 + 20 / 60,
         17 + 20 / 60,
         "",
-        "<b><code>app-dbt</code> <code>v0.1.0</code></b> (Stage 20 8.6 a 8.9). O 8.6, o asset da tabela do pass 5 do Stage 20 apagado no <code>app-dbt-dev</code>; o <code>pip-audit</code> e a leitura do 2.4; o primeiro push, o pipeline do <code>main</code> e a tag, antes das 23:43. O egress de Staging antes da tag e o de Production antes do primeiro <code>production-gate</code>, os dois com <code>GROUPS=bedrock-base</code>; as leituras por alvo.",
+        "<b><code>app-dbt</code> <code>v0.1.0</code></b> (Stage 20 8.6 a 8.9). O 8.6, o asset da tabela do pass 5 do Stage 20 apagado no <code>app-dbt-dev</code>; o <code>pip-audit</code> e a leitura do 2.4; o primeiro push, o pipeline do <code>main</code> e a tag, antes das 23:43. Os egress dos alvos no ar desde a subida; as leituras por alvo.",
         ["20", "8", "9", "10"],
         "você · Claude",
     ),
@@ -534,7 +534,7 @@ def page1():
   Sandbox ficam na quarta, como estavam. Os horários dos dias seguintes partem das 09:00 por convenção deste relatório,
   e você pode deslocá-los.</p>
   <div class="tiles">
-    <div class="tile"><div class="l">Subida de hoje</div><div class="v">14:00</div><div class="d">um hub para as duas sessões</div></div>
+    <div class="tile"><div class="l">Subida de hoje</div><div class="v">14:00</div><div class="d">um comando seu para as duas sessões</div></div>
     <div class="tile"><div class="l">N.10, o resto</div><div class="v">~17:10</div><div class="d">o pass 5 do Stage 21 e o rollback</div></div>
     <div class="tile"><div class="l">R2</div><div class="v">~22:15</div><div class="d">app-dbt, app-ml, app-genai e app-etl</div></div>
     <div class="tile"><div class="l">Última subida</div><div class="v">Qua, 25/11</div><div class="d">as sobras do Sandbox</div></div>
@@ -549,7 +549,7 @@ def page1():
       <ul>
         <li>Começa na sua palavra, porque é medida; cada sessão avisa as outras do laptop antes de qualquer write.</li>
         <li><b>Claude⚡</b> é um write que Claude executa na sua palavra, nomeando o ato, no chat da sessão que o executa.</li>
-        <li>O hub sobe uma vez e desce uma vez, pela sessão do R2, depois de o Sandbox ler zero.</li>
+        <li>Você sobe tudo às 14:00 com um comando só, em série; o hub desce por último, depois de o Sandbox ler zero.</li>
         <li>O Chrome logado como Data Scientist é só da sessão do N.10; o GitLab e qualquer login de persona vão para outro perfil de navegador.</li>
         <li>Termina em custo zero: abas do portal fechadas, <code>make down</code>, <code>make hub-down</code>, <code>make status</code>, §R.</li>
       </ul>
@@ -573,10 +573,11 @@ def page2():
 <section class="page">
   <div class="kicker">Hoje · segunda, 23/11 · 14:00 → ~22:15 (17:00 → ~01:15 UTC)</div>
   <h2>Duas sessões em paralelo sobre uma subida do hub: o resto do N.10 e o R2</h2>
-  <p class="sub">O hub sobe uma vez, pela sessão do R2, que o desce por último, depois de o Sandbox ler zero. Os atos de portal
-  do pass 5 são da sessão do N.10, no Chrome logado como Data Scientist, cada um na sua palavra; os do R2 no GitLab são seus,
-  entre os legs, num outro perfil de navegador, porque um login como outro usuário do Identity Center no perfil do Chrome
-  encerra a sessão do Data Scientist no portal.</p>
+  <p class="sub">Você sobe tudo às 14:00 com um comando só, em série: o hub, o Sandbox, o GitLab com o build runner e
+  os dois egress dos alvos; o hub desce por último, depois de o Sandbox ler zero. Os atos de portal do pass 5 são da sessão do
+  N.10, no Chrome logado como Data Scientist, cada um na sua palavra; os do R2 no GitLab são seus, entre os legs, num outro
+  perfil de navegador, porque um login como outro usuário do Identity Center no perfil do Chrome encerra a sessão do Data
+  Scientist no portal.</p>
   {strip()}
   <h3>N.10, o resto · sessão Sandbox, sem warehouse · 14:00 → ~17:10, e os registros até ~18:00</h3>
   {day_table(N10, "sandbox")}
