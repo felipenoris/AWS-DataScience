@@ -4950,3 +4950,14 @@ CloudTrail read of the session that ran §N.10's day 2's rest, relayed on 2026-1
   first.
 - **[Claude] 6.1 (xvi)**, the grant the portal writes when it fulfils a subscription, answered from 6f's
   log of 2026-11-22 (2.2 inside Sandbox, 4.3 across accounts): the owning project's role grants `SELECT` on the table to the consumer account's `IAMPrincipals` under `context.datazone.projectId=="<consumer project>"`, no grant option, and the consumer project's role creates a resource link and grants `DESCRIBE` on it under the same condition; the manage-access role makes no call, and across accounts the grant carries `CROSS_ACCOUNT_VERSION` `5` with no RAM or Glue policy call.
+
+## 2026-11-23 — The eight `DeleteSpace` of 2026-11-22 and 23: the user's hand
+
+*Claude's hand, the session orchestrating 2026-11-23, recording the user's answer in its chat. No AWS call. It
+names the hand the entry *The idle range's acts of 2026-11-22 and the spaces deleted after them, recorded with
+nothing up* left unrecorded. Times UTC.*
+
+- **[user]** *"Sim, fui eu"*, at 22:15:18, answering *"Os oito spaces apagados entre 22/11 20:42 e 23/11 01:26
+  UTC foram apagados por você?"*: `jup8h` and `jup-app-dbt-dev` on 2026-11-22, and `default-28f1b390-…`,
+  `code`, `jup`, `jup-test-experimentation`, `jup-app-genai-dev` and `jup-ml-dev` on 2026-11-23, each deleted in
+  the portal as the Data Scientist User.
