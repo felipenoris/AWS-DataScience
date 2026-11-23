@@ -1585,3 +1585,39 @@ held credentials. The revocation and the deletions ran in the Data Scientist Use
   `MaxSessionDuration` 3600; a vend longer than 3600 s was not attempted. The projects bucket is versioned,
   its rule `expire-noncurrent-versions` at 90 days, so the 27 noncurrent versions left by item 5 expire in
   February 2027.
+
+## 2026-11-23 — The orchestrator's checks, the pull request and the lowering of Sandbox
+
+*Claude's hand unless an entry names another; the orchestrating session's readings are its own, relayed to
+this session and recorded here. Times UTC.*
+
+- **[orchestrator] Acts 1 and 2 read at 17:27** as the infrastructure user in Sandbox: both JupyterLab spaces
+  `InService` with their app on `ml.t3.medium` `InService`, in `d-p6gthxc82ckg` created 16:43:35 and in
+  `d-lfgbdrjncmsu` 16:46:40; `glue_db_blerpkhn9nj7o0.stage21_images` `ICEBERG`, created 16:48:31, under
+  `…/avhvbqn37ty7m8/dev/data/catalogs/stage21_images`.
+- **[Claude] The checking protocol** (a report after each act, the orchestrator's *verificado* awaited before
+  the catalog's rollback and before the lowering) reached this session after act 11, the message having
+  queued during the turn, so the catalog's rollback ran without that check. The report of acts 3 to 11 went
+  at about 17:47. At 17:48 `list-spaces` and `list-apps` read 0 and 0 in both domains.
+- **[orchestrator] Acts 3 to 11 read at 17:49**, from the state the rollback left: the nine Sandbox domains
+  hold zero spaces and zero apps; `stage21_images` answers `EntityNotFoundException`; the assets
+  `dsmm79zurlnbww` and `c5mzcsflx389zk`, the product `bgclb83agkow0g` and the listing `cuilocp2vj9zbk` answer
+  `ResourceNotFoundException`, while the positive control `bra0895x5fjzww` reads `trades`, so the absence is
+  a deletion and not a lack of visibility; S3 Access Grants holds 5 grants and 7 locations, none naming
+  `stage21`; `shared/stage21-images/` holds 0 current objects, 23 versions and 23 delete markers. Act 12
+  checked on its side, to wait on the user's login.
+- **[Claude] The pull request**: the branch synced with `origin/main` at
+  `495ebb1a15b402965ba05ffb1f72b41a21007fb4` by a merge, `make check` *"check: OK"*, `check-aws-supplement.py`
+  *"OK"*; pull request #394 opened at about 17:51, its CI passing.
+- **[user] `./aws/login.py`** at about 18:09; the `awsds` token expires at 19:08:45, and `sts` answers as
+  `InfrastructureAccess`.
+- **[Claude] `make status` at 18:09**: Sandbox's `egress` `UP` with 27 resources and 18 interface endpoints,
+  `probes` `UP` with 4, `warehouse-compute` down; no Studio app billing in any account; passive burn 0.8759
+  USD/h across the estate, the hub, GitLab, its runners and the egress of Staging and Production included.
+  R2 and the orchestrator told at 18:10, R2's copy queued behind its running turn.
+- **[Claude] The first `make down ENV=sandbox`**, 18:11:09 to 18:11:47: `sandbox/probes` planned *"Plan: 0 to
+  add, 0 to change, 4 to destroy."*, then *"Error: error asking for approval: EOF"*: the command ran with no
+  terminal to answer Terraform's prompt. *"HALTED at terraform-live/sandbox/probes: terraform destroy failed
+  above. The rows after it are untouched: terraform-live/sandbox/warehouse-compute,
+  terraform-live/sandbox/egress."* Nothing was destroyed. The second run, `make down ENV=sandbox AUTO=1`,
+  started at about 18:13.
