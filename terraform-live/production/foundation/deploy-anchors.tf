@@ -293,7 +293,9 @@ module "deploy_role" {
   runner_role_arn = module.deploy_runner_role.role_arn
   runner_role_id  = data.aws_iam_role.deploy_runner.unique_id
   state_prefixes  = []
-  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data", "workloads-egress"] : "${var.account_folder}/${s}/terraform.tfstate"]
+  # studio/ holds the output app_genai_inference_profile_arn, which scripts/deploy-application.py reads
+  # as this role to fill app-genai's MODEL_ID (Stage 17 step 10.5).
+  state_read_keys = [for s in ["workloads", "foundation", "sagemaker", "data", "workloads-egress", "studio"] : "${var.account_folder}/${s}/terraform.tfstate"]
 
   inline_policies = {
     "apply-application" = data.aws_iam_policy_document.apply_application.json

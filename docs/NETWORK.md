@@ -377,7 +377,12 @@ VPC. The workers ran on them from both AZs' subnets, with no `ecr.*` and no `mon
 every Production app-etl and train run read on 2026-10-25 (Stage 10 verification xvi). VPC-Workloads'
 slice also takes an optional group per apply since 2026-10-23, `make up ENV=production GROUPS=redshift`
 adding the `redshift-serverless` endpoint for a job that calls the governed warehouse's API from inside
-the VPC (Stage 9 step 9.1), the way `sandbox/egress/` takes its groups; Staging's slice takes none.
+the VPC (Stage 9 step 9.1), the way `sandbox/egress/` takes its groups. Staging's slice takes them too
+since Stage 17 step 10.5 (written 2026-11-23, created by 10.6's raises): without the variable, the value
+`make up` threads was ignored there. Both name `bedrock-base` for a sitting that runs `app-genai`, and
+`endpoint_action_scopes` narrows its two endpoints to the application's calls: `bedrock-runtime` to
+`bedrock:InvokeModel` and `bedrock:ApplyGuardrail`, `bedrock` to the `guardrail` task's seven. Each raise
+planned 20 to add where the plain `make up` plans 18 (2026-11-23, both slices down).
 `VPC-Networking` carries none: the proxy has to resolve.
 
 **It was ten until 2026-09-09**, when the same reading that repaired `NO_PROXY` was pointed at this

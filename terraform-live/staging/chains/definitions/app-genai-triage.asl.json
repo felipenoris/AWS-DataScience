@@ -1,0 +1,130 @@
+{
+  "Comment": "awsds-${env}-chain-app-genai-triage (Stage 17 step 10.5, a chain of one in the shape of Stage 10 step 3.5; Stage 19 step 4.11): reads the application's stage variables, finds ${workflow_name["app-genai-triage"]} by its name, starts it with them and polls its run every 60 s until the run ends.",
+  "QueryLanguage": "JSONata",
+  "TimeoutSeconds": 14400,
+  "StartAt": "Read the stage variables",
+  "States": {
+    "Read the stage variables": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:ssm:getParameter",
+      "Arguments": {
+        "Name": "${stage_variables_parameter}"
+      },
+      "Assign": {
+        "stageVariables": "{% $parse($states.result.Parameter.Value) %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Find app-genai-triage"
+    },
+    "Find app-genai-triage": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:listWorkflows",
+      "Arguments": {
+        "MaxResults": 100
+      },
+      "Assign": {
+        "workflowArn": "{% $count($states.result.Workflows[Name = '${workflow_name["app-genai-triage"]}']) = 1 ? $states.result.Workflows[Name = '${workflow_name["app-genai-triage"]}'].WorkflowArn : 'none' %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Is app-genai-triage deployed"
+    },
+    "Is app-genai-triage deployed": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $workflowArn = 'none' %}",
+          "Next": "app-genai-triage is not deployed"
+        }
+      ],
+      "Default": "Start app-genai-triage"
+    },
+    "app-genai-triage is not deployed": {
+      "Type": "Fail",
+      "Error": "WorkflowNotDeployed",
+      "Cause": "No workflow, or more than one, is named ${workflow_name["app-genai-triage"]} among the first 100 of this account: the CI/CD CLI creates it at a deploy (Stage 19 step 4.9)."
+    },
+    "Start app-genai-triage": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:startWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "{% $workflowArn %}",
+        "ClientToken": "{% $states.context.Execution.Name & '-app-genai-triage' %}",
+        "OverrideParameters": "{% $stageVariables %}"
+      },
+      "Assign": {
+        "runId": "{% $states.result.RunId %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Wait for app-genai-triage"
+    },
+    "Wait for app-genai-triage": {
+      "Type": "Wait",
+      "Seconds": 60,
+      "Next": "Read app-genai-triage"
+    },
+    "Read app-genai-triage": {
+      "Type": "Task",
+      "Resource": "arn:${partition}:states:::aws-sdk:mwaaserverless:getWorkflowRun",
+      "Arguments": {
+        "WorkflowArn": "{% $workflowArn %}",
+        "RunId": "{% $runId %}"
+      },
+      "Output": {
+        "runId": "{% $runId %}",
+        "runState": "{% $states.result.RunDetail.RunState %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Has app-genai-triage ended"
+    },
+    "Has app-genai-triage ended": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.runState = 'SUCCESS' %}",
+          "Next": "The chain succeeded"
+        },
+        {
+          "Condition": "{% $states.input.runState in ['FAILED', 'TIMEOUT', 'STOPPED'] %}",
+          "Next": "app-genai-triage did not succeed"
+        }
+      ],
+      "Default": "Wait for app-genai-triage"
+    },
+    "app-genai-triage did not succeed": {
+      "Type": "Fail",
+      "Error": "WorkflowRunNotSucceeded",
+      "Cause": "The run of ${workflow_name["app-genai-triage"]} ended FAILED, TIMEOUT or STOPPED: its task instances name the task (Stage 10 step 3.2)."
+    },
+    "The chain succeeded": {
+      "Type": "Succeed"
+    }
+  }
+}

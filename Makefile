@@ -205,6 +205,12 @@ help:
 	@printf '    make up ENV=production ONLY=workloads-egress GROUPS=redshift\n'
 	@printf '    make up ENV=production ONLY=workloads-egress,warehouse-compute GROUPS=redshift\n'
 	@printf '\n'
+	@printf '  Wired in staging/egress too. app-genai s sittings name bedrock-base in both targets\n'
+	@printf '  (Stage 17 10.6), each endpoint narrowed to the calls its tasks make:\n'
+	@printf '\n'
+	@printf '    make up ENV=staging ONLY=egress GROUPS=bedrock-base\n'
+	@printf '    make up ENV=production ONLY=workloads-egress GROUPS=bedrock-base\n'
+	@printf '\n'
 	@./scripts/slices.py envs
 
 # Each script runs even when an earlier one failed, so one run shows every red.
