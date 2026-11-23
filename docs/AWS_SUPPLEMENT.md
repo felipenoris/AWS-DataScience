@@ -4386,15 +4386,17 @@ entry is still true is the reading.
   `notional_by_desk` `4epfbzmhyf6p74` in Staging and `dc5kf0jitjz91s` in Production, beside Sandbox's
   `6w7hp2vvi8kscw` of 2026-11-21. Each `DatasetForm`'s `alternateIdentifiers` holds the account's symlink and
   `awsathena://athena.us-west-2.amazonaws.com/awsdatacatalog.app_dbt.notional_by_desk`, which names no account.
-  The source runs then imported each target's tables as assets, and every version of both targets'
-  `notional_by_desk` asset nodes (`53i9ncbhao12ts`, `6bsflg1a3jt0r4`, two versions each, created by `SYSTEM`)
-  has one upstream node, Sandbox's `6w7hp2vvi8kscw`; the `trades` assets hang from Sandbox's `3s0gk0eg2o68pc`
-  the same way. The target's own table node has no asset downstream. Which identifier joins them is unread; the
+  The source runs then imported each target's tables as assets. Each target's `notional_by_desk` asset node
+  has two versions, Staging's `53i9ncbhao12ts` created at 17:24:05 and 17:25:40 UTC and Production's
+  `6bsflg1a3jt0r4` at 18:18:57 and 18:20:27, and each of the four has one upstream node, Sandbox's
+  `6w7hp2vvi8kscw`; the one `createdBy` read, Production's first version's, is `SYSTEM`. The current version of
+  each target's `trades` asset node has one upstream, Sandbox's `3s0gk0eg2o68pc`, its history unread. The
+  target's own table node has no asset downstream. Which identifier joins them is unread; the
   Athena name is the one the three nodes share. The lineage pages read for this project describe the asset's
   link to a dataset node by its source identifier and say nothing of a match across accounts. Consequence: a
   target's asset shows the runs of the account that first wrote a table of that name, here Sandbox's dbt runs,
   and not its own account's; the target's runs are reached from its table node, by its Glue ARN. Where:
-  `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx).
+  `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx, and the node histories recorded from R2's transcript).
 
 ## SageMaker AI spaces and images
 
@@ -5800,9 +5802,10 @@ entry is still true is the reading.
   afterwards `app_etl_deploy_staging_app_etl` read modified at 18:39:42 and
   `app_etl_deploy_staging_app_etl_train` still `READY`, modified 2026-11-22 at 04:12:30. The deploy's files
   behave the same way (`SUP-348`): `code/app-etl-train.zip` and `workflows/app-etl-train.yaml` stayed under
-  `shared/app-etl/`. Production read the same after `production-deploy` at 19:05 to 19:07 UTC:
-  `app_etl_deploy_production_app_etl` and `…_warehouse` modified at 19:07:24 and 19:07:39,
-  `app_etl_deploy_production_app_etl_train` `READY` since 2026-11-22 04:47:39, and both training files kept. The
+  `shared/app-etl/`. Production read the same at 19:14:51 UTC, after `production-deploy`'s deploy step and
+  while its bootstrap run went on: the job started at 19:05:33, `app_etl_deploy_production_app_etl` and
+  `…_warehouse` read modified at 19:07:24 and 19:07:39, `app_etl_deploy_production_app_etl_train` still `READY`,
+  modified 2026-11-22 at 04:47:39, and both training files kept, written 2026-11-22 at 04:46:32 and 04:47:40. The
   CLI's architecture page, read on 2026-10-13, has `deploy` create the workflows in MWAA Serverless and names no
   removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
   workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,

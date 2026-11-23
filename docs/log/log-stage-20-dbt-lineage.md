@@ -2663,3 +2663,37 @@ relayed on 2026-11-23. Times UTC.*
   21:45:01 on 2026-11-22 by a `DeleteSpace` through `app-dbt-dev`'s user role in the Data Scientist User's
   portal session. No log records the act; 6d's log holds that night's eight `DeleteSpace`. R2 tagged
   `app-dbt` from `examples/app-dbt/` on `main`, not from the space.
+
+## 2026-11-23 — R2: 8.9's node histories, recorded from R2's transcript
+
+*Claude's hand, the session orchestrating 2026-11-23, at the user's request in its chat to review the day's
+logs. No AWS call: the readings are R2's, as `awsds-infra-prod` and `awsds-infra-staging`,
+`InfrastructureAccess`, relayed from its transcript on 2026-11-23. The entry *R2: 8.9's Production trail and the
+nodes of both targets* was written at 18:52:57, before the histories ran. Times UTC.*
+
+- **[Claude] `get-lineage-node 6bsflg1a3jt0r4`** in Production, called at 18:50:43 and answered at 18:51:08, the
+  one `createdBy` read:
+
+  ```text
+  6bsflg1a3jt0r4 DatasetLineageNodeType amazon.datazone.asset/c96p9n24zdtr4g ['AssetLineageForm', 'DatasetSchemaForm', 'DatasetForm', 'ColumnLineageForm'] null 2026-11-23T15:18:57.121000-03:00 SYSTEM
+  ```
+
+- **[Claude] The histories**, called at 18:53:31 and answered at 18:53:42: `aws datazone list-lineage-node-history
+  --identifier <node> --query 'nodes[].[id,eventTimestamp,createdAt]'`, then `get-lineage-node --event-timestamp
+  <v> --query '[eventTimestamp,upstreamNodes[].id]'` for each version. The output as R2 relayed it, in -03:00:
+
+  ```text
+  6bsflg1a3jt0r4  2026-11-23T15:20:21-03:00  2026-11-23T15:20:27.314000-03:00
+  6bsflg1a3jt0r4  2026-11-23T15:18:53-03:00  2026-11-23T15:18:57.121000-03:00
+  2026-11-23T15:20:21-03:00 → 6w7hp2vvi8kscw
+  2026-11-23T15:18:53-03:00 → 6w7hp2vvi8kscw
+  53i9ncbhao12ts  2026-11-23T14:25:27-03:00  2026-11-23T14:25:40.916000-03:00
+  53i9ncbhao12ts  2026-11-23T14:23:59-03:00  2026-11-23T14:24:05.872000-03:00
+  2026-11-23T14:25:27-03:00 → 6w7hp2vvi8kscw
+  2026-11-23T14:23:59-03:00 → 6w7hp2vvi8kscw
+  ```
+
+  Production's `notional_by_desk` asset node has two versions, created at 18:18:57 and 18:20:27, and Staging's
+  two, at 17:24:05 and 17:25:40; each of the four has one upstream, `6w7hp2vvi8kscw`.
+- **[Claude] Unread**: the `createdBy` of Staging's node and of the three other versions, and the history of the
+  `trades` asset nodes, whose current versions alone the call at 18:48:20 read (`SUP-483`).
