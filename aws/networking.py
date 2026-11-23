@@ -1,30 +1,31 @@
 #!/usr/bin/env -S uv run --quiet
-# networking.py - the [P] networking half, per account, side by side: VPCs (default ones
-# flagged), DNS attributes, subnets anchored on zone IDs, route tables and routes, internet
-# gateways, the S3/DynamoDB gateway endpoints (the INT-05 anchor), VPC peerings seen from
-# both sides, the private hosted zones with their associations and pending authorizations,
-# flow logs, NACLs and security groups - plus the regional endpoint-service catalog
-# (section 10, NT-9) and the [E] endpoints instantiated from it with the DNS names each
-# has seized (section 11, NT-10). The preflight for Stage 3, and the standing regression
-# after each of its passes.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/networking.py                        # every awsds-* profile
-#             ./aws/networking.py awsds-infra-prod       # only the ones named
-#             python3 aws/networking.py -                # CloudShell, ambient credentials
-#   writes:   aws/output/networking.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeVpcs, DescribeVpcAttribute, DescribeSubnets, DescribeRouteTables,
-#             DescribeInternetGateways, DescribeVpcEndpoints, DescribeVpcEndpointServices,
-#             DescribeVpcPeeringConnections,
-#             DescribeFlowLogs, DescribeNetworkAcls, DescribeSecurityGroups,
-#             route53:ListHostedZones, GetHostedZone, ListVPCAssociationAuthorizations,
-#             logs:DescribeLogGroups, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""networking.py - the [P] networking half, per account, side by side: VPCs (default ones
+flagged), DNS attributes, subnets anchored on zone IDs, route tables and routes, internet
+gateways, the S3/DynamoDB gateway endpoints (the INT-05 anchor), VPC peerings seen from
+both sides, the private hosted zones with their associations and pending authorizations,
+flow logs, NACLs and security groups - plus the regional endpoint-service catalog
+(section 10, NT-9) and the [E] endpoints instantiated from it with the DNS names each
+has seized (section 11, NT-10). The preflight for Stage 3, and the standing regression
+after each of its passes.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/networking.py                        # every awsds-* profile
+          ./aws/networking.py awsds-infra-prod       # only the ones named
+          python3 aws/networking.py -                # CloudShell, ambient credentials
+writes:   aws/output/networking.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeVpcs, DescribeVpcAttribute, DescribeSubnets, DescribeRouteTables,
+          DescribeInternetGateways, DescribeVpcEndpoints, DescribeVpcEndpointServices,
+          DescribeVpcPeeringConnections,
+          DescribeFlowLogs, DescribeNetworkAcls, DescribeSecurityGroups,
+          route53:ListHostedZones, GetHostedZone, ListVPCAssociationAuthorizations,
+          logs:DescribeLogGroups, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is a
 # per-account fact whose meaning is the comparison between accounts. A CIDR overlap is a
 # relation between two VPCs in two accounts, a peering has a requester and an accepter on
@@ -79,7 +80,7 @@ from __future__ import annotations
 import sys
 from itertools import combinations
 
-from awslib import cidr, context, profiles
+from awslib import cidr, cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.context import short_svc
 from awslib.report import Checks, Report, note
@@ -237,6 +238,7 @@ def internet_exit_default(dest: str, target: str) -> bool:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

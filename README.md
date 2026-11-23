@@ -194,8 +194,9 @@ Blueprint for using AWS as a Data Science infrastructure provider.
   scripts that exist *only* for CloudShell — `aws/cloudshell/management-quotas.sh` and
   `aws/cloudshell/audit-iam-analyser.sh`, the readings of the accounts no profile reaches — stay shell:
   standalone single files, needing no environment, writing `aws/output/cloudshell/`. `ruff` (dev-only)
-  lints and formats the tree through `pre-commit`, and PyYAML (dev-only) parses the GitLab CI files for
-  `check-gitlab-ci.py`. A fresh clone needs no setup step: the first script
+  lints and formats the tree through `pre-commit`, PyYAML (dev-only) parses the GitLab CI files for
+  `check-gitlab-ci.py`, and pytest (dev-only) runs `aws/tests/`, which holds every `aws/` script to
+  answering `--help` before any call. A fresh clone needs no setup step: the first script
   invocation bootstraps everything — `uv run` fetches the pinned interpreter if it is absent, creates
   `.venv/` and installs the packages — so `uv sync` only does the same thing ahead of time.
 

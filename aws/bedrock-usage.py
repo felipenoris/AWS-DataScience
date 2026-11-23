@@ -1,22 +1,23 @@
 #!/usr/bin/env -S uv run --quiet
-# bedrock-usage.py - what Amazon Bedrock consumed in a window, per model, and what that costs.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/bedrock-usage.py                                         # this month, to now (UTC)
-#             ./aws/bedrock-usage.py 2026-09                                 # one calendar month
-#             ./aws/bedrock-usage.py 2026-09-12T21:00Z 2026-09-12T23:00Z     # one window
-#             ./aws/bedrock-usage.py --profile awsds-infra-staging           # another account
-#   writes:   aws/output/bedrock-usage.txt   (untracked - see .gitignore)
-#   reads:    cloudwatch:ListMetrics and GetMetricData on the AWS/Bedrock namespace, cloudtrail:
-#             LookupEvents for the four invocation event names, bedrock:ListInferenceProfiles for
-#             each type when a ModelId names no model, and sts:GetCallerIdentity, all in us-west-2.
-#             Every one is a read; this script invokes no model. GetMetricData is billed per metric
-#             requested (USD 0.01 per 1,000), which one run keeps to fractions of a cent.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""bedrock-usage.py - what Amazon Bedrock consumed in a window, per model, and what that costs.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/bedrock-usage.py                                         # this month, to now (UTC)
+          ./aws/bedrock-usage.py 2026-09                                 # one calendar month
+          ./aws/bedrock-usage.py 2026-09-12T21:00Z 2026-09-12T23:00Z     # one window
+          ./aws/bedrock-usage.py --profile awsds-infra-staging           # another account
+writes:   aws/output/bedrock-usage.txt   (untracked - see .gitignore)
+reads:    cloudwatch:ListMetrics and GetMetricData on the AWS/Bedrock namespace, cloudtrail:
+          LookupEvents for the four invocation event names, bedrock:ListInferenceProfiles for
+          each type when a ModelId names no model, and sts:GetCallerIdentity, all in us-west-2.
+          Every one is a read; this script invokes no model. GetMetricData is billed per metric
+          requested (USD 0.01 per 1,000), which one run keeps to fractions of a cent.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # A TIME WITH NO OFFSET IS REFUSED. `2026-09-12T21:00` is 21:00 in whatever zone the reader assumes,
 # and this machine's aws CLI renders timestamps in local time (-03:00) while the API takes UTC - the
 # reading this script replaces confused the two once, on 2026-09-12. Write `Z` or `-03:00`.
@@ -73,7 +74,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from awslib import context, inferenceprofiles, profiles
+from awslib import cmdline, context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
@@ -291,6 +292,7 @@ def usd(value: float) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, valued=("--profile",))
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

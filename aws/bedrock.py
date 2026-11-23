@@ -1,27 +1,28 @@
 #!/usr/bin/env -S uv run --quiet
-# bedrock.py - what Amazon Bedrock is enabled for, per account: the gates, the catalogue, and
-#              the resources that would be billing.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers every profile below: the cached token is keyed by the
-#             sso-session name, not by profile or account (see aws/INDEX.md).
-#
-#   run:      ./aws/bedrock.py                            every awsds-* profile
-#             ./aws/bedrock.py awsds-infra-sandbox-1      only the profiles named
-#             python3 aws/bedrock.py -                    ambient credentials (CloudShell)
-#   writes:   aws/output/bedrock.txt   (untracked - see .gitignore)
-#   reads:    bedrock:GetUseCaseForModelAccess, GetAccountDataRetention,
-#             GetModelInvocationLoggingConfiguration, ListFoundationModels,
-#             GetFoundationModelAvailability, ListInferenceProfiles for each type,
-#             ListGuardrails, ListCustomModels, ListImportedModels, ListProvisionedModelThroughputs,
-#             ListMarketplaceModelEndpoints; iam:ListRoles and iam:ListAttachedRolePolicies for
-#             section 7; and sts:GetCallerIdentity. Every one is a read;
-#             this script never creates, updates or deletes anything and invokes no model.
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""bedrock.py - what Amazon Bedrock is enabled for, per account: the gates, the catalogue, and
+             the resources that would be billing.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers every profile below: the cached token is keyed by the
+          sso-session name, not by profile or account (see aws/INDEX.md).
+
+run:      ./aws/bedrock.py                            every awsds-* profile
+          ./aws/bedrock.py awsds-infra-sandbox-1      only the profiles named
+          python3 aws/bedrock.py -                    ambient credentials (CloudShell)
+writes:   aws/output/bedrock.txt   (untracked - see .gitignore)
+reads:    bedrock:GetUseCaseForModelAccess, GetAccountDataRetention,
+          GetModelInvocationLoggingConfiguration, ListFoundationModels,
+          GetFoundationModelAvailability, ListInferenceProfiles for each type,
+          ListGuardrails, ListCustomModels, ListImportedModels, ListProvisionedModelThroughputs,
+          ListMarketplaceModelEndpoints; iam:ListRoles and iam:ListAttachedRolePolicies for
+          section 7; and sts:GetCallerIdentity. Every one is a read;
+          this script never creates, updates or deletes anything and invokes no model.
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # THE DISTINCTION THIS FILE EXISTS TO HOLD. "Enabled" is three different questions and the
 # console blurs them:
 #
@@ -58,7 +59,7 @@ import json
 import re
 import sys
 
-from awslib import context, inferenceprofiles, profiles
+from awslib import cmdline, context, inferenceprofiles, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.bedrockscope import SCP_PATH, scp_declaration
 from awslib.report import Checks, Report, failed_calls_epilogue, note
@@ -144,6 +145,7 @@ def json_or_none(text: str):
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

@@ -1,30 +1,31 @@
 #!/usr/bin/env -S uv run --quiet
-# sandboxlake.py - Stage 16's evidence: the sandbox lake (awsds-sandbox-lake) and the
-# register of who can reach it. The bucket's shape (versioning, SSE-KMS under the account
-# data CMK, BPA, the TLS-only statement, no expiry on current objects - permanence is the
-# design), the access role and its trust (enumerated, never a wildcard), the S3 Access
-# Grants location and every grant on the bucket classified by shape against the contract
-# (group folders, the two grantee classes, orphans) - a grant whose project role no
-# longer exists is a dead project that skipped runbook §R. The preflight for Stage 16,
-# and the standing regression after it.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/sandboxlake.py                        # the Sandbox profile
-#             ./aws/sandboxlake.py awsds-infra-sandbox-1  # the same, named
-#             python3 aws/sandboxlake.py -                # CloudShell, ambient credentials
-#   writes:   aws/output/sandboxlake.txt   (untracked - see .gitignore)
-#   reads:    s3api:GetBucketVersioning, GetBucketEncryption, GetPublicAccessBlock,
-#             GetBucketPolicy, GetBucketLifecycleConfiguration, kms:ListAliases,
-#             iam:GetRole, ListRoles, ListRolePolicies, GetRolePolicy,
-#             ListAttachedRolePolicies, GetPolicy, GetPolicyVersion,
-#             s3control:GetAccessGrantsInstance, ListAccessGrantsLocations,
-#             ListAccessGrants, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""sandboxlake.py - Stage 16's evidence: the sandbox lake (awsds-sandbox-lake) and the
+register of who can reach it. The bucket's shape (versioning, SSE-KMS under the account
+data CMK, BPA, the TLS-only statement, no expiry on current objects - permanence is the
+design), the access role and its trust (enumerated, never a wildcard), the S3 Access
+Grants location and every grant on the bucket classified by shape against the contract
+(group folders, the two grantee classes, orphans) - a grant whose project role no
+longer exists is a dead project that skipped runbook §R. The preflight for Stage 16,
+and the standing regression after it.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/sandboxlake.py                        # the Sandbox profile
+          ./aws/sandboxlake.py awsds-infra-sandbox-1  # the same, named
+          python3 aws/sandboxlake.py -                # CloudShell, ambient credentials
+writes:   aws/output/sandboxlake.txt   (untracked - see .gitignore)
+reads:    s3api:GetBucketVersioning, GetBucketEncryption, GetPublicAccessBlock,
+          GetBucketPolicy, GetBucketLifecycleConfiguration, kms:ListAliases,
+          iam:GetRole, ListRoles, ListRolePolicies, GetRolePolicy,
+          ListAttachedRolePolicies, GetPolicy, GetPolicyVersion,
+          s3control:GetAccessGrantsInstance, ListAccessGrantsLocations,
+          ListAccessGrants, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # One profile: every object this stage builds lives in the Sandbox account - the bucket,
 # the access role, the Access Grants instance and its grants - so awsds-infra-sandbox-1
 # (the infrastructure user, InfrastructureAccess in Sandbox) reads all of it. The domain
@@ -59,7 +60,7 @@ import fnmatch
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -94,6 +95,7 @@ ABSENT = (
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

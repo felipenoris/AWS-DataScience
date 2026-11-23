@@ -1,20 +1,22 @@
 #!/usr/bin/env -S uv run --quiet
-# warehouse.py - the Redshift Serverless warehouse, its cost ceiling and its grants.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/warehouse.py                        # every profiled account
-#             ./aws/warehouse.py awsds-infra-sandbox-1  # one of them
-#   writes:   aws/output/warehouse.txt   (untracked - see .gitignore)
-#   reads:    redshift-serverless Get*/List*, redshift DescribeDataShares, logs:DescribeLogGroups, cloudwatch
-#             DescribeAlarms + GetMetricStatistics, iam Get*/List*, secretsmanager
-#             DescribeSecret, datazone ListConnections + GetConnection + ListJobRuns - all
-#             reads. It also runs SELECT statements through redshift-data (see "the one call
-#             that is not a describe").
-#   exits:    0 every check passed | 1 a call failed | 2 a check FAILED
-#
+"""warehouse.py - the Redshift Serverless warehouse, its cost ceiling and its grants.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/warehouse.py                        # every profiled account
+          ./aws/warehouse.py awsds-infra-sandbox-1  # one of them
+          ./aws/warehouse.py --sql                  # also WH-6 and WH-12..WH-14, through SQL
+writes:   aws/output/warehouse.txt   (untracked - see .gitignore)
+reads:    redshift-serverless Get*/List*, redshift DescribeDataShares, logs:DescribeLogGroups, cloudwatch
+          DescribeAlarms + GetMetricStatistics, iam Get*/List*, secretsmanager
+          DescribeSecret, datazone ListConnections + GetConnection + ListJobRuns - all
+          reads. With --sql it also runs SELECT statements through redshift-data (see "the one
+          call that is not a describe").
+exits:    0 every check passed | 1 a call failed | 2 a check FAILED
+"""
+
 # WHY THIS FILE EXISTS. The warehouse is the most expensive object per unit of time in this estate
 # - 1.44 USD for every hour a query runs at 4 base RPUs (docs/PRICING.md 5) - and three of the
 # things that bound it are not visible in any single console page:
@@ -51,7 +53,7 @@ import sys
 import time
 from pathlib import Path
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -1429,6 +1431,7 @@ def judge(checks: Checks, facts: dict, authored: dict | None, want_sql: bool) ->
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, flags=("--sql",))
     want_sql = "--sql" in argv
     wanted = [a for a in argv if not a.startswith("--")] or list(DEFAULT_PROFILES)
 

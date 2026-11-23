@@ -1,24 +1,25 @@
 #!/usr/bin/env -S uv run --quiet
-# list-identities.py - snapshot of the Organization tree and of the IAM Identity Center
-# directory, as seen from the Identity account.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             The login authenticates against the access portal, not against an account:
-#             the cached token is keyed by the sso-session name, so one login covers every
-#             profile in ~/.aws/config that declares `sso_session = awsds`, and the profile
-#             below only matters one step later, when a call trades that token for the
-#             temporary credentials of its account's role. `aws sso login --profile
-#             awsds-infra-identity` reaches the same session and is equivalent.
-#             This is checked before any listing runs: a missing or expired token stops the
-#             script with that command, leaving the previous snapshot untouched.
-#
-#   run:      ./aws/list-identities.py
-#   writes:   aws/output/list-identities.txt   (untracked - see .gitignore)
-#   reads:    everything; this script never creates, updates or deletes anything.
-#
+"""list-identities.py - snapshot of the Organization tree and of the IAM Identity Center
+directory, as seen from the Identity account.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          The login authenticates against the access portal, not against an account:
+          the cached token is keyed by the sso-session name, so one login covers every
+          profile in ~/.aws/config that declares `sso_session = awsds`, and the profile
+          below only matters one step later, when a call trades that token for the
+          temporary credentials of its account's role. `aws sso login --profile
+          awsds-infra-identity` reaches the same session and is equivalent.
+          This is checked before any listing runs: a missing or expired token stops the
+          script with that command, leaving the previous snapshot untouched.
+
+run:      ./aws/list-identities.py
+writes:   aws/output/list-identities.txt   (untracked - see .gitignore)
+reads:    everything; this script never creates, updates or deletes anything.
+"""
+
 # Identity: the `awsds-infra-identity` SSO profile, i.e. the Identity account acting as the
 # IAM Identity Center delegated administrator (D10). Reads are not restricted from there -
 # only *writes* against Management-targeted objects are - so the Organizations calls below
@@ -38,7 +39,7 @@ from __future__ import annotations
 import io
 import sys
 
-from awslib import context
+from awslib import cmdline, context
 from awslib.awscli import AwsCli
 from awslib.report import Report, note
 
@@ -46,7 +47,8 @@ PROFILE = "awsds-infra-identity"
 OUT_NAME = "list-identities.txt"
 
 
-def main() -> int:
+def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, positional=False)
     cli = AwsCli(profile=PROFILE, region=context.REGION)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
@@ -771,4 +773,4 @@ in this file means the call succeeded and returned nothing.
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

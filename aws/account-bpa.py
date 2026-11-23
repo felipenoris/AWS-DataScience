@@ -1,22 +1,23 @@
 #!/usr/bin/env -S uv run --quiet
-# account-bpa.py - the account-level S3 Block Public Access setting, one row per account.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#             One login covers every profile below: the cached token is keyed by the
-#             sso-session name, not by profile or account (see aws/INDEX.md).
-#
-#   run:      ./aws/account-bpa.py                       every awsds-* profile
-#             ./aws/account-bpa.py awsds-infra-staging ...   only the profiles named
-#             python3 aws/account-bpa.py -              no --profile: CloudShell (which has
-#                                                       no uv), for the three accounts that
-#                                                       have none
-#   writes:   aws/output/account-bpa.txt   (untracked - see .gitignore)
-#   reads:    s3control:GetPublicAccessBlock and sts:GetCallerIdentity. This script never
-#             creates, updates or deletes anything - the `put` command is printed, not run.
-#
+"""account-bpa.py - the account-level S3 Block Public Access setting, one row per account.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+          One login covers every profile below: the cached token is keyed by the
+          sso-session name, not by profile or account (see aws/INDEX.md).
+
+run:      ./aws/account-bpa.py                       every awsds-* profile
+          ./aws/account-bpa.py awsds-infra-staging ...   only the profiles named
+          python3 aws/account-bpa.py -              no --profile: CloudShell (which has
+                                                    no uv), for the three accounts that
+                                                    have none
+writes:   aws/output/account-bpa.txt   (untracked - see .gitignore)
+reads:    s3control:GetPublicAccessBlock and sts:GetCallerIdentity. This script never
+          creates, updates or deletes anything - the `put` command is printed, not run.
+"""
+
 # There are two Block Public Access settings, and they are not the same control: the
 # bucket-level one, which Stage 2's s3-bucket module sets on every bucket it creates, and the
 # account-level one below, which also covers a bucket created outside that module. Only the
@@ -57,7 +58,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Report, note
 
@@ -67,6 +68,7 @@ FLAGS = ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPu
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

@@ -1,38 +1,39 @@
 #!/usr/bin/env -S uv run --quiet
-# vpn.py - Stage 4's evidence, side by side: the WireGuard host ([D]) and its IMDS
-# setting, the Elastic IP, the one world-open security-group rule and the host-key secret
-# ([P] anchors - the secret must carry its value-read deny and keep rotation off), the
-# handshake log and health alarm, and the guard that no permission set tests the caller's
-# network (D39; read back from Identity Center, never assumed).
-#
+"""vpn.py - Stage 4's evidence, side by side: the WireGuard host ([D]) and its IMDS
+setting, the Elastic IP, the one world-open security-group rule and the host-key secret
+([P] anchors - the secret must carry its value-read deny and keep rotation off), the
+handshake log and health alarm, and the guard that no permission set tests the caller's
+network (D39; read back from Identity Center, never assumed).
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/vpn.py                        # every awsds-infra-* profile (VP-3 reads all)
+          ./aws/vpn.py awsds-infra-prod  # only the ones named
+          ./aws/vpn.py --on-host              # also read inside the host (see below)
+          python3 aws/vpn.py -                # CloudShell, ambient credentials
+writes:   aws/output/vpn.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeInstances, DescribeVolumes, DescribeAddresses,
+          DescribeSecurityGroups,
+          logs:DescribeLogGroups, cloudwatch:DescribeAlarms,
+          secretsmanager:ListSecrets, GetResourcePolicy,
+          sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
+          GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything - see the next line for the
+          single, typed exception.
+sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
+          GetCommandInvocation, and SendCommand is a write API: it creates a Command,
+          is a mutating CloudTrail event, and runs code on an instance, even though
+          every command it carries is a read. It is a flag and not a default so that
+          `./aws/vpn.py` stays safe to fire at anything. Section 2a says what it buys -
+          which peers the running wg0 actually holds, which no describe answers.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # The GuardDuty reading is ./aws/guardduty.py (GD-1..GD-3) since 2026-08-18, the day
 # GuardDuty left Stage 4 for Stage 15. VP-8 is retired here, not renumbered - the Stage 4
 # log cites it by that name.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/vpn.py                        # every awsds-infra-* profile (VP-3 reads all)
-#             ./aws/vpn.py awsds-infra-prod  # only the ones named
-#             ./aws/vpn.py --on-host              # also read inside the host (see below)
-#             python3 aws/vpn.py -                # CloudShell, ambient credentials
-#   writes:   aws/output/vpn.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeInstances, DescribeVolumes, DescribeAddresses,
-#             DescribeSecurityGroups,
-#             logs:DescribeLogGroups, cloudwatch:DescribeAlarms,
-#             secretsmanager:ListSecrets, GetResourcePolicy,
-#             sso-admin:ListInstances, ListPermissionSets, DescribePermissionSet,
-#             GetInlinePolicyForPermissionSet, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything - see the next line for the
-#             single, typed exception.
-#   sends:    nothing in AWS, unless --on-host is typed. That flag adds ssm:SendCommand +
-#             GetCommandInvocation, and SendCommand is a write API: it creates a Command,
-#             is a mutating CloudTrail event, and runs code on an instance, even though
-#             every command it carries is a read. It is a flag and not a default so that
-#             `./aws/vpn.py` stays safe to fire at anything. Section 2a says what it buys -
-#             which peers the running wg0 actually holds, which no describe answers.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
 #
 # It is two-profile, which aws/INDEX.md admits only for a reason: the WireGuard host and its
 # anchors live in the VPN home, while VP-7 reads the permission sets in the Identity account.
@@ -56,7 +57,7 @@ import json
 import sys
 import time
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -272,6 +273,7 @@ def read_host(cli: AwsCli, instance_id: str, logerr) -> tuple:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__, flags=("--on-host",))
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

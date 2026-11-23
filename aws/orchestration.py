@@ -1,32 +1,33 @@
 #!/usr/bin/env -S uv run --quiet
-# orchestration.py - Stage 10's evidence: the MWAA Serverless workflows in Staging and
-# Production, which the SMUS CI/CD CLI creates in each account's deployment project (Stage 19
-# decision 6 (b)), and D41's chain layer above them (OR-9): each workflow's execution role, the
-# project's (boundary, trust, the policies <env>/studio/ attaches), its NetworkConfiguration
-# (present, two AZs, no default route), its log group and retention (D28 item 5), its failure
-# rule, the model-approval rule, recent runs with their type, the absence of any provisioned MWAA
-# environment, the definitions, and the registry's register/approve record (INT-07's registry
-# half, consumed).
-#
-#   needs:    a live SSO session, and nothing else:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/orchestration.py                       # every awsds-* profile
-#             ./aws/orchestration.py awsds-infra-staging   # only the ones named
-#             python3 aws/orchestration.py -               # CloudShell, ambient credentials
-#   writes:   aws/output/orchestration.txt   (untracked - see .gitignore)
-#   reads:    mwaa-serverless:ListWorkflows, GetWorkflow, ListWorkflowVersions,
-#             ListWorkflowRuns, GetWorkflowRun; mwaa:ListEnvironments; ec2:DescribeSubnets,
-#             DescribeRouteTables; logs:DescribeLogGroups; events:ListRules; iam:GetRole,
-#             ListRoles, ListRolePolicies, GetRolePolicy, ListAttachedRolePolicies;
-#             scheduler:GetScheduleGroup, GetSchedule; states:ListStateMachines;
-#             datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
-#             GetEnvironmentBlueprint (from each Sandbox); cloudtrail:LookupEvents;
-#             sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""orchestration.py - Stage 10's evidence: the MWAA Serverless workflows in Staging and
+Production, which the SMUS CI/CD CLI creates in each account's deployment project (Stage 19
+decision 6 (b)), and D41's chain layer above them (OR-9): each workflow's execution role, the
+project's (boundary, trust, the policies <env>/studio/ attaches), its NetworkConfiguration
+(present, two AZs, no default route), its log group and retention (D28 item 5), its failure
+rule, the model-approval rule, recent runs with their type, the absence of any provisioned MWAA
+environment, the definitions, and the registry's register/approve record (INT-07's registry
+half, consumed).
+
+needs:    a live SSO session, and nothing else:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/orchestration.py                       # every awsds-* profile
+          ./aws/orchestration.py awsds-infra-staging   # only the ones named
+          python3 aws/orchestration.py -               # CloudShell, ambient credentials
+writes:   aws/output/orchestration.txt   (untracked - see .gitignore)
+reads:    mwaa-serverless:ListWorkflows, GetWorkflow, ListWorkflowVersions,
+          ListWorkflowRuns, GetWorkflowRun; mwaa:ListEnvironments; ec2:DescribeSubnets,
+          DescribeRouteTables; logs:DescribeLogGroups; events:ListRules; iam:GetRole,
+          ListRoles, ListRolePolicies, GetRolePolicy, ListAttachedRolePolicies;
+          scheduler:GetScheduleGroup, GetSchedule; states:ListStateMachines;
+          datazone:ListDomains, ListEnvironmentBlueprintConfigurations,
+          GetEnvironmentBlueprint (from each Sandbox); cloudtrail:LookupEvents;
+          sts:GetCallerIdentity.
+          It never creates, updates or deletes anything.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # The subject spans accounts, so this script is multi-profile: an application is developed in a
 # Sandbox project and the CLI deploys it into Staging's deployment project, then Production's, and
 # the provisioned-MWAA reading (OR-6) is only meaningful measured in every account, since the
@@ -66,7 +67,7 @@ import json
 import re
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -597,6 +598,7 @@ def project_home(info: dict | None) -> tuple:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

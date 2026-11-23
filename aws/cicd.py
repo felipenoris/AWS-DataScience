@@ -1,27 +1,28 @@
 #!/usr/bin/env -S uv run --quiet
-# cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
-# (protected, [E]) and its narrow instance role, the deploy roles with their permissions
-# boundaries and single-principal trust (INT-08, INT-18, INT-25), the misuse-alarm rules, the
-# app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
-# side across the Interactive accounts (D17's identical-runtime claim), and the recent
-# AssumeRole events per deploy role - the record INT-08 exists for.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/cicd.py                      # every awsds-* profile
-#             ./aws/cicd.py awsds-infra-prod     # only the ones named
-#             python3 aws/cicd.py -              # CloudShell, ambient credentials
-#   writes:   aws/output/cicd.txt   (untracked - see .gitignore)
-#   reads:    ec2:DescribeInstances, iam:GetRole, ListRolePolicies, GetRolePolicy,
-#             ListAttachedRolePolicies, events:ListRules, ecr:GetRepositoryPolicy,
-#             DescribeRepositories, DescribeImages, sagemaker:ListImages,
-#             DescribeImageVersion, cloudtrail:LookupEvents, sts:GetCallerIdentity.
-#             It never creates, updates or deletes anything, and it never assumes a role:
-#             reading who assumed one is CloudTrail's job, and this file only looks it up.
-#   exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
-#
+"""cicd.py - Stage 8's evidence, the credential layer read from every side: the deploy runner
+(protected, [E]) and its narrow instance role, the deploy roles with their permissions
+boundaries and single-principal trust (INT-08, INT-18, INT-25), the misuse-alarm rules, the
+app-repository grant Staging pulls through (INT-07), the dev-env registration read side by
+side across the Interactive accounts (D17's identical-runtime claim), and the recent
+AssumeRole events per deploy role - the record INT-08 exists for.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/cicd.py                      # every awsds-* profile
+          ./aws/cicd.py awsds-infra-prod     # only the ones named
+          python3 aws/cicd.py -              # CloudShell, ambient credentials
+writes:   aws/output/cicd.txt   (untracked - see .gitignore)
+reads:    ec2:DescribeInstances, iam:GetRole, ListRolePolicies, GetRolePolicy,
+          ListAttachedRolePolicies, events:ListRules, ecr:GetRepositoryPolicy,
+          DescribeRepositories, DescribeImages, sagemaker:ListImages,
+          DescribeImageVersion, cloudtrail:LookupEvents, sts:GetCallerIdentity.
+          It never creates, updates or deletes anything, and it never assumes a role:
+          reading who assumed one is CloudTrail's job, and this file only looks it up.
+exits:    0 all checks passed | 1 a call failed | 2 a check FAILED
+"""
+
 # It is multi-profile, which aws/INDEX.md admits only for a reason: the subject is trust between
 # accounts. The runner lives in Production while its roles live in Staging and the Interactive
 # accounts (INT-08, INT-18), and D17's claim - the same runtime registered everywhere - is readable
@@ -53,7 +54,7 @@ from __future__ import annotations
 import json
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog, head2
 from awslib.report import Checks, Report, failed_calls_epilogue, note
 
@@ -117,6 +118,7 @@ def misuse_caller_field(pattern_text: str, runner_role_id: str) -> str:
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)

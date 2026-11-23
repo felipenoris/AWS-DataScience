@@ -1,24 +1,25 @@
 #!/usr/bin/env -S uv run --quiet
-# declarative-ec2.py - the four EC2 settings awsds-org-declarative-ec2 declares, read back
-# from each account, one row per account per attribute.
-#
-#   needs:    a live SSO session, the only prerequisite:
-#
-#                 aws sso login --sso-session awsds
-#
-#   run:      ./aws/declarative-ec2.py                       every awsds-* profile
-#             ./aws/declarative-ec2.py awsds-infra-staging ...   only the profiles named
-#             python3 aws/declarative-ec2.py -              no --profile: CloudShell (no uv
-#                                                           there; bring the aws/ folder),
-#                                                           for the three accounts with none
-#   writes:   aws/output/declarative-ec2.txt   (untracked - see .gitignore)
-#   reads:    ec2:GetImageBlockPublicAccessState, ec2:GetSnapshotBlockPublicAccessState,
-#             ec2:GetSerialConsoleAccessStatus, ec2:GetInstanceMetadataDefaults,
-#             organizations:DescribeEffectivePolicy, sts:GetCallerIdentity.
-#             This script never creates, updates or deletes anything.
-#   exits:    0 every measured account matches the document | 1 a call failed or a value
-#             does not match
-#
+"""declarative-ec2.py - the four EC2 settings awsds-org-declarative-ec2 declares, read back
+from each account, one row per account per attribute.
+
+needs:    a live SSO session, the only prerequisite:
+
+              aws sso login --sso-session awsds
+
+run:      ./aws/declarative-ec2.py                       every awsds-* profile
+          ./aws/declarative-ec2.py awsds-infra-staging ...   only the profiles named
+          python3 aws/declarative-ec2.py -              no --profile: CloudShell (no uv
+                                                        there; bring the aws/ folder),
+                                                        for the three accounts with none
+writes:   aws/output/declarative-ec2.txt   (untracked - see .gitignore)
+reads:    ec2:GetImageBlockPublicAccessState, ec2:GetSnapshotBlockPublicAccessState,
+          ec2:GetSerialConsoleAccessStatus, ec2:GetInstanceMetadataDefaults,
+          organizations:DescribeEffectivePolicy, sts:GetCallerIdentity.
+          This script never creates, updates or deletes anything.
+exits:    0 every measured account matches the document | 1 a call failed or a value
+          does not match
+"""
+
 # A declarative policy is enforced in the service's control plane, not in authorization: it
 # produces no "explicit deny", names no policy id, and governs service-linked roles, which no
 # SCP does. The SCP battery shows only that an account is refused when it tries to change one
@@ -52,7 +53,7 @@ from __future__ import annotations
 
 import sys
 
-from awslib import context, profiles
+from awslib import cmdline, context, profiles
 from awslib.awscli import AwsCli, ErrorLog
 from awslib.report import Report, note
 
@@ -94,6 +95,7 @@ ATTRS = [
 
 
 def main(argv: list) -> int:
+    cmdline.check(argv, __doc__)
     ctx = context.locate(__file__)
     out_path = ctx.out_file(OUT_NAME)
     out_label = ctx.out_label(OUT_NAME)
