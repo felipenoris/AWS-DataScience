@@ -5848,3 +5848,16 @@ plans as the infrastructure user with `InfrastructureAccess` in `Staging Account
   `FENCED_GENERATIVE` in `aws/deploytargets.py` without `bedrock`; `docs/NETWORK.md`; the Makefile's help;
   `SUP-466`'s later reading; `promotion.md` §N.6 item 8 and §N.11.2 step 2; this stage's `TM-28` sentences,
   that apply having run at 00:46 to 00:47.
+
+## 2026-11-23 — `TM-36` accepted by the user
+
+*Claude's hand, in the session coordinating 2026-11-22's batch, on the branch `claude/orchestrator-2026-11-23`.
+No AWS call. Times are UTC.*
+
+- **[The user] The acceptance**, at 01:48 in that session's chat: *"Aceito o TM-36"*. It answered a question
+  that laid out the channel, decisions 22 (a), 23 (a), 24 (b) and 27 (a), the three bounds (the one model, the
+  account's guardrail, the retention mode `none`), what the targets have not measured (`SUP-466`'s every-model
+  shape, verification l), and the alternative of putting decisions 22 and 24 again.
+- **[Claude] Records**: `TM-36` and its channel row accepted in `threat-model.md`, its waiting bullet narrowed
+  to the applies; this stage's `Status` row and step 10.5; `promotion.md` §N.6 item 8; the waiting list's 10.5
+  row; CLAUDE.md's Stage 11 and Stage 17 rows. #388 merged at 01:51:14 with its head before this record.
