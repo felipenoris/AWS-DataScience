@@ -2846,20 +2846,24 @@ bound it stay N.6's.
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
 | 2026-11-22 and 23, ran | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 to 4 with 4.8 and the closing reads by 01:53 UTC, then Stage 19's 5.4 with Stage 21's rollback item 5 by 01:58 UTC (#384), N.6 item 6's revocations at 02:18 and 02:20 UTC, and the lowering from 02:15 to 02:28 UTC | the raise of the row above | day 1 |
 | 2026-11-23, ran | Stage 17 10.5 with nothing up (N.6 item 8), its applies the same day | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
-| 2026-11-23 | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make hub-up`, `make up ENV=sandbox`: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
-| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies and N.10's day 2's revocation of Stage 20 5.0's subscription, both done 2026-11-23 |
+| 2026-11-23, from 17:00 UTC | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make up ENV=sandbox` on R2's hub: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
+| 2026-11-23, from 17:00 UTC, beside the row above | R2 (N.11.2) | `make hub-up` once for both, `make gitlab-up BUILD=1`, Staging's and Production's egress with `GROUPS=bedrock-base` | 10.5's applies and N.10's day 2's revocation of Stage 20 5.0's subscription, both done 2026-11-23 |
 | 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` (N.12.2) | `SUP-466`'s decision and `sandbox/bedrock/`'s change merged, for reading 6 |
 
-Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
-dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
-days wait on no result of each other, so either comes first; R2 waits on day 3 and on N.10's day 1, whose
-pass 5 Stage 20 orders before pass 8, and on N.10's day 2, whose end revoked the subscription behind 5.0's
-link on 2026-11-23, before any import made it an asset.
+Then 9.11's estate pull request with nothing up (N.6 item 11), on 2026-11-24. The metered days left sit
+inside N.6's dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3
+and N.10's days wait on no result of each other, so either comes first; R2 waits on day 3 and on N.10's day
+1, whose pass 5 Stage 20 orders before pass 8, and on N.10's day 2, whose end revoked the subscription behind
+5.0's link on 2026-11-23, before any import made it an asset.
 
-R2 can share a day with N.10's day 2, the user's choice, since it keeps the user on two surfaces at once:
-R2's acts sit between its pipelines' legs, an hour or more each, and the hub starts once. R1 shared N.9's
-day 2 that way on 2026-11-22. The cost barely moves: each raise bills by the hour whichever day it runs,
-and each Sandbox day carries its own Config cycle either way.
+R2 shares 2026-11-23 with N.10's day 2's rest, the user's choice that day: R2's acts sit between its
+pipelines' legs, an hour or more each, and the hub starts once, held by R2's session, which lowers it last,
+once Sandbox reads zero. R1 shared N.9's day 2 that way on 2026-11-22. Pass 5's portal acts are Claude's, in
+a Chrome window the user signed in to the portal as the Data Scientist User, each on the user's word. R2's
+GitLab acts and any persona sign-in go to another browser profile: a sign-in there as another Identity
+Center user ends the portal session, the reason `aws/login.py` passes `--no-browser`. The cost barely
+moves: each raise bills by the hour whichever day it runs, and each Sandbox day carries its own Config cycle
+either way.
 
 #### N.12.2 The overlaps inside each day
 
@@ -2886,7 +2890,8 @@ minutes starts before the step that does not need it.
   to day 2, while Stage 17's and Stage 20's blocks run on.
 - **N.10's day 2** (N.10.4): Stage 21 pass 5's five-minute revocation wait holds the closing reads.
 - **R1 and R2**: a release's legs run an hour or more each. R1's GitLab chores (N.11.1 step 3) filled the
-  first leg's wait on 2026-11-22; N.6 item 6 needs nothing up and runs outside any sitting.
+  first leg's wait on 2026-11-22; N.6 item 6 needs nothing up and runs outside any sitting. R2's legs on
+  2026-11-23 hold the user's words for N.10's day 2's rest, whose portal acts are Claude's (N.12.1).
 - **N.6 item 7's later Sandbox sitting**: one raise, `make hub-up` then `make up ENV=sandbox
   GROUPS=bedrock-base,mwaa`, `mwaa` for reading 6's two workflows (N.6 item 7). Pass 4's endpoint, minutes
   to create, starts first and stays up after the sitting (Stage 17 decision 6). 6e 6.4's hour admits no
