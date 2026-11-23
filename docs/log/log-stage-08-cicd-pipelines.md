@@ -4746,3 +4746,12 @@ UTC. Each application's legs are in its stage's log: `app-dbt` in Stage 20's, `a
 - **[Claude] The N.10 session's lowering**, as it reported it: `make down ENV=sandbox` ended at 18:23:12,
   `make status` at 18:24:52 reading Sandbox at zero; the orchestrating session's at 18:27:48 reads passive
   burn 0.6875 USD/h, all R2's.
+
+## 2026-11-23 — R2: the user's answers on `production-warehouse-ddl` and on the waiting rows
+
+*Claude's hand, R2's session, recording the user's words relayed by the orchestrating session. Times UTC.*
+
+- **[user]** *"Aceito as três"*, at 18:52 in the orchestrating session's chat, answering *"Aceita as três
+  recomendações do R2?"*: `app-etl` `v0.7.0`'s `production-warehouse-ddl` stays unplayed, Production's
+  warehouse not raised today; and R2's edits to `docs/plan/waiting-on-the-user.md` as R2 described them, in the
+  smallest hunks. The third, 9.11's estate, is in Stage 17's log.

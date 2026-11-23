@@ -6315,3 +6315,20 @@ app-etl"*; reads as `awsds-infra-staging`, `InfrastructureAccess`. Times UTC.*
   `app-etl-warehouse.yaml` at 18:38 to 18:39, and left `code/app-etl-train.zip` (2026-11-22 04:11:20) and
   `workflows/app-etl-train.yaml` (04:12:29) (`SUP-348`), with the `models/` prefix of the retired training
   and transform jobs. 9.11's estate pull request owes their deletion, an act the user names.
+
+## 2026-11-23 — R2: the user's answers on 9.11's estate and on `app-genai`'s triage
+
+*Claude's hand, R2's session, recording the user's words relayed by the orchestrating session. Times UTC.*
+
+- **[user] 9.11's estate, option (a)**: *"Aceito as três"*, at 18:52 in the orchestrating session's chat,
+  answering *"Aceita as três recomendações do R2?"*. Read at 18:38: `awsds-staging-model-app-etl` holds no
+  version and `awsds-prod-model-app-etl` one, version 1, `Approved`, created 2026-10-25 at 01:28. Tomorrow's
+  estate pull request deletes that version by hand, then its apply removes both groups; the deletion is an act
+  the user names in the session that applies, and this answer does not authorize it.
+- **[Claude] The failed triage's report kept**: before any new attempt overwrites it,
+  `shared/app-genai/outbox/triage-report.json` read at 19:03 (1,608 bytes, written 18:41:01, S3 version
+  `lHOzkVjNTYmI3mbJ78GJoE1RxNGgYGbf`, SHA-256 `2b156aa1…2f9c`) and the run's `answers.jsonl` (SHA-256
+  `cfe696d1…447a`) copied to the session's scratchpad; their content is in the entry on 10.6's Production leg.
+  The orchestrating session reads the cause as `parse_answer`, which admits a code fence and nothing after the
+  object; the fix, a parse that stops at the first object's end or structured output in `Converse`, is
+  `app-genai`'s follow-up after today. A new attempt waits on the user's word in R2's chat.
