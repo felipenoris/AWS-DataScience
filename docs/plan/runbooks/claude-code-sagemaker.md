@@ -20,6 +20,7 @@ account. Read your own half.
 through the VPC endpoint — which is what every section below was written to produce.
 
 **§M is done**: M0, M2, M4 and M5; M1 in all 17 enabled Regions and M3 attached, both 2026-09-12.
+In Staging and Production M1 is `us-west-2` alone, declared 2026-11-23 for Stage 17 10.5's in-Region model.
 **§I is built**: the grant applied 2026-09-11, the endpoint pair and its policy
 2026-09-12, and the settings file shipped in the house image since `default-v0.4.0` (image version 4,
 2026-09-12), unchanged in versions 11 and 12, `default-v0.10.0` and `default-v0.10.1`. **§U is exercised**: the first session ran on

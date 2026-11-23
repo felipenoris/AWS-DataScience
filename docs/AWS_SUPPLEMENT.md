@@ -5933,6 +5933,25 @@ deployed by each test). `SUP-426`, below, is the endpoint id its knowledge base'
   only inside it. `awscc` 1.106.0 plans a configuration with no `model_enforcement` as `(known after apply)`
   (`terraform-live/staging/studio/genai.tf` and its Production copy). Whether its apply succeeds is unread:
   Staging's is the first. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+  A later reading (2026-11-23, Stage 17 10.5's applies): the configuration with no `model_enforcement` is
+  created, in Staging at 12:53:49 after 2 s (`dastwpv6xpqh`) and in Production at 14:23:40 after 6 s
+  (`ah6oaw4xn6k6`). `ListEnforcedGuardrailsConfiguration` reads each with its guardrail's version `1`,
+  `selectiveContentGuarding` `COMPREHENSIVE` for `system` and `messages`, `owner` `ACCOUNT` and no
+  `modelEnforcement`, and both slices re-plan `No changes`. What the configuration assesses is verification
+  l's, at the first call (10.6). Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23.
+
+- `SUP-477` **`CreateInferenceProfile` refuses a description outside `([0-9a-zA-Z:.][ _-]?)+`, and the `aws`
+  provider's plan admits it** (measured 2026-11-23 in Staging, Stage 17 10.5, as the infrastructure user). The
+  pattern admits letters, digits, `:` and `.`, each followed by at most one space, `_` or `-`.
+  `aws_bedrock_inference_profile` at `aws` 6.69.1 planned the description *"app-genai's model in this account:
+  Amazon Nova Lite in this Region alone (Stage 17 decision 23 (a))."*, and the apply refused it: *"ValidationException:
+  1 validation error detected: Value at 'description' failed to satisfy constraint: Member must satisfy
+  regular expression pattern: ([0-9a-zA-Z:.][ _-]?)+"* (400). The refusal came after the plan's resources that
+  do not follow the profile were created: the account's guardrail, its version and the enforced configuration
+  (`SUP-466`). Without the apostrophe and the parentheses the profile was created. The pre-commit check that
+  holds EC2's description set (`SUP-064`) holds no Bedrock one.
+
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23; `terraform-live/staging/studio/genai.tf`.
 
 ## Terraform
 
@@ -5941,7 +5960,8 @@ Serverless workgroup's `config_parameter`), `SUP-120` (an Athena workgroup's `fo
 `SUP-101` (`aws_lakeformation_data_lake_settings` and the settings it replaces), `SUP-150` and `SUP-153`
 (DataZone blueprint configurations through `awscc`), `SUP-353` (DataZone policy grants created at once, and
 `-parallelism=1`), `SUP-064` (security group descriptions at `validate`),
-`SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-060` (`jsonencode` and an EventBridge
+`SUP-065` (a Data Lifecycle Manager description at plan time), `SUP-477` (a Bedrock inference profile's
+description at apply), `SUP-060` (`jsonencode` and an EventBridge
 Scheduler placeholder), `SUP-061` (`instance_type` and user data), `SUP-213` (`aws_sagemaker_image_version`
 and a space's own copy of the version) and `SUP-062` (an Elastic IP's allocation id after a transfer).
 
