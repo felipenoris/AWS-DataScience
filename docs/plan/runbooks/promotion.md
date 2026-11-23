@@ -1223,7 +1223,8 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    14:05:14 UTC, each fulfilment `COMPLETED` within 61 s and read on both sides (Stage 19's and Stage 20's
    logs). Stage 20 5.1's model, its archive and its tar the same afternoon, the model on a branch no tag
    carries (Stage 20's log); 4.12's consumer read from the query editor at 14:56:17 UTC, and xxiv read
-   (Stage 19's log).
+   (Stage 19's log). Both subscriptions revoked 2026-11-23 at 02:18:14 and 02:20:52 UTC, at N.10's day 2's
+   end, 5.0's link before any import made it an asset (Stage 19's and Stage 20's logs).
 7. **N.9's days 2 and 3** (N.9.4, N.9.5), no GitLab: Stage 17's sitting B with 2.3 to 3.2 and pass 7 on
    day 2, `GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent`; Stage 17's sitting C and its pass 5 on day 3,
    from which the user took 6e 6.4's window on 2026-11-22, owed to a later sitting. **Day 2 ran 2026-11-21 and 22** (Stage 17's log), and left 6d's remainder and
@@ -1250,12 +1251,15 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
    items, 6h's steps 1 to 10 (5.4 and 0.4's portal half by the user's hand, last), Stage 19's steps 1 to 5
    and Stage 20's pass 5. Stage 17's pass 4 is not among them. Stage 19's step 6, whose data source failed
    creation for want of the access role's `redshift-data:ListDatabases` (`SUP-460`), runs again on day 2;
-   the four metadata reads were applied the same evening.
+   the four metadata reads were applied the same evening. **Day 2 ran 2026-11-22 and 23** (the Stage 21, 19
+   and 20 logs): Stage 21's passes 2 to 4 with 4.8, Stage 19's 5.4 with Stage 21's rollback item 5, both
+   subscriptions revoked, then the lowering and rollback item 1 for pass 2's data product; Stage 21's pass 5
+   moved to a Sandbox sitting with no warehouse (N.12.1).
 10. **R2** (N.11.2), after item 7's day 3, item 8's applies and item 9's day 1, whose pass 5 Stage 20
     orders before pass 8; #321 merged on 2026-11-22 at 13:28:54 UTC (`81d70158`), so its opening pushes the
     mirror: `app-dbt`'s first release,
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
-    assets 5.0 and pass 5 left in `app-dbt-dev`; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
+    asset pass 5 left in `app-dbt-dev`, 5.0's link revoked on 2026-11-23 before any import; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
     retiring its model half (9.11).
 11. **With nothing up, after R2**: 9.11's estate pull request, planned from a `main` that holds it
@@ -2626,11 +2630,14 @@ passes 2 to 4 in order" and its §5.
    closing reads (`list-workgroups`, `describe-clusters`, `WH-8`). About 4 hours 30 minutes. Then Stage
    21's pass 5: the prefix published from the `eighth-experimentation` space, the product requested from a
    `test-experimentation` notebook, approved, read and revoked, about two hours with the revocation's
-   five-minute wait.
+   five-minute wait. **Run 2026-11-22 and 23** to the closing reads, 01:53 UTC (Stage 21's log):
+   passes 2 to 4 with 4.8; pass 5 not run, moved to a Sandbox sitting with no warehouse (N.12.1).
 3. [user] Stage 19's 5.4 with Stage 21's rollback item 5: 5.1's grants revoked, then the view and the
    tables that item names dropped, `lab` kept (6h 6.4, taken 2026-11-22); then the subscriptions of N.6 item 6
    revoked, Stage 19 4.12's (by its 2.5) and Stage 20 5.0's, each read on both sides. Then the lowering
-   (N.10.5).
+   (N.10.5). **Run 2026-11-23**: 5.4 and rollback item 5 from 01:57 to 01:58 UTC; 4.12's subscription
+   `3yzd1cn5n0sumo` and 5.0's `6n3yg1rsytsemo` revoked at 02:18:14 and 02:20:52 UTC during the lowering,
+   which ran from 02:15:48 to 02:27:56 (the Stage 19, 20 and 21 logs).
 
 #### N.10.5 The lowering, each day
 
@@ -2766,8 +2773,8 @@ whose pass 5 Stage 20 orders before pass 8, #321 merged on 2026-11-22; before 20
    `GROUPS=bedrock-base` for `app-genai`'s legs, Staging's through the `optional_service_groups` variable
    Stage 17 10.5 gives `staging/egress/` (written 2026-11-23). [Claude] the
    readings per target after each leg (Stage 17's, and Stage 20's 8.9). Before `app-dbt`'s tag, 8.6's
-   deletion of 5.0's link asset and pass 5's table asset from `app-dbt-dev`, between two of its source's
-   daily runs (02:43 UTC), so the bundle carries neither.
+   deletion of pass 5's table asset from `app-dbt-dev`, between two of its source's daily runs (02:43 UTC),
+   so the bundle does not carry it; 5.0's link, revoked on 2026-11-23, was never imported.
 3. [user] `app-etl`'s release retiring its model half (Stage 17 9.11), last, once `app-ml`'s release holds
    the model in both targets; `app-etl`'s lint pin moves to `4613ddc` with it.
 4. [user] `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`; the tunnel down;
@@ -2805,17 +2812,17 @@ bound it stay N.6's.
 | 2026-11-22, ran | N.6 item 6, with nothing up, to both fulfilments and Stage 20 5.1's tar | — | nothing: xxvi's portal half and both approvals done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.9's day 3 beside N.10's day 1: 10.4's reading 6, 6e 6.4 and 6d's remainder left to a later sitting (N.6 item 7) | one raise with N.10's day 1 (the next row) | nothing: its prerequisites done 2026-11-22 (N.12.5) |
 | 2026-11-22, ran | N.10's day 1's warehouse blocks beside N.9's day 3, 6h's 5.4 and 0.4 among them; Stage 19's step 6 left to day 2 (N.6 item 9) | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,mlflow,bedrock-base,bedrock-agent,redshift`, one raise for both | nothing: item 6's two approvals and Stage 20 5.1's tar done 2026-11-22 |
-| 2026-11-22 | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 and 3, run by 01:06 UTC (#384), then pass 4 from 01:20 UTC with its 4.8, the closing reads and the lowering, which starts by 02:40 UTC on 2026-11-23 | the raise of the row above | day 1 |
+| 2026-11-22 and 23, ran | N.10's day 2 begun on day 1's raise: Stage 21's passes 2 to 4 with 4.8 and the closing reads by 01:53 UTC, then Stage 19's 5.4 with Stage 21's rollback item 5 by 01:58 UTC (#384), N.6 item 6's revocations at 02:18 and 02:20 UTC, and the lowering from 02:15 to 02:28 UTC | the raise of the row above | day 1 |
 | 2026-11-23 | Stage 17 10.5 with nothing up (N.6 item 8) | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
-| 2026-11-23 | N.10's day 2's rest: what 2026-11-22 leaves of Stage 21's pass 4, its pass 5, Stage 19's 5.4 with Stage 21's rollback item 5, then the subscriptions of N.6 item 6 revoked | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | nothing: day 1 ran 2026-11-22 |
-| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2, whose revocation of Stage 20 5.0's subscription comes before 8.6 |
+| 2026-11-23 | N.10's day 2's rest: Stage 21's pass 5 with its rollback; pass 2's data product deleted 2026-11-23 | `make hub-up`, `make up ENV=sandbox`: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
+| 2026-11-24 | R2 (N.11.2) | `make hub-up`, `make gitlab-up BUILD=1`, Staging's and Production's egress | 10.5's applies; N.10's day 2's revocation of Stage 20 5.0's subscription, done 2026-11-23 |
 | 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base` | `SUP-466`'s decision, for reading 6 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11). The metered days left sit inside N.6's
 dates: `app-dbt`'s release, now R2's, before 2026-12-18, N.10 before 2026-12-19. N.9's day 3 and N.10's
 days wait on no result of each other, so either comes first; R2 waits on day 3 and on N.10's day 1, whose
-pass 5 Stage 20 orders before pass 8, and on N.10's day 2, whose end revokes the subscription behind the
-link asset 8.6 deletes.
+pass 5 Stage 20 orders before pass 8, and on N.10's day 2, whose end revoked the subscription behind 5.0's
+link on 2026-11-23, before any import made it an asset.
 
 R2 can share a day with N.10's day 2, the user's choice, since it keeps the user on two surfaces at once:
 R2's acts sit between its pipelines' legs, an hour or more each, and the hub starts once. R1 shared N.9's

@@ -733,3 +733,549 @@ No AWS call for this entry. Times UTC.*
   `ListTables` and `DescribeTable` on Sandbox's workgroups, written on the user's *"Sim, escreva"* and applied on
   *"Sim, aplique"* at 21:23 in `sandbox/warehouse/` (0 added, 2 changed, re-planned `No changes`). The earlier
   entry's "Left for day 2" is answered: 2.2 runs again on day 2, `c4n05wth04ll3k` deleted first.
+
+## 2026-11-22 — §N.10's day 2: the opening readings
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the raise of 18:16 UTC that day 1 and N.9's day 3
+share; reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] The other sessions told** at 22:37: N.9's day 3, whose 6d 7.5 window holds every AWS call of this
+  session while it is open, and which lowers only by agreement, the last session to finish lowering.
+- **[Claude] `make status`** at about 22:39: the hub's two hosts up, `sandbox/egress` with 25 interface
+  endpoints, `sandbox/warehouse-compute` and `sandbox/probes` up; passive 0.3394 USD/h, the warehouse's active
+  1.44 USD per query-hour. One Studio app bills, `jup` in `eighth-experimentation-ai-domain`, since 2026-11-21
+  20:07. The apps of `jup-test-experimentation` and of `eighth-experimentation`'s `default-28f1b390-…` read
+  `Deleted`, their spaces `InService`.
+- **[Claude] The usage limit** `8627a6cb-…`, 10 RPU-hours, period `monthly`, `deactivate`, created by the day's
+  raise: `UsageLimitConsumed` 2.0 and `UsageLimitAvailable` 7.0 in every quarter hour from 21:15 to 22:30;
+  `ChargedSeconds` 4,916, 4,560 and 480 in the hours from 18:00, 19:00 and 20:00, and none since. The limit
+  bites between 9 and 10 (`SUP-123`), so day 2 holds about seven RPU-hours on the warehouse, some 1.75
+  query-hours at 4 RPUs.
+- **[Claude] What 2.1 finds**: `lab.trades_hot`, 10 rows, its columns `trade_date date`, `desk varchar`,
+  `instrument varchar`, `quantity integer`, `price double precision` and `notional double precision`, owner
+  `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; no view in `lab`. The source `c4n05wth04ll3k` reads
+  `FAILED_CREATION`, its error naming `redshift-data:ListDatabases` for
+  `awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c`; the access role's portal policy holds
+  `ImportTheWarehousesMetadataForADataSource`, the four Data API reads on `workgroup/*`.
+
+## 2026-11-22 — §N.10's day 2: 2.4's applies, 2.1, and 2.2 refused at its run
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Faça 2.1
+e 2.2 pelo chrome."* and *"Autorizo os dois applies."* (about 22:50). The applies and the reads as the
+infrastructure user with `InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data
+Governance Account` (`awsds-infra-data`); the portal's acts in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner. N.9's day 3 told of each write first. Times UTC.*
+
+- **[Claude] 2.4's applies**, from this branch at `main`'s `decc55d5`, the plans saved at 22:46 and 22:47 after
+  each slice planned *"No changes."* without the switch:
+  - `sandbox/sagemaker/` with `redshift_serverless_enabled=true`, 22:51:11 to 22:51:44: *"Apply complete!
+    Resources: 3 added, 1 changed, 0 destroyed."*, the blueprint configuration `dlyaabb17hano0`, its
+    `CREATE_ENVIRONMENT_FROM_BLUEPRINT` grant, AWS's `AmazonDataZoneRedshiftManageAccessRolePolicy` on
+    `awsds-sandbox-smus-manage-access`, and the project key's policy;
+  - `data-governance/governance/` with the same switch, 22:51:53 to 22:52:12: *"Apply complete! Resources: 0
+    added, 1 changed, 0 destroyed."*, the profile `experimentation`;
+  - each re-planned with the switch at 22:52 and 22:53: *"No changes."*.
+- **[Claude] The profile** `dh60xbal05q64w` at 22:53:21: the configuration `RedshiftServerless`
+  (`c12845c5-…`), `ON_DEMAND`, order 14, `redshiftBaseCapacity` and `redshiftMaxCapacity` `"4"` with
+  `isEditable` false; DataZone's resolved parameters name the database `dev`, the workgroup
+  `redshift-serverless-workgroup`, the namespace `redshift-serverless-namespace`, the schema `project`, the
+  connection `project.redshift`, `provisionManagedSecret` `true` and `connectToRMSCatalog` `false`. The
+  *Update project* banner N.9 saw on `eighth-experimentation` at 22:2x predates these applies: the trail
+  holds four `UpdateProjectProfile` by the infrastructure user from 19:00:09 to 19:00:14 and one at 05:07:41.
+  Neither session clicks it while the configuration stands.
+- **[Claude] 2.1**, the Query Editor on `redshift-serverless.redshift`, database `sandbox`, *Limit 100* off,
+  the editor's offer of its new version left with *Later*. `CREATE VIEW lab.trades_hot_by_desk` at 22:55:02
+  (query 15519811) and `CREATE TABLE lab.trades_hot_daily AS …` at 22:56:02 (15519826), both `success` by
+  user 103, `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, which owns the view and the table;
+  `lab.trades_hot_daily` holds 5 rows. While the statement was typed the editor raised twice *"A problem
+  occurred while getting autocompletion data"*, *"autocompleteMsg.getMetadataErrorAccessDenied"*.
+- **[Claude] 2.2, Stage 19's step 6 again**: `c4n05wth04ll3k` deleted at about 22:58 from *Manage → Data
+  sources*, *Actions → Delete data source*, the dialog reading *"Deleting this data source will not delete
+  assets it has already published, but no new runs will occur."* The source created again with day 1's
+  rules: `sandbox-lab-trades-hot`, `brnatob4h2kwb4`, Amazon Redshift on `redshift-serverless.redshift`
+  (`awsds-sandbox-warehouse`), database `sandbox`, schema `lab`, *Include: trades_hot\**, *Publish assets to
+  the Catalog* No, *Automated business name generation* Enabled, on demand. The wizard notes *"This
+  connection does not support importing data lineage because it does not use an Amazon Redshift secret for
+  authentication"*. Created at 22:59:17, `READY`.
+- **[Claude] The creation and the run in Sandbox's trail**: at 22:59:18 the project role's session
+  `SYSTEM@5hkjdsy3umpi1c` assumed `awsds-sandbox-warehouse-access-avhvbqn37ty7m8`, which called
+  `GetCredentials` twice, `ListDatabases` (`database` `sandbox`) and at 22:59:19 `ListSchemas`
+  (`schemaPattern` `lab`), each admitted. The run, started at 22:59:30, failed in 3 s, nothing added or
+  updated: *"Data source run failed - VALIDATION_EXCEPTION User: …assumed-role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c
+  is not authorized to perform: redshift-data:ExecuteStatement on resource: …workgroup/… because no
+  identity-based policy allows the redshift-data:ExecuteStatement action (Service: RedshiftData, Status Code:
+  400, …) (SDK Attempt Count: 3)"*. The trail holds three `ExecuteStatement` `AccessDenied` at 22:59:32,
+  22:59:33 and 22:59:35, `requestParameters` `{}`, and no `ListTables` or `DescribeTable`.
+- **[Claude] The statements the run asks for**, written in `sandbox/warehouse/iam.tf`:
+  `ImportTheWarehousesMetadataForADataSource` gains `redshift-data:ExecuteStatement` on the workgroups, and
+  `ReadTheDataSourcesOwnStatements` grants `DescribeStatement`, `GetStatementResult`, `CancelStatement` and
+  `ListStatements` on `*` under `redshift-data:statement-owner-iam-userid = ${aws:userid}`, the shape of AWS's
+  `RSDataIAMSession` in `SageMakerStudioProjectUserRolePolicy` v77. Access Analyzer's `validate-policy`: no
+  finding. Planned from this branch at 23:02 with both switches named (`all_projects_tag_enabled=true`,
+  `data_transfer_role_enabled=false`): *"Plan: 0 to add, 2 to change, 0 to destroy."*, the portal policies of
+  `avhvbqn37ty7m8` and `4gqfau9xuo6e4w`, saved. Not applied: the user's word first.
+
+## 2026-11-22 — §N.10's day 2: the access role's statement applied, 2.2's run read
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat:
+*"Autorizo o apply do warehouse"* (about 23:08). As the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`); the portal's act in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner. N.9's day 3 and the session preparing the SSO infrastructure told first;
+N.9 answered that its 6d 7.5 window was not open. Times UTC.*
+
+- **[Claude] `sandbox/warehouse/` applied** from this branch, the plan saved at 23:02, 23:09:33 to 23:09:46:
+  *"Apply complete! Resources: 0 added, 2 changed, 0 destroyed."*, the portal policies
+  `awsds-sandbox-warehouse-access-portal-avhvbqn37ty7m8` and `-4gqfau9xuo6e4w`. Re-planned at 23:10:07 with
+  both switches named: *"No changes."*.
+- **[Claude] 2.2's run**, *Run* on `brnatob4h2kwb4` in the portal: run `501gj8x6pmqck0`, created 23:10:43,
+  started 23:10:44.29, stopped 23:10:53.68, `SUCCESS`, added 3, updated 0, unchanged 0, failed 0; the
+  failed run `be2j095629d6kw` stays in the list. The include rule `trades_hot*` took the view with the
+  tables:
+
+  | Asset | Id | Type, revision | Forms |
+  |---|---|---|---|
+  | `trades_hot` | `cgpzdjxcumuzrk` | `amazon.datazone.RedshiftTableAssetType` 18 | `RedshiftTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm`, `AssetCommonDetailsForm` |
+  | `trades_hot_daily` | `57py2yrv0o93ww` | `amazon.datazone.RedshiftTableAssetType` 18 | the same |
+  | `trades_hot_by_desk` | `4o4k5h7uxxsj68` | `amazon.datazone.RedshiftViewAssetType` 19 | `RedshiftViewForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm`, `AssetCommonDetailsForm` |
+
+  Each asset stands at revision 2, unlisted, owned by `avhvbqn37ty7m8`. `AssetCommonDetailsForm`'s
+  `sourceIdentifier` is `arn:aws:redshift-serverless:us-west-2:<account>:table/awsds-sandbox-warehouse/sandbox/lab/<name>`
+  for a table and `…:view/awsds-sandbox-warehouse/sandbox/lab/trades_hot_by_desk` for the view; the
+  `externalIdentifier` reads `avhvbqn37ty7m8:redshift:serverless:awsds-sandbox-warehouse:<account>:us-west-2:sandbox:lab:<TABLE|VIEW>:<name>`.
+  `get-asset` answers `awsds-infra-sandbox-1`, a contributor of the project, and refuses `awsds-infra-data`
+  with *"User is not permitted to perform operation: GetAsset"*, as Stage 19's log read on 2026-11-14.
+- **[Claude] The run in Sandbox's trail**: as `awsds-sandbox-warehouse-access-avhvbqn37ty7m8/SYSTEM@5hkjdsy3umpi1c`,
+  `ExecuteStatement` at 23:10:45 and 23:10:46, each `statementName` `Console Query: <uuid>`, database
+  `sandbox`; `DescribeStatement` and `GetStatementResult` on each; no `ListTables`, `DescribeTable` or
+  `ListStatements`. `sys_query_history` between 23:10:40 and 23:11:00 holds one statement, query 15519947 at
+  23:10:47 by user 103, `success`: a catalog query over `pg_catalog.svv_all_columns`,
+  `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, filtered to schema `lab` and the names
+  `trades_hot`, `trades_hot_daily` and `trades_hot_by_desk`. The first statement is not in it. `SUP-460`
+  gains the reading, and the two statements' comments in `iam.tf` say what the run calls.
+
+## 2026-11-22 — §N.10's day 2: 2.3, the table, the view and their data product published
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Sim, faça
+2.3 e 2.4 pelo chrome"* (about 23:20). The portal's acts in the Data Scientist User's Chrome session,
+`eighth-experimentation`'s owner; the reads as the infrastructure user with `InfrastructureAccess` in `Sandbox
+Account 1` (`awsds-infra-sandbox-1`), a contributor of the project. N.9's day 3 and the session preparing the SSO
+infrastructure told first. Times UTC.*
+
+- **[Claude] The asset pages** each opened with the business-name generation's suggestions pending:
+  `trades_hot` *"7 suggestions ready for review — 1 business name · 6 column business names"*, the name
+  *Daily Trading Transactions by Desk and Instrument*; `trades_hot_by_desk` *"4 suggestions ready for review —
+  1 business name · 3 column business names"*, *Daily Hot Trades by Desk with Notional Values*. Neither was
+  accepted or rejected, and each listing carries them as `SuggestionForm`.
+- **[Claude] `trades_hot` published**: *Publish*, the panel *Publish asset* (*"This asset will become
+  discoverable to everyone in your organization and they can request access to this asset."*), *Subscription
+  approval* left at its default *Required*, *Publish asset*: *"Table trades_hot has been published to the
+  catalog."* Listing `cl14qzshdc64y8`, revision 2, `ACTIVE`, created 23:21:18.029 and updated 23:21:19.164, the
+  asset's revision 2; forms `AssetCommonDetailsForm`, `AwsConfigurationForm`, `DataSourceReferenceForm`,
+  `RedshiftTableForm`, `SubscriptionTermsForm` (`approvalRequired` `YES`) and `SuggestionForm`.
+- **[Claude] `trades_hot_by_desk` published** the same way: listing `5t9cxrhio6c8eo`, revision 2, `ACTIVE`,
+  created 23:22:02.144, the asset's revision 2, `RedshiftViewForm` in place of the table's form. The toast
+  calls it a table: *"Table trades_hot_by_desk has been published to the catalog."*
+- **[Claude] The data product**: *Assets → Create → Create data product*, name `sandbox-trades-hot`,
+  description *"Stage 21 pass 2: the Sandbox warehouse's lab.trades_hot and its view lab.trades_hot_by_desk."*,
+  the view and the table, *Create* at 23:23: `614tardy0iah3k`, *Not published*, *Included assets: 2*.
+  *Metadata Forms → Add Form* offered one form, *Classification* (*"The data product's classification: public,
+  internal, restricted or personal."*, 1 field); `internal` saved at 23:24:15, the product's revision 2.
+  *Publish*, the dialog *"This data product will become discoverable to everyone in your organization and they
+  can request access to this data product."*, *Publish*: *"Data product published successfully."* Listing
+  `4q8efayh74yxow`, revision 1, `ACTIVE`, created 23:24:45.910, the product's revision 2; forms
+  `classification` `{"classification":"internal"}` and `ownedByDataProductListing` naming `5t9cxrhio6c8eo` and
+  `cl14qzshdc64y8`, its items the two asset listings at revision 2. The product's publication wrote no new
+  revision of either asset listing.
+- **[Claude] `CT-18` after the publication** (`./aws/catalog.py`, 23:26:18 to 23:29:32, exit 2): `pass`, *"house-price
+  public; trades_notional internal"*. The check reads `GlueTableAssetType` listings alone, and a data product
+  listing only for the asset listings it carries, so neither Redshift listing nor the product's
+  `classification` form is in its reading; 6.3's amendment of `catalog.py` names S3 Object Collections and not
+  Redshift listings. `CT-17` fails on Production's grants to `awsds-sandbox-warehouse-access-avhvbqn37ty7m8` on
+  `app_etl.trades_notional`, `DESCRIBE` on the table and `SELECT` on its columns: Stage 19 5.1's Lake Formation
+  half, which Stage 19's step 7 revokes. `CT-6` lists the source `sandbox-lab-trades-hot`, `REDSHIFT`, no
+  schedule, 3 assets, 1 failed run and 1 successful.
+
+## 2026-11-22 — §N.10's day 2: 2.4, the consumer's compute in `test-experimentation`
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Sim, faça
+2.3 e 2.4 pelo chrome"*. The portal's act in the Data Scientist User's Chrome session, a member of
+`test-experimentation`; the reads as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`). Times UTC.*
+
+- **[Claude] The deploy**: `test-experimentation`'s *Resource blueprints*, *Deploy*. *Managed blueprints* offered
+  *EMR Serverless*, *Lakehouse Database*, *MLflow App*, *Redshift Serverless* and *S3 Bucket*, beside *"Have an
+  existing resource you want to bring in? Create a connection instead."* *Redshift Serverless*, then *Input
+  parameters*: a name (*"The name cannot be changed after creation."*) and a description, and no capacity field.
+  Name `stage21-consumer-redshift`, description *"Stage 21 2.4: the consumer's workgroup, removed at 2.9."*,
+  *Deploy*: *"Blueprint deployment created successfully"*, the deployment `redshift.stage21-consumer-redshift`,
+  its parameters as the profile reads them (database `dev`, base and maximum 4, schema `project`, connection
+  `project.redshift`, `provisionManagedSecret` `true`, `connectToRMSCatalog` `false`).
+- **[Claude] The environment** `dahsfn6j8lqec0`, created 23:27:14.416 by the Data Scientist User from the
+  configuration `c12845c5-…` of the blueprint `dlyaabb17hano0`, `ACTIVE` and its deployment `SUCCESSFUL` at
+  23:29:00. Its stack `DataZone-Env-dahsfn6j8lqec0`, created 23:27:27, `CREATE_COMPLETE` by 23:28:48, holds two
+  resources: `AWS::RedshiftServerless::Namespace` `redshift-serverless-namespace-dahsfn6j8lqec0` (23:27:32) and
+  `AWS::RedshiftServerless::Workgroup` `redshift-serverless-workgroup-dahsfn6j8lqec0` (23:28:28). Sandbox's trail:
+  `CreateNamespace` at 23:27:31 and `CreateWorkgroup` at 23:27:34, each admitted, by
+  `awsds-sandbox-smus-provisioning/AmazonDataZoneEnvironmentDeployer-<account>`; no `UpdateWorkgroup` to 23:31.
+- **[Claude] The workgroup**: `AVAILABLE`, base 4 and maximum 4 RPUs, as `CreateWorkgroup` asked; price-performance
+  target disabled, not publicly accessible, enhanced VPC routing off; subnets `awsds-sandbox-private-usw2-az1`
+  (`subnet-016b5a3a62c739894`) and `-az2` (`subnet-09d3399d6b0fec93a`); security group `sg-05e52373c14288c22`,
+  `datazone-4gqfau9xuo6e4w-dev`, the project's (*"Security group for the project."*), all traffic in from itself
+  and out to `0.0.0.0/0`. The request set `search_path` alone, read back as `project, $user, public`, beside the
+  service's defaults: `max_query_execution_time` 14400, `require_ssl` true, `enable_user_activity_logging` true,
+  `auto_mv` true. Its tags name the domain, the project, the environment, the blueprint `RedshiftServerless` and
+  the scope `dev`. The workgroup is outside the warehouse's usage limit, `make down` and `make status`.
+- **[Claude] The namespace**: `AVAILABLE`, database `dev`, admin user `admin` with the password managed in
+  Secrets Manager (`redshift!redshift-serverless-namespace-dahsfn6j8lqec0-admin-…`), the namespace and the secret
+  both under `alias/awsds-sandbox-project`; its default IAM role and its only role are `test-experimentation`'s
+  project role, `datazone_usr_role_4gqfau9xuo6e4w_bi356s1sacz0cw`; no log export.
+- **[Claude] The connection** `project.redshift` (`4i2nv7u733e51s`), `REDSHIFT`, on the environment: workgroup
+  storage, database `dev`, the JDBC and JDBC IAM URLs on port 5439, the temporary directory
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/4gqfau9xuo6e4w/dev/redshift-tmp/`, `READY`. Its
+  `lineageSync` is `enabled` `true`, job `50jlej783a7cb4`, on `cron(28 23 * * ? *)`, the minute of the
+  creation: a daily lineage run nobody chose, which 2.9's removal ends before its first.
+- **[Claude] The Redshift subscription target** `bbw4g031uhkopc`, `redshift.stage21-consumer-redshift-default-target`,
+  created 23:28:52.677: `type` `null` in `list-subscription-targets`, provider *Amazon SageMaker*, manage-access
+  role `awsds-sandbox-smus-manage-access`, `authorizedPrincipals` `datazone_env_dahsfn6j8lqec0`, applicable to
+  `RedshiftViewAssetType` and `RedshiftTableAssetType`, its form `RedshiftServerlessSubscriptionTargetConfigForm`
+  naming the database `dev`, the namespace's admin secret, the workgroup and the schema `project`. Verification
+  iii has its target, so 2.5 to 2.7 may run.
+- **[Claude] Sandbox's workgroups** at 23:31: `awsds-sandbox-warehouse` (4 and 8) and
+  `redshift-serverless-workgroup-dahsfn6j8lqec0` (4 and 4). `test-experimentation` holds six environments, the
+  new one among them, and `create-datalake-database-env-mydatabase-…` stays `VALIDATION_FAILED` from 2026-11-09.
+
+## 2026-11-22 — §N.10's day 2: 2.5 to 2.8, the subscription, its revocation and the portal's load
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's words in this session's chat: *"Faça do
+2.5 ao  2.8 prlo chro.e"*. The portal's acts in the Data Scientist User's Chrome session, owner of
+`eighth-experimentation` and a member of `test-experimentation`; the reads as the infrastructure user with
+`InfrastructureAccess` in `Sandbox Account 1` (`awsds-infra-sandbox-1`) and in `Data Governance`
+(`awsds-infra-data`). Times UTC; 2.8 ran after midnight, on 2026-11-23.*
+
+- **[Claude] 2.5, the request**: from `test-experimentation`, a subscription request to the data product
+  `sandbox-trades-hot` (listing `4q8efayh74yxow`, revision 1), reason *"Stage 21 2.5: test-experimentation
+  reads the product through its Redshift Serverless workgroup."*. `CreateSubscriptionRequest` at 23:45:56Z by
+  the portal user, Data Governance's trail, answered `ACCEPTED` with no reviewer (`reviewerId` null); the
+  requester owns the publishing project. The subscription `coq9ewxmav1zf4` read `APPROVED`.
+- **[Claude] 2.5, the fulfilment**: two grants created by `SYSTEM` on the target `bbw4g031uhkopc`,
+  `5plwofai6rdwr4` for the view's listing `5t9cxrhio6c8eo` (`trades_hot_by_desk`, asset `4o4k5h7uxxsj68`) at
+  23:45:57.530 and `da65d7frv0lci8` for the table's listing `cl14qzshdc64y8` (`trades_hot`, asset
+  `cgpzdjxcumuzrk`) at 23:45:57.773. Both read `GRANT_FAILED` at 23:46:34 and 23:46:35, each asset's
+  `failureCause` *"Secret ARN can not be null or empty"*, `targetName` null. The consumer's target names its
+  namespace's admin secret (2.4); the producer's assets came from the data source on
+  `redshift-serverless.redshift` (`axsiuoykrswosw`), authenticated by IAM, which names no secret (`SUP-469`).
+- **[Claude] What the failure wrote: nothing.** Both namespaces' `svv_datashares` empty (23:57:44 and
+  23:58:23); their `sys_query_history` from 23:44 holds no `datashare`, `GRANT` or `REVOKE` statement but the
+  admin users' reads; the consumer's databases are `dev` alone. Data Governance's trail holds
+  `CreateSubscriptionRequest` and no `AcceptSubscriptionRequest`, `CreateSubscriptionGrant` or
+  `UpdateSubscriptionGrantStatus`. Sandbox's holds no `redshift-data`, `redshift-serverless`, `redshift` or
+  `secretsmanager` call from 23:44 to 23:59 but the infrastructure user's, and DataZone's only `AssumeRole`s
+  are the portal user's sessions in the two project roles (23:45:03 to 23:45:15, 23:53:06).
+- **[Claude] What the portal shows**: the consumer's side read *Subscription approved*. The producer's
+  *Subscriptions → Access* read `sandbox-trades-hot | test-experimentation | Shared | 22 de novembro de 2026 às
+  20:45`, and its *View access details* *Shared by* Data Scientist User and *Shared with*
+  `test-experimentation`, with no grant status. Neither page shows the failure.
+- **2.6 not run**: with both grants failed there is nothing to `SELECT` and no `ComputeSeconds` to compare. No
+  space was started.
+- **[Claude] 2.7, the revocation**: the producer's *Access* row, *Revoke*, the dialog *Revoke access* asking
+  for *confirm*, with no box. `RevokeSubscription` at 23:56:34Z by the portal user, `retainPermissions`
+  `false`; `coq9ewxmav1zf4` `REVOKED` (`updatedAt` 23:56:34.079); both grants answered
+  `ResourceNotFoundException`, *"subscriptionGrant entity not found"*, at 23:57:10. No call reached Sandbox and
+  neither namespace changed (above). The *Access* tab reads *No data available*. A revocation of a grant that
+  wrote a datashare stays unmeasured.
+- **[Claude] 2.8, the portal's load**: `eighth-experimentation`'s *Data → Add → Create table*, *Redshift table*,
+  the file `stage21_portal_load.csv` (a header and three rows), the compute `Redshift
+  (redshift-serverless.redshift)`, the database `sandbox` (offered `warehouse`, the namespace's default and
+  preselected, `dev` and `sandbox`), the schema `lab` (offered `public` and `lab`), the table name
+  `stage21_portal_load` filled from the file. *Next* answered *"Cannot infer schema"* with IAM's wording: the
+  access role's session `<Identity Center user id>@<Tooling environment id>` *"is not authorized to perform:
+  kms:GenerateDataKey on resource: arn:aws:kms:us-west-2:<account>:key/a81b1ef3-… because no identity-based
+  policy allows the kms:GenerateDataKey action"*.
+- **[Claude] 2.8 in the trail and the database**: the access role's session created 00:01:11Z, `sourceIdentity`
+  the portal user. Its Query Editor V2 session listed databases and schemas as user 103, 00:01:14 to 00:02:10
+  (`application_name` *Amazon Redshift Query Editor V2 - …*). `GenerateDataKey` refused at 00:02:24Z,
+  `invokedBy` `fas.s3.amazonaws.com`, `requestParameters` null. The key is `alias/awsds-sandbox-project`, the
+  default key of `awsds-sandbox-smus-projects` and of no other Sandbox bucket, so the upload went to that
+  bucket through S3; the trail names no object, and no object under `eighth-experimentation`'s prefix is newer
+  than 23:00. The access role holds no `s3:` or `kms:` action, and the bucket's policy only denies insecure
+  transport. No `COPY` ran (`sys_query_history` from 00:00 holds none, `sys_load_error_detail` empty), `lab`
+  holds no `stage21_portal_load`, and the namespace's default role `awsds-sandbox-warehouse-exec` was never
+  reached. Nothing was granted (5b decision 5). Verification vii: the refusal is KMS's, to the connection's
+  access role, at the upload, before any `COPY` (`SUP-470`).
+- **[Claude] The consumer's namespace, read 00:05Z**: `pg_user` lists `rdsdb`, `admin` and
+  `IAMR:awsds-sandbox-smus-provisioning` as superusers, and `IAMR:user-project@4gqfau9xuo6e4w` (user 102, a
+  `SHOW SCHEMAS` at 23:29:15) not. The provisioning role's user ran at the deploy, 23:28:42 to 23:28:49:
+  `CREATE ROLE "datazone_env_dahsfn6j8lqec0"`, `GRANT USAGE ON DATABASE awsdatacatalog` to it,
+  `CREATE SCHEMA "project"`, `GRANT ALL ON SCHEMA "project"` and `GRANT ALL FOR tables IN SCHEMA project` to
+  it, and `GRANT ROLE sys:superuser TO ROLE datazone_env_dahsfn6j8lqec0`. The role is the target's
+  `authorizedPrincipals` (2.4), owned by the provisioning role's user, and no user holds it (`svv_user_grants`
+  empty). A portal session carries `RedshiftDbRoles` `datazone_env_<environment id>` (`docs/SMUS.md`, read
+  2026-10-10 on the warehouse's path), so a portal session on this workgroup would be a superuser session;
+  unmeasured, 2.6 not having run (`SUP-471`).
+
+## 2026-11-23 — §N.10's day 2: 2.9, the consumer's workgroup removed and the reverse applies
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's choice in this session's chat, *"Aceitar e
+fazer 2.9"*, answering whether to accept `SUP-469` as 2.5's reading or to retry on a producer connection
+authenticated by a secret. The user signed in again as the infrastructure user before it (*"usuário sso infra
+logado."*), the token valid to 01:23:31. The portal's act in the Data Scientist User's Chrome session; the reads
+and the applies as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`) and `Data Governance` (`awsds-infra-data`). Times UTC.*
+
+- **The user's decision**: `SUP-469` is 2.5's reading. The retry on a connection authenticated by a secret is
+  not run, so a Redshift asset shared by subscription stays unmeasured end to end.
+- **[Claude] The portal's removal**: `test-experimentation`'s *Resource blueprints*, the deployment
+  `redshift.stage21-consumer-redshift`'s delete, the dialog *Delete blueprint deployment* (*"Deleting a blueprint
+  deployment is final and removes all connections created."*, the word *confirm*), then *"Blueprint deployment
+  deleted successfully"* and the row *Delete in progress*. The trail: `DeleteEnvironment` at 00:24:42 in Data
+  Governance by the domain execution role for the portal user; in Sandbox, `DeleteStack` at 00:24:54,
+  `DeleteWorkgroup` at 00:24:57 and `DeleteNamespace` at 00:25:04, by `awsds-sandbox-smus-provisioning`.
+- **[Claude] What is absent**: the environment `dahsfn6j8lqec0`, `DELETING` at 00:26:09, answered *"Environment
+  not found"* at 00:26:26; the stack `DataZone-Env-dahsfn6j8lqec0` is `DELETE_COMPLETE`. Sandbox's workgroups
+  and namespaces are `awsds-sandbox-warehouse` alone, at 4 and 8. The connection `4i2nv7u733e51s` is not found,
+  its lineage job `50jlej783a7cb4` answers *"The given Job doesn't exist."*, removed before its first run was
+  due, and the target `bbw4g031uhkopc` is not found; no secret named for the namespace exists, scheduled for
+  deletion or not. None of the domain's ten projects holds a `RedshiftServerless` environment (blueprint
+  `dlyaabb17hano0`, 00:27:34).
+- **[Claude] The reverse applies**, N.9's day 3 and N.10's day 1 told first, both idle. From this branch at
+  `d6e83d0b`: `data-governance/governance` planned *"Plan: 0 to add, 1 to change, 0 to destroy."*, the profile
+  `experimentation`'s `environment_configurations`, and applied at 00:28:06, *"Apply complete! Resources: 0
+  added, 1 changed, 0 destroyed."*. `sandbox/sagemaker` planned *"Plan: 0 to add, 1 to change, 3 to destroy."*:
+  the `RedshiftServerless` blueprint configuration, its policy grant and the manage-access role's
+  `AmazonDataZoneRedshiftManageAccessRolePolicy` attachment destroyed, the project key updated in place. Applied
+  at 00:28:48, *"Apply complete! Resources: 0 added, 1 changed, 3 destroyed."*. Both re-planned *"No changes.
+  Your infrastructure matches the configuration."* at 00:29.
+- **[Claude] `US-3`** (`./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`, 00:29 to 00:31, *"all checks
+  passed"*): *"14 blueprint configuration(s) in awsds-infra-sandbox-1"*, *"all inside decision 5's category 1"*,
+  and the domain account's Tooling configuration the note it was.
+
+## 2026-11-23 — §N.10's day 2: pass 3, the warehouse's lineage and its removal
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Sim, faça o
+passo 3"*, answering a question that named pass 3's writes: `lineage_reader`, its secret and its grants on `lab`,
+the second connection and the data source with *Import data lineage* in the portal, 3.3's statements creating
+`lab.trades_hot_by_day`, and 3.5's removal. The portal's acts in the Data Scientist User's Chrome session; the SQL
+as the warehouse's admin through the Data API; the reads as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance` (`awsds-infra-data`). Times UTC.*
+
+- **[Claude] 3.1, the credentials**, 00:37:33 to 00:38:18: the password from `get-random-password`, never
+  printed; `CREATE USER lineage_reader` from its MD5 hash, `GRANT ROLE "sys:operator"`, `USAGE ON SCHEMA lab` and
+  `SELECT ON ALL TABLES IN SCHEMA lab`, each `FINISHED`; the secret `awsds-sandbox-stage21-lineage-reader`
+  tagged `AmazonDataZoneProject` `avhvbqn37ty7m8`. Read back: user 109, `usesuper` false, the role
+  `sys:operator`, five of `lab`'s tables granted.
+- **[Claude] The second connection**, *Create connection* in `eighth-experimentation`, Redshift with *AWS
+  Secrets Manager* and that secret: `sandbox-lineage-reader` (`5dpavlenb7xu34`), `CreateConnection` at 00:40:16 by
+  the domain execution role. The form's JDBC URL named the database `dev`, edited to `sandbox`. `CREATING` to
+  00:43:57, then `READY`, its `lineageSync` `null` throughout (`SUP-207`).
+- **[Claude] 3.2, the data source**: `sandbox-lab-lineage` (`cyfqsfnyf4s8wg`) on that connection over
+  `sandbox.lab`, *Import data lineage* checked, `publishOnImport` false, no schedule. `CreateDataSource` at
+  00:46:52, the switch's time, then an `UpdateDataSource` by `datazone.amazonaws.com` at 00:46:53. At 00:47:17
+  the connection read `lineageSync` `enabled: true`, the job `69cnpyuu9d7yfk` and `cron(51 0 * * ? *)`. The data
+  source never ran.
+- **[Claude] 3.3, the statements, run as the admin through the Data API**, not in the user's Query editor as the
+  step says, to land before the pull at 00:51: `CREATE TABLE lab.trades_hot_by_day AS …` (query 16527491,
+  00:47:56), the `INSERT … SELECT` into `lab.trades_hot_daily` (16527507, 00:48:31), the `UPDATE` (16527512,
+  00:48:37) and the `MERGE` (16527519, 00:48:39), each `success`, the `MERGE` typed `OTHER` in
+  `SYS_QUERY_HISTORY`. The `CREATE TABLE … AS` from `awsdatacatalog` was not run: the pull reads seven days, which
+  held Stage 19 5.2's `CREATE TABLE lab.trades_hot AS SELECT * FROM
+  awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional` (query 14915514, 2026-11-22 19:42:15, user 103), and a
+  statement after 00:51 reaches no pull before 3.5. `lab.trades_from_lake` does not exist.
+- **[Claude] The pull**: the run `ajk9injla9unm8`, `createdBy` `SYSTEM` at 00:51:50, `IN_PROGRESS` at 00:54:21,
+  `PARTIALLY_SUCCEEDED` at 00:54:42. `queryStartTime` 2026-11-16T00:51:50.324Z, `queryEndTime`
+  2026-11-23T00:51:50.324Z, `totalQueriesProcessed` 19, `numQueriesFailed` 1, *"FATAL: Cannot connect to shared
+  database "awsdatacatalog" created from Data Catalog ARN. Connect to a database in your cluster or a database
+  created from a datashare instead and use cross-database query notation <shareddatabase>.<schema>.<object> to
+  query the data in shared database."* The 19 match the window's successful `CTAS` (8), `DDL` (9) and `INSERT`
+  (2) statements, by users 100, 103 and 107; the `UPDATE` and the `MERGE` are not among them. The failure is the
+  `awsdatacatalog` CTAS, the only processed statement naming that database (`SUP-472`).
+- **[Claude] 3.4, the nodes**: from 00:53:05 to 00:54:28 Data Governance's trail holds 26 `CreateLineageNode`
+  by `datazone.amazonaws.com`, beside 16 `CreateLineageEvent`, 37 `CreateLineageNodeVersion`, 41
+  `UpdateLineageNode` and 16 `UpdateLineageNodeVersion`. Ten are dataset nodes, `sandbox.lab.<table>` named by
+  `arn:aws:redshift-serverless:us-west-2:<Sandbox>:table/awsds-sandbox-warehouse/sandbox/lab/<table>` (`view/` for
+  `trades_hot_by_desk`); sixteen are job nodes, one per statement, `query-hash-<hash>` with its text in a
+  `QueryForm`; the edges hang on a job-run node per execution, `<job>/<query id>#<n>#<n>` (`SUP-473`). Edges:
+  `trades_hot` → `trades_hot_daily` by the CTAS of 22:56 and by the `INSERT … SELECT`; `trades_hot` →
+  `trades_hot_by_day` by its CTAS; `trades_hot` → `trades_hot_by_desk` by `CREATE VIEW`. The `UPDATE` and the
+  `MERGE` left no node, and `trades_hot` has no upstream. Statements with no input left a run into the table
+  alone, and each `DROP TABLE` a run whose output is the dropped table: `wh_digits`, `wh_n`, `neg52.t`,
+  `neg52_ctl`, `b52_test` and `b52_eighth`, gone from the warehouse, stand in the graph.
+- **[Claude] The join to the assets**: each Redshift asset's `AssetCommonDetailsForm.sourceIdentifier` is its
+  dataset node's ARN, and the asset nodes `c1cewufu08ayvk`, `4rgbeb8ey4f9qo` and `4ryiwpqegyjq1c` read the
+  dataset nodes as upstream. `list-lineage-node-history` gives `trades_hot_daily` two versions (22:56:03 and
+  00:48:32) and `trades_hot` four.
+- **[Claude] The graph in the portal**, `trades_hot_daily`'s *Lineage* tab at depth 5: `sandbox.lab.trades_hot`
+  (Table) → two job runs, `COMPLETE` → `sandbox.lab.trades_hot_daily` (Table) → *Cataloged* → `trades_hot_daily`
+  (Asset / Inventory). `trades_hot`'s tab: the table → *Cataloged* → the inventory asset → *Published* → the
+  published asset, nothing upstream of the table, so the graph does not reach the lake's `trades_notional`.
+- **[Claude] 3.5, the removal**: the data source's *Edit connection* panel (*"The connection cannot be changed
+  once the data source has been created."*; under the switch, *"Data lineage will be imported from all data
+  sources that use this connection."*), *Import data lineage* unchecked and saved at 01:03:57; the connection
+  read `enabled: false` at 01:04:11, its job and schedule kept. The data source deleted at 01:04:33 (*"Deleting
+  this data source will not delete assets it has already published, but no new runs will occur."*), the
+  connection removed at 01:05:16 (*Remove connection*, the word *confirm*). As the admin, 01:05:35 to 01:05:48:
+  `REVOKE ROLE "sys:operator"`, `REVOKE ALL ON ALL TABLES IN SCHEMA lab`, `REVOKE USAGE ON SCHEMA lab`, `DROP USER
+  lineage_reader`, each `FINISHED`, and `SVV_USER_INFO` holds no such user. The secret deleted at 01:06:08 with
+  the step's seven-day window, deletion date 2026-11-30T01:06:08Z; rollback item 3 says no recovery window.
+- **[Claude] What stays**: the connection answers *"Cannot find connection with id: 5dpavlenb7xu34"*, the data
+  source *"The DataSource doesn't exist with dataSourceId=cyfqsfnyf4s8wg."*, the job *"The given Job doesn't
+  exist. Try creating Job before accessing it."*. `eighth-experimentation` keeps one Redshift connection,
+  `redshift-serverless.redshift`, `lineageSync` `enabled: false` on `cron(43 3 * * ? *)`, 6h decision 3's
+  setting as found. The lineage nodes stay: `sandbox.lab.trades_hot_by_day`'s is read after the removal.
+  `lab.trades_hot_by_day` (owner `dbadmin`, 10 rows) and `lab.trades_hot_daily` (10 rows after the `INSERT`) wait
+  for Stage 19's step 7.
+
+## 2026-11-23 — §N.10's day 2: pass 4, the federated catalog and its removal; rollback item 5
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Autorizo o
+passo 4. Login infra sso feito."*, and for rollback item 5 *"Pode avançar no 5.4"*, answering whether to run Stage
+19's 5.4 with that item before the lowering. The portal's acts in the Data Scientist User's Chrome session; the SQL
+as the warehouse's admin through the Data API; the rest as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`), `Data Governance` (`awsds-infra-data`) and `Production`
+(`awsds-infra-prod`). Times UTC.*
+
+- **[Claude] 4.1, the registration**: `register-namespace` at 01:23:29 answered `{"Status": "Registering"}`.
+  `describe-data-shares-for-consumer` by the catalog's ARN listed nothing, while the producer's
+  `describe-data-shares` held the `INTERNAL` datashare `…/ds_internal_namespace` associated to
+  `DataCatalog/<account>`, `AUTHORIZED`. `associate-data-share-consumer` to the catalog's ARN at 01:26:51 made it
+  `ACTIVE`. Lake Formation's `register-resource` of the datashare at 01:27:07: `HybridAccessEnabled` and
+  `WithPrivilegedAccess` false, `VerificationStatus` `NOT_VERIFIED`. `glue create-catalog` `stage21_warehouse`
+  at 01:27:09, its `FederatedCatalog` on `aws:redshift`, `CreateTime` 01:27:10, `aws:PermissionsModel`
+  `LAKEFORMATION`. `get-catalogs --parent-catalog-id … --recursive` is refused, *"GetCatalogsRecursive is
+  supported only at the account level"*; without `--recursive` it lists a child catalog per database, `warehouse`,
+  `dev` and `sandbox`. `sandbox` holds the databases `public` and `lab`, and `lab` six tables: `trades_hot` (6
+  columns), `trades_hot_daily` (2), `trades_hot_by_desk` (3, `TableType` `Table` where Redshift holds a view),
+  `hello_jupyter_via_access` (3), `hello` (2) and `trades_hot_by_day` (3).
+- **[Claude] The catalog's grants**: Lake Formation lists the creator's `InfrastructureAccess` alone, `ALL`,
+  `ALTER`, `CREATE_CATALOG`, `CREATE_DATABASE`, `DESCRIBE` and `DROP` with grant option on the parent catalog;
+  nothing on the child catalog or on `lab`, and no `IAMAllowedPrincipals`. Verification x's first half: no.
+- **[Claude] 4.2**: `DESCRIBE` and `SELECT` on `stage21_warehouse/sandbox`'s `lab.trades_hot` to
+  `eighth-experimentation`'s project role at 01:27:58, read back.
+- **[Claude] 4.5's two applies on**, from this branch, which holds pull requests #323 and #363:
+  `sandbox/warehouse/` with `all_projects_tag_enabled` and `data_transfer_role_enabled` true, *"Plan: 2 to
+  add"*, the role `awsds-sandbox-warehouse-data-transfer` and its inline policy, applied 01:29:46 to 01:29:57 and
+  re-planned *"No changes."* at 01:30:15. `sandbox/data/`, initialised in the worktree, with
+  `data_transfer_key_statement_enabled` true: *"Plan: 0 to add, 1 to change, 0 to destroy."*, the data key's
+  policy gaining `GenerateDataKeyDecryptDataTransferRole` (`kms:GenerateDataKey` and `kms:Decrypt` through S3 to
+  the role), applied 01:31:00 to 01:31:15.
+- **[Claude] 4.3, Redshift through the catalog**: the Query editor's data explorer lists the granted objects
+  alone, `stage21_warehouse` → `sandbox` → `lab` → *tables (1)* `trades_hot`, *views (0)*. The table's menu
+  offers *Preview data*, *Copy name* and *Refresh*, and *Preview data* opens an Athena cell, never a Redshift
+  one. On `redshift-serverless.redshift`, database `sandbox`, `select * from
+  "sandbox@stage21_warehouse"."lab"."trades_hot" limit 10` answered *ERROR: "sandbox@stage21_warehouse" does not
+  exist*, with the toast `autocompleteMsg.getMetadataErrorAccessDenied`. The same session, `current_user`
+  `IAMR:datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, reads four databases in `svv_redshift_databases`:
+  `dev`, `sandbox` and `warehouse` local, `governed_trades` *shared via data catalog*; `show databases from data
+  catalog` gives one, `glue_db_blerpkhn9nj7o0`. No read ran, so `sys_query_history` holds no `ComputeSeconds`
+  for one. Verification x: no.
+- **[Claude] 4.6 before data lake access**: Athena's runs of the preview at 01:31:20 and 01:32:19 failed
+  *"GENERIC_INTERNAL_ERROR: No scheme for file system location: trades_hot"*.
+- **[Claude] 4.5, data lake access**: `get-catalog` first (Lesson 60). `update-catalog` with the whole input was
+  refused at 01:39:09, *"CatalogCustomProperties and IcebergOptimizationProperties can only be present for root
+  catalog."*, the input carrying the `CustomProperties` that `get-catalog` returns; without them it passed at
+  01:39:21, `DataLakeAccess` true and the transfer role, and the read-back kept `aws:PermissionsModel`. The
+  catalog then carried `KmsKey` `AWS_OWNED_KMS_KEY`, `ManagedWorkgroupName` `<account>:stage21_warehouse`,
+  `RedshiftDatabaseName` `dev` and `ManagedWorkgroupStatus` `CREATING`, `AVAILABLE` at 01:40:01. `redshift-serverless
+  list-workgroups` and `list-namespaces` list `awsds-sandbox-warehouse` alone and `describe-clusters` nothing;
+  `list-managed-workgroups` lists the managed workgroup, created 01:39:21.682, its `sourceArn` the catalog, with
+  no capacity field. Sandbox's trail holds no creation of it by 01:44, only reads. No cluster was created, so
+  `DenyRedshiftProvisionedClusters` had nothing to refuse.
+- **[Claude] 4.6 with data lake access**: the preview at 01:40:59 and 01:41:51 failed *"GENERIC_INTERNAL_ERROR:
+  Malformed request: ERROR: "sandbox@stage21_warehouse" does not exist"*, 5,956 and 6,406 ms of engine time, 0
+  bytes scanned: the name and the answer of 4.3. Each run left the session's `GetManagedWorkgroup` calls in the
+  trail, invoked by `redshift-data.amazonaws.com`. A diagnostic outside 4.2's text, `DESCRIBE` on the catalog
+  `stage21_warehouse/sandbox` and on `lab` to the project role, 01:43:09 to 01:43:12, changed nothing: the run at
+  01:43:19 failed the same. As the admin, `svv_datashares` and `svv_datashare_objects` list no `ds_internal`
+  share. Verification xii's Athena half: no.
+- **[Claude] 4.4, the data source**: `stage21-federated-lab` (`cpsozetz63bs7k`), *AWS Glue (Lakehouse)* on
+  `project.default_lakehouse`, created 01:46:29 with *Enter the catalog name* `stage21_warehouse/sandbox`, which
+  the review reads `<account>:stage21_warehouse/sandbox`; the database list offered `lab`; *Include \**, publish
+  *No*, business names off, data quality on. *Import data lineage* was left checked as the form opened, the
+  setting being the connection's. Run `5boqoxlhwbniq8`, on demand, 01:46:41 to 01:46:44, `SUCCESS`, one asset
+  added, *Lineage import status: Completed*. The asset `dtbux9ndboiz9s`, `trades_hot`, type *Glue Table*, shown
+  `stage21_warehouse.lab`; its form *AWS Glue table* holds the catalog id `<account>:stage21_warehouse/sandbox`, the
+  table ARN `arn:aws:glue:us-west-2:<account>:table/stage21_warehouse/sandbox/lab/trades_hot`, six columns and a
+  *Federated Table* block (`lab`, `trades_hot`, connection `aws:redshift`). Its source identifier is that Glue
+  ARN, so it does not meet pass 3's lineage nodes, named by the Redshift ARN. `GetAsset` as Data Governance's
+  `InfrastructureAccess` answered *"User is not permitted to perform operation: GetAsset"*, a non-member's
+  refusal. The publish, request and approval half was not run, for the hour. Verification xi: the table imports,
+  as a Glue table; the subscription is unmeasured.
+- **[Claude] 4.8, the removal**: the asset deleted in the portal, then the data source (*"Data source
+  deleted."*; `GetDataSource` not found at 01:52:25). `update-catalog` with `DataLakeAccess` false at 01:48:49:
+  the access properties gone, `list-managed-workgroups` empty at 01:49:05. `delete-catalog` at 01:49:05,
+  `get-catalog` *"Catalog not found."*; `deregister-resource` at 01:49:08, `describe-resource` *"Entity not
+  found"*; `disassociate-data-share-consumer` at 01:49:23; `deregister-namespace` at 01:49:24, *"Deregistering"*,
+  the datashare still `AUTHORIZED` to `DataCatalog/<account>` five seconds later and gone at 01:52:25. The
+  orchestrating session was told before the applies. `sandbox/data/` off: *"Plan: 0 to add, 1 to change, 0 to
+  destroy."*, applied 01:51:04 to 01:51:20, the key policy back to `EnableKeyAdministrationInThisAccount`,
+  `AllowSandboxLakeAccessRoleViaS3` and `AllowRedshiftServerlessViaServiceInThisAccount`. `sandbox/warehouse/` off:
+  *"Plan: 0 to add, 0 to change, 2 to destroy."*, applied 01:51:53 to 01:52:03, `get-role` `NoSuchEntity`. Both
+  re-planned *"No changes."* by 01:53:11; `glue get-catalogs` lists none, and Lake Formation no datashare. The
+  first `sandbox/data/` plan, at 01:50:10, had failed *"No valid credential sources found"*, `AWS_PROFILE` unset.
+- **[Claude] The closing reads**, 01:53:11: `awsds-sandbox-warehouse` `AVAILABLE` at 4 RPU, no cluster;
+  `warehouse.py` `WH-8` green, *"1 namespace(s), 1 workgroup(s), all expected"*, and `WH-9` reading
+  `eighth-experimentation`'s `redshift-serverless.redshift` with `lineageSync` off.
+- **[Claude] Rollback item 5**, after Stage 19 5.4's `REVOKE` (that stage's log): `lab` read at 01:57:00, six
+  relations, `trades_hot_by_desk` the view, no `trades_from_lake` and no materialized view. `DROP VIEW
+  lab.trades_hot_by_desk` at 01:57:33, then `DROP TABLE` of `lab.trades_hot_daily`, `lab.trades_hot_by_day` and
+  `lab.trades_hot`, each `FINISHED` by 01:57:42; `lab` keeps `hello` and `hello_jupyter_via_access` (6h 6.4).
+- **What stays**: the data product `sandbox-trades-hot`, its listing and its assets stay published over the
+  dropped relations, with the source `sandbox-lab-trades-hot`, rollback item 1's second half. Pass 5 and the bill
+  of the managed workgroup's nine minutes (6.5) are owed.
+
+## 2026-11-23 — The lowering of §N.10's day 2 and §R's readings
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Descer e
+revogar"*, answering *"Desço agora (`make down ENV=sandbox` e `make hub-down`) e revogo as duas
+assinaturas, ou só desço?"*. The `make` targets with `AUTO=1` from this session's shell, the reads as the
+infrastructure user with `InfrastructureAccess`. The revocations of Stage 19 4.12 and Stage 20 5.0 ran during
+the down, needing nothing up (both logs). Times UTC.*
+
+- **[Claude] The portal**: the one tab of this sitting, in the Data Scientist User's Chrome session, closed at
+  02:15:41 (`sagemaker-application.md` §D).
+- **[Claude] `make down ENV=sandbox`**, 02:15:48 to 02:26:52, rc 0. The Studio apps step found no running app
+  in Sandbox's nine domains. `probes` destroyed 4 resources (the two instances and their security groups),
+  `warehouse-compute` 2 (`aws_redshiftserverless_usage_limit.compute` and the workgroup, 1m13s), `egress` 34,
+  its last interface endpoint after 2m26s.
+- **[Claude] `make hub-down`**, 02:27:43 to 02:27:48, rc 0: `awsds-prod-proxy` and `awsds-prod-vpn` stopped.
+- **[Claude] `make status`**, 02:27:56: passive and active burns 0.0000 USD; every `[E]` slice down in the
+  three accounts, the VPN, proxy and GitLab hosts stopped, no Studio app billing, no EMR Serverless
+  application started and no OpenSearch Serverless collection.
+- **[Claude] §R's readings**, 02:28:15: `./aws/egress.py awsds-infra-prod awsds-infra-staging
+  awsds-infra-sandbox-1` *"all checks passed"*, `EG-5` read; §R's loop lists no Studio app in the nine
+  domains; `list-workgroups`, `list-managed-workgroups` and `describe-clusters` answer empty in Sandbox.
+  `catalog.py`, 02:29:25 to 02:32:30, *"all checks passed"*.
+- **What N.10's day 2 leaves of this stage**: pass 5, on a Sandbox sitting with no warehouse; rollback item 1's
+  second half, the data product `sandbox-trades-hot` with its listings and the source `sandbox-lab-trades-hot`,
+  needing nothing up; 6.5's bill of the managed workgroup, read the day after.
+
+## 2026-11-23 — Rollback item 1's second half: pass 2's data product, its assets and the source deleted
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Fazer
+agora"*, answering whether to unpublish and delete `sandbox-trades-hot` and the source
+`sandbox-lab-trades-hot` now or after pass 5. The portal's acts in the Data Scientist User's Chrome session, in
+`eighth-experimentation`, in `catalog.md` §A's order, each object read on its page before its delete. The CLI
+login had expired at 02:56, so no trail was read. Times UTC, the shell's clock read after each confirmation.*
+
+- **[Claude] The data product** `sandbox-trades-hot` (`614tardy0iah3k`), read first: *Published*, two included
+  assets, *Subscriber count* 0, published revision 2. *Actions → Unpublish*, whose dialog says the product can
+  no longer be viewed or subscribed to, assets available only through it go with it, active subscriptions
+  remain and individually published assets are not affected: *"Data product unpublished successfully."* by
+  03:08:04, the page reading *Not published*. *Actions → Delete* (*"This action cannot be undone. All
+  associated metadata will be permanently removed."*) by 03:08:31; the project's *Data products* tab then lists
+  `my-data-product` alone.
+- **[Claude] The assets**, each read with *Subscriber count* 0 and *No associated data products*: `trades_hot`
+  (`cgpzdjxcumuzrk`, listing `cl14qzshdc64y8`) unpublished by 03:09:43 and deleted by 03:10:13; the view
+  `trades_hot_by_desk` (`4o4k5h7uxxsj68`, listing `5t9cxrhio6c8eo`) unpublished by 03:11:03 and deleted by
+  03:11:33; `trades_hot_daily` (`57py2yrv0o93ww`), *Not published yet*, deleted by 03:12:20. The unpublish
+  dialog: the asset no longer discoverable, pending access requests cancelled, existing access kept. The
+  generated business-name suggestions on each page were left unanswered.
+- **[Claude] The source** `sandbox-lab-trades-hot` (`brnatob4h2kwb4`), read first: Amazon Redshift on
+  `redshift-serverless.redshift`, *Ready*, two on-demand runs on 2026-11-22, the second adding the three assets.
+  *Actions → Delete data source* (*"Deleting this data source will not delete assets it has already published,
+  but no new runs will occur."*): *"Data source deleted."* by 03:13:10, the list reading *Deleting*, then four
+  sources.
+- **[Claude] The reads after**: the inventory holds `house-price`, `trades`, `to-run-in-background-tytue9` and
+  `trades_notional`; a search of the entire catalog for `trades_hot` and for `sandbox-trades-hot` answers *No
+  results found*. The tab closed at 03:14.
+- **What is left of this stage**: pass 5 with its own rollback; 6.5's bill.

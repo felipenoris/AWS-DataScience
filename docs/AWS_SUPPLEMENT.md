@@ -1400,6 +1400,20 @@ entry is still true is the reading.
   release whose cache classifies each table through `get_table_type` would fail the build as well. Where:
   `log-stage-20-dbt-lineage.md`, 2026-11-22 (5.1).
 
+- `SUP-474` **Glue's `UpdateCatalog` refuses on a federated catalog the `CustomProperties` its `GetCatalog`
+  returns, and data lake access creates a Redshift Serverless workgroup that only `ListManagedWorkgroups` shows**
+  (measured 2026-11-23 in Sandbox, Stage 21's 4.5 and 4.8). The catalog `stage21_warehouse`, federated over the
+  Sandbox namespace's datashare, reads back `CatalogProperties.CustomProperties` `{"aws:PermissionsModel":
+  "LAKEFORMATION"}`. An `UpdateCatalog` passing the whole `CatalogInput` with them, as Lesson 60 asks, is refused:
+  *"CatalogCustomProperties and IcebergOptimizationProperties can only be present for root catalog."*. Without
+  them it succeeds, and the property stays. With `DataLakeAccess` true and a data transfer role the catalog reads
+  `KmsKey` `AWS_OWNED_KMS_KEY`, `ManagedWorkgroupName` `<account>:<catalog>`, `RedshiftDatabaseName` `dev` and
+  `ManagedWorkgroupStatus` `CREATING`, `AVAILABLE` within 40 seconds. The workgroup is absent from
+  `ListWorkgroups` and `ListNamespaces`; `ListManagedWorkgroups` lists it with its creation time, its `sourceArn`
+  the catalog, and no capacity field; the account's trail records no creation of it. `DataLakeAccess` false
+  removes it within 16 seconds, before `DeleteCatalog`. Where: `log-stage-21-redshift-s3-data-products.md`,
+  2026-11-23.
+
 ## Lake Formation
 
 - `SUP-100` **`ram enable-sharing-with-aws-organization` both enables trusted access for `ram.amazonaws.com`
@@ -2121,6 +2135,22 @@ entry is still true is the reading.
   succeeded within the minute. The table is a DataZone subscription's resource link to an Iceberg table in
   another account. Nothing reached the Glue Data Catalog. A view over an external schema mapped to the Glue
   database is unmeasured. Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+
+- `SUP-475` **A federated catalog over a Redshift namespace is named `"<database>@<catalog>"` and resolves neither
+  in the namespace that produced it nor in its data lake access workgroup** (measured 2026-11-23 in Sandbox, Stage
+  21's 4.1 to 4.6). After `RegisterNamespace` to the account's Data Catalog, the producer's `DescribeDataShares`
+  holds an `INTERNAL` datashare `…/ds_internal_namespace` associated to `DataCatalog/<account>`, `AUTHORIZED`,
+  while `DescribeDataSharesForConsumer` by the catalog's ARN lists nothing until `AssociateDataShareConsumer` makes
+  it `ACTIVE`; the producer's `svv_datashares` never lists it. `GetCatalogs` with `--recursive` under a parent is
+  refused, *"GetCatalogsRecursive is supported only at the account level"*; without it the catalog lists a child
+  catalog per database. With Lake Formation `DESCRIBE` and `SELECT` on a table, then `DESCRIBE` on its child
+  catalog and database, the producer's IAM session (`IAMR:<project role>`) reads no `sandbox@stage21_warehouse` in
+  `svv_redshift_databases`, and a `SELECT` by that name answers *"does not exist"*. Athena's read of the table from
+  the portal's preview fails *"GENERIC_INTERNAL_ERROR: No scheme for file system location: <table>"* before data
+  lake access, and *"Malformed request: ERROR: "sandbox@stage21_warehouse" does not exist"* with it: the managed
+  workgroup's answer, in Redshift's name for the catalog. A read from another warehouse is unmeasured.
+  `DeregisterNamespace` answers `Deregistering`, and the datashare stays `AUTHORIZED` for seconds, gone within
+  three minutes. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## DataZone and SageMaker Unified Studio
 
@@ -3396,7 +3426,15 @@ entry is still true is the reading.
   from `deploy-production`'s project role, and read `COMPLETED` 61 s after the grant's creation; the second,
   on the same listing, one `BatchGrantPermissions` and no RAM or Glue call, `COMPLETED` 4.5 s after its
   grant's creation (`log-stage-19-smus-native-data-product.md` and `log-stage-20-dbt-lineage.md`,
-  2026-11-22).
+  2026-11-22). Revoked in the same order on 2026-11-23 (4.12's subscription at 02:18:14Z, 5.0's at
+  02:20:52Z, each `retainPermissions` `false`), the removal mirrors the fulfilment. The first revocation made
+  one `BatchRevokePermissions` in Production 42 s after the call and the link's `DeleteTable` in Sandbox 51 s
+  after, and left the share `ACTIVE` and the three policies in place. The second, the account's last, made
+  `BatchRevokePermissions`, `ram:DeleteResourceShare` and the three `glue:DeleteResourcePolicy` within 4 s,
+  each delete repeated in the same second and answering `EntityNotFoundException`, and the link's
+  `DeleteTable`; all from the project roles in `AWSDataZone-Subscriptions` sessions. The share and the
+  per-resource policies stay while another subscription to the same consumer account stands, and go with the
+  last (`log-stage-19-smus-native-data-product.md` and `log-stage-20-dbt-lineage.md`, 2026-11-23).
 
 - `SUP-196` **`UpdateDataSource` refuses the `dataAccessRole` that `GetDataSource` reports for a Glue source
   on a connection** (measured 2026-10-26 in Data Governance, Stage 6f 11.6). A configuration built from the
@@ -3793,7 +3831,17 @@ entry is still true is the reading.
   connection a contributor made at 21:53:22Z carried `lineageSync` enabled on `cron(53 21 * * ? *)`, the
   minute of its creation, daily, and a job of its own, `cqsmsbqin5yr2o`, with no run at 21:55:04.
   `DeleteConnection` took the job with it: `list-job-runs` on its id answered *"The given Job doesn't
-  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22.
+  exist."* at 21:57:38. Where: `log-stage-06h-redshift-connection.md`, 2026-11-22. Read again 2026-11-22
+  (Stage 21's 2.4): the connection the `RedshiftServerless` blueprint wrote for a consumer's workgroup,
+  `project.redshift`, carried `lineageSync` enabled on `cron(28 23 * * ? *)`, the minute of its creation, and a
+  job of its own, so the blueprint's path carries the default too. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22. Read again 2026-11-23 (Stage 21's 3.1 to 3.5): a
+  connection made in the portal with *AWS Secrets Manager* at 00:40:16 carried `lineageSync` `null` from
+  `CREATING` to `READY` at 00:43:57, no job. A data source with *Import data lineage* on it, created at 00:46:52,
+  wrote `enabled: true`, a job `69cnpyuu9d7yfk` and `cron(51 0 * * ? *)`, daily, its first run at 00:51:50. The
+  switch is the connection's: the data source's panel says *"Data lineage will be imported from all data sources
+  that use this connection."* Unchecked at 01:03:57, it wrote `enabled: false`, the job and the schedule kept, and
+  `DeleteConnection` at 01:05:16 took the job. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -4074,6 +4122,99 @@ entry is still true is the reading.
   `VALIDATION_EXCEPTION`, IAM's wording in `errorDetail`, with no run. The access role's policy, written for
   the Data page and the query editor, holds no `redshift-data:` action. Where:
   `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+  Read again 2026-11-22 at 22:59Z (Stage 21's 2.2), with `ListDatabases`, `ListSchemas`, `ListTables` and
+  `DescribeTable` on the access role: the creation passed, the access role calling `GetCredentials` twice,
+  `ListDatabases` and `ListSchemas` (`schemaPattern` `lab`), and the source stood `READY`. Its first run then
+  called `redshift-data:ExecuteStatement` in a second session of the same name, three attempts in 3 s,
+  `requestParameters` `{}`, each refused, and no `ListTables` or `DescribeTable` followed. The run failed
+  with `VALIDATION_EXCEPTION` and IAM's wording, nothing imported. With `ExecuteStatement` granted on the
+  workgroups and `DescribeStatement` and `GetStatementResult` on the session's own statements (23:09Z), the
+  next run at 23:10:44Z added 3 assets in 9.4 s: two `ExecuteStatement` named `Console Query: <uuid>`,
+  each polled with `DescribeStatement` and read with `GetStatementResult`, and no `ListTables` or
+  `DescribeTable`. The second statement, run as the access role's database user, is a catalog query over
+  `svv_all_columns`, `svv_redshift_columns`, `pg_constraint` and `pg_attribute`, limited to the schema and
+  the names the include rule matched; the first is absent from `sys_query_history`. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-469` **A Redshift subscription's fulfilment fails *"Secret ARN can not be null or empty"* when the
+  producer's assets came through a connection authenticated by IAM, and both portals read the subscription as
+  shared** (measured 2026-11-22 in Sandbox and Data Governance, Stage 21's 2.5 and 2.7). The producer's view
+  and table were imported by a data source on a Redshift connection that authenticates by IAM and names no
+  secret; the consumer's target, written by the `RedshiftServerless` blueprint, names its namespace's admin
+  secret. A request accepted at creation at 23:45:56Z led to two grants created by `SYSTEM` within 1.6 s, both
+  `GRANT_FAILED` 37 s later with that `failureCause` on each asset and `targetName` null. Nothing reached
+  either namespace: no datashare, no statement, and no Redshift, Data API or Secrets Manager call in the
+  workgroups' account. The consumer's portal read *Subscription approved*, and the producer's *Access* tab
+  *Shared* with no grant status. `RevokeSubscription` (`retainPermissions` `false`) at 23:56:34Z removed the
+  failed grants: each answered `ResourceNotFoundException` 36 s later, with no call in the workgroups'
+  account. The Redshift asset's page, as `catalog.md` §S summarises it (read 2026-11-17), describes the
+  datashare and names no credential. A Redshift asset shared by subscription therefore comes from a
+  connection authenticated by a secret; which database privileges that secret's user needs is unmeasured.
+  Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-470` **The portal's *Create table → Redshift table* uploads the file through S3 as the Redshift
+  connection's access role, under the projects bucket's default key, before any `COPY`** (measured
+  2026-11-23 at 00:02 UTC in Sandbox, Stage 21's 2.8). With a three-row CSV, the database `sandbox` and the
+  schema `lab`, *Next* answered *"Cannot infer schema"* and IAM's wording: the access role's session
+  `<Identity Center user id>@<Tooling environment id>`, created at 00:01:11Z with the portal user as
+  `sourceIdentity`, *"is not authorized to perform: kms:GenerateDataKey on resource:
+  arn:aws:kms:us-west-2:<account>:key/<id> because no identity-based policy allows the kms:GenerateDataKey
+  action"*. The trail logs the refusal at 00:02:24Z with `invokedBy` `fas.s3.amazonaws.com` and
+  `requestParameters` null, so the object's name is not in it. The key is the default key of the SageMaker
+  projects bucket and of no other bucket in the account. The access role holds no `s3:` or `kms:` action and
+  the bucket's policy only denies insecure transport; whether S3 authorized `s3:PutObject` before calling KMS
+  is not read. The same session's Query Editor V2 statements, as the per-project database user, only listed
+  databases and schemas; no `COPY` ran and no table was created, so the namespace's default role, which holds
+  no policy, was never reached. A load through this form needs the connection's role to write the projects
+  bucket under its key. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-471` **The `RedshiftServerless` blueprint's deploy creates a database role
+  `datazone_env_<environment id>` holding `sys:superuser`** (measured 2026-11-22 in Sandbox, Stage 21's 2.4,
+  read 2026-11-23 at 00:05 UTC). The provisioning role's database user, `IAMR:<provisioning role name>`, a
+  superuser, ran `CREATE ROLE "datazone_env_<environment id>"`, `GRANT USAGE ON DATABASE awsdatacatalog` to
+  it, `CREATE SCHEMA "project"`, `GRANT ALL ON SCHEMA "project"` and `GRANT ALL FOR tables IN SCHEMA project`
+  to it, and `GRANT ROLE sys:superuser TO ROLE datazone_env_<environment id>`, in 7 s ending 4 s before the
+  subscription target was written. The role is the target's `authorizedPrincipals`, and no user held it after
+  the deploy. A portal session carries `RedshiftDbRoles = datazone_env_<environment id>` (`docs/SMUS.md`, measured
+  2026-10-10 on another workgroup), so a member's portal session on this workgroup would be a superuser
+  session; that half is unmeasured. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-472` **A Redshift lineage run reads seven days of the warehouse's query history, imports `CREATE TABLE …
+  AS`, DDL and `INSERT`, leaves `UPDATE` and `MERGE` out, and fails a statement that reads `awsdatacatalog`**
+  (measured 2026-11-23 in Sandbox, Stage 21's 3.2 to 3.4). A connection's first scheduled run, `createdBy`
+  `SYSTEM` at 00:51:50 UTC, read from seven days before its start to its start, processed 19 statements in about
+  three minutes and ended `PARTIALLY_SUCCEEDED`, `numQueriesFailed` 1, with one error naming no query: *"FATAL:
+  Cannot connect to shared database "awsdatacatalog" created from Data Catalog ARN. …"*. The 19 match the
+  window's successful `CTAS`, `DDL` and `INSERT` statements in `SYS_QUERY_HISTORY` (8, 9 and 2) by three database
+  users, a `CREATE SCHEMA` and a `DROP SCHEMA` among them, which wrote no node; an `UPDATE` and a `MERGE` (typed
+  `OTHER`) of the window are not counted and wrote no node. The failure is the only processed statement naming
+  `awsdatacatalog`, a `CREATE TABLE … AS SELECT` from a resource link, so a table copied from the lake stands with
+  no upstream. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-473` **A Redshift lineage run writes a job node per statement, a job-run node per execution and a dataset
+  node per table named by its Redshift ARN, and that node joins the asset carrying the same ARN** (measured
+  2026-11-23 in Sandbox, Stage 21's 3.4). Data Governance's trail records `CreateLineageNode` by
+  `datazone.amazonaws.com`: job nodes `query-hash-<hash>`, the statement in a `QueryForm`, and dataset nodes
+  `<database>.<schema>.<table>`, `sourceIdentifier`
+  `arn:aws:redshift-serverless:<region>:<account>:table/<workgroup>/<database>/<schema>/<table>`, `view/` for a
+  view. The edges hang on job-run nodes, `<job sourceIdentifier>/<query id>#<n>#<n>`, whose `JobRunForm` carries
+  the query's times. A Redshift asset's `AssetCommonDetailsForm.sourceIdentifier` is the same ARN; its node reads
+  the dataset node as upstream, drawn *Cataloged* on the *Lineage* tab. A `DROP TABLE` writes a run whose output
+  is the dropped table, so a dropped table's node stays with its drop as the last upstream. `GetLineageNode`
+  returns the latest version with one upstream run; `ListLineageNodeHistory` lists a version per event. The nodes
+  outlive the connection and its job: one is read after `DeleteConnection`. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-476` **A Glue data source over a federated catalog imports a Redshift table as a Glue table asset whose
+  source identifier is the Glue table's ARN** (measured 2026-11-23 in Sandbox, Stage 21's 4.4). The *AWS Glue
+  (Lakehouse)* form on `project.default_lakehouse` takes the child catalog by name, `stage21_warehouse/sandbox`,
+  stored as `<account>:stage21_warehouse/sandbox`, and its database list offers the federated database. One run
+  imported the table in two seconds as a *Glue Table* whose form carries a *Federated Table* block, connection
+  `aws:redshift`, and the ARN `arn:aws:glue:us-west-2:<account>:table/<catalog>/<child>/<database>/<table>` as
+  its source identifier: not the Redshift ARN of a Redshift data source's asset or of a lineage node
+  (`SUP-473`), so the two never join. The form's *Import data lineage* box is the connection's setting, checked
+  when the form opens on that connection, and the run reports *Lineage import status: Completed*. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## SageMaker AI spaces and images
 
