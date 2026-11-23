@@ -5671,17 +5671,21 @@ entry is still true is the reading.
   Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
 
 - `SUP-484` **`deploy` creates or updates each workflow its manifest names and deletes none the manifest no
-  longer names** (measured 2026-11-23 in Staging, Stage 17 9.11, `list-workflows` as `InfrastructureAccess`).
-  Release G's `v0.6.0` deployed `app_etl_deploy_staging_app_etl` and `app_etl_deploy_staging_app_etl_train` to
-  `deploy-staging` on 2026-11-22. `v0.7.0`'s manifest drops `app-etl-train`, and its `staging-deploy` at 18:38 to
-  18:39 UTC printed *"Successfully created 1 workflow(s)"*; afterwards `app_etl_deploy_staging_app_etl` read
-  modified at 18:39:42 and `app_etl_deploy_staging_app_etl_train` still `READY`, modified 2026-11-22 at 04:12:30.
-  The deploy's files behave the same way (`SUP-348`): `code/app-etl-train.zip` and `workflows/app-etl-train.yaml`
-  stayed under `shared/app-etl/`. The CLI's architecture page, read on 2026-10-13, has `deploy` create the
-  workflows in MWAA Serverless and names no removal, and `destroy` removes what the manifest declares
-  (1.0.9's code, read 2026-10-17), so neither reaches a workflow the manifest dropped. Consequence: a workflow an application retires stays startable
-  in each target, by a chain or by hand, until it is deleted outside the CLI, and its archive stays in the
-  workflow scan's root. Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23 (9.11).
+  longer names** (measured 2026-11-23 in Staging and Production, Stage 17 9.11, `list-workflows` as
+  `InfrastructureAccess`). Release G's `v0.6.0` deployed `app_etl_deploy_staging_app_etl` and
+  `app_etl_deploy_staging_app_etl_train` to `deploy-staging` on 2026-11-22. `v0.7.0`'s manifest drops
+  `app-etl-train`, and its `staging-deploy` at 18:38 to 18:39 UTC printed *"Successfully created 1 workflow(s)"*;
+  afterwards `app_etl_deploy_staging_app_etl` read modified at 18:39:42 and
+  `app_etl_deploy_staging_app_etl_train` still `READY`, modified 2026-11-22 at 04:12:30. The deploy's files
+  behave the same way (`SUP-348`): `code/app-etl-train.zip` and `workflows/app-etl-train.yaml` stayed under
+  `shared/app-etl/`. Production read the same after `production-deploy` at 19:05 to 19:07 UTC:
+  `app_etl_deploy_production_app_etl` and `…_warehouse` modified at 19:07:24 and 19:07:39,
+  `app_etl_deploy_production_app_etl_train` `READY` since 2026-11-22 04:47:39, and both training files kept. The
+  CLI's architecture page, read on 2026-10-13, has `deploy` create the workflows in MWAA Serverless and names no
+  removal, and `destroy` removes what the manifest declares (1.0.9's code, read 2026-10-17), so neither reaches a
+  workflow the manifest dropped. Consequence: a workflow an application retires stays startable in each target,
+  by a chain or by hand, until it is deleted outside the CLI, and its archive stays in the workflow scan's root.
+  Where: `log-stage-17-sandbox-machine-learning.md`, 2026-11-23 (9.11).
 
 ## Bedrock
 
