@@ -1415,3 +1415,44 @@ Nothing was up. Times UTC.*
   and `CreateListingChangeSet` at 16:34:09, each as `awsds-data-studio-domain-execution`, and
   `CreateLineageNode`, `CreateLineageNodeVersion` and `UpdateLineageNode` at 16:34:09 and 16:34:22; the later
   events had not arrived. No data source was created: `eighth-experimentation` lists the same four.
+
+## 2026-11-23 — The two spaces, 5.1's table and 5.3's data product, after the raise
+
+*Claude's hand, in the Data Scientist User's portal session, on the user's authorization in this session's
+chat of the list's acts in order ("criar os dois spaces; o CTAS; o 5.3; …"). The user raised the
+environment. Times UTC.*
+
+- **[Claude] The spaces**: opening each project's JupyterLab from the portal created its default space,
+  `default-28f1b390-0041-7068-8cc7-9ccef94277d1`, with a JupyterLab app `default` on `ml.t3.medium`:
+  `eighth-experimentation`'s in domain `d-p6gthxc82ckg` at 16:43:35, `test-experimentation`'s in
+  `d-lfgbdrjncmsu` at 16:46:40 (app 16:46:45). `list-apps` answers eighth's app `InService` with a
+  `CreationTime` of 2026-11-22 18:55:59, before its space existed.
+- **[Claude] 5.1's table**: the query editor on Athena in `eighth-experimentation`, *Limit 100* off, ran
+  the stage's `CREATE TABLE stage21_images` over the generator's 20 rows, the location
+  `<LocationUri>stage21_images/`. `StartQueryExecution` at 16:48:29 as the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`, session `<user id>@5hkjdsy3umpi1c`, in the workgroup
+  `workgroup-avhvbqn37ty7m8-5hkjdsy3umpi1c`. `glue get-table`: created 16:48:31, `EXTERNAL_TABLE` with
+  `table_type` `ICEBERG`, columns `object_key`, `tone`, `width`, `height`, `size_bytes`, located at
+  `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/catalogs/stage21_images`.
+- **[Claude] The source's run**: *Run* on `5w1ic2yqcs5uog` (Manage → Catalog management → Data sources),
+  run `4udwjanark68wg`, type `PRIORITIZED`, 16:49:45 to 16:49:48, `SUCCESS`, added 1, unchanged 1 (`trades`).
+  The asset `c5mzcsflx389zk` `stage21_images`, `amazon.datazone.GlueTableAssetType` revision 24, created
+  16:49:47, its `externalIdentifier` the Glue table's ARN followed by `.avhvbqn37ty7m8`; forms
+  `GlueTableForm`, `DataSourceReferenceForm`, `SubscriptionTermsForm` (`approvalRequired` `YES`) and
+  `AssetCommonDetailsForm`. Not published (*Publish on import* off).
+- **[Claude] 5.3's product**: *Manage → Catalog management → Assets → Create → Create data product*, name
+  `sandbox-stage21-images`, the description *"Stage 21 pass 5: twenty synthetic 64x64 PNGs under
+  shared/stage21-images/ and their Iceberg table stage21_images, for one sitting."*, *Browse assets* listing
+  both (`stage21-images` as *S3 Object Collection*, `stage21_images` as *Glue Table*), *Create*: *"Data
+  product created successfully"*, the product `bgclb83agkow0g` at 16:53:14. Its page read *Publish* disabled
+  until *Add Form* → `classification` valued `internal` (*"Form added successfully"*, revision 2 at
+  16:54:05); no metadata rule is set (`catalog.md` §M), so whether the form or the page's load enabled it
+  is not separated. *Publish* → *"This data product will become discoverable to everyone in your
+  organization and they can request access to this data product."* → *Publish*.
+- **[Claude] The listings**, read at 16:54 as `awsds-infra-sandbox-1` (`awsds-infra-data`, a member of
+  neither project, is refused `GetDataProduct`): the product listing `cuilocp2vj9zbk`, `ACTIVE`, revision 1
+  over product revision 2, its items the S3 listing `3rnyg9wgrg1v2o` revision 4 and the table's new listing
+  `4m03acvondth1s` revision 1, its forms `ownedByDataProductListing` naming both and `classification`
+  `internal`. The table's listing reads `INACTIVE` on `get-asset` and `search-listings` returns it under no
+  name: the product's publication published the table reachable through the product alone (`catalog.md`
+  §P). The S3 listing stays `ACTIVE`, published on its own at 5.2.
