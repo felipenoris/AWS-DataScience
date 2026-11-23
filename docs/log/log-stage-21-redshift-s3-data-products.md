@@ -1351,3 +1351,30 @@ through `awsds-infra-sandbox-1` (`Sandbox Account 1`) and `awsds-infra-data` (Da
 - **[Claude] Chrome**: this session holds no tab group; the user's signed-in tab is outside it.
 - **[Claude] 1.4's generator** run on the laptop with Python 3: 20 PNGs of 64 by 64, 177 to 180 bytes each, 80
   KB in all, 13 `warm` and 7 `cold`; seeded, so the space writes the same files and the same `VALUES`.
+
+## 2026-11-23 — 5.1's copy, ahead of the raise: the images uploaded through the portal's S3 browser
+
+*Claude, in the session of §N.10's day 2's rest, on the user's word in this session's chat, *"Faça o upload
+agora"*, answering *"Faço agora o upload pelo portal ou espero a subida?"*, after the orchestrating session
+relayed the user's request to advance every write that needs nothing up. The R2 session told first. The
+portal's acts in the Data Scientist User's Chrome session, in a tab of this session's own; the reads as the
+infrastructure user with `InfrastructureAccess` through `awsds-infra-sandbox-1`. Nothing was up. Times UTC.*
+
+- **[Claude] Where 5.1's copy ran**: the plan copies the files from an `eighth-experimentation` space; with
+  no space and no endpoint, the 20 files 1.4's generator wrote on the laptop at 16:0x went up through the
+  portal instead, the generator being seeded, so the files are the ones a space writes.
+- **[Claude] The portal**: *Data → S3 buckets → Project bucket*, `shared`, *Actions* (*Create folder*,
+  *Upload files*, *Create table from contents*, *Copy*, *Publish to Catalog*, *Add business metadata*,
+  *Share*, *Delete*). *Create folder* `stage21-images`, *"Successfully created folder "stage21-images"."*; then
+  *Upload files* with the 20 PNGs, *"20 files uploaded successfully."* The tree also shows *Subscribed buckets*
+  beside *Project bucket*.
+- **[Claude] The objects**: a zero-byte folder key `shared/stage21-images/` at 16:25:12 and the 20 PNGs from
+  16:26:10 to 16:26:12, 177 to 180 bytes each, `image/png`, `aws:kms` under `alias/awsds-sandbox-project`;
+  `img-00.png` read back byte-identical to the laptop's.
+- **[Claude] The identity**: the trail's management events of the page are the project role
+  `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c` in the session `<user id>@5hkjdsy3umpi1c`, the portal's
+  user: `GetEnvironment`, `DescribeDomain`, `ListApps`, `ListSpaces`, Glue's `GetConnections` and
+  `GetCatalogs`, then `kms:GenerateDataKey` at 16:25:11 for the folder key. The page created no space and
+  started no app: none in Sandbox's nine domains at 16:27.
+- **What 5.1 keeps for the raise**: the Athena CTAS of `stage21_images` in `glue_db_blerpkhn9nj7o0`, and the
+  two spaces.
