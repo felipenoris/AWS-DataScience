@@ -4658,3 +4658,149 @@ finding's two sides before writing it. No AWS call.*
 - **[Claude] `gitlab.md`** after R1's acts (Stage 19's log of 2026-11-22): §K's runner table lists
   `awsds/app-ml`, `awsds/app-genai` and `awsds/app-dbt` on the three runners, §M step 3's allowlist holds
   them, and §U's `BUILD=1` row names every application's tag.
+
+## 2026-11-23 — R2's pre-flight, nothing up
+
+*Claude's hand, the session running `promotion.md` §N.11.2 (R2), started by the session coordinating the
+afternoon of 2026-11-23, on the branch `claude/r2-releases-c2e42c` from `main` at `684ec8b1`. As the
+infrastructure user, `InfrastructureAccess`, through `awsds-infra-prod`, `awsds-infra-staging` and
+`awsds-infra-sandbox-1`; reads only. Times UTC.*
+
+- **[Claude] `make status`** at 16:01: 0.0000 USD/h, nothing up, no Studio app billing in the five accounts.
+- **[Claude] The gates' `pip-audit` step**, its script read from this repository's
+  `ci-gates/gates.gitlab-ci.yml` and run verbatim with the job's `PIP_AUDIT_VERSION` 2.10.1, on copies of
+  `origin/main`'s trees, 16:00:38 to 16:01:53: `app-dbt` (`.`) *"78 of 78 pinned package(s) audited, 0
+  blocking vulnerability(ies)"* and `app-ml` (`code`) *"48 of 48"*, each *"No known vulnerabilities found"*,
+  exit 0. `app-genai` with `GATES_UV_PROJECTS=.`, which its pipeline leaves unset: the export holds no pin
+  and the step exits 1 at `grep -c` (Lesson 87), so its tag waits on no gates tag. A dated verdict, run
+  again before each tag (Lesson 77).
+- **[Claude] `./scripts/deploy-application.py`**: `staging --check` as `awsds-infra-staging` and
+  `production --check` as `awsds-infra-prod`, `DOMAIN_ID` and `DOMAIN_REGION` set as the pipeline sets them,
+  16:02:47 to 16:03:01, each exit 0: `deploy-staging` (`5ido8bej1zoeq8`) and `deploy-production`
+  (`d7qcazihvr3s7k`) with their roles, subnets, security groups, keys and shared prefixes, and *"the caller
+  is a member of the project"*. With no `AWS_PROFILE` the script reads *"NoCredentials"*, and with either
+  variable unset it stops on it, exit 1. `--self-check` `OK`: `app-etl` at 8 variables a stage since 9.11's
+  half (#390), `app-ml` 12, `app-genai` 3, `app-dbt` 9, with their workflows' names.
+- **[Claude] `./scripts/check-gitlab-mirror.py --plan`** at 16:03: exit 0, `GM-1` to `GM-8` passing, the
+  copy at `awsds/dev-env` `9e64c6e22982` of 2026-11-22 (merge request !15), the literal and the account's
+  list 73 names, sha256 `61f1e1646df12c14` on both sides. `7f2623b6`, !16's merge, reaches the copy at R2's
+  opening.
+- **[Claude] The raises, planned and saved nowhere**, from `main` at `684ec8b1` with
+  `TF_VAR_optional_service_groups='["bedrock-base"]'`, the list the Makefile's `up` hands Terraform for
+  `GROUPS=bedrock-base` (`slices.py` takes it as `--groups`): `staging/egress/` as `awsds-infra-staging`
+  and `production/workloads-egress/` as `awsds-infra-prod`, 16:07 to 16:09, each *"Plan: 20 to add, 0 to
+  change, 0 to destroy."*: the nine DNS Firewall and query-log resources and eleven interface endpoints,
+  `bedrock` and `bedrock-runtime` beside R1's nine. Production's `init` failed once to reach
+  `registry.terraform.io`; the plan ran on the folder's earlier initialisation and read the slice's state.
+- **[Claude] The trees** at `684ec8b1`: the four applications' `.gitlab-ci.yml` pin `awsds-workflows` at
+  `4401f91` and the gates at `d0b895c8` (`gates-v0.6.0`); `examples/app-etl/` holds 9.11's half, its
+  `workflows/` `app-etl.yaml` and `app-etl-warehouse.yaml` alone and its pipeline naming none of the four
+  model jobs. The laptop's `$HOME/tmp` holds no `app-dbt`, `app-ml` or `app-genai` directory for
+  `sagemaker-application.md` §L step 1's clones; `$HOME/tmp/app-etl` exists, an earlier clone.
+- **[Claude] The project folder** read on `main` at `684ec8b1`, `origin/main`'s commit, clean, with the
+  mirror's `gitlab` remote.
+
+## 2026-11-23 — R2: the opening and the four releases' pipelines
+
+*Claude's hand, R2's session (`promotion.md` §N.11.2), on the user's words in this session's chat naming
+each act of `r2-acts-for-15h.md` in order, *"Um job que falhar para a sessão no log dele."*, and later *"Um
+ato bloqueado não segura as outras aplicações"*. GitLab as its local administrator `felipenoris`, signed in by
+the user in a Chrome tab of Claude's; git through the laptop's keychain credential; AWS reads as the
+infrastructure user, `InfrastructureAccess`. The orchestrating session's readings are marked as such. Times
+UTC. Each application's legs are in its stage's log: `app-dbt` in Stage 20's, `app-ml`, `app-genai` and
+`app-etl` in Stage 17's.*
+
+- **[user] The raise and the tunnel**: `make status` at 16:41 read the hub, GitLab, the build runner
+  `i-015f85e903a4bfe45`, `staging/egress/` and `production/workloads-egress/` up, each egress with eleven
+  interface endpoints, `bedrock` and `bedrock-runtime` among them; passive burn 0.8759 USD/h.
+- **[Claude] GitLab's session**: `/api/v4/user` at 16:43 answered `felipenoris`, administrator, in Claude's tab.
+- **[Claude] The mirror**: `gitlab`'s `main` read `495ebb1a` at 16:43:12, `origin/main`'s commit, which holds
+  #321's `81d70158`; its push was the user's, `86748b34` to `495ebb1a` at 16:40:36 in `awsds/infrastructure`'s
+  events.
+- **[Claude] `awsds/dev-env`'s README row** for `default-v0.10.1`: `main` at `7f2623b6`, !16's merge, its include
+  at `gates-v0.7.0` (`2dedd500`); the branch `readme-default-v0.10.1` at `3b4deb20`, one line; merge request
+  `!17` opened at 16:47:55; its pipeline #140 (`recipe-checks`, `pip-audit`, `secret_detection` and its gate)
+  green; merged at 16:50:39 by `felipenoris`, the merge commit `77b713e9`. `./scripts/gitlab-mirror.py
+  awsds/dev-env` copied it into `gitlab/awsds/dev-env/` (commit `aa331119` on this branch), `.gitlab-ci.yml`'s
+  include moving to `gates-v0.7.0` with it.
+- **[Claude] The four releases**, each a tag on a `main` whose tree is its `examples/` source's (Lesson 86):
+  `app-dbt` `v0.1.0` (pipeline #143, stopped at `build-task-code`, Stage 20's log) and `v0.1.1` (#148);
+  `app-ml` `v0.1.0` (#147); `app-genai` `v0.1.0` (#150); `app-etl` `v0.7.0` (#153). `store-bundle` wrote
+  `app-dbt/v0.1.1/app-dbt.zip` (25501481 bytes, 17:07:04), `app-ml/v0.1.0/app-ml.zip` (15601746, 17:08:18) and
+  `app-genai/v0.1.0/app-genai.zip` (18354, 17:54:04) to `awsds-prod-releases`.
+- **[Claude] The deploy runner serialises the legs**: one job at a time on `awsds-prod-runner-deploy`, so
+  `app-ml`'s `staging-deploy` waited from 17:10:57 to 17:21:32 behind `app-dbt`'s `staging-test`, and each
+  later job queued behind the job running.
+- **[Claude] The gates**, each on the orchestrating session's «verificado» before every `production-gate` and
+  `production-approve`: `app-dbt` `staging-gate` 17:08:01 and `production-gate` 18:02:09; `app-ml` 17:09:57
+  and 18:02:10, `production-approve` 18:32:48; `app-genai` 17:54:52 and 18:32:49; `app-etl` `staging-gate`
+  18:37:28. `app-etl`'s `production-warehouse-ddl` (manual, `allow_failure`, Production's warehouse) is no act
+  of the list and stays unplayed.
+- **The orchestrating session's readings**, as it reported them: the GitLab refs at 16:43, 16:56, 17:05 and
+  17:53 (each tag on its `main`); `awsds-prod-releases` at 16:58; `app-dbt`'s Staging leg at 17:27 (the bundle,
+  both executions `SUCCEEDED`, both tables `ICEBERG`); `app-ml`'s at 17:51 (the bundle, both executions, the
+  approved version's metadata, the image's digest); `app-genai`'s at 18:27 (the bundle, both executions, the
+  guardrail's version 1 `READY` at 18:01:25, the triage report); `app-ml`'s Production registry at 18:26 (one
+  version, `PendingManualApproval`, no transform job since 18:00); `app-etl`'s refs at 18:31. The assets of
+  `deploy-production` answered it `AccessDeniedException`, the infrastructure user being no member there.
+- **[Claude] The N.10 session's lowering**, as it reported it: `make down ENV=sandbox` ended at 18:23:12,
+  `make status` at 18:24:52 reading Sandbox at zero; the orchestrating session's at 18:27:48 reads passive
+  burn 0.6875 USD/h, all R2's.
+
+## 2026-11-23 — R2: the user's answers on `production-warehouse-ddl` and on the waiting rows
+
+*Claude's hand, R2's session, recording the user's words relayed by the orchestrating session. Times UTC.*
+
+- **[user]** *"Aceito as três"*, at 18:52 in the orchestrating session's chat, answering *"Aceita as três
+  recomendações do R2?"*: `app-etl` `v0.7.0`'s `production-warehouse-ddl` stays unplayed, Production's
+  warehouse not raised today; and R2's edits to `docs/plan/waiting-on-the-user.md` as R2 described them, in the
+  smallest hunks. The third, 9.11's estate, is in Stage 17's log.
+
+## 2026-11-23 — R2: the lowering, Staging's egress, Production's workloads egress and GitLab's backup
+
+*Claude's hand, R2's session, on the user's words in this session's chat, *"make down ENV=staging; down do
+workloads-egress; backup do GitLab"*, each after the orchestrating session's «verificado», as
+`awsds-infra-staging` and `awsds-infra-prod`, `InfrastructureAccess`; the other sessions on the laptop told
+before the first. Times UTC.*
+
+- **[Claude] `make status` before** (19:15): passive burn 0.6875 USD/h, the hub (`vpn`, `proxy`), GitLab
+  (`tooling`, `runners`), `production/egress`, `production/workloads-egress` and `staging/egress` up; Sandbox at
+  zero; no Studio app billing in any account.
+- **[Claude] `make down ENV=staging AUTO=1`**, 19:27:08 to 19:33:08, exit 0: `staging/egress` *"Plan: 0 to add, 0 to
+  change, 20 to destroy."*, then *"Destroy complete! Resources: 20 destroyed."*; the `[P]` slices and `bootstrap/`
+  refused as always; no Studio app and no dormant `[D]` in Staging. Staging read no interface endpoint at 19:33.
+- **[Claude] `make down ENV=production ONLY=workloads-egress AUTO=1`**, 19:34:32 to 19:40:25, exit 0: *"Plan: 0 to
+  add, 0 to change, 20 to destroy."*, *"Destroy complete! Resources: 20 destroyed."*; the workloads VPC
+  (`vpc-06e421bd113984822`) keeps its S3 and DynamoDB gateways alone. GitLab's host is in `vpc-02fa17bfbbb0df9d5`,
+  whose own S3 gateway carries the backup's upload, so the order of this act and the next did not matter.
+- **[Claude] GitLab's backup by hand**: `aws ssm send-command` with `AWS-RunShellScript`, *"sudo gitlab-backup
+  create STRATEGY=copy"*, on `i-010c8217a1b3062dc` (`awsds-prod-gitlab`), command
+  `7a9e1d32-e122-4d14-8872-8db1ee7d60a3`, 19:40:47 to 19:41:31, `Success`, exit 0: *"Dumping database ... done"*,
+  *"Dumping repositories ... done"*, *"Uploading backup archive to remote storage awsds-prod-gitlab-backup ... done
+  (encrypted with aws:kms)"*, *"Backup 1795462881_2026_11_23_19.4.2 is done."*. Read in the bucket:
+  `1795462881_2026_11_23_19.4.2_gitlab_backup.tar`, 22,876,160 bytes, 19:41:32, `aws:kms`, expiring 2026-12-24
+  (`expire-current-versions`), release 19.4.2.
+- **[Claude] `make gitlab-down AUTO=1`**, after the orchestrating session's «verificado» with the backup read,
+  19:43:45 to 19:51:39, exit 0: `production/runners` *"Plan: 0 to add, 0 to change, 13 to destroy."*, *"Destroy
+  complete! Resources: 13 destroyed."*; `production/tooling` stopped, `i-010c8217a1b3062dc` (`awsds-prod-gitlab`)
+  reading `stopped`; `production/egress` *"12 to destroy"*, *"Destroy complete! Resources: 12 destroyed."*; the
+  hub's two `[D]` slices refused by the target, as written.
+- **[user] The tunnel down**, at about 19:45, during `make gitlab-down` (*"Túnel derrubado"*, in the orchestrating
+  session's chat). Every later CLI call ran with `NO_PROXY='*'`.
+- **[Claude] `make hub-down AUTO=1`**, after the orchestrating session's «verificado», 19:53:53 to 19:53:59, exit 0:
+  `awsds-prod-proxy` (`i-071bcc561f75b51d7`) and `awsds-prod-vpn` (`i-0e3ae32bacd61c9b2`) `stopped`.
+- **[Claude] §R** at 19:54 to 20:00: `make status` *"passive burn: USD 0.0000/h"*, *"active burn: USD 0.0000"*, no
+  Studio app, no EMR Serverless application and no OpenSearch Serverless collection in any account.
+  `./aws/egress.py` on the three accounts: *"all checks passed"*, no interface endpoint and no NAT gateway, 0.000
+  USD/h each. `./aws/cicd.py`: *"0 check(s) FAILED."*. `./aws/orchestration.py`: 16 failed, fifteen `OR-2` on the
+  CLI's log groups with no retention (`EXC-25`, the new applications' groups among them) and one `OR-8`,
+  *"CreateModelPackage caller … datazone_usr_role_d7qcazihvr3s7k_59niwej9axztow/AmazonMWAAServerless is not
+  awsds-deploy-prod"*: `app-ml`'s register workflow proposes the version as the project role by design (Stage 17
+  pass 9), and the check reads `app-etl`'s retired shape, where the deploy role registered. `./aws/deploytargets.py`:
+  one failed, `DT-8` *"staging table app_dbt.trades carries a lake table's name - Staging holds no copy (decision
+  3)"*: `app-dbt`'s Glue job loads its own sample into `app_dbt.trades`, which shares the lake table's name and
+  copies nothing from it. Both checks are Lesson 87's class, owed a change that reads each application's shape.
+  The calls that failed in all three are the same eleven, each instrument's opening `aws sts get-caller-identity`
+  on the profiles of five SSO sessions not signed in (`awsds-ctadmin`, `awsds-deploy`, `awsds-devenv`,
+  `awsds-governance`, `awsds-scientist`), *"Error loading SSO Token: Token for <session> does not exist"*; every
+  measurement ran as the infrastructure user.

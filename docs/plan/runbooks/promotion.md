@@ -1267,9 +1267,12 @@ N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s f
     before 2026-12-18 or with the archive moved to dbt 1.12, its tag preceded by 8.6's deletion of the
     asset pass 5 left in `app-dbt-dev`, 5.0's link revoked on 2026-11-23 before any import; `app-ml`'s (Stage 17 9.7) and `app-genai`'s
     (10.6), whose pipeline runs no `pip-audit` and so waits on no gates tag; then `app-etl`'s release
-    retiring its model half (9.11).
+    retiring its model half (9.11). **R2 ran on 2026-11-23** (N.11.2): the four releases through both
+    targets, `app-dbt` as `v0.1.1`.
 11. **With nothing up, after R2**: 9.11's estate pull request, planned from a `main` that holds it
-    (Lesson 79).
+    (Lesson 79), option (a) taken by the user on 2026-11-23: `awsds-prod-model-app-etl/1` deleted by hand on the
+    user's word, then the apply removes both groups; the retired workflow `app_etl_deploy_<target>_app_etl_train`
+    and its two files deleted in each target (`SUP-484`), each an act the user names.
 12. **The stages' close**: after item 10, Stages 8, 9 and 10 hold only what N.5 lists and Stage 8
     xxvii's plan half, which waits for an Amazon Linux release that lands while the runners are up; each
     can close as Stage 4 did, what waits moved to the trigger or the stage that provides its subject. The
@@ -2814,6 +2817,19 @@ steps 2 and 3 push; before 2026-12-18, since it carries
 4. [user] `make down ENV=staging`; `make down ENV=production ONLY=workloads-egress`; `make gitlab-down`;
    the tunnel down; `make hub-down`. [Claude] `make status`, §R, and 9.11's estate pull request, planned
    from a `main` that holds the release (N.6 item 11).
+
+**R2 ran on 2026-11-23** (the logs of Stages 8, 17 and 20), the hub, GitLab with the build runner and both
+targets' egress raised by the user before 16:41 UTC: step 1's mirror at `495ebb1a` and `awsds/dev-env`'s
+README row (!17) with its mirror, every push authenticated by the keychain's credential. Step 2: `app-dbt`'s
+`v0.1.0` stopped at `build-task-code` on `run-dbt.sh`'s `0777` mode, the runner's checkout, and its fix
+merged by !1 released as `v0.1.1` (#148) through both targets; `app-ml`'s `v0.1.0` (#147), Production's
+scoring chain held at `resolve` before `production-approve` and `SUCCEEDED` from the registry after it;
+`app-genai`'s `v0.1.0` (#150), its Production triage `FAILED` once at `check` on a malformed answer and
+`SUCCEEDED` on the one attempt the user named. Step 3: `app-etl`'s `v0.7.0` (!18, #153) through both targets
+with no model job, `production-warehouse-ddl` unplayed on the user's answer, the retired workflow and its files
+left in both targets (`SUP-484`). Step 4: `make down ENV=staging`, `make down ENV=production
+ONLY=workloads-egress`, a GitLab backup by hand at 19:41 (`1795462881_2026_11_23_19.4.2`) and `make
+gitlab-down`, each with `AUTO=1`. Every `scan-gate` read `SUP-437`'s text.
 
 #### N.11.3 The sittings' cost
 

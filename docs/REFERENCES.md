@@ -2244,6 +2244,14 @@
   Pipelines' IAM access management:
   <https://docs.aws.amazon.com/en_us/sagemaker/latest/dg/build-and-manage-access.html>.
 
+- **Deleting a DataZone asset (read 2026-11-23, for Stage 20 8.6's deletion in R2).** The user guide:
+  *"To delete an asset, you must be the owner or the contributor of the project"* to which it belongs, and a
+  listing with subscribers is refused until they are revoked:
+  <https://docs.aws.amazon.com/datazone/latest/userguide/delete-data-asset.html>. `DeleteAsset`'s reference
+  refuses an asset linked to a draft or published data product or referenced by an asset filter:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteAsset.html>. The SageMaker Unified
+  Studio pages of the same subject rendered no body to a fetch.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
