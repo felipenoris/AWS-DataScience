@@ -1049,3 +1049,78 @@ and the applies as the infrastructure user with `InfrastructureAccess` in `Sandb
 - **[Claude] `US-3`** (`./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`, 00:29 to 00:31, *"all checks
   passed"*): *"14 blueprint configuration(s) in awsds-infra-sandbox-1"*, *"all inside decision 5's category 1"*,
   and the domain account's Tooling configuration the note it was.
+
+## 2026-11-23 — §N.10's day 2: pass 3, the warehouse's lineage and its removal
+
+*Claude, in the session of `promotion.md` §N.10's day 2, on the user's word in this session's chat, *"Sim, faça o
+passo 3"*, answering a question that named pass 3's writes: `lineage_reader`, its secret and its grants on `lab`,
+the second connection and the data source with *Import data lineage* in the portal, 3.3's statements creating
+`lab.trades_hot_by_day`, and 3.5's removal. The portal's acts in the Data Scientist User's Chrome session; the SQL
+as the warehouse's admin through the Data API; the reads as the infrastructure user with `InfrastructureAccess` in
+`Sandbox Account 1` (`awsds-infra-sandbox-1`) and `Data Governance` (`awsds-infra-data`). Times UTC.*
+
+- **[Claude] 3.1, the credentials**, 00:37:33 to 00:38:18: the password from `get-random-password`, never
+  printed; `CREATE USER lineage_reader` from its MD5 hash, `GRANT ROLE "sys:operator"`, `USAGE ON SCHEMA lab` and
+  `SELECT ON ALL TABLES IN SCHEMA lab`, each `FINISHED`; the secret `awsds-sandbox-stage21-lineage-reader`
+  tagged `AmazonDataZoneProject` `avhvbqn37ty7m8`. Read back: user 109, `usesuper` false, the role
+  `sys:operator`, five of `lab`'s tables granted.
+- **[Claude] The second connection**, *Create connection* in `eighth-experimentation`, Redshift with *AWS
+  Secrets Manager* and that secret: `sandbox-lineage-reader` (`5dpavlenb7xu34`), `CreateConnection` at 00:40:16 by
+  the domain execution role. The form's JDBC URL named the database `dev`, edited to `sandbox`. `CREATING` to
+  00:43:57, then `READY`, its `lineageSync` `null` throughout (`SUP-207`).
+- **[Claude] 3.2, the data source**: `sandbox-lab-lineage` (`cyfqsfnyf4s8wg`) on that connection over
+  `sandbox.lab`, *Import data lineage* checked, `publishOnImport` false, no schedule. `CreateDataSource` at
+  00:46:52, the switch's time, then an `UpdateDataSource` by `datazone.amazonaws.com` at 00:46:53. At 00:47:17
+  the connection read `lineageSync` `enabled: true`, the job `69cnpyuu9d7yfk` and `cron(51 0 * * ? *)`. The data
+  source never ran.
+- **[Claude] 3.3, the statements, run as the admin through the Data API**, not in the user's Query editor as the
+  step says, to land before the pull at 00:51: `CREATE TABLE lab.trades_hot_by_day AS …` (query 16527491,
+  00:47:56), the `INSERT … SELECT` into `lab.trades_hot_daily` (16527507, 00:48:31), the `UPDATE` (16527512,
+  00:48:37) and the `MERGE` (16527519, 00:48:39), each `success`, the `MERGE` typed `OTHER` in
+  `SYS_QUERY_HISTORY`. The `CREATE TABLE … AS` from `awsdatacatalog` was not run: the pull reads seven days, which
+  held Stage 19 5.2's `CREATE TABLE lab.trades_hot AS SELECT * FROM
+  awsdatacatalog.glue_db_blerpkhn9nj7o0.trades_notional` (query 14915514, 2026-11-22 19:42:15, user 103), and a
+  statement after 00:51 reaches no pull before 3.5. `lab.trades_from_lake` does not exist.
+- **[Claude] The pull**: the run `ajk9injla9unm8`, `createdBy` `SYSTEM` at 00:51:50, `IN_PROGRESS` at 00:54:21,
+  `PARTIALLY_SUCCEEDED` at 00:54:42. `queryStartTime` 2026-11-16T00:51:50.324Z, `queryEndTime`
+  2026-11-23T00:51:50.324Z, `totalQueriesProcessed` 19, `numQueriesFailed` 1, *"FATAL: Cannot connect to shared
+  database "awsdatacatalog" created from Data Catalog ARN. Connect to a database in your cluster or a database
+  created from a datashare instead and use cross-database query notation <shareddatabase>.<schema>.<object> to
+  query the data in shared database."* The 19 match the window's successful `CTAS` (8), `DDL` (9) and `INSERT`
+  (2) statements, by users 100, 103 and 107; the `UPDATE` and the `MERGE` are not among them. The failure is the
+  `awsdatacatalog` CTAS, the only processed statement naming that database (`SUP-472`).
+- **[Claude] 3.4, the nodes**: from 00:53:05 to 00:54:28 Data Governance's trail holds 26 `CreateLineageNode`
+  by `datazone.amazonaws.com`, beside 16 `CreateLineageEvent`, 37 `CreateLineageNodeVersion`, 41
+  `UpdateLineageNode` and 16 `UpdateLineageNodeVersion`. Ten are dataset nodes, `sandbox.lab.<table>` named by
+  `arn:aws:redshift-serverless:us-west-2:<Sandbox>:table/awsds-sandbox-warehouse/sandbox/lab/<table>` (`view/` for
+  `trades_hot_by_desk`); sixteen are job nodes, one per statement, `query-hash-<hash>` with its text in a
+  `QueryForm`; the edges hang on a job-run node per execution, `<job>/<query id>#<n>#<n>` (`SUP-473`). Edges:
+  `trades_hot` → `trades_hot_daily` by the CTAS of 22:56 and by the `INSERT … SELECT`; `trades_hot` →
+  `trades_hot_by_day` by its CTAS; `trades_hot` → `trades_hot_by_desk` by `CREATE VIEW`. The `UPDATE` and the
+  `MERGE` left no node, and `trades_hot` has no upstream. Statements with no input left a run into the table
+  alone, and each `DROP TABLE` a run whose output is the dropped table: `wh_digits`, `wh_n`, `neg52.t`,
+  `neg52_ctl`, `b52_test` and `b52_eighth`, gone from the warehouse, stand in the graph.
+- **[Claude] The join to the assets**: each Redshift asset's `AssetCommonDetailsForm.sourceIdentifier` is its
+  dataset node's ARN, and the asset nodes `c1cewufu08ayvk`, `4rgbeb8ey4f9qo` and `4ryiwpqegyjq1c` read the
+  dataset nodes as upstream. `list-lineage-node-history` gives `trades_hot_daily` two versions (22:56:03 and
+  00:48:32) and `trades_hot` four.
+- **[Claude] The graph in the portal**, `trades_hot_daily`'s *Lineage* tab at depth 5: `sandbox.lab.trades_hot`
+  (Table) → two job runs, `COMPLETE` → `sandbox.lab.trades_hot_daily` (Table) → *Cataloged* → `trades_hot_daily`
+  (Asset / Inventory). `trades_hot`'s tab: the table → *Cataloged* → the inventory asset → *Published* → the
+  published asset, nothing upstream of the table, so the graph does not reach the lake's `trades_notional`.
+- **[Claude] 3.5, the removal**: the data source's *Edit connection* panel (*"The connection cannot be changed
+  once the data source has been created."*; under the switch, *"Data lineage will be imported from all data
+  sources that use this connection."*), *Import data lineage* unchecked and saved at 01:03:57; the connection
+  read `enabled: false` at 01:04:11, its job and schedule kept. The data source deleted at 01:04:33 (*"Deleting
+  this data source will not delete assets it has already published, but no new runs will occur."*), the
+  connection removed at 01:05:16 (*Remove connection*, the word *confirm*). As the admin, 01:05:35 to 01:05:48:
+  `REVOKE ROLE "sys:operator"`, `REVOKE ALL ON ALL TABLES IN SCHEMA lab`, `REVOKE USAGE ON SCHEMA lab`, `DROP USER
+  lineage_reader`, each `FINISHED`, and `SVV_USER_INFO` holds no such user. The secret deleted at 01:06:08 with
+  the step's seven-day window, deletion date 2026-11-30T01:06:08Z; rollback item 3 says no recovery window.
+- **[Claude] What stays**: the connection answers *"Cannot find connection with id: 5dpavlenb7xu34"*, the data
+  source *"The DataSource doesn't exist with dataSourceId=cyfqsfnyf4s8wg."*, the job *"The given Job doesn't
+  exist. Try creating Job before accessing it."*. `eighth-experimentation` keeps one Redshift connection,
+  `redshift-serverless.redshift`, `lineageSync` `enabled: false` on `cron(43 3 * * ? *)`, 6h decision 3's
+  setting as found. The lineage nodes stay: `sandbox.lab.trades_hot_by_day`'s is read after the removal.
+  `lab.trades_hot_by_day` (owner `dbadmin`, 10 rows) and `lab.trades_hot_daily` (10 rows after the `INSERT`) wait
+  for Stage 19's step 7.

@@ -3797,7 +3797,13 @@ entry is still true is the reading.
   (Stage 21's 2.4): the connection the `RedshiftServerless` blueprint wrote for a consumer's workgroup,
   `project.redshift`, carried `lineageSync` enabled on `cron(28 23 * * ? *)`, the minute of its creation, and a
   job of its own, so the blueprint's path carries the default too. Where:
-  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-22. Read again 2026-11-23 (Stage 21's 3.1 to 3.5): a
+  connection made in the portal with *AWS Secrets Manager* at 00:40:16 carried `lineageSync` `null` from
+  `CREATING` to `READY` at 00:43:57, no job. A data source with *Import data lineage* on it, created at 00:46:52,
+  wrote `enabled: true`, a job `69cnpyuu9d7yfk` and `cron(51 0 * * ? *)`, daily, its first run at 00:51:50. The
+  switch is the connection's: the data source's panel says *"Data lineage will be imported from all data sources
+  that use this connection."* Unchecked at 01:03:57, it wrote `enabled: false`, the job and the schedule kept, and
+  `DeleteConnection` at 01:05:16 took the job. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 - `SUP-208` **The SageMaker Unified Studio Query editor opens each session on the Redshift connection's
   database, not on the database selected in an earlier session** (measured 2026-10-26, Stage 9 xxiv). The
@@ -4134,6 +4140,32 @@ entry is still true is the reading.
   the deploy. A portal session carries `RedshiftDbRoles = datazone_env_<environment id>` (`docs/SMUS.md`, measured
   2026-10-10 on another workgroup), so a member's portal session on this workgroup would be a superuser
   session; that half is unmeasured. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-22.
+
+- `SUP-472` **A Redshift lineage run reads seven days of the warehouse's query history, imports `CREATE TABLE …
+  AS`, DDL and `INSERT`, leaves `UPDATE` and `MERGE` out, and fails a statement that reads `awsdatacatalog`**
+  (measured 2026-11-23 in Sandbox, Stage 21's 3.2 to 3.4). A connection's first scheduled run, `createdBy`
+  `SYSTEM` at 00:51:50 UTC, read from seven days before its start to its start, processed 19 statements in about
+  three minutes and ended `PARTIALLY_SUCCEEDED`, `numQueriesFailed` 1, with one error naming no query: *"FATAL:
+  Cannot connect to shared database "awsdatacatalog" created from Data Catalog ARN. …"*. The 19 match the
+  window's successful `CTAS`, `DDL` and `INSERT` statements in `SYS_QUERY_HISTORY` (8, 9 and 2) by three database
+  users, a `CREATE SCHEMA` and a `DROP SCHEMA` among them, which wrote no node; an `UPDATE` and a `MERGE` (typed
+  `OTHER`) of the window are not counted and wrote no node. The failure is the only processed statement naming
+  `awsdatacatalog`, a `CREATE TABLE … AS SELECT` from a resource link, so a table copied from the lake stands with
+  no upstream. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
+
+- `SUP-473` **A Redshift lineage run writes a job node per statement, a job-run node per execution and a dataset
+  node per table named by its Redshift ARN, and that node joins the asset carrying the same ARN** (measured
+  2026-11-23 in Sandbox, Stage 21's 3.4). Data Governance's trail records `CreateLineageNode` by
+  `datazone.amazonaws.com`: job nodes `query-hash-<hash>`, the statement in a `QueryForm`, and dataset nodes
+  `<database>.<schema>.<table>`, `sourceIdentifier`
+  `arn:aws:redshift-serverless:<region>:<account>:table/<workgroup>/<database>/<schema>/<table>`, `view/` for a
+  view. The edges hang on job-run nodes, `<job sourceIdentifier>/<query id>#<n>#<n>`, whose `JobRunForm` carries
+  the query's times. A Redshift asset's `AssetCommonDetailsForm.sourceIdentifier` is the same ARN; its node reads
+  the dataset node as upstream, drawn *Cataloged* on the *Lineage* tab. A `DROP TABLE` writes a run whose output
+  is the dropped table, so a dropped table's node stays with its drop as the last upstream. `GetLineageNode`
+  returns the latest version with one upstream run; `ListLineageNodeHistory` lists a version per event. The nodes
+  outlive the connection and its job: one is read after `DeleteConnection`. Where:
+  `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
 ## SageMaker AI spaces and images
 
