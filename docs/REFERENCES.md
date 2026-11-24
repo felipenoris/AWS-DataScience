@@ -2946,6 +2946,52 @@
   <https://aws.amazon.com/sagemaker/lakehouse/pricing/>. S3 Metadata's object metadata in *"read-only, fully
   managed Apache Iceberg tables"*:
   <https://docs.aws.amazon.com/AmazonS3/latest/userguide/metadata-tables-overview.html>.
+- **The federated catalog read again, and Athena and Spark over the Glue Iceberg REST catalog (read
+  2026-11-24, for [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) pass 8 and decision 5).**
+  Read in their `.md` form where one exists. A Lake Formation-managed datashare, *"Athena doesn't support
+  querying Amazon Redshift datashares managed by Lake Formation."*:
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-rs-datashare.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/data-sharing-redshift.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/lf_datashare_overview.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/lake-formation-considerations.html>. The namespace as a
+  federated catalog: its read-only administrator for `AWSServiceRoleForRedshift`, its roles table, its creation
+  for *"Apache Iceberg compatible analytical engines such as Athena and Apache Spark on Amazon EMR"*, its
+  queries and its notes (*"RMS tables are accessible only from the extension endpoint in AWS Glue Iceberg REST
+  Catalog."*, no DDL from the engines, no sharing at the catalog's level):
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/redshift-ns-prereqs.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/managing-namespaces-datacatalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/create-ns-catalog.html>,
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/query-redshift-fed-catalog.html> and
+  <https://docs.aws.amazon.com/lake-formation/latest/dg/notes-ns-catalog.html>. Redshift's side: the
+  registration and its `consumer-identifiers`, and the overview's mount *"in the same AWS Region under the same
+  account"*, its isolation-level rule and its Region list, which names no US West (Oregon):
+  <https://docs.aws.amazon.com/redshift/latest/mgmt/serverless_datasharing-register-namespace.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration-register.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/iceberg-integration_overview.html>. Redshift's federated
+  permissions, *"Access from engines other than Redshift is not supported"*:
+  <https://docs.aws.amazon.com/redshift/latest/dg/federated-permissions-considerations.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/federated-permissions-prereqs.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/federated-permissions-prereqs-glue.html>. A database's
+  isolation level, `database_isolation_level` in `SVV_REDSHIFT_DATABASES`, *"SNAPSHOT isolation is the default
+  isolation level when creating provisioned clusters and serverless workgroups"*:
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_SVV_REDSHIFT_DATABASES.html>,
+  <https://docs.aws.amazon.com/redshift/latest/dg/c_serial_isolation.html> and
+  <https://docs.aws.amazon.com/redshift/latest/dg/r_STV_DB_ISOLATION_LEVEL.html>. Athena on a registered
+  namespace, *"Athena can read and write data stored in Redshift clusters or serverless namespaces that have been
+  registered in the AWS Glue Data Catalog."*: <https://docs.aws.amazon.com/athena/latest/ug/gdc-register-rs.html>.
+  Glue's Iceberg REST endpoints, the standard one and the extension one with *"Endpoint :
+  https://glue.{{us-east-1}}.amazonaws.com/extensions"*:
+  <https://docs.aws.amazon.com/glue/latest/dg/iceberg-rest-apis.html>,
+  <https://docs.aws.amazon.com/glue/latest/dg/connect-glu-iceberg-rest.html> and
+  <https://docs.aws.amazon.com/glue/latest/dg/connect-glue-iceberg-rest-ext.html>. The lakehouse's
+  architecture page and FAQ, *"However, you must have appropriate write permissions on the tables to write data
+  to them."*: <https://docs.aws.amazon.com/sagemaker-lakehouse-architecture/latest/userguide/lakehouse-how.html>
+  and <https://aws.amazon.com/sagemaker/lakehouse/faqs/>. Two AWS blogs, the Spark settings for Redshift
+  managed storage on Glue 5.0 and Amazon EMR 7.5.0, and the cross-account share of a catalog's databases and
+  tables, *"We can’t share the entire catalog to external accounts as a catalog-level permission"*:
+  <https://aws.amazon.com/blogs/big-data/access-amazon-redshift-managed-storage-tables-through-apache-spark-on-aws-glue-and-amazon-emr-using-amazon-sagemaker-lakehouse/>
+  and
+  <https://aws.amazon.com/blogs/big-data/configure-cross-account-access-of-amazon-sagemaker-lakehouse-multi-catalog-tables-using-aws-glue-5-0-spark/>.
 - **Glue's data quality monitoring of a catalog or a database, SageMaker Unified Studio's *Data profile*** —
   read 2026-11-21 for [`upstream-releases.md`](plan/upstream-releases.md) and [`PRICING.md`](PRICING.md) §5,
   after the user found the *Data profile* menu on a database. The guide's page and the pages on getting

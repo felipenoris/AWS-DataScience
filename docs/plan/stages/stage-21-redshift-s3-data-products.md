@@ -2,17 +2,17 @@
 
 | | |
 |---|---|
-| **Status** | **2026-11-23, pass 5 done to 5.7 with rollback items 1, 5 and 6** ([log](../../log/log-stage-21-redshift-s3-data-products.md)), no warehouse: 20 synthetic PNGs under `eighth-experimentation`'s `shared/stage21-images/` and their Iceberg table `stage21_images` in the data product `sandbox-stage21-images`, subscribed by `test-experimentation`. Verification xiv yes: the prefix publishes from the S3 browser with the approval switch alone, and the product's publication leaves the table's listing `INACTIVE` and outside `SearchListings` (`SUP-479`, `SUP-482`). xv: one S3 Access Grant, `READ`, to the subscriber's project role on the producer's location, scoped to the prefix; a request from a space is recorded as the space's user, so it was accepted at creation (`SUP-480`, `SUP-481`), and by the user's choice 5.4 is not run again with a requester outside the owning project, the manual approval resting on Stage 19's of 2026-11-22. xvi yes: the portal and a terminal read an image, the terminal reaching S3 Control through the spoke's S3 gateway endpoint (`SUP-091`); a vend outside the scope, a listing of `shared/` and a `READ` session's write refused. xvii yes: write is asked on the asset's own listing, never through the product, and the `READWRITE` session wrote. xviii: the vend was refused 31 s after the grant's deletion, and at the second revocation nine seconds before the trail's `RevokeSubscription`, recorded as observed and closed by the user's choice; sessions vended before a revocation live their own duration, a 3600 s one writing 19 minutes after (`SUP-092`); `TM-37` accepted by the user the same day, *"Aceito as três recomendações do N.10."*. `catalog.py` gained `CT-20`, and its `CT-17` and `CT-18` reach a table its product's publication listed through the product listing's items, `CT-18` taking the product's form for it (Stage 19 decision 4 extended by the user, self-check 62 of 62, `SUP-482`). The lowering ran 18:12:50 to 18:23:12 UTC, Sandbox at zero. Owed: 6.5's bill by service once Cost Explorer holds both days (`SUP-142`), xix. Before it, **2026-11-23, 6.5's Redshift half read from the free trial, nothing up** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the managed workgroup charged 23,040 RPU-seconds, 2.30 USD, for 4 `ComputeSeconds`, metered under its own UUID, and the consumer's workgroup 960, 0.10, both absorbed by the trial. xii's bill is answered and its base capacity stays unread; 6.4's price is in [`docs/PRICING.md`](../../PRICING.md) §5. The trail holds the managed workgroup's `CreateManagedWorkgroup`, invoked by Glue, and no `CreateCluster` (`SUP-474`, Stage 9's 9.5a). Owed: pass 5 with its own rollback; 6.5's bill by service once Cost Explorer holds both days (`SUP-142`). Before it, **2026-11-22 and 23, `promotion.md` §N.10's day 2: passes 2 to 4 run, 2.6 not run, rollback item 5 done** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): 2.4's two slices applied; 2.2's source imported three assets once the access role held `ExecuteStatement` (`SUP-460`); 2.3 published the data product `sandbox-trades-hot`, `lab.trades_hot` and its view `lab.trades_hot_by_desk`; 2.4's consumer workgroup `redshift-serverless-workgroup-dahsfn6j8lqec0` deployed in `test-experimentation`, its deploy granting the role `datazone_env_dahsfn6j8lqec0` `sys:superuser` (`SUP-471`). 2.5's subscription was accepted at creation and both grants failed, *"Secret ARN can not be null or empty"*, nothing written in either namespace while both portals read it shared (`SUP-469`); 2.6 had nothing to read; 2.7 revoked it. 2.8's load was refused by KMS to the access role at the upload, before any `COPY` (`SUP-470`), answering verification vii. On the user's choice the same night, `SUP-469` is 2.5's reading and the retry on a connection authenticated by a secret is not run. 2.9 done 2026-11-23 by 00:31 UTC: the consumer's deployment deleted in the portal, nothing of it left, `data-governance/governance/` then `sandbox/sagemaker/` applied with the switch off and re-planned *"No changes."*, `US-3` green. Pass 3 done 2026-11-23, 00:37 to 01:06 UTC: `lineage_reader` and its secret, the connection `sandbox-lineage-reader` carrying no lineage job until its data source's *Import data lineage* wrote one (`SUP-207`); 3.3's statements run as the admin through the Data API to land before the pull. The pull read seven days and ended `PARTIALLY_SUCCEEDED`, answering verification viii: `CREATE TABLE … AS`, `INSERT … SELECT` and `CREATE VIEW` inside `lab` became edges, the `UPDATE` and the `MERGE` did not, and Stage 19 5.2's `CREATE TABLE … AS` from `awsdatacatalog`, in the window, was the run's one failure, so `lab.trades_from_lake` was not created (`SUP-472`). Verification ix: the dataset nodes join the three Redshift assets by their ARN, and the graph does not reach the lake's `trades_notional` or a Glue job's events (`SUP-473`). 3.5 removed the data source, the connection and its job, the user and the secret (seven-day window); the nodes stay. Pass 4 done 2026-11-23, 01:23 to 01:53 UTC: the namespace registered to the Data Catalog, the federated catalog `stage21_warehouse` arriving with no `IAMAllowedPrincipals`, and 4.2's grant; Redshift in the producer's workgroup resolves no `"sandbox@stage21_warehouse"`, answering verification x no (`SUP-475`). 4.4's Glue data source imported `trades_hot` as a Glue table asset keyed by the Glue table's ARN (`SUP-476`), xi's first half; the subscription was not run. Data lake access created a managed Redshift Serverless workgroup that only `ListManagedWorkgroups` lists, under an AWS-owned key, and no cluster, and `update-catalog` refuses the `CustomProperties` `get-catalog` returns (`SUP-474`); Athena through it fails on the same name, answering xii but for 6.5's bill. 4.8 removed every object, both slices re-planned *"No changes."*, and the closing reads passed, `WH-8` green. Rollback item 5 done at 01:57 UTC with Stage 19's 5.4: the view and the three tables dropped, `lab` kept. The lowering from 02:15:48 to 02:27:56 UTC, `make status` at 0.0000 USD/h, §R's readings and `catalog.py` passing. Rollback item 1's second half done 2026-11-23, 03:08 to 03:13 UTC, in the portal: the data product `sandbox-trades-hot` unpublished and deleted, its three assets deleted after the two listings' unpublish, then the source `sandbox-lab-trades-hot`. Before it, **2026-11-22, 2.2 attempted as Stage 19's step 6 on `promotion.md` §N.10's day 1** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the Redshift data source failed creation, the access role lacking `redshift-data:ListDatabases` (`SUP-460`), the four metadata reads applied the same evening (21:23 UTC), so 2.2 runs again on §N.10's day 2 and 2.3 waits for its asset; 2.1's copy `lab.trades_hot` exists, 10 rows, with no materialized view over the link (`SUP-459`). Before it, **Pass 1 done 2026-11-18**. Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*. **1.3's wizard half read 2026-11-22** and left by *Cancel*: the form asks for a provisioning role and a manage-access role, the two every configuration names, so the checklist's step 4 closes with no change; the blueprint's configuration read absent before and after, and the trail holds no write. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects. **Passes 2 to 4's rows written 2026-11-19, nothing up**, in "The Sandbox warehouse sitting: passes 2 to 4 in order": the four slices re-planned from `main` with the counts the commands carry, pass 2's raise corrected to one `make up`, and every plan of `sandbox/warehouse/` naming both switches. **4.5's write path taken 2026-11-22, decision 4 (b)**: `sandbox/data/`'s key policy names the data transfer role for the sitting, AWS's `GenerateDataKeyDecryptDataTransferRole` behind `data_transfer_key_statement_enabled`, off by default; planned *"No changes."* off and *"Plan: 0 to add, 1 to change, 0 to destroy."* on, not applied |
-| **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). Nothing blocks pass 1 |
-| **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; [D31](../decisions/D31-approver-read.md) for the data key's readers (decision 4); 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decision 5 and Stage 19 decision 9, each read against its premises |
+| **Status** | **2026-11-24, pass 8 written with nothing up, decision 5 taken (b)** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): on the user's request of 14:39 UTC, pass 4's failure read against AWS's pages, and the three statements the request rested on checked. A Lake Formation-managed datashare is read by Redshift alone; Athena and Spark reach the warehouse's tables through the federated catalog, Spark only through the Glue Iceberg REST catalog's extension endpoint; and the Iceberg engines may write under a grant, DDL refused. Pass 4 seated no `AWSServiceRoleForRedshift` among Lake Formation's read-only administrators, a step of Lake Formation's prerequisites, and granted the project role while the portal's Redshift session reaches Glue and Lake Formation as the access role (`SUP-139`); Redshift's Region list for Iceberg compatibility omits US West (Oregon), where every call of pass 4 succeeded. Decision 5 (b), on the user's card at 15:53 UTC: Redshift, Athena and Spark read in the sitting, and 8.13's write does not run, verification xxv resting on AWS's pages. 8.1 to 8.3 need nothing up; the sitting rides SB2 before the free trial ends on 2026-12-19. Before it, **2026-11-23, pass 5 done to 5.7 with rollback items 1, 5 and 6** ([log](../../log/log-stage-21-redshift-s3-data-products.md)), no warehouse: 20 synthetic PNGs under `eighth-experimentation`'s `shared/stage21-images/` and their Iceberg table `stage21_images` in the data product `sandbox-stage21-images`, subscribed by `test-experimentation`. Verification xiv yes: the prefix publishes from the S3 browser with the approval switch alone, and the product's publication leaves the table's listing `INACTIVE` and outside `SearchListings` (`SUP-479`, `SUP-482`). xv: one S3 Access Grant, `READ`, to the subscriber's project role on the producer's location, scoped to the prefix; a request from a space is recorded as the space's user, so it was accepted at creation (`SUP-480`, `SUP-481`), and by the user's choice 5.4 is not run again with a requester outside the owning project, the manual approval resting on Stage 19's of 2026-11-22. xvi yes: the portal and a terminal read an image, the terminal reaching S3 Control through the spoke's S3 gateway endpoint (`SUP-091`); a vend outside the scope, a listing of `shared/` and a `READ` session's write refused. xvii yes: write is asked on the asset's own listing, never through the product, and the `READWRITE` session wrote. xviii: the vend was refused 31 s after the grant's deletion, and at the second revocation nine seconds before the trail's `RevokeSubscription`, recorded as observed and closed by the user's choice; sessions vended before a revocation live their own duration, a 3600 s one writing 19 minutes after (`SUP-092`); `TM-37` accepted by the user the same day, *"Aceito as três recomendações do N.10."*. `catalog.py` gained `CT-20`, and its `CT-17` and `CT-18` reach a table its product's publication listed through the product listing's items, `CT-18` taking the product's form for it (Stage 19 decision 4 extended by the user, self-check 62 of 62, `SUP-482`). The lowering ran 18:12:50 to 18:23:12 UTC, Sandbox at zero. Owed: 6.5's bill by service once Cost Explorer holds both days (`SUP-142`), xix. Before it, **2026-11-23, 6.5's Redshift half read from the free trial, nothing up** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the managed workgroup charged 23,040 RPU-seconds, 2.30 USD, for 4 `ComputeSeconds`, metered under its own UUID, and the consumer's workgroup 960, 0.10, both absorbed by the trial. xii's bill is answered and its base capacity stays unread; 6.4's price is in [`docs/PRICING.md`](../../PRICING.md) §5. The trail holds the managed workgroup's `CreateManagedWorkgroup`, invoked by Glue, and no `CreateCluster` (`SUP-474`, Stage 9's 9.5a). Owed: pass 5 with its own rollback; 6.5's bill by service once Cost Explorer holds both days (`SUP-142`). Before it, **2026-11-22 and 23, `promotion.md` §N.10's day 2: passes 2 to 4 run, 2.6 not run, rollback item 5 done** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): 2.4's two slices applied; 2.2's source imported three assets once the access role held `ExecuteStatement` (`SUP-460`); 2.3 published the data product `sandbox-trades-hot`, `lab.trades_hot` and its view `lab.trades_hot_by_desk`; 2.4's consumer workgroup `redshift-serverless-workgroup-dahsfn6j8lqec0` deployed in `test-experimentation`, its deploy granting the role `datazone_env_dahsfn6j8lqec0` `sys:superuser` (`SUP-471`). 2.5's subscription was accepted at creation and both grants failed, *"Secret ARN can not be null or empty"*, nothing written in either namespace while both portals read it shared (`SUP-469`); 2.6 had nothing to read; 2.7 revoked it. 2.8's load was refused by KMS to the access role at the upload, before any `COPY` (`SUP-470`), answering verification vii. On the user's choice the same night, `SUP-469` is 2.5's reading and the retry on a connection authenticated by a secret is not run. 2.9 done 2026-11-23 by 00:31 UTC: the consumer's deployment deleted in the portal, nothing of it left, `data-governance/governance/` then `sandbox/sagemaker/` applied with the switch off and re-planned *"No changes."*, `US-3` green. Pass 3 done 2026-11-23, 00:37 to 01:06 UTC: `lineage_reader` and its secret, the connection `sandbox-lineage-reader` carrying no lineage job until its data source's *Import data lineage* wrote one (`SUP-207`); 3.3's statements run as the admin through the Data API to land before the pull. The pull read seven days and ended `PARTIALLY_SUCCEEDED`, answering verification viii: `CREATE TABLE … AS`, `INSERT … SELECT` and `CREATE VIEW` inside `lab` became edges, the `UPDATE` and the `MERGE` did not, and Stage 19 5.2's `CREATE TABLE … AS` from `awsdatacatalog`, in the window, was the run's one failure, so `lab.trades_from_lake` was not created (`SUP-472`). Verification ix: the dataset nodes join the three Redshift assets by their ARN, and the graph does not reach the lake's `trades_notional` or a Glue job's events (`SUP-473`). 3.5 removed the data source, the connection and its job, the user and the secret (seven-day window); the nodes stay. Pass 4 done 2026-11-23, 01:23 to 01:53 UTC: the namespace registered to the Data Catalog, the federated catalog `stage21_warehouse` arriving with no `IAMAllowedPrincipals`, and 4.2's grant; Redshift in the producer's workgroup resolves no `"sandbox@stage21_warehouse"`, answering verification x no (`SUP-475`). 4.4's Glue data source imported `trades_hot` as a Glue table asset keyed by the Glue table's ARN (`SUP-476`), xi's first half; the subscription was not run. Data lake access created a managed Redshift Serverless workgroup that only `ListManagedWorkgroups` lists, under an AWS-owned key, and no cluster, and `update-catalog` refuses the `CustomProperties` `get-catalog` returns (`SUP-474`); Athena through it fails on the same name, answering xii but for 6.5's bill. 4.8 removed every object, both slices re-planned *"No changes."*, and the closing reads passed, `WH-8` green. Rollback item 5 done at 01:57 UTC with Stage 19's 5.4: the view and the three tables dropped, `lab` kept. The lowering from 02:15:48 to 02:27:56 UTC, `make status` at 0.0000 USD/h, §R's readings and `catalog.py` passing. Rollback item 1's second half done 2026-11-23, 03:08 to 03:13 UTC, in the portal: the data product `sandbox-trades-hot` unpublished and deleted, its three assets deleted after the two listings' unpublish, then the source `sandbox-lab-trades-hot`. Before it, **2026-11-22, 2.2 attempted as Stage 19's step 6 on `promotion.md` §N.10's day 1** ([log](../../log/log-stage-21-redshift-s3-data-products.md)): the Redshift data source failed creation, the access role lacking `redshift-data:ListDatabases` (`SUP-460`), the four metadata reads applied the same evening (21:23 UTC), so 2.2 runs again on §N.10's day 2 and 2.3 waits for its asset; 2.1's copy `lab.trades_hot` exists, 10 rows, with no materialized view over the link (`SUP-459`). Before it, **Pass 1 done 2026-11-18**. Written 2026-11-17: the plan, the user's questions of 2026-11-17 answered from AWS's pages read that day and from this estate's measurements, and decisions 1 to 3, taken the same day: 1 (b), the consumer's own workgroup by the `RedshiftServerless` blueprint for one sitting; 2 (a), a second connection by secret for lineage; 3 (b), the federated catalog with data lake access for one sitting. 1.3's readings, 2026-11-18 with nothing up: the blueprint's template holds the base capacity at 4 RPU through a locked `redshiftBaseCapacity`, so decision 1 stands. 1.5's code written the same day, off by default, both slices planned *"No changes."*; the tag `sagemaker-prereqs-v0.12.0` pushed the same night by Recipe B and `sandbox/sagemaker/` moved to it, re-planned *"No changes."*. **1.3's wizard half read 2026-11-22** and left by *Cancel*: the form asks for a provisioning role and a manage-access role, the two every configuration names, so the checklist's step 4 closes with no change; the blueprint's configuration read absent before and after, and the trail holds no write. 4.5's data transfer role written and merged 2026-11-18 with [pull request #323](https://github.com/felipenoris/AWS-DataScience/pull/323), `data_transfer_role_enabled` off, planned *"Plan: 2 to add"* with it on. Passes 2 to 4 ride the Sandbox warehouse sitting ([`runbooks/promotion.md`](../runbooks/promotion.md) §N.6 item 9), before 2026-12-19 if the free trial is to absorb them; their commands, and pass 5's, follow each pass's steps. Pass 5 needs no warehouse and rides any Sandbox sitting with a space in both projects. **Passes 2 to 4's rows written 2026-11-19, nothing up**, in "The Sandbox warehouse sitting: passes 2 to 4 in order": the four slices re-planned from `main` with the counts the commands carry, pass 2's raise corrected to one `make up`, and every plan of `sandbox/warehouse/` naming both switches. **4.5's write path taken 2026-11-22, decision 4 (b)**: `sandbox/data/`'s key policy names the data transfer role for the sitting, AWS's `GenerateDataKeyDecryptDataTransferRole` behind `data_transfer_key_statement_enabled`, off by default; planned *"No changes."* off and *"Plan: 0 to add, 1 to change, 0 to destroy."* on, not applied |
+| **Prerequisites** | [5b](stage-05b-redshift-serverless.md) and [6h](stage-06h-redshift-connection.md): the Sandbox warehouse at 4 base RPUs and `eighth-experimentation`'s connection, which writes and reads the schema `lab` in the `sandbox` database (6h passes 0 to 2, 2026-10-10). [Stage 19](stage-19-smus-native-data-product.md)'s Glue road: a table imported by a project's source, published, packaged in a product and subscribed inside one account (verification vi, 2026-11-14); its pass 5, whose 5.3 publishes the estate's first Redshift asset and subscribes nothing. `test-experimentation`'s `DataLake` environment ([6f](stage-06f-data-governance.md) 2.0), the Glue subscription target. The account's S3 Access Grants instance, created by SageMaker Unified Studio with one location per project ([`docs/SMUS.md`](../../SMUS.md), "The vending surface under that same path", 2026-08-23). For pass 2's subscription, 1.5's code merged and tagged, off by default (decision 1 (b)). For pass 8's sitting, 8.3's code merged, off by default (decision 5 (b)). Nothing blocks pass 1 |
+| **Consumes** | [D13](../decisions/D13-lake-formation-enforcement.md), [D26](../decisions/D26-unified-studio.md), [D40](../decisions/D40-redshift-warehouse.md); [D12](../decisions/D12-budget-ceiling.md) for the cost; [D31](../decisions/D31-approver-read.md) for the data key's readers (decision 4); 6h decisions 3 and 8, [Stage 9](stage-09-deployment-targets.md) decisions 5 and 14 and Stage 19 decision 9, each read against its premises; [D22](../decisions/D22-data-governance-account.md) for pass 8's reading of Production, Data Governance and Sandbox |
 | **Proves** | — (no `INT-nn` row: everything runs in Sandbox, and the domain in Data Governance is reached through the doors Stage 19 measured). What it does prove: whether SageMaker Unified Studio's standard path carries a Redshift table, the namespace seen through the Glue Data Catalog, and an S3 prefix of images through publication, a data product and a subscription as it carries a Glue table; which engine and which compute the consumer needs for each; and what lineage the catalog draws for the warehouse |
 
 *Read with [`docs/GOVERNANCE.md`](../../GOVERNANCE.md) §The catalog road and its paragraph on a data
 product, the lake and a warehouse, [`docs/SMUS.md`](../../SMUS.md) §The catalog surface,
 [`runbooks/catalog.md`](../runbooks/catalog.md) §A, §P, §S and §L,
-[`runbooks/redshift-connection.md`](../runbooks/redshift-connection.md) §P, §J and §T, Stage 9 decision 5
+[`runbooks/redshift-connection.md`](../runbooks/redshift-connection.md) §P, §G, §J and §T, Stage 9 decision 5
 and Stage 19 decision 9. The vendor sources are the 2026-11-17 rows in
-[`docs/REFERENCES.md`](../../REFERENCES.md).*
+[`docs/REFERENCES.md`](../../REFERENCES.md), and pass 8's the 2026-11-24 row.*
 
 ---
 
@@ -221,7 +221,8 @@ project by hand (D40, 6h).
 ## The plan and the estate against the premises
 
 What each item holds today, with its measurement or page, and what this stage does to it: keep, amend, or a
-decision for the user, named by its number in Decisions due. Read from `main` `7816fbe` on 2026-11-17.
+decision for the user, named by its number in Decisions due. Read from `main` `7816fbe` on 2026-11-17; pass
+8's rows from `676800d` on 2026-11-24.
 
 | Item | Today | Under the premises |
 |---|---|---|
@@ -230,7 +231,11 @@ decision for the user, named by its number in Decisions due. Read from `main` `7
 | D26 | one domain, in Data Governance | **keep** |
 | 6h decision 3 | the connection's `lineageSync`, off since 2026-11-19; its 39 daily runs at 03:43 UTC before it all failed | **keep** as the user's; pass 3 reads a lineage run with the workgroup up and leaves the setting as it found it |
 | 6h decision 8 | how a second project is admitted to the warehouse; taken 2026-11-17 as (a), the tag `for-use-with-all-datazone-projects=true`, its switch written 2026-11-18 and off | **keep** as taken, standing since 2026-11-22 ([pull request #363](https://github.com/felipenoris/AWS-DataScience/pull/363)): 6h's apply on §N.10's day 1 puts `test-experimentation` in the map under the tag, with no schema. Decision 1 (b) admits no project of its own, and every plan of `sandbox/warehouse/` here names the tag true |
-| Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there |
+| Stage 9 decision 5 | Production's namespace reaches Lake Formation as a Lake Formation-managed datashare mapped to a federated database; data lake access refused for the managed cluster against `DenyRedshiftProvisionedClusters` and D12; 9.5a's reading owed only if the federated catalog comes back | **keep** in Production. **Decision 3 (b)**: the federated catalog comes back in Sandbox for one sitting, and 9.5a's reading is taken there. 9.5a read 2026-11-23: a Serverless workgroup and no cluster, under an AWS-owned key (`SUP-474`); pass 8 measures Athena's and Spark's reach over the shape, and the decision stays the user's |
+| Stage 9 decision 14 | (a): Data Governance registers Production's datashare and grants it, the registration permanent under `DenyLakeDeletionAndDeregistration` | **keep**: pass 8 registers nothing outside Sandbox, and weighs a registration of Production's namespace to Data Governance's catalog without building it |
+| D22 | Data Governance holds state and no compute | **keep**: pass 8 reads that no page names the account of a managed workgroup for another account's namespace |
+| Sandbox's Lake Formation settings | `consumer-data` sets the administrators and `Parameters`, and no read-only administrator | **amend for one sitting**: 8.5 seats `AWSServiceRoleForRedshift` among the read-only administrators by `put-data-lake-settings`, outside Terraform, and 8.14 takes it out |
+| The access role in `sandbox/warehouse/` | `glue:GetCatalogs` on this account's catalogs; no statement names `stage21_warehouse` | **amend for one sitting**: 8.3's `federated_catalog_read_enabled`, off by default, gives it the catalog's metadata reads, and 8.8 grants it in Lake Formation |
 | Stage 19 decision 9 | (a), taken 2026-10-31: the read in place through `awsdatacatalog`, 5.3's Redshift asset published and never subscribed; (b), the subscription with a target, *"read as a second half once a target's shape is priced"* | **keep** (a) for Stage 19; pass 2 here is (b)'s second half, under decision 1 |
 | [`catalog.md`](../runbooks/catalog.md) | §A: a Redshift source unmeasured; §P: a product of several items unread; §S: no Redshift target, fulfilment from the pages; no S3 Object Collection | **amend**: the 2026-11-17 readings at 1.1, the measurements at 6.1 |
 | [`docs/SMUS.md`](../../SMUS.md), "Existing buckets as catalog assets" | the S3 Object Collection, *"No stage uses it"* | **amend** at 6.2 |
@@ -844,6 +849,325 @@ SELECT * FROM (VALUES ...) AS t (object_key, tone, width, height, size_bytes);
 The stage's row in `CLAUDE.md`'s Current position, the index's state, the log, and the waiting list's
 rows removed.
 
+### 8. The federated catalog again: why pass 4's reads failed, then Athena and Spark over it
+
+Written 2026-11-24 with nothing up, on the user's request of 14:39 UTC in a cloud session's thread:
+*"Revise o plano do stage associado incluindo esta etapa de investigação e configuração da
+funcionalidade."* Pass 4 registered the namespace and created the catalog, and neither Redshift nor Athena
+resolved `"sandbox@stage21_warehouse"` (`SUP-475`). Pass 8 reads which prerequisite or grant pass 4
+missed, configures the shape AWS's pages give, and measures a read by Redshift, Athena and Spark, with
+each Iceberg engine's `INSERT` tried under a `SELECT` grant (decision 5 (b)). It runs before 7's close:
+the numbers are identifiers, not an order.
+
+**What AWS's pages say**, read 2026-11-24 in their `.md` form where one exists
+([`docs/REFERENCES.md`](../../REFERENCES.md)), against the three statements the request rested on:
+
+- **A Lake Formation-managed datashare is read by Redshift alone: holds.** *"You can query Amazon Redshift
+  datashares managed by Lake Formation with Amazon Redshift. Athena doesn't support querying Amazon
+  Redshift datashares managed by Lake Formation."* (Lake Formation's notes on Redshift datashares).
+  Production's `trades_lf`, registered in Data Governance as the federated database `governed_trades`
+  (Stage 9 decisions 5 and 14), is that shape.
+- **Athena and Spark reach the warehouse's tables through the namespace registered as a federated
+  catalog: holds, through two doors.** Lake Formation's page on creating the catalog names *"Apache
+  Iceberg compatible analytical engines such as Athena and Apache Spark on Amazon EMR"*, which data lake
+  access serves: *"To enable these query engines to read and write to Amazon Redshift namespaces, AWS Glue
+  creates a managed Amazon Redshift cluster with the compute and storage resources required to perform
+  read and write operations without impacting Amazon Redshift data warehouse workloads."* Athena reads the
+  catalog as one registered with Glue: *"Athena can read and write data stored in Redshift clusters or
+  serverless namespaces that have been registered in the AWS Glue Data Catalog."* (Athena's page), and
+  *"Athena doesn't support a multi-catalog experience."* (Lake Formation's notes on these catalogs).
+  Spark reads it through Glue's Iceberg REST catalog: *"RMS tables are accessible only from the extension
+  endpoint in AWS Glue Iceberg REST Catalog."* (the same notes), the endpoint's page giving *"Endpoint :
+  https://glue.{{us-east-1}}.amazonaws.com/extensions"* and *"These additional APIs are used when you
+  access tables stored in Amazon Redshift managed storage."* No page says whether the standard endpoint,
+  `https://glue.<region>.amazonaws.com/iceberg`, serves a federated catalog's tables; 8.12 tries both.
+  Redshift's federated permissions, the other registration model, is Redshift's alone: *"Access from
+  engines other than Redshift is not supported"* (Redshift's considerations for it). Pass 4's catalog
+  carried `aws:PermissionsModel` `LAKEFORMATION`, the model the Iceberg engines read.
+- **Outside engines only read: does not hold as written.** The pages give read and write and refuse DDL:
+  the creation page above; Athena's, *"DDL operations, including setting AWS Glue Data Catalog
+  configuration and operations on Amazon Redshift managed storage tables, are not supported."*; Lake
+  Formation's notes, *"Data Definition Language (DDL) operations on the catalog from engines like Athena,
+  Amazon EMR Spark, or others, including setting catalog configurations, are not supported."*; and the
+  SageMaker Lakehouse FAQ, *"However, you must have appropriate write permissions on the tables to write
+  data to them."* A consumer is read-only by its grant, `SELECT` without `INSERT`; 8.11 and 8.12 measure
+  that refusal, and the write under an `INSERT` grant rests on these pages (decision 5 (b)).
+
+**Pass 4's failure, by cause**, each read against pass 4's entry in the log:
+
+| Cause | The page or the estate | It would explain | Read or removed by |
+|---|---|---|---|
+| The Redshift service-linked role is no Lake Formation read-only administrator | *"To query the Amazon Redshift tables in the federated catalog from Amazon Redshift Query Editor v2, ensure that the Read only administrator role policy contains the ARN for the Amazon Redshift service-linked role-`AWSServiceRoleForRedshift`."* (Lake Formation's prerequisites, a step done by `put-data-lake-settings`), the role its roles table describes as *"Discovers the federated catalog, queries Amazon Redshift tables in the federated catalog."* `consumer-data` sets no read-only administrator, and pass 4 named none | both reads: neither the producer's workgroup nor the managed one mounted the catalog | 8.2 reads the settings; 8.5 seats the role |
+| The Redshift session's principal held neither half of the reach (Lesson 28) | The portal's Redshift session calls Glue and Lake Formation as the access role, never as the project role its database user is named after (`SUP-139`; [`redshift-connection.md`](../runbooks/redshift-connection.md) §G, measured on `governed_trades` on 2026-10-25). 4.2 granted the project role, and no statement of the access role names `stage21_warehouse`: on this account's catalogs it holds `glue:GetCatalogs` (`ListTheCatalogsTheQueryEditorOffers`), and its database and table reads name `governed_trades` (`ReadTheGovernedShareCatalog`, written after Glue refused it `glue:GetTable` on 2026-10-25) and the subscription's link database (`ReadTheSubscribedProductsCatalog`). The editor's toast, `autocompleteMsg.getMetadataErrorAccessDenied`, is a refusal | Redshift's read; Athena's ran as the project role, which held the grant | 8.1 reads the refused call and its caller; 8.3's statement and 8.8's grants to both roles remove it |
+| The namespace was not mounted for want of use | *"When you register a serverless namespace that’s not being actively used, the AWS Glue Data Catalog won’t mount that namespace as a catalog until the namespace is used again."* (Redshift's overview). The workgroup ran statements before and after the registration (the log), and the page defines no window | both, for a while | 8.7 registers after a statement; 8.9 reads the mount at 0, 5 and 15 minutes |
+| The data key lacks the page's statement for Redshift | Lake Formation's prerequisites write four statements into a customer managed key. The data key holds Redshift Serverless's path (`AllowRedshiftServerlessViaServiceInThisAccount`), the root's metadata actions (`EnableKeyAdministrationInThisAccount`) and, for a sitting, the transfer role's, and not `RedshiftAllowAccessPolicy`, the path through `redshift.<region>.amazonaws.com`. [inferred] The registration and its datashare are Redshift's calls, not Redshift Serverless's | both, if the mount reads the key on that path | 8.1 reads KMS's refusals; 8.3 writes the statement only if one shows |
+| The database's isolation level | *"To access tables in data warehouses registered to the AWS Glue Data Catalog, the database’s isolation level must be SNAPSHOT."* and *"Attempting to access tables with an isolation level of SERIALIZABLE will result in an error."* (Redshift's overview). 6h created `sandbox` with no clause (6h's log, 1.1), and its level is unread: Redshift's page on isolation levels gives *"SNAPSHOT isolation is the default isolation level when creating provisioned clusters and serverless workgroups"*, a workgroup's creation and not a `CREATE DATABASE` | a table's read once the name resolves, not the name: the failure after pass 4's | 8.6 reads it |
+| The Region | Redshift's overview: *"Apache Iceberg compatibility with Amazon Redshift is available in the following AWS Regions:"*, a list that names US West (N. California) and not US West (Oregon). Every call of pass 4 succeeded in `us-west-2`, and data lake access created its managed workgroup there (`SUP-474`) | both, if the mount is what the list withholds | [`upstream-releases.md`](../upstream-releases.md)'s row, read again before the sitting; the cause left if 8.9 and 8.11 fail with the seat, the grants and any key statement in place |
+| The producer's own workgroup | The overview mounts the catalogs *"on all provisioned clusters and serverless workgroups in the same AWS Region under the same account."*; `SUP-475` left a read from another warehouse unmeasured | Redshift's read alone; the managed workgroup failed the same | not separable in Sandbox, which holds one warehouse (D40) |
+
+**How the shape fits Production, Data Governance, Sandbox and D40**:
+
+- Pass 8 stays in Sandbox (P4): the catalog, its managed workgroup and every grant are Sandbox's, for one
+  sitting.
+- Production's namespace could be registered to Data Governance's catalog, since the registration names
+  an account: *"`consumer-identifiers`: An array with a single element, containing the unique identifier
+  of the account you’re registering the cluster or namespace to."* (Redshift's page on registering). What
+  it would cost, each against a decision: the datashare registered in Data Governance is permanent there,
+  `DenyLakeDeletionAndDeregistration` refusing its deregistration in the `Data` OU (Stage 9 decision 14
+  (a)); data lake access creates compute, no page names the account a catalog's managed workgroup runs in
+  when the namespace is another account's, and D22 keeps compute out of Data Governance; Production's
+  data key would name a transfer role, decision 4 (b)'s widening of D31 in Production; and the catalog
+  does not cross accounts whole: *"Cross-account sharing is not supported at the federated catalog level.
+  However, you can share individual databases and tables from within a federated catalog across AWS
+  accounts."* (Lake Formation's notes), under cross-account version 4, which Sandbox's settings carry.
+- Redshift mounts such a catalog only in the account that holds it, *"in the same AWS Region under the
+  same account"* (Redshift's overview), so Sandbox's warehouse keeps Production's rows through the Lake
+  Formation-managed datashare whatever pass 8 reads.
+- Pass 8 therefore changes no decision by itself. Stage 9 decision 5 stands as the user's while the
+  datashare serves every Redshift reader; 9.5a's premise was read on 2026-11-23 as a Serverless workgroup
+  and no cluster, under an AWS-owned key (`SUP-474`). An Iceberg engine over Production's warehouse is a
+  question D40 already holds, *"A query engine is a choice per workload, not per estate"*, with `INT-24`
+  naming *"a federated catalog read by Athena or a Lake Formation-managed datashare"*; pass 8's readings
+  are what such a workload's decision would rest on.
+
+**Before the sitting, with nothing up**:
+
+- **8.1 [Claude] Pass 4's trail**, 2026-11-23 from 01:23 to 01:53 UTC, inside the event history's 90
+  days: every refused call of Glue, Lake Formation, KMS, Redshift, Redshift Serverless and the Redshift
+  Data API, with its caller, `errorCode` and `errorMessage`. It answers to which principal the editor's
+  catalog read was refused, whether KMS refused a Redshift path, and which calls the managed workgroup
+  made, as whom.
+- **8.2 [Claude] The readings**: Sandbox's Lake Formation settings, saved, with their read-only
+  administrators and `Parameters`; `AWSServiceRoleForRedshift`'s ARN; the data key's policy against the
+  page's four statements; the access role simulated for `glue:GetCatalog` and `glue:GetTable` on the
+  catalog's ARNs, expected `implicitDeny`; the Spark connection, `project.spark.fineGrained` read in
+  `test-experimentation` on 2026-11-14 (`SUP-368`), listed or not in `eighth-experimentation`, and if
+  only the consumer holds one, 8.8's grants name that project's role too, with the form of a session's
+  `%%configure` cell on it from the portal's page; the Region list read again.
+- **8.3 [Claude] The code, off by default**, merged before the sitting and planned with each switch on and
+  off, the counts written here: `sandbox/warehouse/`'s `federated_catalog_read_enabled`, giving the
+  producer's access role `glue:GetCatalog`, `glue:GetDatabase`, `glue:GetDatabases`, `glue:GetTable` and
+  `glue:GetTables` on the account's catalog, `catalog/stage21_warehouse`, `catalog/stage21_warehouse/*`,
+  `database/stage21_warehouse/*` and `table/stage21_warehouse/*`, the forms of the transfer role's
+  statement and of 4.4's table ARN, with `lakeformation:GetDataAccess` only if 8.1 shows Redshift asking
+  for it; and, only if 8.1 shows KMS refusing Redshift's path, AWS's `RedshiftAllowAccessPolicy` behind
+  its own switch in `sandbox/data/`. The seat and the grants are calls of the sitting, as 4.2's were.
+
+**In the sitting**, under decision 5 (b): SB2 ([`promotion.md`](../runbooks/promotion.md) §N.12.1), whose
+raise adds `redshift` for Stage 19's xiv; a JupyterLab space in `eighth-experimentation`. Each write is on
+the user's word naming it, the other sessions told first and the `awsds` token's `expiresAt` read before
+each plan (`SUP-465`); from 8.4 to 8.14 every plan of `sandbox/warehouse/` names its three switches
+(Lessons 51, 69). The slices come before the seat, so no apply of `sandbox/data/` runs while it stands.
+
+- **8.4 [Claude⚡] The slices**, from a `main` that holds 8.3: `sandbox/warehouse/` with the transfer role
+  and the catalog read on, then `sandbox/data/` with the transfer role's key statement on (decision 4
+  (b)), and 8.3's Redshift statement if it was written.
+- **8.5 [Claude⚡] The seat**: the settings read and saved whole, `AWSServiceRoleForRedshift` added to
+  `ReadOnlyAdmins`, and the structure written back by `put-data-lake-settings` with everything else as
+  read: the call replaces the whole structure (Lesson 60), and an omitted `Parameters` resets
+  `CROSS_ACCOUNT_VERSION` (`consumer-data`'s first hazard, INT-11). Read back and diffed, the seat the
+  only difference; a refused put stops the pass. **[Claude] reads** `sandbox/data/`'s plan after it:
+  *"No changes."* says the provider leaves an unmanaged `read_only_admins` alone, and a planned removal
+  is recorded, no apply of the slice running before 8.14 removes the seat.
+- **8.6 [Claude⚡] The table**: `lab.stage21_fed`, lowercase as the overview requires of a registered
+  object, created and filled with three rows as the admin through the Data API; **[Claude] reads**
+  `sandbox`'s isolation level. If it is not snapshot isolation, the table's read is expected to fail after
+  the name resolves, and the `ALTER DATABASE` that changes 6h's database is the user's call in the
+  sitting.
+- **8.7 [Claude⚡] The registration and the catalog**, 4.1's commands and its reads, after 8.6's
+  statements have used the namespace.
+- **8.8 [Claude⚡] Lake Formation grants** to the producer's access role and its project role: `DESCRIBE`
+  on `stage21_warehouse`, on its child catalog `stage21_warehouse/sandbox` and on `lab`; `DESCRIBE` and
+  `SELECT` on `lab.stage21_fed`. Each read back.
+- **8.9 [user] Redshift reads** `"sandbox@stage21_warehouse"."lab"."stage21_fed"` from the producer's
+  Query editor, the name 4.3 used. **[Claude] reads** the same session's `svv_redshift_databases` at 0, 5
+  and 15 minutes after 8.8, `governed_trades` its positive control (Lesson 62); `sys_query_history`; and
+  the trail's Glue and Lake Formation calls of the minutes, their caller and any refusal.
+- **8.10 [Claude⚡] Data lake access**, 4.5's update with `CatalogInput`'s fields from `get-catalog` and
+  without `CustomProperties` (`SUP-474`), read back `AVAILABLE`, and `list-managed-workgroups`.
+- **8.11 [user] Athena reads** the table from the producer's query editor, by the name the preview gives
+  as in 4.6, then its `INSERT` of one row, expected refused under `SELECT`, the wording read. **If Athena
+  answers *"does not exist"* again, the pass stops here**: no Spark, 8.14 at once, and the causes left go
+  to the user as a new decision, the Region and the isolation level among them.
+- **8.12 [user] Spark reads** the table in a notebook on the project's Spark connection, a Glue 5.0
+  session as the project role: the extension endpoint's catalog and the standard endpoint's, each set in
+  the session's configuration before its first statement, as the commands give; a `SELECT` through each,
+  then an `INSERT`, expected refused. **[Claude] reads** `GetDataAccess` and the session's identity in the
+  trail, and the table's rows as the admin, three, all Redshift's. A hang or an S3 refusal is read
+  against the S3 gateway endpoint's allow-list (`AllowAwsOwnedServiceBuckets`,
+  `terraform-modules/vpc/endpoints.tf`) with the bucket named, and nothing changes in the sitting. The
+  Glue session is stopped by hand (Lesson 81).
+- **8.13 The write**: not run, since decision 5 took (b); verification xxv rests on AWS's pages.
+- **8.14 [Claude⚡] Removed in the sitting**, each read back absent: data lake access off by the same
+  update, `list-managed-workgroups` empty; the grants revoked; the catalog deleted and the registration
+  withdrawn in 4.8's order; the seat taken out by `put-data-lake-settings` with the structure read then,
+  and the result diffed against 8.5's saved file; `sandbox/data/` with its switches off, then
+  `sandbox/warehouse/` with both of pass 8's off; `lab.stage21_fed` dropped. Then the sitting's closing
+  reads as in "The Sandbox warehouse sitting" item 7, with `list-managed-workgroups` empty, the settings
+  equal to the saved file and no federated catalog in `glue get-catalogs`.
+
+**After it**: **8.15 [Claude]** the bill by usage type the next day (6.5), the managed workgroup under its
+own UUID (`SUP-474`) and the Glue session by its `DPUSeconds` (`SUP-368`); a `SUP-nnn` per behaviour no
+page states; [`catalog.md`](../runbooks/catalog.md) and
+[`redshift-connection.md`](../runbooks/redshift-connection.md) §G with the readings; D40's file and Stage
+9 decision 5's row with what was read, no decision changed by them.
+
+About 1 hour 50 minutes in the sitting: 20 minutes of slices and seat, 30 of table, registration and
+Redshift's read with its 15-minute wait, 15 of data lake access and Athena, 30 of Spark with the session's
+start, and 15 of removal.
+
+**The commands of pass 8**, in a shell that ran pass 2's first block (`S`, `A`, `q`). Every `$A` and
+`$ROLE` a colon follows is braced (Lesson 84). The `jq` programs and the Spark settings are unrun.
+
+```bash
+# 8.1 pass 4's refused calls, one file per event source
+mkdir -p "$HOME/tmp"
+for src in glue lakeformation kms redshift redshift-serverless redshift-data; do
+  aws cloudtrail lookup-events --lookup-attributes "AttributeKey=EventSource,AttributeValue=${src}.amazonaws.com" \
+    --start-time 2026-11-23T01:23:00Z --end-time 2026-11-23T01:53:00Z --profile $S --output json \
+    > "$HOME/tmp/s21-p8-trail-${src}.json"
+done
+for src in glue lakeformation kms redshift redshift-serverless redshift-data; do
+  jq -r '.Events[].CloudTrailEvent | fromjson | select(.errorCode != null)
+    | [.eventTime, .eventName, (.userIdentity.arn // .userIdentity.invokedBy // "-"), .errorCode,
+       (.errorMessage // "-")] | @tsv' "$HOME/tmp/s21-p8-trail-${src}.json"
+done
+# 8.2 the settings saved whole, the role, the key, the access role's reach, the Spark connection
+aws lakeformation get-data-lake-settings --profile $S --query DataLakeSettings --output json \
+  > "$HOME/tmp/s21-p8-lf-before.json"
+jq '{ReadOnlyAdmins, Parameters}' "$HOME/tmp/s21-p8-lf-before.json"
+SLR=$(aws iam get-role --role-name AWSServiceRoleForRedshift --query Role.Arn --output text --profile $S)
+aws kms get-key-policy --key-id alias/awsds-sandbox-data --policy-name default --query Policy \
+  --output text --profile $S
+aws iam simulate-principal-policy --profile $S \
+  --policy-source-arn "arn:aws:iam::${A}:role/awsds-sandbox-warehouse-access-avhvbqn37ty7m8" \
+  --action-names glue:GetCatalog glue:GetTable --resource-arns \
+  "arn:aws:glue:us-west-2:${A}:catalog/stage21_warehouse" \
+  "arn:aws:glue:us-west-2:${A}:table/stage21_warehouse/sandbox/lab/stage21_fed" \
+  --query 'EvaluationResults[].[EvalActionName,EvalResourceName,EvalDecision]' --output text
+aws datazone list-connections --domain-identifier $D --project-identifier $P --type SPARK --profile $S
+# 8.4 ⚡ the slices, the transfer role and the catalog read first, then the key statement; TAG as 4.5's
+# block says, 6h decision 8 (a)'s wide tag standing
+TAG=true
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
+  -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=true \
+  -var federated_catalog_read_enabled=true -out="$HOME/tmp/s21-p8-warehouse-on.tfplan"   # 8.3's count
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
+  "$HOME/tmp/s21-p8-warehouse-on.tfplan"
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data plan -input=false \
+  -var data_transfer_key_statement_enabled=true -out="$HOME/tmp/s21-p8-data-on.tfplan"     # 1 to change
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data apply -input=false \
+  "$HOME/tmp/s21-p8-data-on.tfplan"
+# 8.5 ⚡ the seat, the structure written back whole, read back and diffed
+jq --arg slr "$SLR" '.ReadOnlyAdmins = ((.ReadOnlyAdmins // []) + [{DataLakePrincipalIdentifier: $slr}])' \
+  "$HOME/tmp/s21-p8-lf-before.json" > "$HOME/tmp/s21-p8-lf-seat.json"
+aws lakeformation put-data-lake-settings --data-lake-settings "file://$HOME/tmp/s21-p8-lf-seat.json" \
+  --profile $S
+aws lakeformation get-data-lake-settings --profile $S --query DataLakeSettings --output json \
+  > "$HOME/tmp/s21-p8-lf-after.json"
+diff "$HOME/tmp/s21-p8-lf-before.json" "$HOME/tmp/s21-p8-lf-after.json"            # the seat alone
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data plan -input=false \
+  -var data_transfer_key_statement_enabled=true                                     # read, not applied
+# 8.6 ⚡ the table, as the admin; a statement's rows as pass 2's block says
+q "create table lab.stage21_fed (id integer, source varchar(16))"
+q "insert into lab.stage21_fed values (1, 'redshift'), (2, 'redshift'), (3, 'redshift')"
+q "select database_name, database_isolation_level from svv_redshift_databases"
+# 8.7 ⚡ 4.1's block: register-namespace, describe-data-shares-for-consumer, associate-data-share-consumer,
+# register-resource, create-catalog, get-catalogs and list-permissions, unchanged
+# 8.8 ⚡ both roles: DESCRIBE on the catalog, its child and lab; DESCRIBE and SELECT on the table
+for ROLE in awsds-sandbox-warehouse-access-avhvbqn37ty7m8 datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c; do
+  PR="DataLakePrincipalIdentifier=arn:aws:iam::${A}:role/${ROLE}"
+  aws lakeformation grant-permissions --principal "$PR" --permissions DESCRIBE --profile $S \
+    --resource "{\"Catalog\": {\"Id\": \"${A}:stage21_warehouse\"}}"
+  aws lakeformation grant-permissions --principal "$PR" --permissions DESCRIBE --profile $S \
+    --resource "{\"Catalog\": {\"Id\": \"${A}:stage21_warehouse/sandbox\"}}"
+  aws lakeformation grant-permissions --principal "$PR" --permissions DESCRIBE --profile $S \
+    --resource "{\"Database\": {\"CatalogId\": \"${A}:stage21_warehouse/sandbox\", \"Name\": \"lab\"}}"
+  aws lakeformation grant-permissions --principal "$PR" --permissions DESCRIBE SELECT --profile $S \
+    --resource "{\"Table\": {\"CatalogId\": \"${A}:stage21_warehouse/sandbox\", \"DatabaseName\": \"lab\",
+      \"Name\": \"stage21_fed\"}}"
+done
+aws lakeformation list-permissions --resource "{\"Table\": {\"CatalogId\": \"${A}:stage21_warehouse/sandbox\",
+  \"DatabaseName\": \"lab\", \"Name\": \"stage21_fed\"}}" --profile $S
+# 8.10 ⚡ data lake access: CatalogInput's fields from get-catalog, CustomProperties left out (SUP-474)
+ROLE_ARN=$(AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse output -raw data_transfer_role_arn)
+aws glue get-catalog --catalog-id "${A}:stage21_warehouse" --profile $S --output json \
+  > "$HOME/tmp/s21-p8-catalog.json"
+jq --arg role "$ROLE_ARN" '.Catalog | {Description, FederatedCatalog, Parameters,
+    CreateDatabaseDefaultPermissions, CreateTableDefaultPermissions,
+    CatalogProperties: {DataLakeAccessProperties: {DataLakeAccess: true, DataTransferRole: $role}}}
+  | with_entries(select(.value != null))' "$HOME/tmp/s21-p8-catalog.json" > "$HOME/tmp/s21-p8-dla-on.json"
+aws glue update-catalog --catalog-id "${A}:stage21_warehouse" \
+  --catalog-input "file://$HOME/tmp/s21-p8-dla-on.json" --profile $S
+aws glue get-catalog --catalog-id "${A}:stage21_warehouse" --profile $S \
+  --query Catalog.CatalogProperties.DataLakeAccessProperties                   # ManagedWorkgroupStatus
+aws redshift-serverless list-managed-workgroups --profile $S
+# 8.12 the refused INSERTs read by their effect, as the admin: three rows, all 'redshift'
+q "select source, count(*) from lab.stage21_fed group by source order by source"
+# 8.14 ⚡ data lake access off, then 8.8's loop with revoke-permissions, then 4.8's block from delete-catalog
+# to deregister-namespace
+jq '.CatalogProperties.DataLakeAccessProperties = {DataLakeAccess: false}' \
+  "$HOME/tmp/s21-p8-dla-on.json" > "$HOME/tmp/s21-p8-dla-off.json"
+aws glue update-catalog --catalog-id "${A}:stage21_warehouse" \
+  --catalog-input "file://$HOME/tmp/s21-p8-dla-off.json" --profile $S
+aws redshift-serverless list-managed-workgroups --profile $S                                   # empty
+# the seat out: the structure read now, less the role, written back, diffed against 8.5's file
+aws lakeformation get-data-lake-settings --profile $S --query DataLakeSettings --output json \
+  > "$HOME/tmp/s21-p8-lf-now.json"
+jq --arg slr "$SLR" '.ReadOnlyAdmins = [(.ReadOnlyAdmins // [])[] | select(.DataLakePrincipalIdentifier != $slr)]' \
+  "$HOME/tmp/s21-p8-lf-now.json" > "$HOME/tmp/s21-p8-lf-unseat.json"
+aws lakeformation put-data-lake-settings --data-lake-settings "file://$HOME/tmp/s21-p8-lf-unseat.json" \
+  --profile $S
+aws lakeformation get-data-lake-settings --profile $S --query DataLakeSettings --output json \
+  > "$HOME/tmp/s21-p8-lf-end.json"
+diff "$HOME/tmp/s21-p8-lf-before.json" "$HOME/tmp/s21-p8-lf-end.json"      # none, or [] for an absent list
+# then the key statement off, then the transfer role and the catalog read off
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data plan -input=false \
+  -out="$HOME/tmp/s21-p8-data-off.tfplan"                                                 # 1 to change
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/data apply -input=false \
+  "$HOME/tmp/s21-p8-data-off.tfplan"
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse plan -input=false \
+  -var all_projects_tag_enabled=$TAG -var data_transfer_role_enabled=false \
+  -var federated_catalog_read_enabled=false -out="$HOME/tmp/s21-p8-warehouse-off.tfplan"   # 8.3's count
+AWS_PROFILE=$S terraform -chdir=terraform-live/sandbox/warehouse apply -input=false \
+  "$HOME/tmp/s21-p8-warehouse-off.tfplan"
+q "drop table lab.stage21_fed"
+```
+
+```sql
+-- 8.9 [user], the Query editor on awsds-sandbox-warehouse, database sandbox; the list again at 5 and 15 min
+SELECT * FROM "sandbox@stage21_warehouse"."lab"."stage21_fed";
+SELECT database_name, database_type FROM svv_redshift_databases ORDER BY 1;
+-- 8.11 [user], Athena, by the name the preview gives (4.6): the read, then the INSERT expected refused
+INSERT INTO <the preview's name> VALUES (10, 'athena');
+```
+
+```python
+# 8.12 [user], the session's settings, given in its %%configure cell before its first statement (the cell's
+# form read at 8.2): the extension endpoint as fedext, the standard endpoint as fedrest, with Glue's pages'
+# keys; glue.account-id and glue.catalog-arn are the blog's lines for a session with Lake Formation's
+# fine-grained access, the ARN in the form the blog writes.
+account = "<account>"
+conf = {
+    "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+    "spark.sql.catalog.fedext": "org.apache.iceberg.spark.SparkCatalog",
+    "spark.sql.catalog.fedext.type": "glue",
+    "spark.sql.catalog.fedext.glue.id": f"{account}:stage21_warehouse/sandbox",
+    "spark.sql.catalog.fedext.client.region": "us-west-2",
+    "spark.sql.catalog.fedext.glue.account-id": account,
+    "spark.sql.catalog.fedext.glue.catalog-arn": f"arn:aws:glue:us-west-2:{account}:stage21_warehouse/sandbox",
+    "spark.sql.catalog.fedrest": "org.apache.iceberg.spark.SparkCatalog",
+    "spark.sql.catalog.fedrest.type": "rest",
+    "spark.sql.catalog.fedrest.uri": "https://glue.us-west-2.amazonaws.com/iceberg",
+    "spark.sql.catalog.fedrest.warehouse": f"{account}:stage21_warehouse/sandbox",
+    "spark.sql.catalog.fedrest.rest.sigv4-enabled": "true",
+    "spark.sql.catalog.fedrest.rest.signing-name": "glue",
+}
+spark.sql("SELECT * FROM fedext.lab.stage21_fed").show()
+spark.sql("SELECT * FROM fedrest.lab.stage21_fed").show()
+spark.sql("INSERT INTO fedext.lab.stage21_fed VALUES (20, 'spark')")    # expected refused under SELECT
+```
+
 ### The Sandbox warehouse sitting: passes 2 to 4 in order
 
 Written 2026-11-19 with nothing up, for the Sandbox warehouse sitting the orchestrating session runs
@@ -949,6 +1273,12 @@ About 4 hours 30 minutes of passes 2 to 4, beside Stage 19's 5.3, which they sha
 | xviii | After a revocation, how long does `GetDataAccess` answer, and how long do credentials vended before it work? | 5.7 |
 | xix | What did the sittings bill, by service? | 6.5 |
 | xx | Does removing the consumer's compute delete its workgroup, namespace and stack, and does `US-3` read green with 1.5's variables off? | 2.9 |
+| xxi | Which prerequisite or grant did pass 4 miss: the trail's refused calls and their callers, the read-only administrators, the data key's statements? | 8.1, 8.2 |
+| xxii | With `AWSServiceRoleForRedshift` seated and both roles granted, does Redshift list the catalog's database and read its table, and after how long? | 8.4 to 8.9 |
+| xxiii | Does Athena read the table through data lake access, and is its `INSERT` refused under `SELECT`, with which wording? | 8.10, 8.11 |
+| xxiv | Does Spark read the table through the extension endpoint, the standard endpoint or neither, and is its `INSERT` refused under `SELECT`? | 8.12 |
+| xxv | With `INSERT` granted, do Athena's and Spark's rows land in the warehouse, read by Redshift? Not measured: decision 5 took (b) | — |
+| xxvi | What did pass 8's sitting bill, the managed workgroup and the Glue session apart? | 8.15 |
 
 ## Decisions due
 
@@ -956,8 +1286,8 @@ The user took decisions 1 to 3 on 2026-11-17 in the cloud session's thread, one 
 user's request: decision 1 on its card at 21:55 UTC, decisions 2 and 3 in words at 21:55 UTC. At 21:50 UTC
 the user set the rule the recommendations follow: *"Revise as recomendações considerando que iremos
 exercitar o caminho sugerido pela AWS por padrão."* Decision 4 on 2026-11-22, in this stage's session on
-the laptop. The log carries each question as it was asked and each answer in the user's words. Taken: 1
-to 4.
+the laptop; decision 5 on 2026-11-24 on its card at 15:53 UTC, in a cloud session's thread. The log
+carries each question as it was asked and each answer in the user's words. Taken: 1 to 5.
 
 1. **The consumer of a Redshift asset, and its subscription target** (2.4). **Taken 2026-11-17: (b)**, on
    the card whose option read *"Caminho documentado pela AWS: o consumidor ganha um workgroup só dele por
@@ -1004,6 +1334,20 @@ to 4.
    taken: (a) the key policy unchanged, 4.5's reads run and a write through S3 refused, so 4.6's read
    through data lake access would likely be refused by this estate's key rather than measured on AWS's
    path.
+5. **The federated catalog again, with Athena and Spark** (pass 8). **Taken 2026-11-24: (b)**, on the
+   card whose option read *"Só leitura no SB2"*, *"Igual à primeira, sem o INSERT: a verificação xxv
+   (escrita) fica só com o que as páginas da AWS dizem."*: 8.1 to 8.3 with nothing up, then the sitting
+   in SB2, with the seat, the grants to both roles and data lake access; Redshift, Athena and Spark read
+   `lab.stage21_fed`, each Iceberg engine's `INSERT` tried under `SELECT` and expected refused; everything
+   removed in the sitting. 8.13 does not run, and verification xxv rests on AWS's pages. Its costs:
+   `AWSServiceRoleForRedshift` reads every object and grant of Sandbox's Lake Formation for the sitting;
+   the access role reads the catalog's metadata; decision 4 (b)'s fourth reader of the data key returns
+   for the sitting; about 8 USD of managed compute if the trial does not absorb it. The card recommended
+   (a), AWS's documented path under the rule of 2026-11-17, which measures the third statement inside the
+   free trial. Not taken: (a) the same with Athena and Spark each writing one row under an `INSERT`
+   granted for minutes, a table of `lab` writable by the project role for that time; (c) 8.1 and 8.2
+   alone, the causes read from the trail and the estate and no sitting, so verifications xxii to xxvi stay
+   unanswered and the Iceberg engines' reach unmeasured in this estate.
 
 ## Cost
 
@@ -1020,6 +1364,10 @@ Measured rates, `us-west-2`, from [`docs/PRICING.md`](../../PRICING.md):
 - S3 Access Grants: 0.03 per 1,000 requests. S3: kilobytes. Athena: 5.00 per TB scanned, kilobytes.
 - The catalog: metadata requests at 10.00 per 100,000 with 4,000 a month free per account; a source's run in
   compute units at 1.776 each with 0.2 a month free.
+- Pass 8 (decision 5): the managed workgroup charged 23,040 RPU-seconds, 2.30 USD, for pass 4's three failed
+  reads, 7,680 each, about 0.77 USD [inferred: 128 RPU for the 60-second minimum], absorbed by the free
+  trial (`SUP-474`, [`docs/PRICING.md`](../../PRICING.md)); pass 8's ten queries or so, about 8 USD. A Glue 5.0 session at 0.44 per DPU-hour, 0.40 USD
+  for 1,152 seconds on 2026-11-14 (`SUP-368`). The warehouse inside the trial.
 - At rest: nothing new. Every object a pass creates is removed at its end, the consumer's workgroup and
   namespace at 2.9, but the assets and listings, which are metadata.
 
@@ -1043,22 +1391,33 @@ Each write is on the user's word, in this order, each object read before its del
    table `stage21_images`.
 6. **[user] `make down ENV=sandbox`**, every portal tab closed first
    ([`sagemaker-application.md`](../runbooks/sagemaker-application.md) §D).
+7. **[Claude⚡] Pass 8's objects** (8.14), if 8.14 did not run, before that sitting's `make down` (item 6):
+   data lake access off, the grants revoked, the catalog deleted and the registration withdrawn in 4.8's
+   order, `AWSServiceRoleForRedshift` taken out of the read-only administrators with the structure read
+   then, `sandbox/data/`'s switches off and applied, then `sandbox/warehouse/`'s
+   `federated_catalog_read_enabled` and `data_transfer_role_enabled` off and applied; `lab.stage21_fed`
+   dropped.
 
 ## What this stage does not do
 
 - Promote a product, or touch Production's warehouse, its datashare or its federated database.
 - Build a SageMaker application: the tables come from SQL in the query editor and the files from a space.
 - Keep a federated catalog, data lake access, the data transfer role's key statement, the consumer's
-  workgroup, the `RedshiftServerless` blueprint or `sys:operator` past its sitting.
+  workgroup, the `RedshiftServerless` blueprint, `sys:operator`, `AWSServiceRoleForRedshift`'s read-only
+  seat or the access role's catalog reads past its sitting.
+- Register Production's namespace, or create a federated catalog in Data Governance: pass 8 weighs the
+  shape against the accounts and builds it nowhere.
 - Grant the namespace's default role a policy (5b decision 5), even for 2.8.
 - Enable the `LakehouseCatalog` or `LakehouseAdmin` blueprints, or create an RMS catalog (decision 3 (b)).
+- Grant the project role `INSERT` on a warehouse table for Athena's or Spark's write (decision 5 (b)).
 - Build S3 Metadata tables or an S3 table bucket: read, not built.
 - Put unstructured files in the governed lake's buckets.
 
 ## What concerns the other sessions
 
 - **Stage 19**: its pass 5 shares the warehouse sitting. Its 5.3 asset is the one 2.2 reads when it ran
-  first, and its 5.4 revocation waits for pass 2's end.
+  first, and its 5.4 revocation waits for pass 2's end. Pass 8 shares SB2 with its xiv, both needing the
+  raise's `redshift`.
 - **6h**: its decision 8 (a) stands since 2026-11-22 ([pull request
   #363](https://github.com/felipenoris/AWS-DataScience/pull/363)). From its step 7 on §N.10's day 1,
   `test-experimentation`, this stage's consumer, is in the warehouse's map under the wide tag, with no
@@ -1066,19 +1425,23 @@ Each write is on the user's word, in this order, each object read before its del
   of `sandbox/warehouse/` here names the tag true. Pass 2's subscription lands on the consumer's own
   workgroup; decision 1's open case, a project that adds the existing workgroup in the portal, needs no
   further admission from day 1 and stays unmeasured. Pass 3 reads a lineage run; 6h decision 3 was done
-  2026-11-19, the project connection's `lineageSync` off and its database `sandbox`.
+  2026-11-19, the project connection's `lineageSync` off and its database `sandbox`. Pass 8 creates and
+  drops `lab.stage21_fed` in its sitting and reads `sandbox`'s isolation level; an `ALTER DATABASE` on it
+  is the user's call there.
 - **6d, 17, 19 and 20**: 1.5's variables ride `sagemaker-prereqs`, `sandbox/sagemaker/` and
   `data-governance/governance/`, which their applies plan too. Off by default, they plan `No changes` in
   another stage's tree; the sitting's apply is announced to the other sessions first, and `US-3` reads red
   until 2.9.
 - **Stage 9**: pass 4 brings the federated catalog back in Sandbox alone, and decision 3 (b) takes 9.5a's
   reading there, the question of its verification xxiii; its decision 5 holds in Production, where nothing
-  changes.
+  changes. Pass 8 brings the catalog back once more in Sandbox, for Athena's and Spark's reads, and
+  changes neither decision 5 nor decision 14 (a).
 - **Stage 11**: 6.4's threat-model entries, `sys:operator` held by a project and an S3 Access Grants
   credential that outlives its revocation; decision 4's fourth reader of the account data key, for the
-  sitting.
+  sitting. Pass 8's seat of `AWSServiceRoleForRedshift` among Lake Formation's read-only administrators,
+  for its sitting.
 - **Stage 20**: its pass 5 makes `eighth-experimentation` a consumer of Production's listing; this stage
   makes it the producer of two data products and, if 4.4 imports, a federated catalog's asset, each retired
   at the end.
 - **Stage 12**: the bills of decision 1 (b)'s workgroup and decision 3 (b)'s managed workgroup, read at
-  6.5 against D12.
+  6.5 against D12, and pass 8's managed workgroup and Glue session, read at 8.15.

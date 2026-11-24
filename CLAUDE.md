@@ -454,8 +454,8 @@ up with what each closes, and the dated deadlines.
 
 Done: 0, 1a, 1b, 1c, 1d, 2, 3, 4, 5a, 6a, 6b, 6c, 6g, 6i, 7, 8, 9, 10, 16 and 18. Not started: 13, which waits
 on the domain name from the user; and 15, which nothing blocks and whose decisions 1-4 are the user's. 21's
-passes 1 to 5 ran 2026-11-18 to 2026-11-23, `TM-37` accepted; left: 6.5's bill by service (xix), 2026-11-26.
-The calendar is `promotion.md` §N.12.1, re-planned 2026-11-23 with Stages 11 to 15 left out at the user's
+passes 1 to 5 ran 2026-11-18 to 2026-11-23, `TM-37` accepted; left: 6.5's bill by service (xix), 2026-11-26,
+and pass 8's reads in SB2 (decision 5 (b)). The calendar is `promotion.md` §N.12.1, re-planned 2026-11-23 with Stages 11 to 15 left out at the user's
 request.
 
 | Stage | State | What comes next |

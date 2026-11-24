@@ -1736,3 +1736,67 @@ Times UTC.*
   chat of the session that changed `CT-18` (pull request #395). Stage 19's log points to that entry.
 - **[Claude] The spaces of earlier sittings** deleted in Sandbox before this day's raise, from 20:42:36 on
   2026-11-22 to 01:26:32, are in 6d's log.
+
+## 2026-11-24 — Pass 8 written with nothing up: pass 4's failure read against AWS's pages, and decision 5
+
+*Claude's hand, in a cloud session's thread of the project, on the user's request of 14:39 UTC: "Revise o
+plano do stage associado incluindo esta etapa de investigação e configuração da funcionalidade." No AWS
+call: AWS's pages read in their `.md` form ([`REFERENCES.md`](../REFERENCES.md), 2026-11-24), the estate
+read in the repository at `676800d`. Times UTC.*
+
+- **[Claude] The three statements the request rested on**, each against the pages. A Lake Formation-managed
+  datashare is read by Redshift alone: holds, *"Athena doesn't support querying Amazon Redshift datashares
+  managed by Lake Formation."* Athena and Spark reach the warehouse's tables through the namespace registered
+  as a federated catalog: holds through two doors, Athena on the catalog registered in Glue with data lake
+  access, and Spark on the Glue Iceberg REST catalog's extension endpoint, *"RMS tables are accessible only
+  from the extension endpoint in AWS Glue Iceberg REST Catalog."* Outside engines only read: does not hold as
+  written, since the pages give read and write and refuse DDL; a consumer is read-only by its grant.
+- **[Claude] Pass 4's failure, by cause**, against this log's entry on pass 4. Lake Formation's prerequisites
+  ask for `AWSServiceRoleForRedshift` among the read-only administrators, and pass 4 seated none. 4.2 granted
+  the project role, while the portal's Redshift session reaches Glue and Lake Formation as the access role
+  (`SUP-139`, `redshift-connection.md` §G), whose statements name no `stage21_warehouse`. The data key holds
+  no `RedshiftAllowAccessPolicy` [inferred]. The `sandbox` database's isolation level is unread. Redshift's
+  Region list for Iceberg compatibility names US West (N. California) and not US West (Oregon), where every
+  call of pass 4 succeeded. None is measured: 8.1's trail and 8.2's readings come first.
+- **[Claude] Production, Data Governance and Sandbox**: a registration names one account, so Production's
+  namespace could be registered to Data Governance's catalog. The registration would be permanent there
+  (Stage 9 decision 14 (a)), no page names the account of its managed workgroup (D22), Production's data key
+  would name a transfer role (D31), and the catalog crosses no account whole. Redshift mounts such a catalog
+  in its own account alone, so Stage 9 decision 5 stands.
+- **[Claude] Written**: pass 8 in the stage file, 8.1 to 8.15 with their commands; verifications xxi to xxvi;
+  decision 5, due, (a) recommended; the cost, rollback item 7 and the other sessions' lines; the waiting
+  list's rows; [`promotion.md`](../plan/runbooks/promotion.md) §N.12.1's rows of 2026-11-27 and SB2;
+  [`upstream-releases.md`](../plan/upstream-releases.md)'s row on the Region list; the rows of `CLAUDE.md`
+  and both indexes.
+- **[Claude] What waits**: decision 5, the user's; then 8.1 to 8.3 on the laptop, which holds the
+  credentials, with nothing up; the sitting in SB2, before the free trial ends on 2026-12-19.
+
+## 2026-11-24 — Decision 5 taken: (b), the reads without the write
+
+*The user's hand, on a decision card in this project's cloud session thread at 15:53:23 UTC; recorded by
+Claude in the same thread, with no AWS call. The card was posted in Portuguese and is quoted as posted.
+Times UTC.*
+
+- **[Claude] The question**, on the card posted after the entry above: *"Escolher o escopo do passo 8 do
+  Stage 21 (Athena e Spark)"*, (a) recommended:
+  1. *"Leitura e escrita no SB2"*: *"8.1 a 8.3 sem nada no ar; no SB2: assento do SLR, grants, data lake
+     access; Redshift, Athena e Spark leem e Athena e Spark gravam 1 linha; tudo removido na sessão."*
+  2. *"Só leitura no SB2"*: *"Igual à primeira, sem o INSERT: a verificação xxv (escrita) fica só com o
+     que as páginas da AWS dizem."*
+  3. *"Só leituras, sem sessão"*: *"Só 8.1 e 8.2 no laptop (trilha e estado), sem SB2: Athena e Spark
+     seguem sem medição neste ambiente."*
+
+  The card's reason for (a): *"Caminho documentado pela AWS (regra de 2026-11-17), mede a terceira
+  afirmação, cabe no free trial até 2026-12-19 e tudo é removido na mesma sessão."*
+- **[user] The answer**: *"Só leitura no SB2"*, decision 5 (b).
+- **[Claude] The reading**: (b) drops (a)'s granted write, so 8.13 does not run and verification xxv rests
+  on AWS's pages. The `INSERT` that 8.11 and 8.12 try under `SELECT` alone, expected refused, stays as the
+  read-only grant's measurement for verifications xxiii and xxiv, and 8.12 reads the table's rows as the
+  admin after it. The card did not name those attempts; the reply in the thread names this reading.
+- **[Claude] The text that follows**: in the stage file, the `Status` row, the prerequisites, pass 8's
+  opening, the third statement, 8.11 to 8.13, the sitting's length (1 hour 50 minutes), the commands,
+  verification xxv, decision 5, what the stage does not do and Stage 11's line; the waiting list's
+  decision row removed, and its warehouse and 2026-12-19 rows; [`promotion.md`](../plan/runbooks/promotion.md)
+  §N.12.1; `CLAUDE.md`'s row; the log index's row.
+- **[Claude] What waits**: 8.1 to 8.3 on the laptop, with nothing up; then the sitting in SB2, before the
+  free trial ends on 2026-12-19.
