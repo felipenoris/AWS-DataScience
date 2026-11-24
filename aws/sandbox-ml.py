@@ -5,8 +5,9 @@ version and its create and tag statements, the D13 boundary's five statements an
 instance ceiling, the Tooling stack's enableNetworkIsolation), the MLflow Apps, every training
 job against the boundary's four job settings, the Model Registry group ml-demo-xgboost, the
 serving objects (each endpoint with its price, decision 6), the ML pipelines, the entries read
-without being created (HyperPod, Partner AI apps) with the quotas that bound the exercise,
-the Generative AI objects and the roles behind them, the doors a session opens (the interface
+without being created (HyperPod, Partner AI apps, Feature Store) with what the project roles hold
+for each, Feature Store's runtime endpoint service and the quotas that bound the exercise, the
+Generative AI objects and the roles behind them, the doors a session opens (the interface
 endpoints, the S3 gateway's allow-list, the DNS Firewall list), and CloudTrail's record of
 who created each object, and through which door. Passes 9 and 10's applications in their
 `dev` projects: app-ml's jobs, its leftover model, its candidate, the version it proposed and
@@ -28,8 +29,8 @@ run:      ./aws/sandbox-ml.py                        # the Sandbox profile
           python3 aws/sandbox-ml.py -                # CloudShell, ambient
 writes:   aws/output/sandbox-ml.txt, and each pipeline's live definition under
           aws/output/sandbox-ml/ (untracked - see .gitignore)
-reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, GetPolicy,
-          GetPolicyVersion;
+reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, GetRolePolicy,
+          GetPolicy, GetPolicyVersion;
           kms:ListAliases; cloudformation:DescribeStacks; sagemaker:ListMlflowApps,
           DescribeMlflowApp, ListTrainingJobs, DescribeTrainingJob, ListProcessingJobs,
           DescribeProcessingJob, ListModelPackageGroups,
@@ -37,16 +38,17 @@ reads:    iam:ListRoles, GetRole, ListAttachedRolePolicies, ListRolePolicies, Ge
           DescribeEndpoint, DescribeEndpointConfig,
           ListEndpointConfigs, ListModels, DescribeModel, ListTransformJobs,
           DescribeTransformJob, ListPipelines, DescribePipeline, ListPipelineExecutions,
-          ListPipelineExecutionSteps, ListClusters, ListPartnerApps, DescribeImageVersion,
-          ListTags; servicequotas:ListServiceQuotas, ListAWSDefaultServiceQuotas,
-          ListRequestedServiceQuotaChangeHistory;
+          ListPipelineExecutionSteps, ListClusters, ListPartnerApps, ListFeatureGroups,
+          DescribeImageVersion, ListTags; servicequotas:ListServiceQuotas,
+          ListAWSDefaultServiceQuotas, ListRequestedServiceQuotaChangeHistory;
           bedrock:ListGuardrails, GetGuardrail, ListEvaluationJobs,
           GetFoundationModelAvailability, ListTagsForResource, ListInferenceProfiles,
           ListEnforcedGuardrailsConfiguration; bedrock-agent (bedrock:) ListKnowledgeBases,
           GetKnowledgeBase,
           ListDataSources, ListAgents, ListPrompts, ListFlows; aoss:ListCollections;
           s3vectors:ListVectorBuckets; lambda:ListFunctions; ec2:DescribeSubnets,
-          DescribeSecurityGroups, DescribeVpcEndpoints; route53resolver:
+          DescribeSecurityGroups, DescribeVpcEndpoints, DescribeVpcEndpointServices;
+          route53resolver:
           ListFirewallDomainLists, ListFirewallDomains; cloudwatch:ListMetrics,
           GetMetricStatistics; s3api:HeadObject, ListObjectsV2; s3:GetObject (`aws s3 cp`
           to stdout, or to a temporary folder for an archive's hash); cloudtrail:LookupEvents;
@@ -152,6 +154,39 @@ QUOTAS = (
     "ml.m5.large for transform job usage",
     "ml.t3.medium for processing job usage",
 )
+
+# Pass 6's entries, read and never created: the actions each project role is read for, by the
+# names of SageMaker's service authorization reference (v1.5, read 2026-11-24), and Feature Store's
+# runtime, whose endpoint service no slice declares (6.4). A slice declares a service by its short
+# name, `sagemaker.featurestore-runtime`.
+HYPERPOD_ACTIONS = (
+    "sagemaker:CreateCluster",
+    "sagemaker:DescribeCluster",
+    "sagemaker:ListClusters",
+    "sagemaker:UpdateCluster",
+    "sagemaker:DeleteCluster",
+)
+PARTNER_APP_ACTIONS = (
+    "sagemaker:CreatePartnerApp",
+    "sagemaker:DescribePartnerApp",
+    "sagemaker:ListPartnerApps",
+    "sagemaker:CreatePartnerAppPresignedUrl",
+    "sagemaker:CallPartnerAppApi",
+)
+FEATURE_GROUP_ACTIONS = (
+    "sagemaker:CreateFeatureGroup",
+    "sagemaker:DescribeFeatureGroup",
+    "sagemaker:UpdateFeatureGroup",
+    "sagemaker:DeleteFeatureGroup",
+    "sagemaker:ListFeatureGroups",
+    "sagemaker:PutRecord",
+    "sagemaker:GetRecord",
+    "sagemaker:BatchGetRecord",
+    "sagemaker:DeleteRecord",
+)
+FEATURESTORE_RUNTIME = "sagemaker.featurestore-runtime"
+FEATURESTORE_RUNTIME_SERVICE = f"com.amazonaws.{context.REGION}.{FEATURESTORE_RUNTIME}"
+SLICE_TREES = ("terraform-modules", "terraform-live")
 
 # The Tooling environment's stack, and the parameter step 0.8 reads.
 TOOLING_STACK = "DataZone-Env-{env}"
@@ -337,6 +372,36 @@ def actions_include(statement: dict, action: str) -> bool:
         a == action or a == f"{service}:*" or a == "*" or fnmatch.fnmatchcase(action, a)
         for a in as_list(statement.get("Action"))
     )
+
+
+def allows(statement: dict, action: str) -> bool:
+    """Whether an Allow statement names ``action``: by an Action pattern, or by a NotAction that
+    leaves it out. IAM matches an action's name in any case."""
+    if statement.get("Effect") != "Allow":
+        return False
+    if "NotAction" in statement:
+        patterns = as_list(statement["NotAction"])
+        return not any(fnmatch.fnmatchcase(action.lower(), a.lower()) for a in patterns)
+    patterns = as_list(statement.get("Action"))
+    return any(fnmatch.fnmatchcase(action.lower(), a.lower()) for a in patterns)
+
+
+def granted(documents: list, actions: tuple) -> list | None:
+    """Each Allow statement of ``documents``, (policy name, document) pairs, that names one of
+    ``actions``, as `policy/Sid: actions [condition keys]`; None when a document is unread."""
+    out = []
+    for name, doc in documents:
+        if doc is None:
+            return None
+        for st in as_list(doc.get("Statement")):
+            hits = [a.split(":", 1)[1] for a in actions if allows(st, a)]
+            if hits:
+                keys = condition_keys(st)
+                out.append(
+                    f"{name}/{st.get('Sid') or '-'}: {', '.join(hits)}"
+                    + (f" [{', '.join(keys)}]" if keys else "")
+                )
+    return out
 
 
 def resource_types(statement: dict) -> list:
@@ -701,6 +766,16 @@ def main(argv: list) -> int:
         boundary = (r.get("PermissionsBoundary") or {}).get("PermissionsBoundaryArn", "")
         if boundary and boundary not in policies:
             policies[boundary] = policy_document(boundary)
+        inline = (run_json("iam", "list-role-policies", "--role-name", rname) or {}).get(
+            "PolicyNames", []
+        )
+        inline_docs = {
+            name: (
+                run_json("iam", "get-role-policy", "--role-name", rname, "--policy-name", name)
+                or {}
+            ).get("PolicyDocument")
+            for name in inline
+        }
         domain, project = tags.get("AmazonDataZoneDomain", ""), tags.get(PROJECT_TAG, "")
         # datazone_usr_role_<project>_<environment>: neither id holds an underscore.
         rest = rname[len(PROJECT_ROLE_PREFIX) :]
@@ -711,6 +786,7 @@ def main(argv: list) -> int:
             "tags": tags,
             "boundary": boundary,
             "attached": attached,
+            "inline_docs": inline_docs,
             "project": project,
             "domain": domain,
             "env": env,
@@ -996,6 +1072,22 @@ def main(argv: list) -> int:
     # ------------------------------------------------------------------ entries read, not built
     clusters = (run_json("sagemaker", "list-clusters") or {}).get("ClusterSummaries", [])
     partner_apps = (run_json("sagemaker", "list-partner-apps") or {}).get("Summaries", [])
+    listed = run_json("sagemaker", "list-feature-groups")
+    feature_groups = None if listed is None else listed.get("FeatureGroupSummaries", [])
+    listed = run_json(
+        "ec2",
+        "describe-vpc-endpoint-services",
+        "--filters",
+        f"Name=service-name,Values={FEATURESTORE_RUNTIME_SERVICE}",
+    )
+    runtime_service = None if listed is None else (listed.get("ServiceDetails") or [{}])[0]
+    runtime_declared = sorted(
+        str(path.relative_to(ctx.repo_root))
+        for tree in SLICE_TREES
+        for path in (ctx.repo_root / tree).rglob("*.tf")
+        if ".terraform" not in path.parts
+        and FEATURESTORE_RUNTIME in path.read_text(encoding="utf-8")
+    )
     applied = (
         run_json("service-quotas", "list-service-quotas", "--service-code", "sagemaker") or {}
     ).get("Quotas", [])
@@ -1927,6 +2019,70 @@ def main(argv: list) -> int:
             )
     else:
         checks.ok("ML-7", "Partner AI apps", "none")
+    if feature_groups is None:
+        checks.note("ML-7", "feature groups", f"{UNREAD} - see section 15.")
+    elif feature_groups:
+        for g in feature_groups:
+            checks.fail(
+                "ML-7",
+                f"feature group {g.get('FeatureGroupName', '-')}",
+                f"{g.get('FeatureGroupStatus', '-')} - the stage creates none (6.4).",
+            )
+    else:
+        checks.ok("ML-7", "feature groups", "none")
+    # What each project role holds for the three entries, from every policy on it, attached and
+    # inline: a cluster or a partner app is standing infrastructure no decision asks for, so a
+    # grant of either fails; Feature Store's grant is verification xxxiii's role half. The roles
+    # carry the same AWS policies, so a reading is printed once with the projects that share it.
+    entry_grants = {}  # (entry, reading) -> projects
+    for p in projects.values():
+        documents = [
+            (a.get("PolicyName", ""), (policies.get(a.get("PolicyArn", "")) or ("-", None))[1])
+            for a in p["attached"]
+        ] + sorted(p["inline_docs"].items())
+        for entry, actions in (
+            ("HyperPod", HYPERPOD_ACTIONS),
+            ("Partner AI apps", PARTNER_APP_ACTIONS),
+            ("Feature Store", FEATURE_GROUP_ACTIONS),
+        ):
+            found = granted(documents, actions)
+            reading = UNREAD if found is None else "; ".join(found)
+            entry_grants.setdefault((entry, reading), []).append(p["project"] or p["role"])
+    for (entry, reading), owners in sorted(entry_grants.items()):
+        held_by = (
+            f"every project role, {len(owners)}"
+            if len(owners) == len(projects)
+            else ", ".join(sorted(owners))
+        )
+        what = f"{entry}: the project role's grants ({held_by})"
+        if reading == UNREAD:
+            checks.note("ML-7", what, f"{UNREAD} - a policy's call failed, see section 15.")
+        elif entry == "Feature Store":
+            checks.note("ML-7", what, (reading or "none") + " (6.4, verification xxxiii).")
+        elif reading:
+            checks.fail("ML-7", what, f"{reading} - the stage reads none (6.1, 6.2).")
+        else:
+            checks.ok("ML-7", what, "none in any policy on the role")
+    if runtime_service is None:
+        checks.note("ML-7", "Feature Store's runtime", f"{UNREAD} - see section 15.")
+    else:
+        offered = runtime_service.get("ServiceName")
+        checks.note(
+            "ML-7",
+            "Feature Store's runtime",
+            (
+                f"{offered}, private DNS {runtime_service.get('PrivateDnsName') or '-'}"
+                if offered
+                else f"{FEATURESTORE_RUNTIME_SERVICE} not offered in the Region"
+            )
+            + "; "
+            + (
+                f"declared in {', '.join(runtime_declared)}"
+                if runtime_declared
+                else "no slice declares it"
+            )
+            + " (6.4).",
+        )
     for qname in QUOTAS:
         row = quota_rows.get(qname)
         if row is None:
@@ -2907,7 +3063,30 @@ def main(argv: list) -> int:
         rows += [
             f"Partner AI app\t{a.get('Name', '-')}\t{a.get('Status', '-')}" for a in partner_apps
         ]
+        rows += [
+            f"Feature group\t{g.get('FeatureGroupName', '-')}\t{g.get('FeatureGroupStatus', '-')}"
+            for g in feature_groups or []
+        ]
         rep.tabulate(rows if len(rows) > 1 else rows + ["(none)\t-\t-"])
+        rep.line()
+        rows = ["ENTRY\tPROJECT ROLES\tSTATEMENTS THAT GRANT ITS ACTIONS"]
+        rows += [
+            f"{entry}\t{', '.join(sorted(owners))}\t{reading or '(none)'}"
+            for (entry, reading), owners in sorted(entry_grants.items())
+        ]
+        rep.tabulate(rows)
+        rep.line()
+        rep.line(
+            f"Feature Store's runtime: {FEATURESTORE_RUNTIME_SERVICE} "
+            + (
+                UNREAD
+                if runtime_service is None
+                else ("offered" if runtime_service.get("ServiceName") else "not offered")
+            )
+            + "; declared in "
+            + (", ".join(runtime_declared) or "no slice")
+            + "."
+        )
         rep.line()
         rows = ["QUOTA\tVALUE\tSOURCE\tAWS DEFAULT\tCODE\tLATEST REQUEST"]
         for qname in QUOTAS + tuple(mlflow_quotas):

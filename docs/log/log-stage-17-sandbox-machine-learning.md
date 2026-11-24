@@ -6551,3 +6551,81 @@ Account>`. Terraform 1.17.2. Times UTC.*
   (`EXC-25`), the two retired workflows' groups among them; `./aws/deploytargets.py`, 23:43:24 to 23:45:03, exit
   0, 44 checks passing, `DT-3` reading `awsds-prod-model-app-ml` alone with its two-statement policy, and
   `DT-8`'s note on `app_dbt.trades`. Neither run had a failed call.
+
+## 2026-11-24 — `app-genai`'s `parse_answer` fix for R3, nothing up
+
+*Claude's hand, a sitting with no AWS call, on the branch `claude/vigilant-shtern-ba2579`, the calendar's
+2026-11-24 row (`promotion.md` §N.12.1). Times UTC.*
+
+- **[Claude] The fix**, written by 00:23: `check.py`'s `parse_answer` reads the JSON object an answer begins
+  with through `json.JSONDecoder.raw_decode`, after an opening code fence if it has one, and stops at its
+  closing brace, so the text after it fails no answer. The report gains `text_after_object`, the ids of the
+  answers let through that carry text after their object besides a closing fence. The planted values are
+  searched for in the whole answer, as before. The prompt, the `Converse` request and the records `triage`
+  writes are unchanged.
+- **[Claude] Why the parse and not structured output**: the parse is one function of `check`, tested
+  offline, and changes nothing the model or the guardrail receives. botocore 1.43.1, the worker's, holds
+  `Converse`'s `outputConfig.textFormat` of type `json_schema` (read in the application's lock); which
+  models honour it, Nova Lite among them, and what a guarded request's assessment does with it are unread,
+  so it would change the request every stage sends and owe a Sandbox loop before R3.
+- **[Claude] The tests**: `tests/test_check.py` gains the stray bracket, Production's answer to `m19` of
+  2026-11-23 verbatim; the fence; the clean answer; a closing fence followed by text; a second object after
+  the first; leading text and an array around the object, which still fail; and a planted telephone number
+  after the object, which still fails the run. `uv run pytest` *"108 passed"*, 95 before. The negative
+  control, the new tests against `check.py` at `1141d862` at 00:23:45: 12 fail, the stray bracket on *"m01:
+  the answer is no JSON object with a label of the list"*, Production's wording for `m19`. `ruff check` and
+  `ruff format --check` pass; `awsds-workflows lint .` at `4401f91` with the pipeline's seven instance types
+  *"ok: 3 arquivo(s)"*.
+- Nothing went to GitLab: `v0.1.1` is R3's tag.
+
+## 2026-11-24 — Pass 6: Claude's halves of 6.1 to 6.4, the APIs read and nothing created
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), reads alone: the policy simulator is a read, and nothing was created. No account
+id is written. Times UTC.*
+
+- **[Claude] The listings**, 00:25:41: `list-clusters` `{"ClusterSummaries": []}`, `list-partner-apps`
+  `{"Summaries": []}` and `list-feature-groups` `{"FeatureGroupSummaries": []}`.
+- **[Claude] Feature Store's runtime** (6.4), 00:25:56: `describe-vpc-endpoint-services` lists 598 services in
+  `us-west-2`, among them `com.amazonaws.us-west-2.sagemaker.featurestore-runtime` and its `-fips` twin, an
+  `Interface` service owned by `amazon` in `us-west-2a` to `us-west-2d`, private DNS
+  `featurestore-runtime.sagemaker.us-west-2.amazonaws.com` and `featurestore-runtime.sagemaker.us-west-2.api.aws`,
+  endpoint policies supported. No `.tf` file under `terraform-modules/` or `terraform-live/` names
+  `featurestore-runtime`. Partner AI apps have a service of their own, `aws.sagemaker.us-west-2.partner-app`,
+  private DNS `*.partner-app.us-west-2.sagemaker.aws`, which no slice names either.
+- **[Claude] The project roles' policies**: Sandbox's six project roles carry the same three AWS managed
+  policies, `SageMakerStudioProjectRoleMachineLearningPolicy` v48, `SageMakerStudioProjectUserRolePolicy` v77
+  and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9, beside each project's `awsds-sandbox-*`
+  policies, and no inline policy. No statement names a cluster or a partner-app action. The ML policy's
+  `SageMakerFeatureStorePermission` allows `sagemaker:*Feature*` and `sagemaker:*Record` on `*` where
+  `aws:ResourceTag/AmazonDataZoneProject` equals `${aws:PrincipalTag/AmazonDataZoneProject}`, and its
+  `SageMakerListPermissions` allows `sagemaker:ListFeatureGroups` on the principal tag
+  `EnableSageMakerMLWorkloadsPermissions` `true`.
+- **[Claude] The simulation**, 00:29:13 to 00:29:37, as `eighth-experimentation`'s project role, the context
+  carrying the Region and the role's `AmazonDataZoneProject` and `EnableSageMakerMLWorkloadsPermissions` tags,
+  which the simulator does not read from the role (`SUP-008`), each action name checked first against
+  SageMaker's Service Reference v1.5. On a feature group tagged with the caller's project,
+  `CreateFeatureGroup`, `DescribeFeatureGroup`, `UpdateFeatureGroup`, `DeleteFeatureGroup`,
+  `DescribeFeatureMetadata`, `UpdateFeatureMetadata`, `PutRecord`, `GetRecord`, `BatchGetRecord`,
+  `BatchWriteRecord` and `DeleteRecord` read `allowed` through the ML policy, Organizations and the boundary
+  allowing; on a group tagged with another project, each `implicitDeny`; `AddTags` with `aws:TagKeys`
+  `AmazonDataZoneProject` `implicitDeny` (`SUP-267`); `ListFeatureGroups` `allowed`. With the caller's tag in
+  the context, `ListClusters`, `ListClusterSchedulerConfigs`, `CreateCluster`, `DescribeCluster`,
+  `UpdateCluster`, `DeleteCluster`, `ListClusterNodes`, `BatchAddClusterNodes`, `ListPartnerApps`,
+  `CreatePartnerApp`, `DescribePartnerApp`, `UpdatePartnerApp`, `DeletePartnerApp`,
+  `CreatePartnerAppPresignedUrl` and `CallPartnerAppApi` each read `implicitDeny`, no statement matched.
+  Verification xxxiii's role half reads: every feature-group action, on a group of the caller's project.
+- **[Claude] The `PartnerApps` blueprint** (6.2), 00:31:01: `list-environment-blueprints --managed` on
+  `awsds-studio` lists it as `5cj3vjg02pcrf4`. Sandbox's 14 blueprint configurations are
+  `AmazonBedrockChatAgent`, `AmazonBedrockEvaluation`, `AmazonBedrockFlow`, `AmazonBedrockFunction`,
+  `AmazonBedrockGuardrail`, `AmazonBedrockKnowledgeBase`, `AmazonBedrockPrompt`, `DataLake`, `EmrServerless`,
+  `MLflowApp`, `S3Bucket`, `S3TableCatalog`, `SageMakerAIDomain` and `Tooling`; none is `PartnerApps`'s.
+- **[Claude] `ML-7`** (6.3) gains the feature groups, each project role's grants for the three entries from
+  every policy on it, attached and inline, and the runtime's endpoint service; a grant for clusters or partner
+  apps fails it. `./aws/sandbox-ml.py`, 00:35:05 to 00:40:28, exit 0, *"all checks passed"*: `ML-7` passing on no
+  cluster, no partner app and no feature group, on no HyperPod and no Partner AI apps grant on any of the six
+  roles, and on the quotas at 20, 30, 8 and 10; noting the Feature Store grant on the six roles and the
+  runtime's service, which no slice declares. The grant helpers read a synthetic `sagemaker:CreateCluster`, a
+  `sagemaker:*`, two `NotAction` statements and a `Deny` as expected.
+- **[Claude] `make check`**, run with every edit of the branch: *"check: OK"*.
+- The user's page halves of 6.1, 6.2 and 6.4 wait on the user's readings.
