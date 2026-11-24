@@ -6629,3 +6629,55 @@ id is written. Times UTC.*
   `sagemaker:*`, two `NotAction` statements and a `Deny` as expected.
 - **[Claude] `make check`**, run with every edit of the branch: *"check: OK"*.
 - The user's page halves of 6.1, 6.2 and 6.4 wait on the user's readings.
+
+## 2026-11-24 — Pass 6: the pages of 6.1, 6.2 and 6.4, read in the portal and nothing created
+
+*Claude's hand in the user's Chrome, on the portal session the user opened for it (*"Abri uma sessão no
+chrome no SMUS para você realizar esta leitura agora."*), signed in as the Data Scientist User (read in the
+account menu), in `eighth-experimentation`, with the estate down; two reads as the infrastructure user
+(`awsds-infra-sandbox-1`). Each form and panel was cancelled and nothing was submitted; the project's *Update
+project* banner was left alone, and the tab was closed at 01:00:52. No account id or address is written.
+Times UTC, from 00:49.*
+
+- **[Claude] 6.1, HyperPod**: Compute's *HyperPod clusters* tab (`compute?type=hyperpod`), under the banner
+  0.9 read, *"No connections to display."* *Add compute* opens at its third step, *Enter details*, type
+  *SageMaker HyperPod*, and asks a connection name, the cluster's name (*"found in SageMaker Console"*), an
+  access role ARN (*"the IAM role ARN that this project needs to assume"*), an account ID (*"the AWS account
+  ID the runtime role exists in"*) and the Region. Its first step offers *Create new compute resources*
+  (Amazon Redshift Serverless, EMR Serverless) and *Connect to existing compute resources* (SageMaker
+  HyperPod alone), its second *All compute types (1)*. The page connects a project to a cluster that exists
+  and creates none. Cancelled.
+- **[Claude] 6.2, Partner AI apps**: absent, as 0.9 read on 2026-11-21. No entry in the left navigation, the
+  *Manage* menu (*Govern*: Domain units, Blueprints; *Catalog management*: Assets, Subscription requests,
+  Data sources, Metadata forms, Business glossaries, Custom asset types), the Generative AI group
+  (Playground; AI apps, the Bedrock IDE) or Discover's filters (All, Assets, Data products, Files, Models,
+  Notebooks, Jobs, Workflows, Feature groups). *Resource blueprints* → *Deploy* offers the *Managed
+  blueprints* EMR Serverless, Lakehouse Database, MLflow App and S3 Bucket, the gallery `app-ml-dev`'s owner
+  read on 2026-11-21 (`docs/SMUS.md` §Resource blueprints); cancelled. No page shows the four partners.
+- **[Claude] 6.4, Feature Store**: AI/ML → Feature Store (`feature-store`), an introduction card (*Feature
+  groups*, *Real-time Inference*, *Batch Ingestion*) and *"You don't have any feature groups."*; the empty
+  page has no *Feature groups* or *Features* tab. *Create feature group* has three steps, *Feature group
+  details*, *Feature definitions* and *Tags - optional*. The first asks a name, a description (*"cannot be
+  changed once created"*) and a *Store configuration*: *Online*, *Offline* or *Online and offline*. With
+  *Online and offline* chosen in the unsaved form, it pre-fills:
+  - online: storage type *Standard*, not editable; the key `alias/awsds-sandbox-project` by its ARN; *Time to
+    Live (TTL)* off (*"Once TTL has been enabled for a feature group, it cannot be disabled."*);
+  - offline: `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/feature-store`;
+    table format *Glue (Default)* or *Iceberg*; the IAM role, the project's own
+    `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; the same key; throughput *On-demand (default)*;
+  - the data catalog: *"Create a table to store your offline Feature Store data."* checked, the catalog
+    `AwsDataCatalog`, not editable, and the database `new_database`, `glue_db_blerpkhn9nj7o0` or one typed,
+    under *"These databases are configured with the Lake Formation permissions required to create the
+    offline store table."*; the table name empty.
+
+  Cancelled on its first step. AWS documents the page for IAM-based domains alone, and this Identity Center
+  domain shows it and its form.
+- **[Claude] The form's values**, read by 00:59:36: the key `alias/awsds-sandbox-project`, customer managed,
+  *"SMUS project resources in this account - blueprint-provisioned volumes and artifacts (Stage 6). NOT the
+  data CMK."*, the projects bucket's key (`docs/GOVERNANCE.md` §Encryption); both databases in Sandbox's Glue
+  Data Catalog, located at the project's `dev/data/catalogs/`, `glue_db_blerpkhn9nj7o0` created 2026-10-26
+  21:25:41 and `new_database` 2026-10-28 06:22:40. *Resource blueprints* lists a `DataLake` deployment named
+  `create-datalake-database-env-new_database-1793168541728`.
+- Pass 6 is read, 6.1 to 6.4. Verification xxxiii's page half: the form writes the offline store as the
+  project role, under the project's prefix and key, into a project database; how its Glue table meets Lake
+  Formation stays unread while no group exists.

@@ -179,12 +179,15 @@ what the lab's portal has shown, read in `eighth-experimentation` and `app-etl-d
 | **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | the entry opens *Compute → MLflow*, `ml-demo-mlflow` in `eighth-experimentation`; on 2026-10-19 it was the legacy experiments page |
 | **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | *Inference endpoints*, with *Create new endpoint*; none created (pass 4) |
 | **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; a pipeline from the SDK that ran, and one from the editor whose training job the boundary refused, deleted the same day (pass 5, 2026-11-22) |
-| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group (6.4) |
+| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group; *Create feature group* read and cancelled 2026-11-24 (6.4) |
 
 The Identity Center chapter also documents *HyperPod clusters* and *Partner AI apps*. Both provision
 standing infrastructure, and Stage 17 reads them without creating anything (6.1, 6.2). The project role
 holds no action of either, `ListClusters` and `ListPartnerApps` included (simulated 2026-11-24), and
-Sandbox holds no `PartnerApps` blueprint configuration.
+Sandbox holds no `PartnerApps` blueprint configuration. In the portal on 2026-11-24, *Add compute* on
+Compute's *HyperPod clusters* tab connects a project to an existing cluster, by its name, an access role
+ARN, an account ID and a Region, and creates none; Partner AI apps show in no menu, Discover filter or
+blueprint gallery.
 
 | Generative AI entry | AWS's path | What it holds | In the lab |
 |---|---|---|---|
@@ -308,7 +311,12 @@ OfflineStore"*, which needs `kms:GenerateDataKey` on the store's key, and regist
 `featurestore-runtime.sagemaker`, whose `TargetStores` can name the offline store alone.
 
 No feature group has been created here (6.4, verification xxxiii). The entry shows in both lab
-projects, an Identity Center domain's (0.9, 2026-11-21). The project role holds a feature group's
+projects, an Identity Center domain's (0.9, 2026-11-21), and its *Create feature group* opens there: a
+name, a description and the store, *Online*, *Offline* or *Online and offline*, then the project's
+`dev/data/ml/feature-store` prefix, the project role as the offline store's, `alias/awsds-<env>-project`
+for both stores, *Glue* or *Iceberg*, *On-demand* throughput and a project database in `AwsDataCatalog`,
+*"configured with the Lake Formation permissions required to create the offline store table"* (read and
+cancelled 2026-11-24). The project role holds a feature group's
 actions through `SageMakerStudioProjectRoleMachineLearningPolicy`'s `SageMakerFeatureStorePermission`,
 `sagemaker:*Feature*` and `sagemaker:*Record` on a group whose `AmazonDataZoneProject` tag is the
 caller's, and `ListFeatureGroups` through `SageMakerListPermissions` too, where AWS's developer guide asks
@@ -1333,8 +1341,8 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **The Sandbox registry's first version**, and what it does to `EXC-11` (3.3).
 - **An endpoint**: its create, its invocation and its deletion (pass 4), the serverless negative
   (4.4) and the default instance type of a JumpStart deploy (4.5).
-- **Feature Store**: the entry, the project role's grant, the runtime endpoint, the offline store's
-  table under Lake Formation (6.4, verification xxxiii).
+- **Feature Store**: a created group and its offline store's table under Lake Formation (6.4,
+  verification xxxiii); the entry, the grant, the form and the runtime endpoint were read 2026-11-24.
 - **The Bedrock IDE's remainder**: no shared snapshot reaches the catalog and no answer cites a chunk,
   the chat agent app being refused and a flow app having no *Share*
   ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).
