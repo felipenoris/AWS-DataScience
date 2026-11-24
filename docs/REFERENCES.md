@@ -53,7 +53,9 @@
   `assets.access` (Stage 19 item 23): <https://github.com/felipenoris/awsds-workflows/pull/25>. Its PR #29,
   merged 2026-11-21 as `4401f91`, `main`'s head on 2026-11-23, makes the rule `operador` refuse the native
   notebook operator (Stage 8 5.6); `app-dbt`, `app-ml` and `app-genai` pin it:
-  <https://github.com/felipenoris/awsds-workflows/pull/29>.
+  <https://github.com/felipenoris/awsds-workflows/pull/29>. Its PR #30, merged 2026-11-24 as `8b14f6d`,
+  leaves network isolation to the task in the rules `treino` and `modelo` (Stage 11 7.5):
+  <https://github.com/felipenoris/awsds-workflows/pull/30>.
 
 ## Organization and identity
 

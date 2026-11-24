@@ -531,8 +531,8 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   role, which holds no S3 on a lake prefix, and Lake Formation vends to Glue, never to a SageMaker input.
   An isolated container has no network and no AWS credentials; a container without network isolation
   reads what the role is granted: a processing job since [Stage 20](stage-20-dbt-lineage.md) decision 13
-  (applied 2026-11-17), a training job and a model once [Stage 11](stage-11-dlp.md) step 7.4 applies its
-  decision 14 (taken 2026-11-24). So the producer
+  (applied 2026-11-17), a training job and a model since [Stage 11](stage-11-dlp.md) step 7.4 applied its
+  decision 14 on 2026-11-24. So the producer
   and the pickup are Glue jobs, and a SageMaker step (training, processing, batch transform) reads what a
   Glue step staged into `awsds-prod-outputs`, which is Stage 10 step 5.1's shape. **The job log groups are
   pre-created**: the first SageMaker job creates `/aws/sagemaker/ProcessingJobs` (and `TrainingJobs`,

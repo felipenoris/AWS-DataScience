@@ -668,3 +668,49 @@ UTC.*
   and [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) opened at 03:42:55 UTC. Its merge is
   the user's. An application takes the rules with its next pin of `awsds-workflows` (Stage 8 5.6's rule);
   `4401f91` and the template's `196acee` ask for isolation until then.
+
+## 2026-11-24 — Step 7.4: decision 14's applies and the battery
+
+- **[The user] The merges**: [PR #411](https://github.com/felipenoris/AWS-DataScience/pull/411) at 04:27:36
+  UTC as `bfc091f9`, and `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30)
+  at 04:27:15 UTC as `8b14f6d` (step 7.5).
+- **[Claude] The merges read**: on `main` at `676800db`, `sagemaker-denies` carries no
+  `DenySageMakerJobsWithoutNetworkIsolation` and the five callers pin `sagemaker-denies-v0.4.0` and
+  `sagemaker-prereqs-v0.16.0`; `awsds-workflows`' `lint.py` names `EnableNetworkIsolation` only to leave it
+  to the task. The branch `claude/stage-11-7.4-applies` starts at `676800db`.
+- **[Claude] The token**: the `awsds` session's `expiresAt` read 03:58:11 UTC at 04:29, behind the clock
+  (`SUP-465`). **[The user]** signed in again, and the token read 05:19:24 UTC at 04:42.
+- **[Claude] The plans from `main`**: a first run at 04:42:26 without `AWS_PROFILE` stopped in every slice on
+  *"No valid credential sources found"*, the IMDS fallback that `terraform-changes.md` reads as the absence
+  of a profile. With each slice's profile, from 04:43:19, the saved plans read `identity/sso/` 6 to change,
+  `identity/org-policies/` 1, `sandbox/sagemaker/` 1, `staging/studio/` 2 and `production/studio/` 2, each
+  removing the statement once per policy and adding nothing: the SCP's `policy_document_bytes` 2808 to 2493
+  with its description, and in each target `person_session`'s document read during apply (`SUP-356`).
+- **[The user] The authorization**, answering a question that named the five slices and the battery:
+  *"Autorizo os 5 e bateria"*.
+- **[Claude] The peers told** before the first apply: *Schedule revision e preparação paralela* and
+  *Worktrees para apagar*, the two sessions listed.
+- **[Claude] The applies**, each from its saved plan with `-input=false`:
+
+  | Slice | Profile | UTC | Result |
+  |---|---|---|---|
+  | `identity/sso/` | `awsds-infra-identity` | 04:45:42 to 04:46:07 | 6 changed, the six persona sets' inline policies |
+  | `identity/org-policies/` | `awsds-infra-identity` | 04:46:17 to 04:46:26 | 1 changed, `awsds-org-scp-ou-workloads` (`p-83t232f4`) |
+  | `sandbox/sagemaker/` | `awsds-infra-sandbox-1` | 04:46:35 to 04:46:47 | 1 changed, the boundary |
+  | `staging/studio/` | `awsds-infra-staging` | 04:46:47 to 04:47:00 | 1 changed, the boundary; `person_session` read with no diff |
+  | `production/studio/` | `awsds-infra-prod` | 04:47:00 to 04:47:15 | 1 changed, as Staging |
+
+- **[Claude] The battery**, `./aws/probes/scp-battery.py --phase ou`, 04:47:34 to 04:49:13, exit 0: *"62 as
+  expected, 0 unexpected, 5 not measured"*. In Production, *"workloads: CreateTrainingJob not isolated still
+  authorized (Stage 11 decision 14 contrast)"* `ALLOWED` at `reached-authorization`, and the processing job
+  without isolation authorized as before; the processing job off the VPC, above the ceiling, without
+  inter-container encryption or without the volume key, and the training job above the ceiling, `DENY-SCP`
+  on `p-83t232f4`. Verification xi: yes.
+- **[Claude] The checks**: `make check` and `make check-ou` pass. `./aws/deploytargets.py` reads `DT-11`
+  pass, the `Workloads` document with its five job Sids, and exits 1 on the persona sessions not signed in
+  (its section 14); `./aws/sandbox-ml.py` exits 0 with no `FAIL` row.
+- **[Claude] Records**: 7.4, 7.5 and the `Status` row; `TM-38` and the threat model's waits;
+  `AWS_STATE.md` §C's row removed; the AI/ML, application and battery runbooks; Stage 9's 3.1; Stage 20's
+  sentence on Stage 17's training jobs; CLAUDE.md and the references. The waiting list's row leaves, and a
+  decision joins it: a PUBLIC AgentCore runtime in Sandbox, passed on by the orchestrating session from
+  Stage 17's reading of 2026-11-24.
