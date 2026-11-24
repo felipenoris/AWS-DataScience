@@ -527,11 +527,12 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
     of [Stage 18](stage-18-staging-deployment-project.md) 4.4's job. `ReadTheJobsConnection` grants it on this account's
     connections (applied 2026-10-22).
 
-  **A SageMaker job reads no governed data.** Since [Stage 20](stage-20-dbt-lineage.md) decision 13
-  (applied 2026-11-17) this holds of a training job and a model; a processing job without network
-  isolation reads what its role is granted. Under the settings 3.5 enforces, the container has no
-  network and no AWS credentials, and the platform stages its inputs and outputs with this role, which
-  holds no S3 on a lake prefix; Lake Formation vends to Glue, never to a SageMaker input. So the producer
+  **A SageMaker job reads no governed data.** The platform stages a job's inputs and outputs with this
+  role, which holds no S3 on a lake prefix, and Lake Formation vends to Glue, never to a SageMaker input.
+  An isolated container has no network and no AWS credentials; a container without network isolation
+  reads what the role is granted: a processing job since [Stage 20](stage-20-dbt-lineage.md) decision 13
+  (applied 2026-11-17), a training job and a model once [Stage 11](stage-11-dlp.md) step 7.4 applies its
+  decision 14 (taken 2026-11-24). So the producer
   and the pickup are Glue jobs, and a SageMaker step (training, processing, batch transform) reads what a
   Glue step staged into `awsds-prod-outputs`, which is Stage 10 step 5.1's shape. **The job log groups are
   pre-created**: the first SageMaker job creates `/aws/sagemaker/ProcessingJobs` (and `TrainingJobs`,
@@ -594,11 +595,12 @@ is `aws_sagemaker_model_package_group_policy` (`PutModelPackageGroupPolicy`, ≤
   firewall's nine pieces; the next Production `make up` applies it. Decision 12 (a) adds `lakeformation`
   (2026-10-22): *"Plan: 16 to add"*, seven endpoints at 0.070/h.
 - **3.5 — [Claude reads, user decides] Enforce the job settings where `Create*Job` is called (decision
-  9).** `terraform-modules/sagemaker-denies/` holds five statements: `DenySageMakerJobsOffVpc` (`VpcConfig`
-  present, `CreateModel` included, which is how batch transform is bound), `DenySageMakerInstanceCeiling`
-  (seven CPU types), `DenySageMakerJobsWithoutNetworkIsolation` (without `CreateProcessingJob` since
-  2026-11-17, [Stage 20](stage-20-dbt-lineage.md) decision 13), the inter-container-encryption deny (sent
-  even for one instance: the deny is `BoolIfExists`, and 6i had to set it) and the volume-key deny. **They
+  9).** `terraform-modules/sagemaker-denies/` holds `DenySageMakerJobsOffVpc` (`VpcConfig` present,
+  `CreateModel` included, which is how batch transform is bound), `DenySageMakerInstanceCeiling` (seven
+  CPU types), the inter-container-encryption deny (sent even for one instance: the deny is `BoolIfExists`,
+  and 6i had to set it) and the volume-key deny. `DenySageMakerJobsWithoutNetworkIsolation` lost
+  `CreateProcessingJob` on 2026-11-17 ([Stage 20](stage-20-dbt-lineage.md) decision 13) and its other
+  actions at `sagemaker-denies-v0.4.0` ([Stage 11](stage-11-dlp.md) decision 14). **They
   bind the caller, never the role the job runs as** (Lesson 66): 6d's refusal named the calling session's
   boundary, and
   6i's accepted job was the caller's. In Sandbox the caller and the job's role are one role, the project

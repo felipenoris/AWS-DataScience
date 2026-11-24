@@ -593,3 +593,59 @@ ran as the infrastructure user (`InfrastructureAccess`). No apply. Times are UTC
   `Status` row; `AWS_STATE.md` §C's row of the planned change, removed; the waiting list's row, taken;
   CLAUDE.md's Stage 11 row and the battery's reading. `POLICIES.md`'s `DenyAgentCoreBuiltInTools` row, read
   again, is still true. Stage 17's sentences that call `TM-28` unapplied are updated by 10.5's PR.
+
+## 2026-11-24 — Decision 14: the network-isolation statement removed from `sagemaker-denies`, tagged and planned
+
+*Claude, in a session of its own on the branch `claude/xgboost-image-ml-pipeline-d30359`, which began with the
+user's questions on `ml-demo-pipeline`'s training image and on inference endpoints. The decision is the
+user's, answered on this session's card. AWS calls by this session, all reads: the plans in Identity
+(`awsds-infra-identity`), Sandbox Account 1 (`awsds-infra-sandbox-1`), Staging (`awsds-infra-staging`) and
+Production (`awsds-infra-prod`), each as the infrastructure user (`InfrastructureAccess`). No apply. Times are
+UTC.*
+
+- **[The user] The request**: a processing job runs as the project role since Stage 20 decision 13, with a
+  space's reach, and the user asked for the same of every other case: *"Gostaria de estender este
+  comportamento para os demais casos"*.
+- **[Claude] The options**, on the card at 02:36: *"Modelo isolado nos targets"*, recommended, which removes
+  the statement for the training, tuning and AutoML jobs in Sandbox, Staging and Production and for
+  `CreateModel` in Sandbox alone; and *"Retirar em tudo"*. The card named the consequence: *"Em Production, isso reabre o
+  `TM-33`."*
+- **[The user] The answer**, 02:40: *"Retirar em tudo"*. Decision 14 (b).
+- **[Claude] The module**: `terraform-modules/sagemaker-denies` loses `DenySageMakerJobsWithoutNetworkIsolation`
+  and its action list; `validate` passed on it and on `sagemaker-prereqs`.
+- **[Claude] The plans against the local module**, from 03:02:03, each caller's `source` pointed at
+  `../../../terraform-modules/<module>` and restored after: `identity/org-policies/` ended 03:02:23,
+  *"Plan: 0 to add, 1 to change, 0 to destroy."*, the `Workloads` SCP losing the statement and gaining the
+  description, `policy_document_bytes` 2808 to 2493; `identity/sso/` ended 03:02:16, *"Plan: 0 to add, 6 to
+  change, 0 to destroy."*, the six persona sets' inline policies, the statement the only line removed and none
+  added; `staging/studio/` ended 03:02:31, *"Plan: 0 to add, 2 to change, 0 to destroy."*, the boundary losing
+  the statement and `person_session` planned in place, its document read during apply because
+  `data.aws_s3_bucket.projects` carries `depends_on` on the module (`SUP-356`). The precondition
+  `sagemaker_denies_drift` passed.
+- **[Claude] Commit 1**, `65fb2e82` at 03:04:11, the module alone; the tags `sagemaker-denies-v0.4.0` and
+  `sagemaker-prereqs-v0.16.0` on it, origin's highest being `v0.3.0` and `v0.15.0`. `origin/main`
+  `20345474` merged into the branch at 03:05:07 (`44b4f391`). The push named the branch and the two tags, and
+  `git ls-remote` read both on `65fb2e82684549102c8c5c3d5de948b2643c5d25`.
+- **[Claude] Commit 2**, `2fed5359` at 03:10:26: the five callers on the tags, the `Workloads` document and
+  its description, `POLICIES.md`, the battery's training row without isolation as an allow contrast,
+  `DT-11`'s and `sandbox-ml.py`'s lists without the Sid, `ML-3`'s note. Every hook passed.
+- **[Claude] The plans with the tags**, from 03:09:04 after `init`: `identity/org-policies/` 1 to change
+  (03:09:32), `identity/sso/` 6 (03:09:19), `sandbox/sagemaker/` 1, the boundary (03:09:37),
+  `staging/studio/` 2 (03:09:30) and `production/studio/` 2 (03:09:26), the second in each `person_session`.
+  Each removes the statement once per policy and adds nothing outside `person_session`'s deferred document.
+- **[Claude] The SDK's model**, botocore 1.44.10's `sagemaker` 2017-07-24: `CreateAutoMLJob` and
+  `CreateAutoMLJobV2` carry a `VpcConfig` and no `EnableNetworkIsolation`, so the removed `BoolIfExists`
+  deny refused every AutoML create, unmeasured. `CreateAIBenchmarkJob`, `CreateCluster`,
+  `CreateCompilationJob`, `CreateDataQualityJobDefinition`, `CreateEndpointConfig`,
+  `CreateInferenceRecommendationsJob`, `CreateLabelingJob`, `CreateModelBiasJobDefinition`,
+  `CreateModelExplainabilityJobDefinition`, `CreateModelQualityJobDefinition`, `CreateMonitoringSchedule`,
+  `CreateOptimizationJob`, `CreateTrainingSession` and `UpdateMonitoringSchedule` carry a `VpcConfig` and are
+  on no list of `sagemaker-denies`: step 7.7.
+- **[Claude] The lint**, `awsds-workflows` at `4401f91`: the rule `treino` asks `EnableNetworkIsolation` and
+  `EnableInterContainerTrafficEncryption` true of a training request, and `modelo` asks
+  `EnableNetworkIsolation` true of a model (`lint.py`). Step 7.5, a pull request in that repository.
+- **[Claude] Records**: decision 14, section 7, verification xi and the `Status` row; `TM-38` accepted, with
+  its channel row, `TM-33`'s and `TM-35`'s holds and the file's waits; `AWS_STATE.md` §C's row of the planned
+  change; `sagemaker-ai-ml.md` §C and its endpoint section, `sagemaker-application.md`, Stage 9's 3.1 and 3.5;
+  CLAUDE.md's Stage 11 row and the waiting list's row. `POLICIES.md`'s `DenySageMakerJobsOffVpc` row, read
+  again, now also says it is what keeps a container holding its role's credentials in the project's subnets.
