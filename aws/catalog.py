@@ -13,7 +13,8 @@ reads:    in Data Governance - datazone:ListDomains, GetDomain, ListProjects,
           ListProjectMemberships, ListEnvironments, GetUserProfile, GetGroupProfile,
           SearchListings, GetListing, ListDataSources, GetDataSource, ListDataSourceRuns,
           ListSubscriptions, ListSubscriptionRequests, ListSubscriptionGrants,
-          ListPolicyGrants, lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
+          ListPolicyGrants, ListLineageEvents, GetLineageNode, ListLineageNodeHistory,
+          lakeformation:GetResourceLFTags, ListLFTags; in Sandbox -
           lakeformation:ListLFTags; in each account read - lakeformation:ListPermissions and
           cloudtrail:LookupEvents; in the account a project's environments live in -
           datazone:Search over that project's assets and glue:GetTable; in Sandbox -
@@ -146,6 +147,25 @@ exits:    0 every check passed | 1 a call failed | 2 a check FAILED, or a --self
 #         subscription and what the request asked for on the collection's own listing (Stage 21
 #         5.4, 5.6). A grant to a person's role, or on a location no project owns, is the
 #         sandbox lake's and outside this check.
+#   CT-21 the lineage events posted in the last LINEAGE_WINDOW_DAYS days, by processingStatus and
+#         job namespace (Stage 20 step 6.1). A FAILED event is a run whose nodes the domain did not
+#         write, and fails; an empty window is a note.
+#   CT-22 each Glue table asset hangs from the dataset node keyed by its own table, the table its
+#         externalIdentifier names, and a job's run wrote that node or, for the table a
+#         subscription created, the listing's node feeds it (Stage 20 6.1, verification xx). A
+#         deployment project's tables are a release run's outputs, so there a node nothing fed, or
+#         no node at all, is a run that posted no lineage (SUP-097) and fails; in any other
+#         project it is a table no instrumented engine wrote, a note. An asset hanging from
+#         another account's node of the same table is a note (SUP-483), the import's window when
+#         its forms name that table too (SUP-454).
+#   CT-23 every Glue table node is carried by an asset: a node no asset's node hangs from is a
+#         note, the target's own node SUP-483 leaves behind among them (Stage 20 6.1).
+#   CT-24 a deployment project's Glue table asset carries the description, README and
+#         classification of the asset of the same table in a chain application's dev project, and
+#         its forms name its own account's table (Stage 20 xxi). The release's catalog import
+#         carries the curation, and the dev project may curate again before the next release, so
+#         a difference is a note; forms naming another account's table are the import's window,
+#         which the target's source closes at its next run (SUP-454).
 #
 # CT-7 and CT-8 read every page of ListPermissions in the registry, in the Interactive account
 # and, since their projects exist, in both deployment targets: the CLI has no paginator for that
@@ -188,6 +208,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 
 from awslib import cmdline, context, profiles
@@ -312,6 +333,24 @@ MEASURED_CROSS_PROJECT_STARTS = {
 
 # The two that must stay empty for the owner project's approval to be the control (CT-9).
 OVERRIDE_TYPES = ("OVERRIDE_DOMAIN_UNIT_OWNERS", "OVERRIDE_PROJECT_OWNERS")
+
+# The days back from the run CT-21 reads ListLineageEvents over.
+LINEAGE_WINDOW_DAYS = 7
+# A job's run carries the edges into and out of a dataset node; an asset's node is a dataset node
+# that answers to `amazon.datazone.asset/<asset id>` (SUP-347). A listing's node answers to
+# `amazon.datazone.listing/<listing id>`, and the table a subscription's fulfilment creates hangs
+# from it (the Stage 6f and Stage 20 logs, 2026-11-22).
+JOB_RUN_NODE_TYPE = "amazon.datazone.JobRunLineageNodeType"
+DATASET_NODE_TYPE = "amazon.datazone.DatasetLineageNodeType"
+ASSET_NODE_PREFIX = "amazon.datazone.asset/"
+LISTING_NODE_PREFIX = "amazon.datazone.listing/"
+# The versions of a dataset node CT-22 reads, newest first, for the run that wrote it: a dbt test's
+# version carries no upstream edge (Stage 20 2.4), the model's run before it does.
+LINEAGE_VERSIONS_READ = 20
+# A Glue table's ARN: the sourceIdentifier of the dataset node the domain keys a table by
+# (SUP-391), and of an asset's AssetCommonDetailsForm; with `.<project id>` after it, a Glue table
+# asset's externalIdentifier (SUP-343).
+GLUE_TABLE_ARN = re.compile(r"arn:aws:glue:[a-z0-9-]+:(\d{12}):table/([^/]+)/([^/]+)")
 
 
 def json_or_none(text: str):
@@ -903,6 +942,262 @@ def explain_access_grant(location: str, grantee: str, scope: str, collections: d
         if listing_owner == owner and holder in subscribed:
             return f"the fulfilment of {holder}'s approved subscription to {name}"
     return ""
+
+
+def glue_table_label(arn: str, where_of: dict) -> str:
+    """'<where>:<database>.<table>' for a Glue table's ARN, an account not read labelled
+    'elsewhere'; empty for anything else."""
+    m = GLUE_TABLE_ARN.fullmatch(arn or "")
+    if not m:
+        return ""
+    account, database, table = m.groups()
+    return f"{where_of.get(account, 'elsewhere')}:{database}.{table}"
+
+
+def asset_table_label(external_id: str, project_id: str, where_of: dict) -> str:
+    """The table a Glue table asset's externalIdentifier names, `<table ARN>.<project id>`
+    (SUP-343). The catalog import leaves it the target's own table while it writes the source
+    project's into the forms (SUP-454)."""
+    suffix = f".{project_id}"
+    arn = external_id[: -len(suffix)] if external_id.endswith(suffix) else external_id
+    return glue_table_label(arn, where_of)
+
+
+def feeder(node: dict) -> tuple:
+    """(kind, name) of a node a dataset node's version hangs from: ('job', the job a run's node
+    belongs to, its name `<job>/<run id>` without the run), ('listing', the listing's name and id)
+    for a subscription's table, or ('node', its name) for anything else."""
+    name = mask_account(node.get("name") or node.get("sourceIdentifier") or "-")
+    source = node.get("sourceIdentifier") or ""
+    if node.get("typeName") == JOB_RUN_NODE_TYPE:
+        return ("job", name.rsplit("/", 1)[0])
+    if source.startswith(LISTING_NODE_PREFIX):
+        return ("listing", f"{name} ({source[len(LISTING_NODE_PREFIX) :]})")
+    return ("node", name)
+
+
+def feeders(nodes: list) -> tuple:
+    """(kind, names) over the nodes one version of a dataset node hangs from: 'job' when a job's
+    run is among them, 'listing' when every one is a listing, 'node' otherwise; ('', '') for
+    none."""
+    found = [feeder(n) for n in nodes]
+    if not found:
+        return ("", "")
+    kinds = {k for k, _ in found}
+    kind = "job" if "job" in kinds else ("listing" if kinds == {"listing"} else "node")
+    return (kind, ", ".join(sorted({n for _, n in found})))
+
+
+def fed_by_label(kind: str, names: str) -> str:
+    """The report's word for what fed a dataset node."""
+    if not kind:
+        return "no run"
+    return names if kind == "job" else f"{kind} {names}"
+
+
+def event_verdict(events: list, since: str, read: bool) -> tuple:
+    """CT-21's (result, detail) over ListLineageEvents' items posted since `since`. A FAILED event
+    is a run whose nodes the domain did not write; REQUESTED and PROCESSING are still in flight."""
+    if not read:
+        return ("note", "ListLineageEvents not read: an absence, not a pass")
+    if not events:
+        return ("note", f"no event since {since}: an absence, not a pass")
+    statuses: dict = {}
+    spaces: dict = {}
+    for e in events:
+        status = e.get("processingStatus") or "-"
+        statuses[status] = statuses.get(status, 0) + 1
+        job = ((e.get("eventSummary") or {}).get("openLineageRunEventSummary") or {}).get("job")
+        space = mask_account((job or {}).get("namespace") or "-")
+        spaces[space] = spaces.get(space, 0) + 1
+    spread = "by job namespace " + ", ".join(f"{s} {n}" for s, n in sorted(spaces.items()))
+    failed = [e for e in events if e.get("processingStatus") == "FAILED"]
+    if failed:
+        return (
+            "fail",
+            f"{len(failed)} of {len(events)} event(s) since {since} FAILED: "
+            + ", ".join(e.get("id") or "-" for e in failed)
+            + f" - the domain wrote no node from them; {spread}",
+        )
+    if set(statuses) != {"SUCCESS"}:
+        counts = ", ".join(f"{n} {s}" for s, n in sorted(statuses.items()))
+        return ("note", f"{counts} since {since}, the rest in flight; {spread}")
+    return ("pass", f"{len(events)} event(s) since {since}, every one SUCCESS; {spread}")
+
+
+class AssetLineage(NamedTuple):
+    """A Glue table asset and the dataset nodes its lineage node hangs from (CT-22)."""
+
+    project: str  # the owning project's name
+    deployment: bool  # owned by a deployment project, whose tables a release's run writes
+    asset: str
+    own: str  # '<where>:<db>.<table>', the table its externalIdentifier names
+    named: str  # the table its AssetCommonDetailsForm's sourceIdentifier names
+    upstream: tuple  # (the node's table label or source, feeders' kind, feeders' names) triples
+    read: bool = True  # False when its node or an upstream node's history was not read
+
+
+def lineage_findings(rows: list) -> tuple:
+    """CT-22's readings as (failures, notes, passes): sentences, the passes as (kind, sentence).
+
+    An asset hangs from the node keyed by its own table, written by a job's run or, for a
+    subscription's table, fed by the listing's node: the pass. In a deployment project every table
+    is a release run's output, so a node nothing fed, or no node while the forms name the asset's
+    own table, is a run that posted no lineage (SUP-097), a failure. Anywhere else it is a table no
+    instrumented engine wrote, a note. A node of another account's table of the same name is a
+    note (SUP-483), and the import's window when the forms name that table too (SUP-454)."""
+    fails, notes, passes = [], [], []
+    for r in rows:
+        who = f"{r.asset} of {r.project}"
+        if not r.read:
+            notes.append(f"{who}: its lineage not read")
+            continue
+        window = (
+            f"; its forms name {r.named}, the import's window (SUP-454)"
+            if r.named and r.named != r.own
+            else ""
+        )
+        own = [(kind, names) for table, kind, names in r.upstream if table == r.own]
+        others = [(table, kind, names) for table, kind, names in r.upstream if table != r.own]
+        kinds = {kind for kind, _ in own}
+        if kinds & {"job", "listing"}:
+            kind = "job" if "job" in kinds else "listing"
+            names = ", ".join(n for k, n in own if k == kind)
+            passes.append((kind, f"{who} <- {fed_by_label(kind, names)}"))
+        elif "node" in kinds:
+            names = ", ".join(n for k, n in own if k == "node")
+            notes.append(f"{who} hangs from its table's node, fed by {names}'s node")
+        elif own:
+            line = f"{who} hangs from its table's node, which no job run wrote"
+            if r.deployment:
+                fails.append(f"{line} - the release's run posted no lineage for it (SUP-097)")
+            else:
+                notes.append(line)
+        elif others:
+            sources = ", ".join(
+                f"{t}'s node" + (f" ({fed_by_label(k, n)})" if k else "") for t, k, n in others
+            )
+            notes.append(f"{who} hangs from {sources}, not {r.own}'s (SUP-483){window}")
+        elif r.deployment and not window:
+            fails.append(
+                f"{who} hangs from no dataset node - the release's run posted no lineage for "
+                "its table (SUP-097)"
+            )
+        else:
+            notes.append(f"{who} hangs from no dataset node{window}")
+    return fails, notes, passes
+
+
+def fed_count(passes: list) -> str:
+    """'<n> from their own table's job run, <m> from a subscription's listing' over CT-22's
+    passes."""
+    jobs = sum(1 for kind, _ in passes if kind == "job")
+    return (
+        f"{jobs} from their own table's job run, {len(passes) - jobs} from a subscription's listing"
+    )
+
+
+def lineage_verdict(rows: list, unread: list) -> tuple:
+    """CT-22's (result, detail) over every Glue table asset of the inventories read."""
+    fails, notes, passes = lineage_findings(rows)
+    gaps = [f"the inventory of {n}" for n in unread]
+    if fails:
+        return ("fail", "; ".join(fails + notes))
+    if not rows and not gaps:
+        return ("note", "no Glue table asset in any inventory: an absence, not a pass")
+    if notes or gaps:
+        parts = ([f"not read: {', '.join(gaps)}"] if gaps else []) + notes + [fed_count(passes)]
+        return ("note", "; ".join(parts))
+    projects = len({r.project for r in rows})
+    return (
+        "pass",
+        f"{len(rows)} asset(s) in {projects} project(s), each hanging from its own table's node: "
+        + fed_count(passes),
+    )
+
+
+def orphan_verdict(nodes: list, carried: set, unread: list) -> tuple:
+    """CT-23's (result, detail): the Glue table nodes, (node id, table label), that no asset's
+    node hangs from, among those the registry's trail created."""
+    orphans = sorted({(label, nid) for nid, label in nodes if nid not in carried})
+    listed = ", ".join(f"{label} ({nid})" for label, nid in orphans)
+    if unread:
+        return (
+            "note",
+            f"not read: {', '.join(unread)}"
+            + (f"; carried by no asset read: {listed}" if listed else ""),
+        )
+    if not nodes:
+        return ("note", "no Glue table node in the registry's trail: an absence, not a pass")
+    if orphans:
+        return (
+            "note",
+            f"{len(orphans)} of {len({n for n, _ in nodes})} Glue table node(s) carried by no asset: {listed}",
+        )
+    return (
+        "pass",
+        f"each of the {len({n for n, _ in nodes})} Glue table node(s) carried by an asset",
+    )
+
+
+class Curation(NamedTuple):
+    """What a person curates on an asset, and the table its forms name (CT-24)."""
+
+    description: str
+    readme: str  # AssetCommonDetailsForm's readMe
+    classification: str | None  # the classification form's value; None with no form
+    named: str  # '<where>:<db>.<table>' its AssetCommonDetailsForm's sourceIdentifier names
+
+
+def curation_findings(pairs: list) -> tuple:
+    """CT-24's readings as (notes, passes) over (deployment project, asset, own table label, its
+    Curation, the dev project's name or '', the dev asset's Curation or None) rows.
+
+    A release's catalog import carries the dev asset's description, README and classification
+    (Stage 20 xxi), and the dev project's curation may move on before the next release, so a
+    difference is a note, as is a deployment project's asset naming another account's table, the
+    import's window (SUP-454)."""
+    notes, passes = [], []
+    for project, asset, own, mine, dev_project, dev in pairs:
+        who = f"{asset} of {project}"
+        found = []
+        if dev is None:
+            found.append(f"no chain application's dev project holds an asset of {own}")
+        else:
+            fields = [
+                label
+                for label, a, b in (
+                    ("description", mine.description, dev.description),
+                    ("README", mine.readme, dev.readme),
+                    ("classification", mine.classification, dev.classification),
+                )
+                if a != b
+            ]
+            if fields:
+                found.append(f"its {', '.join(fields)} differ from {dev_project}'s")
+        if mine.named and mine.named != own:
+            found.append(f"its forms name {mine.named}, not {own}: the import's window (SUP-454)")
+        if found:
+            notes.append(f"{who}: " + "; ".join(found))
+        else:
+            passes.append(f"{who} = {dev_project}'s")
+    return notes, passes
+
+
+def curation_verdict(pairs: list, unread: list) -> tuple:
+    """CT-24's (result, detail) over every Glue table asset of the deployment projects read."""
+    notes, passes = curation_findings(pairs)
+    gaps = [f"the inventory of {n}" for n in unread]
+    if not pairs and not gaps:
+        return ("note", "no Glue table asset in a deployment project: an absence, not a pass")
+    if notes or gaps:
+        parts = ([f"not read: {', '.join(gaps)}"] if gaps else []) + notes
+        return ("note", "; ".join(parts + [f"{len(passes)} as their dev asset"]))
+    return (
+        "pass",
+        f"{len(passes)} asset(s) carry their dev asset's description, README and classification, "
+        "each naming its own account's table",
+    )
 
 
 def self_check() -> int:
@@ -2433,6 +2728,9 @@ def main(argv: list) -> int:
     inventory: list = []  # (project, asset, "<db>.<table>", where, listed, link target or "")
     inventory_unread: list = []  # the projects whose inventory was not read whole
     inventory_assets = 0
+    # (project name, asset id, asset name, the table its externalIdentifier names, its Curation),
+    # for each Glue table asset (CT-22, CT-24)
+    glue_assets: list = []
     for pid, pname in projects.items():
         homes = sorted(where_of[a] for a in project_accounts.get(pid, ()) if a in where_of)
         if not homes:
@@ -2465,6 +2763,21 @@ def main(argv: list) -> int:
             glue = forms.get("GlueTableForm") or {}
             where = where_of.get(glue.get("catalogId") or "-", "elsewhere")
             table = f"{glue.get('databaseName', '-')}.{glue.get('tableName', '-')}"
+            details = forms.get("AssetCommonDetailsForm") or {}
+            glue_assets.append(
+                (
+                    pname,
+                    asset.get("identifier", "-"),
+                    asset.get("name", "-"),
+                    asset_table_label(asset.get("externalIdentifier") or "", pid, where_of),
+                    Curation(
+                        asset.get("description") or "",
+                        details.get("readMe") or "",
+                        classification_value(forms),
+                        glue_table_label(details.get("sourceIdentifier") or "", where_of),
+                    ),
+                )
+            )
             read, target = link_of(where, table)
             if not read:
                 tables_unread.append(f"{where}:{table}")
@@ -2843,6 +3156,159 @@ def main(argv: list) -> int:
             "; ".join(f"{g[3]} on {g[4]}: {why}" for g, why in fulfilled),
         )
 
+    # ---------------------------------------------------------------- the lineage graph
+    # Every lineage read is the domain's and is asked of the registry's session: ListLineageEvents
+    # answered the same 394 events to each of the four accounts' sessions, and GetLineageNode an
+    # asset's node of a deployment project to the registry's (read 2026-11-24, Stage 20 xxi).
+    lineage_live = bool(domain_id) and live[DATA_PROFILE].live
+    since = (datetime.now(timezone.utc) - timedelta(days=LINEAGE_WINDOW_DAYS)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    lineage_events: list = []
+    events_read = False
+    if lineage_live:
+        res = dat.run(
+            "datazone",
+            "list-lineage-events",
+            "--domain-identifier",
+            domain_id,
+            "--timestamp-after",
+            since,
+            "--output",
+            "json",
+        )
+        if res.ok:
+            events_read = True
+            lineage_events = (json_or_none(res.stdout) or {}).get("items", [])
+    result, detail = event_verdict(lineage_events, since, events_read)
+    ct21 = f"the lineage events of the last {LINEAGE_WINDOW_DAYS} days by processingStatus"
+    checks.add(result, "CT-21", ct21, detail)
+
+    # A node read at an event's timestamp carries that event's edges alone (Stage 20 2.4), so the
+    # run that wrote a dataset node is found by reading its versions newest first.
+    nodes_read: dict = {}  # (node id, event timestamp or "") -> its body; {} not found; None unread
+
+    def lineage_node(nid: str, at: str = "") -> dict | None:
+        key = (nid, at)
+        if key not in nodes_read:
+            args = ["datazone", "get-lineage-node", "--domain-identifier", domain_id]
+            args += ["--identifier", nid] + (["--event-timestamp", at] if at else [])
+            res = dat.run(*args, "--output", "json", tolerate="ResourceNotFoundException")
+            if res.tolerated:
+                nodes_read[key] = {}
+            else:
+                nodes_read[key] = (json_or_none(res.stdout) or {}) if res.ok else None
+        return nodes_read[key]
+
+    writers: dict = {}  # dataset node id -> feeders() of its newest fed version; None unread
+
+    def fed_by(nid: str) -> tuple | None:
+        if nid not in writers:
+            res = dat.run(
+                "datazone",
+                "list-lineage-node-history",
+                "--domain-identifier",
+                domain_id,
+                "--identifier",
+                nid,
+                "--sort-order",
+                "DESCENDING",
+                "--output",
+                "json",
+            )
+            found: tuple | None = ("", "") if res.ok else None
+            versions = (json_or_none(res.stdout) or {}).get("nodes", []) if res.ok else []
+            for version in versions[:LINEAGE_VERSIONS_READ]:
+                body = lineage_node(nid, version.get("eventTimestamp") or "")
+                ups = [u.get("id") for u in (body or {}).get("upstreamNodes") or []]
+                if body is None or ups:
+                    bodies = [lineage_node(u) for u in ups]
+                    found = None if body is None or None in bodies else feeders(bodies)
+                    break
+            writers[nid] = found
+        return writers[nid]
+
+    asset_lineage: list = []  # AssetLineage rows (CT-22)
+    carried: set = set()  # the dataset node ids an asset's node hangs from (CT-23)
+    for project, asset_id, name, own, curation in glue_assets:
+        body = lineage_node(ASSET_NODE_PREFIX + asset_id) if lineage_live else None
+        upstream: list = []
+        complete = body is not None
+        for up in (body or {}).get("upstreamNodes") or []:
+            nid = up.get("id") or "-"
+            carried.add(nid)
+            node = lineage_node(nid)
+            fed = fed_by(nid) if node else None
+            if node is None or fed is None:
+                complete = False
+            kind, names = fed or ("", "")
+            source = (node or {}).get("sourceIdentifier") or (node or {}).get("name") or nid
+            label = glue_table_label(source, where_of) or mask_account(source)
+            upstream.append((label, kind, names))
+        asset_lineage.append(
+            AssetLineage(
+                project,
+                project in DEPLOYMENT_PROJECTS,
+                name,
+                own,
+                curation.named,
+                tuple(upstream),
+                complete,
+            )
+        )
+    result, detail = lineage_verdict(asset_lineage, inventory_unread)
+    ct22 = "each Glue table asset hangs from its own table's node, fed by a job's run or a listing"
+    checks.add(result, "CT-22", ct22, detail)
+
+    # The registry's trail records each node's creation with its id and sourceIdentifier (SUP-347),
+    # the one listing of the nodes the API has; its 90 days hold every node since the domain's
+    # first event of 2026-10-19 until 2027-01-17.
+    table_nodes: list = []  # (node id, table label) of each Glue table node the trail created
+    nodes_unread: list = [f"the inventory of {n}" for n in inventory_unread]
+    if not lineage_live:
+        nodes_unread.append("the lineage graph")
+    if live[DATA_PROFILE].live:
+        res = dat.run(
+            "cloudtrail",
+            "lookup-events",
+            "--lookup-attributes",
+            "AttributeKey=EventName,AttributeValue=CreateLineageNode",
+            "--output",
+            "json",
+        )
+        if res.ok:
+            for event in (json_or_none(res.stdout) or {}).get("Events", []):
+                extra = (json_or_none(event.get("CloudTrailEvent", "")) or {}).get(
+                    "additionalEventData"
+                ) or {}
+                label = glue_table_label(extra.get("sourceIdentifier") or "", where_of)
+                if extra.get("typeName") == DATASET_NODE_TYPE and label and extra.get("identifier"):
+                    table_nodes.append((extra["identifier"], label))
+        else:
+            nodes_unread.append("the registry's trail")
+    else:
+        nodes_unread.append("the registry's trail")
+    result, detail = orphan_verdict(table_nodes, carried, nodes_unread)
+    checks.add(result, "CT-23", "every Glue table node is carried by an asset", detail)
+
+    # A deployment project's asset against the asset of the same table in a chain application's
+    # dev project, which the release's bundle exported (Stage 20 xxi).
+    dev_names = set(CHAIN_DEV_PROJECTS.values())
+    dev_assets: dict = {}  # "<db>.<table>" -> (dev project name, its Curation)
+    for project, _, _, own, curation in glue_assets:
+        if project in dev_names and own:
+            dev_assets.setdefault(own.split(":", 1)[1], (project, curation))
+    curation_pairs: list = []
+    for project, _, name, own, curation in glue_assets:
+        if project not in DEPLOYMENT_PROJECTS:
+            continue
+        dev_project, dev = dev_assets.get(own.split(":", 1)[-1], ("", None))
+        curation_pairs.append((project, name, own, curation, dev_project, dev))
+    curation_unread = [n for n in inventory_unread if n in DEPLOYMENT_PROJECTS or n in dev_names]
+    result, detail = curation_verdict(curation_pairs, curation_unread)
+    ct24 = "a deployment project's asset carries its dev asset's curation and names its own table"
+    checks.add(result, "CT-24", ct24, detail)
+
     # ---------------------------------------------------------------- the LF-Tag ontology
     tag_rows: list = []
     for label, cli, profile in (
@@ -2866,7 +3332,7 @@ def main(argv: list) -> int:
             "sections 1 to 4 are the catalog (DataZone), section 5 is Lake Formation, section 6\n"
             "joins them on the lake's published tables and section 7 on a project's own listed\n"
             "table, and CT-7, CT-10 and CT-17 are the question of whether one has reached into\n"
-            "the other."
+            "the other. Section 8 reads the lineage graph the domain draws from the posted events."
         )
 
         rep.h1("1. The domain")
@@ -2949,7 +3415,7 @@ def main(argv: list) -> int:
             ["WHERE\tGRANTS\tPAGES\tLISTING"]
             + [
                 f"{w}\t{g}\t{p}\t"
-                + ("read to its last page" if whole else "NOT read to its last page - section 11")
+                + ("read to its last page" if whole else "NOT read to its last page - section 12")
                 for w, (g, p, whole) in lf_read.items()
             ]
         )
@@ -3104,16 +3570,85 @@ def main(argv: list) -> int:
                 ]
             )
 
-        rep.h1("8. The LF-Tag ontology, by account")
+        rep.h1("8. The lineage graph")
+        if not events_read:
+            rep.text("ListLineageEvents was not read (CT-21).")
+        else:
+            statuses: dict = {}
+            for e in lineage_events:
+                job = ((e.get("eventSummary") or {}).get("openLineageRunEventSummary") or {}).get(
+                    "job"
+                ) or {}
+                key = (mask_account(job.get("namespace") or "-"), e.get("processingStatus") or "-")
+                statuses[key] = statuses.get(key, 0) + 1
+            rep.text(f"The lineage events posted since {since}, by job namespace (CT-21):")
+            rep.tabulate(
+                ["JOB NAMESPACE\tPROCESSING STATUS\tEVENTS"]
+                + [f"{ns}\t{st}\t{n}" for (ns, st), n in sorted(statuses.items())]
+            )
+        rep.line()
+        if not asset_lineage:
+            rep.text("No Glue table asset was read (CT-22).")
+        else:
+            rep.text(
+                "Each Glue table asset, the nodes its lineage node hangs from and what fed each\n"
+                "one's newest version with an upstream: a job's run, or a listing for a\n"
+                "subscription's table (CT-22). OWN TABLE is the table its externalIdentifier names,\n"
+                "FORMS NAME the one its sourceIdentifier names:"
+            )
+            rep.tabulate(
+                ["PROJECT\tASSET\tOWN TABLE\tFORMS NAME\tHANGS FROM\tFED BY"]
+                + [
+                    f"{r.project}\t{r.asset}\t{r.own or '-'}\t{r.named or '-'}\t"
+                    + (", ".join(t for t, _, _ in r.upstream) or ("-" if r.read else "NOT READ"))
+                    + "\t"
+                    + (", ".join(fed_by_label(k, n) for _, k, n in r.upstream) or "-")
+                    for r in asset_lineage
+                ]
+            )
+        rep.line()
+        orphans = sorted({(label, nid) for nid, label in table_nodes if nid not in carried})
+        if not orphans:
+            rep.text(f"Every one of the {len(table_nodes)} Glue table nodes is carried (CT-23).")
+        else:
+            rep.text("The Glue table nodes no asset's node hangs from (CT-23):")
+            rep.tabulate(["TABLE\tNODE"] + [f"{label}\t{nid}" for label, nid in orphans])
+        rep.line()
+        if not curation_pairs:
+            rep.text("No Glue table asset in a deployment project (CT-24).")
+        else:
+
+            def same(a, b) -> str:
+                return "same" if a == b else "DIFFERS"
+
+            rep.text("Each deployment project's asset against its dev asset (CT-24):")
+            rep.tabulate(
+                ["PROJECT\tASSET\tDEV PROJECT\tDESCRIPTION\tREADME\tCLASSIFICATION\tFORMS NAME"]
+                + [
+                    f"{project}\t{name}\t{dev_project or '-'}\t"
+                    + (
+                        "\t".join(
+                            same(getattr(mine, f), getattr(dev, f))
+                            for f in ("description", "readme", "classification")
+                        )
+                        if dev
+                        else "-\t-\t-"
+                    )
+                    + f"\t{mine.named or '-'}"
+                    for project, name, _, mine, dev_project, dev in curation_pairs
+                ]
+            )
+
+        rep.h1("9. The LF-Tag ontology, by account")
         if not tag_rows:
             rep.text("No LF-Tag is defined in either account.")
         else:
             rep.tabulate(["WHERE\tKEY\tVALUES"] + [f"{w}\t{k}\t{v}" for w, k, v in tag_rows])
 
-        rep.h1("9. Checks")
+        rep.h1("10. Checks")
         rep.checks_table(checks)
 
-        rep.h1("10. What this report cannot see")
+        rep.h1("11. What this report cannot see")
         rep.text(
             "DataZone refuses GetAsset and GetDataProduct to InfrastructureAccess in Data Governance\n"
             "(Stage 6f 0.6), the session this report reads the domain with, so the asset behind a\n"
@@ -3150,13 +3685,22 @@ def main(argv: list) -> int:
         )
         rep.line()
         rep.text(
+            "The lineage graph is read as the registry's session, which every lineage read answers\n"
+            "as it answers each account's. An asset's node carries its edges to the dataset nodes\n"
+            "as they stand, whatever version is asked (measured 2026-11-24, Stage 20 xxi), so CT-22\n"
+            "reads where an asset hangs now, not where it hung. The Glue table nodes CT-23 judges\n"
+            "are those CreateLineageNode records in the registry's trail, 90 days of them: every\n"
+            "node since the domain's first event of 2026-10-19, until 2027-01-17."
+        )
+        rep.line()
+        rep.text(
             "CT-13 reads CloudTrail's last 90 days. The domain's account records a start from another\n"
             "account with that account and the role's id alone: the caller's own copy names the role,\n"
             "so the Interactive account's and both deployment targets' trails are read beside the\n"
             "registry's (Stage 19 pass 4)."
         )
 
-        rep.h1("11. Calls that failed")
+        rep.h1("12. Calls that failed")
         failed_calls_epilogue(rep, errors)
 
     n_fail = checks.n_fail()

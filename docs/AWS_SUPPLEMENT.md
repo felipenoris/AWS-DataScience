@@ -3990,6 +3990,19 @@ entry is still true is the reading.
   target's asset shows the runs of the account that first wrote a table of that name, here Sandbox's dbt runs,
   and not its own account's; the target's runs are reached from its table node, by its Glue ARN. Where:
   `log-stage-20-dbt-lineage.md`, 2026-11-23 (8.9, xx, and the node histories recorded from R2's transcript).
+  Read again 2026-11-24 (Stage 20 xxi, as `InfrastructureAccess` in the four accounts): the upstream is the node
+  keyed by the Glue ARN the asset's current revision names in `AssetCommonDetailsForm` `sourceIdentifier`, the
+  link `SUP-473` read for Redshift, and the catalog import copies that ARN from the source project (`SUP-454`).
+  `app-etl`'s `trades_notional` reads it in both targets: Production's asset at revision 8, the `publish` task's
+  source run naming Production's table, hangs from Production's node `6i4aaj4f895ixc`; Staging's at revision 6,
+  the import's naming Sandbox's table, from Sandbox's `d0m1zl6r8q3uvk`. `app-dbt`'s target asset nodes were
+  created with revision 1, which named the target's table, after the target's table node, and hang from
+  Sandbox's, which revision 2 names, so the link is not fixed when the node is created. A version read shows the
+  asset node's current edge: each of the 13 versions of Production's `trades_notional` node reads
+  `6i4aaj4f895ixc`, those of the import revisions 2, 5 and 7 included, and each of Staging's 6 reads
+  `d0m1zl6r8q3uvk`, those of the source revisions 1, 3 and 5 included, while a table node's version carries its
+  own event's run edges alone. Unmeasured until the targets' sources run again: the edge moving with a revision.
+  Where: `log-stage-20-dbt-lineage.md`, 2026-11-24.
 
 ### Connections
 
@@ -5804,7 +5817,16 @@ entry is still true is the reading.
   listing). So the first scheduled run after an import reads `updated: 1` where nothing ran the source
   since, and `unchanged: 1` every other day. Between an import and the source's next run the asset names
   another account's table, and a listing made in that window publishes that table's location and ARN.
-  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22.
+  Where: `log-stage-19-smus-native-data-product.md`, 2026-11-22. Read again 2026-11-24 on `app-dbt`'s release
+  of 2026-11-23 (Stage 20 xxi): revision 1 of each target asset, `SYSTEM`'s from the `*-catalog` job's source
+  run, names the target's table and carries no description, README or `classification` form; revision 2, the
+  job's second import about 90 seconds later, carries all three equal to `app-dbt-dev`'s, the README in
+  `AssetCommonDetailsForm` `readMe`, with Sandbox's `GlueTableForm` key for key and Sandbox's
+  `sourceIdentifier`, and keeps the target's own source and run in `DataSourceReferenceForm`. Over seven days
+  `app-etl`'s `trades_notional` alternates the same way, each import naming Sandbox's table and each source
+  run the target's: Staging's revisions 2, 4 and 6 and Production's 2, 5 and 7 are the imports. Each asset's
+  lineage node hangs from the node of the ARN its current revision names (`SUP-483`). Where:
+  `log-stage-20-dbt-lineage.md`, 2026-11-24.
 
 - `SUP-484` **`deploy` creates or updates each workflow its manifest names and deletes none the manifest no
   longer names** (measured 2026-11-23 in Staging and Production, Stage 17 9.11, `list-workflows` as
