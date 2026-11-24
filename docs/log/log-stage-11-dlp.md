@@ -649,3 +649,22 @@ UTC.*
   change; `sagemaker-ai-ml.md` §C and its endpoint section, `sagemaker-application.md`, Stage 9's 3.1 and 3.5;
   CLAUDE.md's Stage 11 row and the waiting list's row. `POLICIES.md`'s `DenySageMakerJobsOffVpc` row, read
   again, now also says it is what keeps a container holding its role's credentials in the project's subnets.
+
+## 2026-11-24 — Step 7.5: the lint's rules `treino` and `modelo` in `awsds-workflows` PR #30
+
+- **[The user] The authorization**, 03:32 UTC: *"Autorizo push e PR"*, answering whether Claude may push and
+  open the pull request in `awsds-workflows` for the rules `treino` and `modelo`.
+- **[Claude] The change**, on the branch `claude/lint-treino-modelo-isolamento` from `4401f91`:
+  `_check_training` reads `EnableInterContainerTrafficEncryption` alone and `_check_model_request` reads no
+  isolation, so no rule reads `EnableNetworkIsolation`. The module's docstring, the guide's rules table and
+  isolation paragraph, the lab notes, the memory and `CLAUDE.md` follow, as `1a50ceb` did for the rule `job`.
+  The new pass tests, each with the field false and absent, failed on `4401f91`'s `lint.py` (6 failures) and
+  pass on the branch.
+- **[Claude] The checks**: `uv run pytest` without the `AWS_*` variables, 423 passed, 2 skipped and 7 failed,
+  each on `prepare-offline`'s platform refusal (*"esta máquina é Darwin arm64, e a pasta só serve ao job
+  preparada em Linux x86_64"*), which the repository's CI runs on Ubuntu; `ruff check` and
+  `ruff format --check` clean; the `pdoc` site built with the `docs` group and read on the changed passages.
+- **[Claude] The pull request**: `79a59b0`, `805b549` and `6bbab3c` pushed with origin's `main` at `4401f91`,
+  and [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) opened at 03:42:55 UTC. Its merge is
+  the user's. An application takes the rules with its next pin of `awsds-workflows` (Stage 8 5.6's rule);
+  `4401f91` and the template's `196acee` ask for isolation until then.

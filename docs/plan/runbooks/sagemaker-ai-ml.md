@@ -386,8 +386,9 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   its training job and its model keep `EnableNetworkIsolation: true`, since each reads its input mounts
   alone. The lint's rule `job` leaves it to the task from `awsds-workflows` `1a50ceb` (Stage 20 step
   6.4), in `4401f91`, the pin of `app-dbt`, `app-ml` and `app-genai`; at `app-etl`'s `196acee` it still
-  refuses a processing request without it. The rules `treino` and `modelo` still refuse a training or
-  model request without it (Stage 11 step 7.5).
+  refuses a processing request without it. The rules `treino` and `modelo` refuse a training or model
+  request without it at every pin; `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), unmerged, leaves it to the task (Stage 11
+  step 7.5).
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on `DenySageMakerJobsOffVpc`'s list.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
@@ -762,7 +763,8 @@ model while `check_if_model_exists` keeps its default; and `action_if_model_exis
 `timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, in
 `4401f91`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4), and the
 rule `operador` refuses the native notebook operator by name since `4401f91` (Stage 8 5.6). The rules
-`treino` and `modelo` still ask for `EnableNetworkIsolation: true` (Stage 11 step 7.5). The
+`treino` and `modelo` ask for `EnableNetworkIsolation: true` at every pin, until an application pins the
+merge of `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) (Stage 11 step 7.5). The
 endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
 that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
 (verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.

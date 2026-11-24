@@ -897,7 +897,8 @@ reason beside it:
   `EnableNetworkIsolation: true` (the template's choice, which no statement asks of a processing job since
   Stage 20 decision 13, nor of a training job or a model from Stage 11 step 7.4; the lint's `job` rule at
   the template's pin `196acee` asks it of a processing task, and from `1a50ceb`, Stage 20 step 6.4, leaves
-  it to the task, while `treino` and `modelo` still ask it, Stage 11 step 7.5),
+  it to the task, while `treino` and `modelo` ask it at every pin until `awsds-workflows` PR #30's merge,
+  Stage 11 step 7.5),
   `EnableInterContainerTrafficEncryption: true`, `VolumeKmsKeyId` and the output's `KmsKeyId`
   `{env.PROJECT_KEY_ARN}` (an output without it lands under the S3-managed key, `EXC-22`), an `InstanceType` of the ceiling the lint receives (`ml.t3.medium` to `ml.c5.xlarge`
   today), `ImageUri` `{env.JOB_IMAGE_URI}` or a `TrainingImage` of an algorithm repository the lint
