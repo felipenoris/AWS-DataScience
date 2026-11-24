@@ -86,16 +86,25 @@ leave out the trace's matched values and the model output it returns, both unmas
 
 ### The check
 
-The check asserts one answer for each message; for each answer no guardrail blocked, a JSON object with a
-`label` of the prompt's list and a `summary` of at most 200 characters (the prompt asks for 120); the
-message on the denied topic blocked by the application guardrail's topic, by its own trace; the planted
-e-mail address and telephone number masked in that trace and found in no answer, the number also as its
-last seven digits in another layout; and the labels agreeing with the sample's on at least
-`MIN_ACCURACY` of the answers let through. The message that tells the model to ignore its instructions
-asserts nothing of its own: blocked, it is recorded; let through, its answer is held to the rules above.
-An ordinary message a guardrail blocks is recorded under `unexpected_blocks` and left out of the
-accuracy. The report carries the model, the guardrail and its version, the counts, the accuracy, the
-tokens and each failure, by message id and never with a message's or an answer's text.
+The check asserts one answer for each message; for each answer no guardrail blocked, a JSON object at its
+start, after an opening code fence if it has one, with a `label` of the prompt's list and a `summary` of
+at most 200 characters (the prompt asks for 120); the message on the denied topic blocked by the
+application guardrail's topic, by its own trace; the planted e-mail address and telephone number masked
+in that trace and found in no answer, the number also as its last seven digits in another layout; and the
+labels agreeing with the sample's on at least `MIN_ACCURACY` of the answers let through. The message that
+tells the model to ignore its instructions asserts nothing of its own: blocked, it is recorded; let
+through, its answer is held to the rules above. An ordinary message a guardrail blocks is recorded under
+`unexpected_blocks` and left out of the accuracy. The report carries the model, the guardrail and its
+version, the counts, the accuracy, the tokens and each failure, by message id and never with a message's
+or an answer's text.
+
+The parse stops at the end of the object an answer begins with (`json.JSONDecoder.raw_decode`), so text
+after it fails no answer: Production's `m19` came back on 2026-11-23 as an object followed by a stray
+`]`, and the same request answered without it on the retry. The report names those answers under
+`text_after_object`, a closing fence aside, and the planted values are searched for in the whole answer,
+that text included. Structured output, `Converse`'s `outputConfig` with a JSON schema, is the other
+remedy, held back: it changes the request every stage sends, and what Nova Lite and the guardrail do with
+it is unmeasured.
 
 ### The sample
 

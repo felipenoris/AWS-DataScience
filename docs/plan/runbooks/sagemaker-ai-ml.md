@@ -179,10 +179,15 @@ what the lab's portal has shown, read in `eighth-experimentation` and `app-etl-d
 | **MLflow** | *MLflow*, with *Create MLflow App* | *MLflow*, with *Connect MLflow App* | MLflow Apps and tracking servers; the experiments' interface | the entry opens *Compute → MLflow*, `ml-demo-mlflow` in `eighth-experimentation`; on 2026-10-19 it was the legacy experiments page |
 | **Inference endpoints** | *Inference endpoints*, with *Create endpoint* | *Endpoints* | models, endpoint configurations and real-time endpoints | *Inference endpoints*, with *Create new endpoint*; none created (pass 4) |
 | **ML pipelines** | *ML pipelines*, with *Create in visual editor* | not in the chapter | SageMaker AI Pipelines: definitions, executions, the graph | *ML pipelines*, with *Create in visual editor*; a pipeline from the SDK that ran, and one from the editor whose training job the boundary refused, deleted the same day (pass 5, 2026-11-22) |
-| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group (6.4) |
+| **Feature Store** | not in the chapter; the SDK works in any domain type | *Feature Store* | feature groups and their stores | *Feature Store*, no feature group; *Create feature group* read and cancelled 2026-11-24 (6.4) |
 
 The Identity Center chapter also documents *HyperPod clusters* and *Partner AI apps*. Both provision
-standing infrastructure, and Stage 17 reads them without creating anything (6.1, 6.2).
+standing infrastructure, and Stage 17 reads them without creating anything (6.1, 6.2). The project role
+holds no action of either, `ListClusters` and `ListPartnerApps` included (simulated 2026-11-24), and
+Sandbox holds no `PartnerApps` blueprint configuration. In the portal on 2026-11-24, *Add compute* on
+Compute's *HyperPod clusters* tab connects a project to an existing cluster, by its name, an access role
+ARN, an account ID and a Region, and creates none; Partner AI apps show in no menu, Discover filter or
+blueprint gallery.
 
 | Generative AI entry | AWS's path | What it holds | In the lab |
 |---|---|---|---|
@@ -305,10 +310,22 @@ OfflineStore"*, which needs `kms:GenerateDataKey` on the store's key, and regist
 `DisableGlueTableCreation` is set; a write is `PutRecord` on the runtime
 `featurestore-runtime.sagemaker`, whose `TargetStores` can name the offline store alone.
 
-Nothing of it has run here (6.4, verification xxxiii): whether an Identity Center domain shows the
-entry; what the project role holds for a feature group, where AWS's developer guide asks a role for the
-managed policy `AmazonSageMakerFeatureStoreAccess`; the endpoint service of the runtime, which no slice
-declares; and how the offline store's Glue table meets this estate's Lake Formation governance. No
+No feature group has been created here (6.4, verification xxxiii). The entry shows in both lab
+projects, an Identity Center domain's (0.9, 2026-11-21), and its *Create feature group* opens there: a
+name, a description and the store, *Online*, *Offline* or *Online and offline*, then the project's
+`dev/data/ml/feature-store` prefix, the project role as the offline store's, `alias/awsds-<env>-project`
+for both stores, *Glue* or *Iceberg*, *On-demand* throughput and a project database in `AwsDataCatalog`,
+*"configured with the Lake Formation permissions required to create the offline store table"* (read and
+cancelled 2026-11-24). The project role holds a feature group's
+actions through `SageMakerStudioProjectRoleMachineLearningPolicy`'s `SageMakerFeatureStorePermission`,
+`sagemaker:*Feature*` and `sagemaker:*Record` on a group whose `AmazonDataZoneProject` tag is the
+caller's, and `ListFeatureGroups` through `SageMakerListPermissions` too, where AWS's developer guide asks
+a role for the managed policy `AmazonSageMakerFeatureStoreAccess`; simulated on 2026-11-24, every action
+`allowed` on a group of the caller's project and `implicitDeny` on another project's, and the project
+key's `sagemaker:AddTags` `implicitDeny` (`SUP-267`). The runtime's endpoint service is
+`com.amazonaws.<region>.sagemaker.featurestore-runtime`, private DNS
+`featurestore-runtime.sagemaker.<region>.amazonaws.com`, and no slice declares it (read 2026-11-24). How
+the offline store's Glue table meets this estate's Lake Formation governance stays unread. No
 application uses a feature group (decision 20 (a)): the entry is read in Sandbox and nothing is built.
 The CLI's README marks Feature Store *(future)* in its list of what it deploys, and neither the provider
 nor the service's list holds an operator for a feature group, so a task's own code would create one and
@@ -466,7 +483,7 @@ a job leaves through an interface endpoint or does not leave.
 | `bedrock`, `bedrock-runtime` | `GROUPS=bedrock-base`; the runtime endpoint's policy admits `InvokeModel` and `InvokeModelWithResponseStream` alone | none today; the `bedrock-base` group for the sittings that run `app-genai`, each endpoint narrowed to what the tasks call, designed (10.5) |
 | `bedrock-agent`, `bedrock-agent-runtime` | `GROUPS=bedrock-agent` | none today; the `bedrock-agent` group with the knowledge base increment (decision 25 (b), 10.7, designed) |
 | `bedrock-agentcore`, `bedrock-agentcore-control` | none: no `vpc-egress` tag holds a group for them; the agent increment's, for its loop in `dev` (10.11, designed) | none; the same group with the agent increment, once the Region's catalog is read for both names (verification lvii) |
-| Feature Store's runtime, `featurestore-runtime.sagemaker` in the SDK's model; its endpoint service is unread (6.4) | none | none |
+| Feature Store's runtime, `com.amazonaws.<region>.sagemaker.featurestore-runtime` (read 2026-11-24, 6.4) | none: no slice declares it | none |
 
 A call the portal makes for a person does not pass these endpoints: the playground's `ConverseStream`
 of 2026-10-19 carried no `vpcEndpointId` in the trail.
@@ -1289,7 +1306,7 @@ Claude Code on Bedrock from a space, with the use-case form and the retention mo
 
 | Instrument | What it reads |
 |---|---|
-| `./aws/sandbox-ml.py`, `ML-1`..`ML-9` | Sandbox: the project roles, their managed policy and boundary; the MLflow Apps; each training job against the boundary's settings, the ceiling, the key and the tag; the registry; the serving objects, where no endpoint may outlive its sitting; the pipelines; HyperPod, Partner AI apps and the quotas; the Generative AI objects; the session's endpoints |
+| `./aws/sandbox-ml.py`, `ML-1`..`ML-9` | Sandbox: the project roles, their managed policy and boundary; the MLflow Apps; each training job against the boundary's settings, the ceiling, the key and the tag; the registry; the serving objects, where no endpoint may outlive its sitting; the pipelines; HyperPod, Partner AI apps and Feature Store, what the project roles hold for each and the runtime's endpoint service, and the quotas; the Generative AI objects; the session's endpoints |
 | `./aws/orchestration.py`, `OR-1`..`OR-9` | the targets: the workflows, their log groups and roles, the failure rules, the definitions, the registry's writes by the deploy role, the chains |
 | `ML-10` and `OR-10`, designed (9.9) | in `app-ml-dev`: the jobs against the settings and the tag, no model named `app-ml-score-*` older than a day, the candidate under `app-ml/models/latest/` with its hash against `model.json`, the version `register` proposed and the MLflow run `track` logged. In the targets: the scoring jobs against the settings and the tag, no such model, no endpoint, no training job of the application, the package group's versions with the hash each carries and who registered and who approved it, the model under `app-ml/bundle/model/` against the hash of the release deployed, and the chains' last executions |
 | `ML-11`, `OR-11` and `./aws/deploytargets.py`'s `DT-14`, designed (10.9) | in `app-genai-dev`: the application's guardrail, the hash its newest version carries against the definition in the checkout, the inference profile, both reports, the deny's state on the role, and an empty `ListEnforcedGuardrailsConfiguration` outside step 10.4's sitting. In the targets: the application's guardrail by its name, the hash of the version the last report names against the released definition, any other guardrail of the account, which fails the check unless it is the account's own, the account-level configuration against decision 27 (a), the profile and its model, the retention mode in each Region a call can be served in, the chains' last executions and the reports. `DT-14`: `bedrock` outside the ceiling's allow, the three sets of statements with their resources and their conditions, the deny over the account's guardrail, and no other Bedrock allow |
@@ -1324,8 +1341,8 @@ Each line names the step or the verification of Stage 17 that closes it.
 - **The Sandbox registry's first version**, and what it does to `EXC-11` (3.3).
 - **An endpoint**: its create, its invocation and its deletion (pass 4), the serverless negative
   (4.4) and the default instance type of a JumpStart deploy (4.5).
-- **Feature Store**: the entry, the project role's grant, the runtime endpoint, the offline store's
-  table under Lake Formation (6.4, verification xxxiii).
+- **Feature Store**: a created group and its offline store's table under Lake Formation (6.4,
+  verification xxxiii); the entry, the grant, the form and the runtime endpoint were read 2026-11-24.
 - **The Bedrock IDE's remainder**: no shared snapshot reaches the catalog and no answer cites a chunk,
   the chat agent app being refused and a flow app having no *Share*
   ([`bedrock-generative-ai.md`](bedrock-generative-ai.md) §U).

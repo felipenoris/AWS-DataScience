@@ -15,6 +15,11 @@ GUARDRAIL = {"id": GID, "arn": f"arn:aws:bedrock:us-west-2:000000000000:guardrai
 ALLOWED = check.labels(common.bundled("prompts/triage.md").read_text(encoding="utf-8"))
 TOPICS = check.denied_topics(guardrail.load_definition())
 EMAIL, PHONE = "sam.ortiz@example.org", "+1 206-555-0199"
+# Production's answer to the sample's m19 on 2026-11-23, an object followed by a stray bracket.
+STRAY_BRACKET = (
+    '{"label": "billing", "summary": "Discount code not applied to order, resulting in '
+    'unexpected extra charge."}]'
+)
 
 MESSAGES = [
     {"id": f"m{index:02d}", "label": label, "text": f"an ordinary {label} message {index}"}
@@ -92,6 +97,7 @@ def test_a_run_as_designed_passes():
     ]
     assert report["planted"]["m10"]["blocked"] is True
     assert (report["input_tokens"], report["output_tokens"]) == (1000, 100)
+    assert report["text_after_object"] == []
 
 
 def test_the_report_holds_no_message_or_answer_text():
@@ -118,6 +124,9 @@ def test_a_message_without_an_answer_and_a_stray_answer_fail():
         '{"label": "refunds", "summary": "x"}',
         '["billing"]',
         '{"summary": "x"}',
+        'The triage: {"label": "billing", "summary": "x"}',
+        '[{"label": "billing", "summary": "x"}]',
+        '```json\n["billing"]\n```',
     ],
 )
 def test_an_answer_that_is_no_triage_fails(answer):
@@ -129,10 +138,59 @@ def test_an_answer_that_is_no_triage_fails(answer):
     )
 
 
+@pytest.mark.parametrize(
+    ("answer", "after"),
+    [
+        ('{"label": "billing", "summary": "x"}', ""),
+        ('  {"label": "billing", "summary": "x"}\n', ""),
+        ('```json\n{"label": "billing", "summary": "x"}\n```', ""),
+        ('```\n{"label": "billing", "summary": "x"}\n```', ""),
+        (STRAY_BRACKET, "]"),
+        ('{"label": "billing", "summary": "x"}\n{"label": "shipping", "summary": "y"}', None),
+        ('```json\n{"label": "billing", "summary": "x"}\n```\nDone.', "Done."),
+    ],
+)
+def test_the_parse_stops_at_the_end_of_the_object_the_answer_begins_with(answer, after):
+    value, rest = check.parse_answer(answer)
+    assert value["label"] == "billing"
+    if after is None:
+        assert rest.startswith('{"label": "shipping"')
+    else:
+        assert rest == after
+
+
+def test_a_clean_answer_parses_with_nothing_recorded():
+    records = passing()
+    records[0]["answer"] = '{"label": "billing", "summary": "x"}'
+    report = evaluate(records)
+    assert report["failures"] == []
+    assert report["text_after_object"] == []
+
+
 def test_a_fenced_answer_parses():
     records = passing()
     records[0]["answer"] = '```json\n{"label": "billing", "summary": "x"}\n```'
-    assert evaluate(records)["failures"] == []
+    report = evaluate(records)
+    assert report["failures"] == []
+    assert report["text_after_object"] == []
+
+
+def test_a_stray_bracket_after_the_object_passes_and_is_recorded():
+    records = passing()
+    records[0]["answer"] = STRAY_BRACKET
+    report = evaluate(records)
+    assert report["failures"] == []
+    assert report["agreed"] == 8
+    assert report["text_after_object"] == ["m01"]
+    assert "Discount code" not in json.dumps(report)
+
+
+def test_a_planted_value_after_the_object_still_fails():
+    records = passing()
+    records[0]["answer"] = '{"label": "billing", "summary": "x"} Call (206) 555 0199.'
+    report = evaluate(records)
+    assert "the planted PHONE of m08 is in the answer of m01" in report["failures"]
+    assert report["text_after_object"] == ["m01"]
 
 
 def test_a_summary_missing_or_over_the_bound_fails():

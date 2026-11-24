@@ -6551,3 +6551,133 @@ Account>`. Terraform 1.17.2. Times UTC.*
   (`EXC-25`), the two retired workflows' groups among them; `./aws/deploytargets.py`, 23:43:24 to 23:45:03, exit
   0, 44 checks passing, `DT-3` reading `awsds-prod-model-app-ml` alone with its two-statement policy, and
   `DT-8`'s note on `app_dbt.trades`. Neither run had a failed call.
+
+## 2026-11-24 — `app-genai`'s `parse_answer` fix for R3, nothing up
+
+*Claude's hand, a sitting with no AWS call, on the branch `claude/vigilant-shtern-ba2579`, the calendar's
+2026-11-24 row (`promotion.md` §N.12.1). Times UTC.*
+
+- **[Claude] The fix**, written by 00:23: `check.py`'s `parse_answer` reads the JSON object an answer begins
+  with through `json.JSONDecoder.raw_decode`, after an opening code fence if it has one, and stops at its
+  closing brace, so the text after it fails no answer. The report gains `text_after_object`, the ids of the
+  answers let through that carry text after their object besides a closing fence. The planted values are
+  searched for in the whole answer, as before. The prompt, the `Converse` request and the records `triage`
+  writes are unchanged.
+- **[Claude] Why the parse and not structured output**: the parse is one function of `check`, tested
+  offline, and changes nothing the model or the guardrail receives. botocore 1.43.1, the worker's, holds
+  `Converse`'s `outputConfig.textFormat` of type `json_schema` (read in the application's lock); which
+  models honour it, Nova Lite among them, and what a guarded request's assessment does with it are unread,
+  so it would change the request every stage sends and owe a Sandbox loop before R3.
+- **[Claude] The tests**: `tests/test_check.py` gains the stray bracket, Production's answer to `m19` of
+  2026-11-23 verbatim; the fence; the clean answer; a closing fence followed by text; a second object after
+  the first; leading text and an array around the object, which still fail; and a planted telephone number
+  after the object, which still fails the run. `uv run pytest` *"108 passed"*, 95 before. The negative
+  control, the new tests against `check.py` at `1141d862` at 00:23:45: 12 fail, the stray bracket on *"m01:
+  the answer is no JSON object with a label of the list"*, Production's wording for `m19`. `ruff check` and
+  `ruff format --check` pass; `awsds-workflows lint .` at `4401f91` with the pipeline's seven instance types
+  *"ok: 3 arquivo(s)"*.
+- Nothing went to GitLab: `v0.1.1` is R3's tag.
+
+## 2026-11-24 — Pass 6: Claude's halves of 6.1 to 6.4, the APIs read and nothing created
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` in `Sandbox Account 1`
+(`awsds-infra-sandbox-1`), reads alone: the policy simulator is a read, and nothing was created. No account
+id is written. Times UTC.*
+
+- **[Claude] The listings**, 00:25:41: `list-clusters` `{"ClusterSummaries": []}`, `list-partner-apps`
+  `{"Summaries": []}` and `list-feature-groups` `{"FeatureGroupSummaries": []}`.
+- **[Claude] Feature Store's runtime** (6.4), 00:25:56: `describe-vpc-endpoint-services` lists 598 services in
+  `us-west-2`, among them `com.amazonaws.us-west-2.sagemaker.featurestore-runtime` and its `-fips` twin, an
+  `Interface` service owned by `amazon` in `us-west-2a` to `us-west-2d`, private DNS
+  `featurestore-runtime.sagemaker.us-west-2.amazonaws.com` and `featurestore-runtime.sagemaker.us-west-2.api.aws`,
+  endpoint policies supported. No `.tf` file under `terraform-modules/` or `terraform-live/` names
+  `featurestore-runtime`. Partner AI apps have a service of their own, `aws.sagemaker.us-west-2.partner-app`,
+  private DNS `*.partner-app.us-west-2.sagemaker.aws`, which no slice names either.
+- **[Claude] The project roles' policies**: Sandbox's six project roles carry the same three AWS managed
+  policies, `SageMakerStudioProjectRoleMachineLearningPolicy` v48, `SageMakerStudioProjectUserRolePolicy` v77
+  and `SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9, beside each project's `awsds-sandbox-*`
+  policies, and no inline policy. No statement names a cluster or a partner-app action. The ML policy's
+  `SageMakerFeatureStorePermission` allows `sagemaker:*Feature*` and `sagemaker:*Record` on `*` where
+  `aws:ResourceTag/AmazonDataZoneProject` equals `${aws:PrincipalTag/AmazonDataZoneProject}`, and its
+  `SageMakerListPermissions` allows `sagemaker:ListFeatureGroups` on the principal tag
+  `EnableSageMakerMLWorkloadsPermissions` `true`.
+- **[Claude] The simulation**, 00:29:13 to 00:29:37, as `eighth-experimentation`'s project role, the context
+  carrying the Region and the role's `AmazonDataZoneProject` and `EnableSageMakerMLWorkloadsPermissions` tags,
+  which the simulator does not read from the role (`SUP-008`), each action name checked first against
+  SageMaker's Service Reference v1.5. On a feature group tagged with the caller's project,
+  `CreateFeatureGroup`, `DescribeFeatureGroup`, `UpdateFeatureGroup`, `DeleteFeatureGroup`,
+  `DescribeFeatureMetadata`, `UpdateFeatureMetadata`, `PutRecord`, `GetRecord`, `BatchGetRecord`,
+  `BatchWriteRecord` and `DeleteRecord` read `allowed` through the ML policy, Organizations and the boundary
+  allowing; on a group tagged with another project, each `implicitDeny`; `AddTags` with `aws:TagKeys`
+  `AmazonDataZoneProject` `implicitDeny` (`SUP-267`); `ListFeatureGroups` `allowed`. With the caller's tag in
+  the context, `ListClusters`, `ListClusterSchedulerConfigs`, `CreateCluster`, `DescribeCluster`,
+  `UpdateCluster`, `DeleteCluster`, `ListClusterNodes`, `BatchAddClusterNodes`, `ListPartnerApps`,
+  `CreatePartnerApp`, `DescribePartnerApp`, `UpdatePartnerApp`, `DeletePartnerApp`,
+  `CreatePartnerAppPresignedUrl` and `CallPartnerAppApi` each read `implicitDeny`, no statement matched.
+  Verification xxxiii's role half reads: every feature-group action, on a group of the caller's project.
+- **[Claude] The `PartnerApps` blueprint** (6.2), 00:31:01: `list-environment-blueprints --managed` on
+  `awsds-studio` lists it as `5cj3vjg02pcrf4`. Sandbox's 14 blueprint configurations are
+  `AmazonBedrockChatAgent`, `AmazonBedrockEvaluation`, `AmazonBedrockFlow`, `AmazonBedrockFunction`,
+  `AmazonBedrockGuardrail`, `AmazonBedrockKnowledgeBase`, `AmazonBedrockPrompt`, `DataLake`, `EmrServerless`,
+  `MLflowApp`, `S3Bucket`, `S3TableCatalog`, `SageMakerAIDomain` and `Tooling`; none is `PartnerApps`'s.
+- **[Claude] `ML-7`** (6.3) gains the feature groups, each project role's grants for the three entries from
+  every policy on it, attached and inline, and the runtime's endpoint service; a grant for clusters or partner
+  apps fails it. `./aws/sandbox-ml.py`, 00:35:05 to 00:40:28, exit 0, *"all checks passed"*: `ML-7` passing on no
+  cluster, no partner app and no feature group, on no HyperPod and no Partner AI apps grant on any of the six
+  roles, and on the quotas at 20, 30, 8 and 10; noting the Feature Store grant on the six roles and the
+  runtime's service, which no slice declares. The grant helpers read a synthetic `sagemaker:CreateCluster`, a
+  `sagemaker:*`, two `NotAction` statements and a `Deny` as expected.
+- **[Claude] `make check`**, run with every edit of the branch: *"check: OK"*.
+- The user's page halves of 6.1, 6.2 and 6.4 wait on the user's readings.
+
+## 2026-11-24 — Pass 6: the pages of 6.1, 6.2 and 6.4, read in the portal and nothing created
+
+*Claude's hand in the user's Chrome, on the portal session the user opened for it (*"Abri uma sessão no
+chrome no SMUS para você realizar esta leitura agora."*), signed in as the Data Scientist User (read in the
+account menu), in `eighth-experimentation`, with the estate down; two reads as the infrastructure user
+(`awsds-infra-sandbox-1`). Each form and panel was cancelled and nothing was submitted; the project's *Update
+project* banner was left alone, and the tab was closed at 01:00:52. No account id or address is written.
+Times UTC, from 00:49.*
+
+- **[Claude] 6.1, HyperPod**: Compute's *HyperPod clusters* tab (`compute?type=hyperpod`), under the banner
+  0.9 read, *"No connections to display."* *Add compute* opens at its third step, *Enter details*, type
+  *SageMaker HyperPod*, and asks a connection name, the cluster's name (*"found in SageMaker Console"*), an
+  access role ARN (*"the IAM role ARN that this project needs to assume"*), an account ID (*"the AWS account
+  ID the runtime role exists in"*) and the Region. Its first step offers *Create new compute resources*
+  (Amazon Redshift Serverless, EMR Serverless) and *Connect to existing compute resources* (SageMaker
+  HyperPod alone), its second *All compute types (1)*. The page connects a project to a cluster that exists
+  and creates none. Cancelled.
+- **[Claude] 6.2, Partner AI apps**: absent, as 0.9 read on 2026-11-21. No entry in the left navigation, the
+  *Manage* menu (*Govern*: Domain units, Blueprints; *Catalog management*: Assets, Subscription requests,
+  Data sources, Metadata forms, Business glossaries, Custom asset types), the Generative AI group
+  (Playground; AI apps, the Bedrock IDE) or Discover's filters (All, Assets, Data products, Files, Models,
+  Notebooks, Jobs, Workflows, Feature groups). *Resource blueprints* → *Deploy* offers the *Managed
+  blueprints* EMR Serverless, Lakehouse Database, MLflow App and S3 Bucket, the gallery `app-ml-dev`'s owner
+  read on 2026-11-21 (`docs/SMUS.md` §Resource blueprints); cancelled. No page shows the four partners.
+- **[Claude] 6.4, Feature Store**: AI/ML → Feature Store (`feature-store`), an introduction card (*Feature
+  groups*, *Real-time Inference*, *Batch Ingestion*) and *"You don't have any feature groups."*; the empty
+  page has no *Feature groups* or *Features* tab. *Create feature group* has three steps, *Feature group
+  details*, *Feature definitions* and *Tags - optional*. The first asks a name, a description (*"cannot be
+  changed once created"*) and a *Store configuration*: *Online*, *Offline* or *Online and offline*. With
+  *Online and offline* chosen in the unsaved form, it pre-fills:
+  - online: storage type *Standard*, not editable; the key `alias/awsds-sandbox-project` by its ARN; *Time to
+    Live (TTL)* off (*"Once TTL has been enabled for a feature group, it cannot be disabled."*);
+  - offline: `s3://awsds-sandbox-smus-projects/dzd-d8yrvx1ko7im6o/avhvbqn37ty7m8/dev/data/ml/feature-store`;
+    table format *Glue (Default)* or *Iceberg*; the IAM role, the project's own
+    `datazone_usr_role_avhvbqn37ty7m8_5hkjdsy3umpi1c`; the same key; throughput *On-demand (default)*;
+  - the data catalog: *"Create a table to store your offline Feature Store data."* checked, the catalog
+    `AwsDataCatalog`, not editable, and the database `new_database`, `glue_db_blerpkhn9nj7o0` or one typed,
+    under *"These databases are configured with the Lake Formation permissions required to create the
+    offline store table."*; the table name empty.
+
+  Cancelled on its first step. AWS documents the page for IAM-based domains alone, and this Identity Center
+  domain shows it and its form.
+- **[Claude] The form's values**, read by 00:59:36: the key `alias/awsds-sandbox-project`, customer managed,
+  *"SMUS project resources in this account - blueprint-provisioned volumes and artifacts (Stage 6). NOT the
+  data CMK."*, the projects bucket's key (`docs/GOVERNANCE.md` §Encryption); both databases in Sandbox's Glue
+  Data Catalog, located at the project's `dev/data/catalogs/`, `glue_db_blerpkhn9nj7o0` created 2026-10-26
+  21:25:41 and `new_database` 2026-10-28 06:22:40. *Resource blueprints* lists a `DataLake` deployment named
+  `create-datalake-database-env-new_database-1793168541728`.
+- Pass 6 is read, 6.1 to 6.4. Verification xxxiii's page half: the form writes the offline store as the
+  project role, under the project's prefix and key, into a project database; how its Glue table meets Lake
+  Formation stays unread while no group exists.
