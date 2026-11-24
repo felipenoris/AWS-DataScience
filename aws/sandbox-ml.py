@@ -1,9 +1,9 @@
 #!/usr/bin/env -S uv run --quiet
 """sandbox-ml.py - Stage 17's evidence: the machine learning a SageMaker Unified Studio project
 offers, read in the Sandbox account. The project roles (the ML tag, the managed policy's
-version and its create and tag statements, the D13 boundary's five statements and its
+version and its create and tag statements, the D13 boundary's statements and its
 instance ceiling, the Tooling stack's enableNetworkIsolation), the MLflow Apps, every training
-job against the boundary's four job settings, the Model Registry group ml-demo-xgboost, the
+job against the boundary's job settings, the Model Registry group ml-demo-xgboost, the
 serving objects (each endpoint with its price, decision 6), the ML pipelines, the entries read
 without being created (HyperPod, Partner AI apps, Feature Store) with what the project roles hold
 for each, Feature Store's runtime endpoint service and the quotas that bound the exercise, the
@@ -125,12 +125,11 @@ SID_CREATE = "SageMakerCreatePermissions"
 SID_TAG = "SageMakerTagPermissions"
 SID_MLFLOW = "SageMakerMlflowServerlessPermission"
 
-# The D13 boundary's five statements (terraform-modules/sagemaker-denies), and the instance types
+# The D13 boundary's statements (terraform-modules/sagemaker-denies), and the instance types
 # the exercise asks for. The ceiling is read from the live boundary, never copied here.
 BOUNDARY_SIDS = (
     "DenySageMakerJobsOffVpc",
     "DenySageMakerInstanceCeiling",
-    "DenySageMakerJobsWithoutNetworkIsolation",
     "DenySageMakerJobsWithoutInterContainerEncryption",
     "DenySageMakerJobsWithoutVolumeEncryption",
 )
@@ -1732,8 +1731,9 @@ def main(argv: list) -> int:
             + " (verification ii).",
         )
 
-    # ML-3: each training job against the four settings, the ceiling, the key, the tag, the image.
-    # A setting outside the boundary fails on any job; a failed outcome on the newest job only,
+    # ML-3: each training job against the boundary's settings, the ceiling, the key, the tag, the
+    # image, network isolation a note since no statement asks for it (Stage 11 decision 14). A setting
+    # outside the boundary fails on any job; a failed outcome on the newest job only,
     # since a training job cannot be deleted and an earlier failure stays listed.
     ceiling = None
     for p in projects.values():
@@ -1746,6 +1746,7 @@ def main(argv: list) -> int:
         res = j.get("ResourceConfig") or {}
         p = by_arn.get(j.get("RoleArn", ""))
         problems = []
+        notes = []
         if not vpc.get("Subnets"):
             problems.append("no VpcConfig")
         else:
@@ -1753,13 +1754,14 @@ def main(argv: list) -> int:
             if bad:
                 problems.append(f"subnets outside the private tier: {', '.join(bad)}")
         if j.get("EnableNetworkIsolation") is not True:
-            problems.append("network isolation off")
+            notes.append(
+                "network isolation off: the container holds the role's credentials (TM-38)"
+            )
         if j.get("EnableInterContainerTrafficEncryption") is not True:
             problems.append("inter-container encryption off")
         itype = res.get("InstanceType", "-")
         if ceiling is not None and itype not in ceiling:
             problems.append(f"{itype} outside the ceiling")
-        notes = []
         if p is None:
             problems.append(f"role {j.get('RoleArn', '-')} is no project role")
         else:

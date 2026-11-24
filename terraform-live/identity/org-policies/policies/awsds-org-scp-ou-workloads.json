@@ -89,23 +89,6 @@
       }
     },
     {
-      "Sid": "DenySageMakerJobsWithoutNetworkIsolation",
-      "Effect": "Deny",
-      "Action": [
-        "sagemaker:CreateTrainingJob",
-        "sagemaker:CreateHyperParameterTuningJob",
-        "sagemaker:CreateAutoMLJob",
-        "sagemaker:CreateAutoMLJobV2",
-        "sagemaker:CreateModel"
-      ],
-      "Resource": "*",
-      "Condition": {
-        "BoolIfExists": {
-          "sagemaker:NetworkIsolation": "false"
-        }
-      }
-    },
-    {
       "Sid": "DenySageMakerJobsWithoutInterContainerEncryption",
       "Effect": "Deny",
       "Action": [
