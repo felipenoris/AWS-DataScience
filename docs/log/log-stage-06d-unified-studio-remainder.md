@@ -4961,3 +4961,35 @@ nothing up* left unrecorded. Times UTC.*
   UTC foram apagados por você?"*: `jup8h` and `jup-app-dbt-dev` on 2026-11-22, and `default-28f1b390-…`,
   `code`, `jup`, `jup-test-experimentation`, `jup-app-genai-dev` and `jup-ml-dev` on 2026-11-23, each deleted in
   the portal as the Data Scientist User.
+
+## 2026-11-24 — *Update project* in the five other Sandbox projects: the user's hand, read with nothing up
+
+*The user's act, reported in their words in the chat of the session orchestrating 2026-11-24. Claude's hand, that
+session, reads the projects as the infrastructure user, read-only: DataZone and CloudTrail in Data Governance,
+SageMaker in Sandbox. Times UTC.*
+
+- **[user]** *"Fiz o Update project nos cinco projetos"*, at about 01:50: the act the waiting list held for the
+  spaces of `promotion.md` §N.12.1's SB1. The trail holds five `UpdateProject` through
+  `awsds-data-studio-domain-execution`, the portal's role, none refused: `eighth-experimentation` at 01:47:47,
+  `test-experimentation` at 01:48:00, `app-ml-dev` at 01:48:31, `app-genai-dev` at 01:48:45 and `app-dbt-dev` at
+  01:49:03.
+- **[Claude] The deployments**, `datazone get-project` and `list-environments` at 01:53:00: four projects `ACTIVE`,
+  each deployment `SUCCESSFUL`, `lastUpdatedAt` from 01:50:50 to 01:52:09; their `Tooling` environments updated
+  from 01:49:11 to 01:50:02 and their `SageMakerAIDomain` environments from 01:50:44 to 01:52:03.
+  `eighth-experimentation` read `UPDATING`, its deployment `IN_PROGRESS`, its other environments updating first.
+- **[Claude] The ceilings**, `sagemaker describe-domain` at 01:53:18, `MaxIdleTimeoutInMinutes` for JupyterLab and
+  Code Editor: `525600` in the `SageMakerAIDomain` domains of `app-genai-dev` (`d-q1bianbhckrd`, modified
+  01:50:19), `app-ml-dev` (`d-hxxfi3od0xhm`, 01:51:05), `test-experimentation` (`d-jaid1tvg20jv`, 01:51:06) and
+  `app-dbt-dev` (`d-nt4ujzbdpeqm`, 01:51:38), and in the `Tooling` domains of `test-experimentation`
+  (`d-lfgbdrjncmsu`, 01:48:39) and `eighth-experimentation` (`d-p6gthxc82ckg`, 01:48:32); `eighth-experimentation`'s
+  `SageMakerAIDomain` domain `d-m8m0uefej9kb` still `120`, modified 2026-11-22 05:28:53. Each domain changed 25 to
+  32 seconds before its environment's `updatedAt`. `./aws/studio.py` with Sandbox's profile alone, its report
+  generated at 01:51:49, read `120` on the four domains modified after 01:50:19, its calls preceding their update;
+  its three `US-13` failures are `EXC-26`'s `Tooling` domains, which it matches to no project name without the
+  registry's profile.
+- **[Claude] `eighth-experimentation`'s end**, the deployment polled every 30 seconds: `SUCCESSFUL` at 01:58:04,
+  its `SageMakerAIDomain` environment updated at 01:57:37 after its other environments, and `d-m8m0uefej9kb` read
+  `525600` at 01:58:29, modified 01:57:12.
+- **[Claude] `./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`**, generated at 02:00:47, exit 0: `US-7`
+  passes on all nine Sandbox domains at `ceiling=525600min`, the six blueprint domains and `EXC-26`'s three
+  `Tooling` domains, each `US-13` a note naming its project; 0 checks failed. The waiting list's row is removed.
