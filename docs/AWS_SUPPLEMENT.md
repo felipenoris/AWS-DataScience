@@ -3985,9 +3985,10 @@ entry is still true is the reading.
   answers an `INACTIVE` listing to `InfrastructureAccess` in Data Governance is not measured; a refused read
   leaves both checks a note. Where: `log-stage-21-redshift-s3-data-products.md`, 2026-11-23.
 
-- `SUP-483` **A Glue table asset's lineage node takes as upstream the dataset node another account created for a
-  table of the same database and name, not the node keyed by its own account's table ARN** (measured
-  2026-11-23, Stage 20 8.9, `GetLineageNode` and `ListLineageNodeHistory` as `InfrastructureAccess` in Staging
+- `SUP-483` **A Glue table asset's lineage node takes as upstream the node of the table its current revision names,
+  and each revision re-points it, so after a catalog import it hangs from the source account's table node until
+  the target's source runs** (measured 2026-11-23, Stage 20 8.9, `GetLineageNode` and `ListLineageNodeHistory` as
+  `InfrastructureAccess` in Staging
   and Production). `app-dbt`'s release ran dbt in both targets, each run posting events whose datasets carry the
   account's symlink (`SUP-391`), and the domain wrote a table node per account keyed by its own Glue ARN:
   `notional_by_desk` `4epfbzmhyf6p74` in Staging and `dc5kf0jitjz91s` in Production, beside Sandbox's
@@ -4016,7 +4017,31 @@ entry is still true is the reading.
   `6i4aaj4f895ixc`, those of the import revisions 2, 5 and 7 included, and each of Staging's 6 reads
   `d0m1zl6r8q3uvk`, those of the source revisions 1, 3 and 5 included, while a table node's version carries its
   own event's run edges alone. Unmeasured until the targets' sources run again: the edge moving with a revision.
-  Where: `log-stage-20-dbt-lineage.md`, 2026-11-24.
+  Where: `log-stage-20-dbt-lineage.md`, 2026-11-24. Measured 2026-11-24 after the targets' scheduled source runs
+  (02:25:56 and 02:36:55 UTC, as `InfrastructureAccess` in the four accounts): each run's revision 3 named the
+  target's table, and within 13 seconds each of the four `app-dbt` asset nodes gained a version and hung from its
+  own table's node (`4epfbzmhyf6p74`, `akfm2ggbaumjo0`, `dc5kf0jitjz91s`, `c35d04bqelikuo`). The domain's trail
+  holds `UpdateLineageNode` on the asset node, on the target's table node and on Sandbox's, each by
+  `datazone.amazonaws.com`, and no new version on either table node. All twelve versions of the four nodes then
+  read the new upstream, the eight that read Sandbox's nodes at 00:25 included. So a revision re-points the edge,
+  and no version keeps the edge it had. Where: `log-stage-20-dbt-lineage.md`, 2026-11-24 (the targets' source
+  runs).
+
+- `SUP-489` **A DataZone data source's scheduled run starts at a fixed offset after its cron time, the same to
+  the second every day for one source and different between sources** (measured 2026-11-24, Stage 20,
+  `list-data-source-runs` and `get-data-source-run` as `InfrastructureAccess` in Sandbox, Staging and
+  Production). Four Glue sources, none with a `timezone` in its schedule, started each `SCHEDULED` run within
+  0.2 s of one second: Staging's `app_dbt` source `495urkkg5c7fyo`, `cron(23 2 * * ? *)`, at 02:25:56 UTC on
+  each of 2026-11-20 to 2026-11-24, 2 min 56 s after its cron; Production's `bjfmkla36ed3ps`,
+  `cron(27 2 * * ? *)`, at 02:36:55 on the same days, 9 min 55 s; Sandbox's `3uof8bs4x693f4`,
+  `cron(43 2 * * ? *)`, at 02:54:41 on 2026-11-22 to 2026-11-24, 11 min 41 s; Staging's `app_etl` source
+  `52f18khk7kdi4w`, `cron(28 15 * * ? *)`, at 15:37:23 on 2026-11-16 to 2026-11-23, 9 min 23 s. Each run's
+  `createdAt` is within 0.1 s of its `startedAt`, so the run is created late, not queued. `ScheduleConfiguration`
+  and `CreateDataSource` describe `schedule` as the cron of the runs, and the DataZone and SageMaker Unified
+  Studio guides say the source runs at the time selected; none states an offset (read 2026-11-24).
+  Consequence: a reading that must follow a scheduled run waits for the source's measured start, read from
+  `list-data-source-runs`, not for its cron; 8.6's entry of 2026-11-23 expected Sandbox's re-import at 02:43,
+  and the run started at 02:54:41. Where: `log-stage-20-dbt-lineage.md`, 2026-11-24 (the targets' source runs).
 
 ### Connections
 
@@ -5840,7 +5865,12 @@ entry is still true is the reading.
   `app-etl`'s `trades_notional` alternates the same way, each import naming Sandbox's table and each source
   run the target's: Staging's revisions 2, 4 and 6 and Production's 2, 5 and 7 are the imports. Each asset's
   lineage node hangs from the node of the ARN its current revision names (`SUP-483`). Where:
-  `log-stage-20-dbt-lineage.md`, 2026-11-24.
+  `log-stage-20-dbt-lineage.md`, 2026-11-24. Read again after the targets' scheduled source runs of 2026-11-24:
+  Staging's at 02:25:56 and Production's at 02:36:55 UTC each read `updated: 2`, `SUCCEEDED_UPDATED` though
+  Staging's tables had not changed since revision 1, and wrote revision 3 by `SYSTEM`, naming the target's table
+  in `GlueTableForm` and `sourceIdentifier` and keeping the import's README as well as its description and
+  `classification`. Sandbox's forms lasted about 9 h 00 min in Staging and 8 h 17 min in Production. Where: the
+  same log, 2026-11-24 (the targets' source runs).
 
 - `SUP-484` **`deploy` creates or updates each workflow its manifest names and deletes none the manifest no
   longer names** (measured 2026-11-23 in Staging and Production, Stage 17 9.11, `list-workflows` as

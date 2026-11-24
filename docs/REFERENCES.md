@@ -2361,6 +2361,15 @@
   <https://docs.aws.amazon.com/datazone/latest/APIReference/API_DeleteAsset.html>. The SageMaker Unified
   Studio pages of the same subject rendered no body to a fetch.
 
+- **A DataZone data source's schedule (read 2026-11-24, for `SUP-489`).** Searched for an offset, a delay or a
+  window between a scheduled run and its cron; no page names one. `ScheduleConfiguration`, the cron and the
+  timezone: <https://docs.aws.amazon.com/datazone/latest/APIReference/API_ScheduleConfiguration.html>;
+  `CreateDataSource`'s `schedule`:
+  <https://docs.aws.amazon.com/datazone/latest/APIReference/API_CreateDataSource.html>; the run preference in
+  the DataZone guide: <https://docs.aws.amazon.com/datazone/latest/userguide/create-glue-data-source.html>; the
+  run schedule in SageMaker Unified Studio's:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/create-data-source.html>.
+
 ## Data platform
 
 - AWS Glue Data Catalog: <https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html>.
