@@ -43,20 +43,6 @@ locals {
     "sagemaker:CreateModel",
   ]
 
-  # The creates that must ask for EnableNetworkIsolation: a training, tuning or AutoML job and a
-  # model, the scope AWS's internet-free mode and the Tooling blueprint's enableNetworkIsolation
-  # give the setting. A processing job is left out (Stage 20 decision 13): it runs in its
-  # project's subnets and security group as its role and reaches what the workflow's Glue job and
-  # worker tasks reach there, and an application still chooses isolation job by job. A list of its
-  # own, since vpc_config_actions keeps CreateProcessingJob (Lesson 51).
-  network_isolation_actions = [
-    "sagemaker:CreateTrainingJob",
-    "sagemaker:CreateHyperParameterTuningJob",
-    "sagemaker:CreateAutoMLJob",
-    "sagemaker:CreateAutoMLJobV2",
-    "sagemaker:CreateModel",
-  ]
-
   # EnableInterContainerTrafficEncryption - distributed training/processing only. A single-
   # instance job has no inter-container traffic but still sends the field as true: the deny
   # below is BoolIfExists, so an omitted field is refused (Stage 6i).
@@ -146,23 +132,16 @@ data "aws_iam_policy_document" "this" {
     }
   }
 
-  # ------------------------------------------------------- the three hardening requirements
+  # ------------------------------------------------------------- the hardening requirements
   #
-  # Separate statements rather than three conditions on one, because conditions inside a
-  # statement are ANDed: a single statement would deny only the job that violates all three.
-  statement {
-    sid       = "DenySageMakerJobsWithoutNetworkIsolation"
-    effect    = "Deny"
-    actions   = local.network_isolation_actions
-    resources = ["*"]
-
-    condition {
-      test     = "BoolIfExists"
-      variable = "sagemaker:NetworkIsolation"
-      values   = ["false"]
-    }
-  }
-
+  # Separate statements rather than two conditions on one, because conditions inside a statement
+  # are ANDed: a single statement would deny only the job that violates both.
+  #
+  # No statement asks for EnableNetworkIsolation (Stage 20 decision 13 for a processing job, Stage
+  # 11 decision 14 for a training, tuning or AutoML job and a model): a container runs isolated when
+  # its request asks for it. Without it the container holds its execution role's credentials and
+  # reaches what that role is granted from the project's subnets, where DenySageMakerJobsOffVpc
+  # keeps it (TM-35, TM-38).
   statement {
     sid       = "DenySageMakerJobsWithoutInterContainerEncryption"
     effect    = "Deny"
