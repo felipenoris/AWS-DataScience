@@ -16,7 +16,8 @@ release T's sitting (N.8.2, `v0.4.7`, pipeline #117) on 2026-11-15, release F's 
 #129) on 2026-11-16, its step 10, Stage 19 item 31, applied on 2026-11-17, N.9's days 1 and 2 on 2026-11-21
 and 22, R1 (N.11.1) on 2026-11-22: release G (N.8.5, `v0.6.0`, pipeline #138) and N.8.3, and R2 (N.11.2) on
 2026-11-23, the first releases of `app-dbt`, `app-ml` and `app-genai`. Stages 8, 9 and 10 closed on
-2026-11-23 (N.6 item 12), and what they left waiting is N.5; N.6 item 11 and N.12's calendar hold the rest.
+2026-11-23 (N.6 item 12), and what they left waiting is N.5. N.6 item 11 ran the same day; N.12.1's calendar,
+re-planned that day with Stages 11 to 15 left out, holds what is left.
 
 | § | Holds |
 |---|---|
@@ -26,7 +27,7 @@ and 22, R1 (N.11.1) on 2026-11-22: release G (N.8.5, `v0.6.0`, pipeline #138) an
 | [§T](#t-the-tag-stage-8s-pass-4-with-stage-10s-passes-1-and-2) | the tag: Stage 8's pass 4 with Stage 10's passes 1 and 2, and Stage 9's 8.5 |
 | [§W](#w-the-governed-warehouse-stage-9s-pass-6) | the governed warehouse, Stage 9's pass 6: steps 1 to 4 done, step 5 run within §V |
 | [§V](#v-the-data-release-v040) | the data release, the tag `v0.4.2` since `v0.4.0` and `v0.4.1` stopped in their legs: Stage 9's 8.5 and 9.4 to 9.7, Stage 10's pass 3 and 6.1, Stage 8's ix |
-| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, N.6, the order of what is left on 2026-11-20, N.9 and N.10, the Sandbox days, and N.11, the release sittings |
+| [§N](#n-the-next-release-what-stages-8-9-and-10-leave) | what Stages 8, 9 and 10 leave, by sitting: the steps that need nothing up, the next release through Staging and Production (`EXC-22`, Stage 8 xxiv, Stage 9 xii, the Scheduler's placeholder), the warehouses, a Sandbox space, the deliberate exercises (xxiv on the adopted datashare in N.4a), what waits on something else, N.6, the order of what is left on 2026-11-20, N.9 and N.10, the Sandbox days, N.11, the release sittings, and N.12, the calendar of what is left, re-planned 2026-11-23 |
 | [§Q](#q-after-the-quotas-stage-10s-pass-3) | after the quotas: Stage 10's pass 3, now within §V |
 | [§R](#r-the-readings-at-the-end-of-every-sitting) | the readings at the end of every sitting |
 
@@ -1152,7 +1153,9 @@ and Stage 21's pass 5. Every step that needs GitLab is on one of two release sit
 where release G, N.8.3 and each application's first release had a sitting of their own. The order is the
 dependencies', and N.12 holds its calendar; the waiting list's "Sittings with the environment up" says what each
 closes, and its Dates bound items 4, 5, 9 and 10. Read again on 2026-11-22 with nothing up, after R1 and
-N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s first release.
+N.9's day 2: items 4 and 5 ran, item 7's day 2 ran, and R2 carries `app-dbt`'s first release. Items 1 to 12
+are done by 2026-11-23 and item 13 is N.5's; the order of what is left from that date, Stages 11 to 15 aside,
+is N.12.1's.
 
 1. **With nothing up, done 2026-11-17.** Release G's step 3, `production/studio/`, applied at 13:11 UTC on
    the user's word naming it, from the plan saved at 05:06 UTC from `main` at `80e996f5` (2 added, 2
@@ -2866,18 +2869,67 @@ USD per sitting. A sitting of six to eight hours bills about 0.48 USD/h before t
 Production's trial. The two replace the sittings of release G, of N.8.3 and of each application's first
 release, each of which raised the same hub, GitLab and egress.
 
-### N.12 The calendar and the overlaps inside each day, read 2026-11-20
+### N.12 The calendar and the overlaps inside each day, read 2026-11-23
 
-Written with nothing up on 2026-11-20, when the user asked for the plan that takes the least time to run.
-N.6's order stands; this section dates it and puts each day's waits beside other work. What N.12.3 lists
-was read or built that day, so no sitting spends time on it. Read again on 2026-11-22 with nothing up,
-after the first three metered days. N.12.5 holds what a later session of that day read and built with
-nothing up.
+Written with nothing up on 2026-11-20, when the user asked for the plan that takes the least time to run,
+and read again on 2026-11-22 after the first three metered days. Re-planned with nothing up on 2026-11-23,
+after R2 and 9.11's applies, at the user's request: *"Faça um replanejamento e atualize o schedule,
+considerando o que está pendente no plano, excluindo os stages 11, 12, 13, 14, 15."* N.12.1 gives every item
+Stages 5b, 6d, 6e, 6f, 6h, 17, 19, 20 and 21 owe a date or the act it waits on; Stages 11 to 15 have none
+here, and their rows in the waiting list stand. In N.12.1, N.12.2 and N.12.4 the sittings to come are
+first and the sittings that ran follow them. N.12.3 and N.12.5 hold what was read and built with nothing
+up on 2026-11-20 and 2026-11-22.
 
 #### N.12.1 The calendar
 
-The earliest dates, each sitting on the day after the one it waits on. A sitting may slip; the dates that
-bound it stay N.6's.
+The earliest dates, each sitting on the day after the one it waits on; a sitting may slip, and the dates
+that bound it are below the table. Every metered sitting starts on the user's word, and N.6's rule stands:
+what needs nothing up runs before the sitting, a sitting that needs no GitLab raises none, and an
+application reaches a Sandbox space as a tar built on the laptop. SB1 to SB3 are the Sandbox sittings, R3
+to R5 the release sittings after R1 and R2.
+
+| Date | Sitting | Raise | Waits on |
+|---|---|---|---|
+| 2026-11-24 | With nothing up. [user] Sandbox's free-trial reading (5b 0.3a); *Update project* in the projects whose spaces SB1 makes (`SUP-380`); `SUP-466`'s decision. [user and Claude] Stage 17's pass 6, the pages and their APIs, nothing created. [Claude] `sandbox/bedrock/`'s change after the decision, written, planned and merged; Stage 20 xxi's metadata comparison and `./aws/catalog.py`'s rows; `app-genai`'s `parse_answer` fix, tested and merged on `main` | — | nothing |
+| 2026-11-25 | SB1, N.6 item 7's later Sandbox sitting: Stage 17's pass 4, its endpoint kept up after it at 2.76 USD a day until its member deletes it (decision 6); 6e 6.4's window; Stage 17 10.4's reading 6 after it; 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` | for reading 6, `sandbox/bedrock/`'s change merged; without it reading 6 moves to SB2 |
+| 2026-11-26 | With nothing up: [Claude] Stage 21 xix, 6.5's bill by service | — | Cost Explorer holding 2026-11-22 and 23 |
+| 2026-11-26 | R3: `app-genai` `v0.1.1`, `parse_answer`'s fix, and `app-etl` `v0.7.1`, its tree without `--TRAIN_PATH` since #397, through both targets; a GitLab backup by hand; then [user] both targets' `shared/app-etl/work/train/` deleted (Stage 17 9.11) | `make hub-up`, `make gitlab-up BUILD=1`, `make up ENV=staging ONLY=egress GROUPS=bedrock-base`, `make up ENV=production ONLY=workloads-egress GROUPS=bedrock-base` | the fix merged on `main` |
+| 2026-11-27 to 2026-12-01 | With nothing up: [Claude] Stage 17 10.7 and 9.8's endpoint written, each step's readings first, then the code, the egress slices' endpoint sets (`bedrock-agent` for 10.7, `sagemaker.runtime` back for 9.8), the module tags the steps name, the lint's rule for the endpoint operator in `awsds-workflows`, the plans; [user] the threat-model amendment for the knowledge base's service role, then each apply by name | — | R3's merge requests, so that neither increment rides R3's tags |
+| 2026-12-02 | SB2: 10.7's loop in `app-genai-dev`, li's `dev` half; 9.8's endpoint in `app-ml-dev`; Stage 19 xiv over an external schema, if the user keeps it; reading 6, if SB1 left it | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,bedrock-base,bedrock-agent`, `redshift` added for xiv | the applies of 2026-12-01; xiv's table, the user's choice |
+| 2026-12-03 | R4: `app-genai` `v0.2.0` (10.7) and `app-ml` `v0.2.0` (9.8's endpoint, with Stage 9 xvii read in a target) through both targets; a GitLab backup by hand | R3's raise, both targets' egress with `GROUPS=bedrock-base,bedrock-agent` | SB2's loops |
+| 2026-12-04 to 2026-12-08 | With nothing up: [Claude] Stage 17 10.11 and 9.8's ML pipeline written, the readings first (liii, liv and lvii; the project role for a pipeline, and a parameter inside `VpcConfig`), then the agent's source and `build-agent-code`, the workflows, the `vpc-egress` tag with `bedrock-agentcore`, the execution role, the service-linked role, the boundary's statements and the lint's rule that reads a definition file (lxi); [user] the threat-model amendment for the execution role and `TM-28`'s tools, then each apply by name | — | R4 |
+| 2026-12-09 | SB3: 10.11's loop in `app-genai-dev` (lv, lvi) with 10.8's harness, its export and its evaluation job; 9.8's ML pipeline in `app-ml-dev` | `make hub-up`, `make up ENV=sandbox GROUPS=mwaa,bedrock-base,bedrock-agent,bedrock-agentcore` | the applies of 2026-12-08 |
+| 2026-12-10 | R5: `app-genai` `v0.3.0` (10.11) and `app-ml` `v0.3.0` (9.8's ML pipeline) through both targets; a GitLab backup by hand | R3's raise, both targets' egress with `GROUPS=bedrock-base,bedrock-agent,bedrock-agentcore` | SB3's loops |
+| 2026-12-11 | With nothing up: Stage 17's pass 8, the close; every stage whose items are done closes as Stages 8, 9 and 10 did (N.6 item 12) | — | R5 |
+| 2026-12-21 | The warehouse after the trial: the compute raised for an hour with no query (5b x's first half), then a query on `lab` (6h xii), then lowered | `make hub-up`, `make up ENV=sandbox GROUPS=redshift` | the trial's end on 2026-12-19 |
+| 2026-12-23 | With nothing up: [Claude] Cost Explorer for 2026-12-20 to 22: 5b x, 6h xii | — | the raise of 2026-12-21 |
+
+The order is the dependencies'. SB1 waits on nothing but reading 6's change. R3 carries no grant change,
+and both increments of SB2 and R4 wait on its merge requests, since each increment changes its application
+and its grants in one release (Stage 17 9.8). 10.11 follows 10.7, whose knowledge base its tool retrieves
+from, and 10.8's harness rides 10.11's loop, whose endpoint group it needs. 9.8's two increments depend on
+no step of pass 10, so each rides the sittings of a pass 10 increment: the endpoint with 10.7, the ML
+pipeline with 10.11. Stage 19 xiv needs a warehouse before 2026-12-19, so SB2 carries it, on a table the
+user chooses: 4.12's subscription made again and approved by the Governance Manager, a table of Sandbox's
+own, or xiv moot. The raise of 2026-12-21 exists for 5b x's first half and 6h xii alone; the user may make
+both moot, and 5b x's second half, the storage alone, is read from Cost Explorer either way.
+
+The dates that bound the calendar: 2026-12-18, when dbt Core 1.11's critical support ends with `app-dbt`
+`v0.1.1` on it (Stage 20 decision 6); 2026-12-19, when Sandbox's Redshift trial ends; the newest GitLab
+backup's expiry, 2026-12-24 for R2's and 2027-01-10 for R5's if it runs on 2026-12-10, after which no current
+backup is left while GitLab stays down; 2027-01-08, Sonnet 4.5's successor (6e decision 17); 2027-01-21,
+when Production's trial ends. Each Sandbox sitting bills at N.9.7's rates and each release sitting at
+N.11.3's, some 4 to 6 USD; pass 4's endpoint adds 2.76 USD a day while it stands, and 10.7's vector store
+and 10.11's runtime bill at idle what li and lvi read.
+
+What waits on the user with no date: 6d's 1.1, 1.2 and 6.1 (xvii); 6e 8.3's budget notification; 6f 11.12,
+when called; 6h x, a project's unwiring, which no step plans; Stage 19 decision 17 (d)'s report, deferred;
+Stage 20 7.1, keep or delete, a delete of the lineage events needing an identity the domain admits
+(`SUP-401`); the two retired workflows' log groups (Stage 17 9.11). N.5's items wait on their triggers, and
+each release sitting reads the newest Amazon Linux release against the runners' image first (Stage 8
+xxvii's plan half).
+
+The sittings that ran from 2026-11-21 to 2026-11-23, as the calendar of 2026-11-20 dated them:
 
 | Date | Sitting | Raise | Waits on |
 |---|---|---|---|
@@ -2891,7 +2943,6 @@ bound it stay N.6's.
 | 2026-11-23, ran | Stage 17 10.5 with nothing up (N.6 item 8), its applies the same day | — | 10.4's first answer from Nova Lite, read 2026-11-22 |
 | 2026-11-23, ran | N.10's day 2's rest: Stage 21's pass 5 with rollback items 1, 5 and 6, the lowering from 18:12:50 to 18:23:12 UTC; pass 2's data product deleted 2026-11-23; nothing left for 2026-11-25 | `make up ENV=sandbox` in the user's raise: pass 5 needs no warehouse | nothing: day 1 ran 2026-11-22 |
 | 2026-11-23, ran, beside the row above | R2 (N.11.2): `app-dbt` `v0.1.1`, `app-ml` and `app-genai` `v0.1.0` and `app-etl` `v0.7.0` through both targets, the lowering ending 19:53:59 UTC | one command of the user's for both: `make hub-up`, `make up ENV=sandbox`, `make gitlab-up BUILD=1`, Staging's and Production's egress with `GROUPS=bedrock-base` | 10.5's applies and N.10's day 2's revocation of Stage 20 5.0's subscription, both done 2026-11-23 |
-| 2026-11-25 | N.6 item 7's later Sandbox sitting: Stage 17's pass 4, 6e 6.4's window, then Stage 17 10.4's reading 6 outside it, 6d's remainder last | `make hub-up`, `make up ENV=sandbox GROUPS=bedrock-base,mwaa` (N.12.2) | `SUP-466`'s decision and `sandbox/bedrock/`'s change merged, for reading 6 |
 
 Then 9.11's estate pull request with nothing up (N.6 item 11), brought forward from 2026-11-24 to 2026-11-23
 by the user. `app-dbt`'s release ran in R2
@@ -2917,6 +2968,27 @@ step names the other's result. A trail or a log is read once per block, after it
 ([`log-debugging.md`](log-debugging.md)), never after each act. A run, a job or a pipeline that takes
 minutes starts before the step that does not need it.
 
+- **SB1** (2026-11-25): one raise, `make hub-up` then `make up ENV=sandbox GROUPS=bedrock-base,mwaa`,
+  `mwaa` for reading 6's two workflows (N.6 item 7). Pass 4's endpoint, minutes to create, starts first and
+  stays up after the sitting (Stage 17 decision 6), and pass 6's pages, if 2026-11-24 left them, fill its
+  creation. 6e 6.4's hour admits no other Bedrock call in the account, so reading 6 follows it, after
+  `sandbox/bedrock/`'s change is merged. 6d's remainder comes last, Stage 17's spaces stopped, so 7.5's
+  window reads no terminal traffic of Claude's, and 6.1 (viii)'s reading and the day's records fill 7.7's
+  thirty minutes.
+- **R3, R4 and R5**: a release's legs run an hour or more each, and the sitting's other acts sit between
+  them, as R1's and R2's did. Before each sitting Claude reads the newest Amazon Linux release against the
+  runners' image (N.5), and the day of each tag, before it, the gates' `pip-audit` on each application whose
+  pipeline runs it (Lesson 77). A GitLab act or a persona sign-in goes to another browser profile, since a
+  sign-in as another Identity Center user ends the portal session. The backup by hand comes last, before
+  `make gitlab-down`.
+- **SB2 and SB3**: the two applications' loops run side by side, a space each in `app-genai-dev` and
+  `app-ml-dev`, each application deployed from its tar before it runs (Lesson 90). A step that waits on a
+  create, the endpoint's `InService`, the ingestion job or the runtime's `READY`, starts before the other
+  project's step that does not need it. SB2's warehouse block, if xiv keeps its place, takes N.10's day 1
+  rule on the usage limit: on a breach its steps wait for the user's word while the loops run on.
+
+The days that ran:
+
 - **N.9's day 1** (N.9.3): `make up ENV=sandbox GROUPS=mwaa` runs right after `make hub-up`, beside
   Claude's re-plan and `start-associations-once`, since the render waits on no Sandbox slice; the spaces are
   created at once; 4.7's three runs are launched before Stage 20's sitting A, and Claude reads their trail
@@ -2937,12 +3009,6 @@ minutes starts before the step that does not need it.
 - **R1 and R2**: a release's legs run an hour or more each. R1's GitLab chores (N.11.1 step 3) filled the
   first leg's wait on 2026-11-22; N.6 item 6 needs nothing up and runs outside any sitting. R2's legs on
   2026-11-23 hold the user's words for N.10's day 2's rest, whose portal acts are Claude's (N.12.1).
-- **N.6 item 7's later Sandbox sitting**: one raise, `make hub-up` then `make up ENV=sandbox
-  GROUPS=bedrock-base,mwaa`, `mwaa` for reading 6's two workflows (N.6 item 7). Pass 4's endpoint, minutes
-  to create, starts first and stays up after the sitting (Stage 17 decision 6). 6e 6.4's hour admits no
-  other Bedrock call in the account, so reading 6 follows it, after `sandbox/bedrock/`'s change is merged.
-  6d's remainder comes last, Stage 17's spaces stopped, so 7.5's window reads no terminal traffic of
-  Claude's, and 6.1 (viii)'s reading and the day's records fill 7.7's thirty minutes.
 
 #### N.12.3 What was read and built with nothing up on 2026-11-20
 
@@ -3012,7 +3078,7 @@ The waiting list holds each as a row. In the calendar's order:
 
   All taken by day 1, read 2026-11-21: Remote - SSH 0.128.0 and AWS Toolkit 4.20.0 with both settings,
   `proxy-on` in `~/.zshrc`, the tunnels `mbp` and `mbp-split-tunnel` in the WireGuard app.
-- **Before 6d's remainder**, last in N.6 item 7's later Sandbox sitting (N.12.1): nothing new; in it, step 12's
+- **Before 6d's remainder**, last in SB1 (N.12.1): nothing new; in it, step 12's
   item 1 makes the owner's remote-access space anew, `code` deleted on 2026-11-23 (6d's log). Chrome's
   proxy flag is typed in the window itself
   ([`client-vpn-proxy-configuration.md`](client-vpn-proxy-configuration.md) §4.1 [c]).
@@ -3038,11 +3104,20 @@ The waiting list holds each as a row. In the calendar's order:
 - **Before R2**: Stage 17 10.5's acts (above); the answer on GitLab's local user's password came on
   2026-11-22 (Stage 19's log). #321 was merged by the user on 2026-11-22 at 13:28:54 UTC as `81d70158`
   (N.11.1 step 6), `make check` and `--self-check` passing on that commit.
-- **Before N.6 item 7's later Sandbox sitting**: `SUP-466`'s decision, then `sandbox/bedrock/`'s change
-  written, planned and merged with nothing up, for Stage 17 10.4's reading 6; without it the reading stays
-  out of the sitting. The spaces of 2026-11-22 in `app-ml-dev` and `app-genai-dev` were deleted on 2026-11-23 (6d's log): the
+- **Before SB1**: *Update project* in the projects whose spaces it makes, so *Create space* offers
+  the idle timeout's range (`SUP-380`); `SUP-466`'s decision, then `sandbox/bedrock/`'s change
+  written, planned and merged with nothing up, for Stage 17 10.4's reading 6; without it the reading moves
+  to SB2. The spaces of 2026-11-22 in `app-ml-dev` and `app-genai-dev` were deleted on 2026-11-23 (6d's log): the
   sitting makes each anew and copies its application from `examples/` on `main`, deployed before it runs
   (Lesson 90).
+
+- **Before R3**: `parse_answer`'s fix merged on `main`. After `app-etl`'s Production leg, both targets'
+  `shared/app-etl/work/train/` deleted, an act the user names (Stage 17 9.11).
+- **Before SB2 and R4**: the threat-model amendment for 10.7's service role, then each apply by name; xiv's
+  table, or xiv moot.
+- **Before SB3 and R5**: the threat-model amendment for 10.11's execution role and `TM-28`'s tools, then
+  each apply by name.
+- **Before the raise of 2026-12-21**: the user's word on it, or 5b x's first half and 6h xii made moot.
 
 #### N.12.5 What was read and built with nothing up on 2026-11-22, after R1
 
