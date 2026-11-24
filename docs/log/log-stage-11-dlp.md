@@ -668,3 +668,136 @@ UTC.*
   and [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) opened at 03:42:55 UTC. Its merge is
   the user's. An application takes the rules with its next pin of `awsds-workflows` (Stage 8 5.6's rule);
   `4401f91` and the template's `196acee` ask for isolation until then.
+
+## 2026-11-24 — Step 7.4: decision 14's applies and the battery
+
+- **[The user] The merges**: [PR #411](https://github.com/felipenoris/AWS-DataScience/pull/411) at 04:27:36
+  UTC as `bfc091f9`, and `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30)
+  at 04:27:15 UTC as `8b14f6d` (step 7.5).
+- **[Claude] The merges read**: on `main` at `676800db`, `sagemaker-denies` carries no
+  `DenySageMakerJobsWithoutNetworkIsolation` and the five callers pin `sagemaker-denies-v0.4.0` and
+  `sagemaker-prereqs-v0.16.0`; `awsds-workflows`' `lint.py` names `EnableNetworkIsolation` only to leave it
+  to the task. The branch `claude/stage-11-7.4-applies` starts at `676800db`.
+- **[Claude] The token**: the `awsds` session's `expiresAt` read 03:58:11 UTC at 04:29, behind the clock
+  (`SUP-465`). **[The user]** signed in again, and the token read 05:19:24 UTC at 04:42.
+- **[Claude] The plans from `main`**: a first run at 04:42:26 without `AWS_PROFILE` stopped in every slice on
+  *"No valid credential sources found"*, the IMDS fallback that `terraform-changes.md` reads as the absence
+  of a profile. With each slice's profile, from 04:43:19, the saved plans read `identity/sso/` 6 to change,
+  `identity/org-policies/` 1, `sandbox/sagemaker/` 1, `staging/studio/` 2 and `production/studio/` 2, each
+  removing the statement once per policy and adding nothing: the SCP's `policy_document_bytes` 2808 to 2493
+  with its description, and in each target `person_session`'s document read during apply (`SUP-356`).
+- **[The user] The authorization**, answering a question that named the five slices and the battery:
+  *"Autorizo os 5 e bateria"*.
+- **[Claude] The peers told** before the first apply: *Schedule revision e preparação paralela* and
+  *Worktrees para apagar*, the two sessions listed.
+- **[Claude] The applies**, each from its saved plan with `-input=false`:
+
+  | Slice | Profile | UTC | Result |
+  |---|---|---|---|
+  | `identity/sso/` | `awsds-infra-identity` | 04:45:42 to 04:46:07 | 6 changed, the six persona sets' inline policies |
+  | `identity/org-policies/` | `awsds-infra-identity` | 04:46:17 to 04:46:26 | 1 changed, `awsds-org-scp-ou-workloads` (`p-83t232f4`) |
+  | `sandbox/sagemaker/` | `awsds-infra-sandbox-1` | 04:46:35 to 04:46:47 | 1 changed, the boundary |
+  | `staging/studio/` | `awsds-infra-staging` | 04:46:47 to 04:47:00 | 1 changed, the boundary; `person_session` read with no diff |
+  | `production/studio/` | `awsds-infra-prod` | 04:47:00 to 04:47:15 | 1 changed, as Staging |
+
+- **[Claude] The battery**, `./aws/probes/scp-battery.py --phase ou`, 04:47:34 to 04:49:13, exit 0: *"62 as
+  expected, 0 unexpected, 5 not measured"*. In Production, *"workloads: CreateTrainingJob not isolated still
+  authorized (Stage 11 decision 14 contrast)"* `ALLOWED` at `reached-authorization`, and the processing job
+  without isolation authorized as before; the processing job off the VPC, above the ceiling, without
+  inter-container encryption or without the volume key, and the training job above the ceiling, `DENY-SCP`
+  on `p-83t232f4`. Verification xi: yes.
+- **[Claude] The checks**: `make check` and `make check-ou` pass. `./aws/deploytargets.py` reads `DT-11`
+  pass, the `Workloads` document with its five job Sids, and exits 1 on the persona sessions not signed in
+  (its section 14); `./aws/sandbox-ml.py` exits 0 with no `FAIL` row.
+- **[Claude] Records**: 7.4, 7.5 and the `Status` row; `TM-38` and the threat model's waits;
+  `AWS_STATE.md` §C's row removed; the AI/ML, application and battery runbooks; Stage 9's 3.1; Stage 20's
+  sentence on Stage 17's training jobs; CLAUDE.md and the references. The waiting list's row leaves, and a
+  decision joins it: a PUBLIC AgentCore runtime in Sandbox, passed on by the orchestrating session from
+  Stage 17's reading of 2026-11-24.
+- **[Claude] The package's texts**: on the user's *"Autorizo push e PR"*, `awsds-workflows`
+  [PR #31](https://github.com/felipenoris/awsds-workflows/pull/31), `71ee437` on `8b14f6d`, opened at 05:12:05
+  UTC, dates these applies in its guide, lab notes, memory and `CLAUDE.md`, which said the change was written
+  and not applied. `uv run pytest` read 423 passed, 2 skipped and the 7 `prepare-offline` failures of 7.5's
+  entry; `ruff` and the `pdoc` site clean. Its merge is the user's.
+
+## 2026-11-24 — Step 7.7: the creates that carry a network configuration outside `DenySageMakerJobsOffVpc`
+
+- **[The user] The request**: *"Sim, fazer a 7.7"*.
+- **[Claude] The SDK's model**, botocore 1.44.10 (API `2017-07-24`, 438 operations), was walked offline for
+  every member that names a network. 20 operations carry a `VpcConfig`: the statement's six and the step's
+  fourteen, and no other. Six carry a network in other members: `CreateDomain`, `CreateNotebookInstance`,
+  `CreateWorkforce`, `UpdateWorkforce`, `UpdateDomain` and `UpdateCluster` (`OverrideVpcConfig`). Of the
+  fourteen:
+  - the four job definitions and both monitoring-schedule calls take an `ImageUri`;
+  - `CreateOptimizationJob` takes an image per optimization;
+  - `CreateEndpointConfig` takes a `VpcConfig`, an `ExecutionRoleArn` and `EnableNetworkIsolation`.
+
+  `CreateInferenceComponent`, which is not on the list, takes `Specification.Container.Image` beside an
+  optional `ModelName`, and no network member.
+- **[Claude] The Service Reference**, v1.5:
+  - `sagemaker:VpcSubnets` and `sagemaker:VpcSecurityGroupIds` are on `CreateCluster`,
+    `CreateEndpointConfig`, the four job definitions, both monitoring-schedule calls, `CreateTrainingSession`
+    and `UpdateCluster`.
+  - `sagemaker:NetworkIsolation` is on the job definitions, the schedule calls and `CreateEndpointConfig`.
+  - No VPC key is on `CreateAIBenchmarkJob`, `CreateCompilationJob`, `CreateInferenceRecommendationsJob`,
+    `CreateOptimizationJob` or `CreateLabelingJob`. The last carries `sagemaker:WorkteamArn`,
+    `sagemaker:WorkteamType` and the two key ARNs.
+  - `CreateInferenceComponent` carries `sagemaker:ModelArn`.
+
+  The reading of 2026-10-16 in `REFERENCES.md` found no VPC key on `CreateEndpointConfig`.
+- **[Claude] AWS's pages**: six, read through a page-reading agent, every one loaded.
+  - `CreateEndpointConfig`'s reference ties `VpcConfig`, `ExecutionRoleArn` and `EnableNetworkIsolation` to
+    no kind of endpoint, and never names an inference component.
+  - The component's specification marks `Container` and `ModelName` optional, and names neither the
+    container's role nor its network.
+  - Hosting in a VPC covers `CreateModel` alone.
+  - Network isolation: a container is internet-enabled by default. An isolated one makes no outbound call
+    and receives no credentials, and SageMaker moves its data with the execution role.
+  - The recommender's input configuration says nothing of the network its endpoints take without a
+    `VpcConfig` or with a model name.
+- **[Claude] The token**: the `awsds` session's token expired at 05:19:24 UTC. Sandbox's simulation ran on
+  the CLI's cached role credentials (`SUP-465`); Staging's and Production's profiles failed until **[the
+  user]** signed in again: *"Login feito"*.
+- **[Claude] The simulation**: `iam simulate-principal-policy` as every `datazone_usr_role_*`, resource `*`
+  (`SUP-008`, `SUP-009`). The context held the Region, the organization, the project tag as request and
+  resource tag, `ml.m5.large` and every role tag as a principal tag, and no VPC key. Sandbox Account 1's six
+  roles ran 05:39:14 to 05:39:23 UTC; Staging's and Production's one each ran 07:07:26 to 07:07:32. The
+  results were identical in the three accounts:
+
+  | Action | Decision | By |
+  |---|---|---|
+  | `CreateEndpointConfig`, `CreateInferenceRecommendationsJob`, `CreateInferenceComponent`, `CreateEndpoint` | `allowed` | `SageMakerStudioProjectRoleMachineLearningPolicy` v48's `SageMakerCreatePermissions`, conditioned |
+  | the other twelve of 7.7's list, and `UpdateCluster` | `implicitDeny` | no statement; the organization and the boundary allow |
+  | `CreateProcessingJob`, `CreateModel` (controls) | `explicitDeny` | the boundary in Sandbox, the `Workloads` SCP in the targets |
+
+  With `sagemaker:VpcSubnets` and `sagemaker:VpcSecurityGroupIds` in the context, `CreateModel` read
+  `allowed` in the three accounts (07:08:15 to 07:08:23), so its deny comes from the key's absence. The
+  operations with a network in other members ran 07:14:54 to 07:15:02:
+  - `UpdateDomain`, `CreateWorkforce`, `UpdateWorkforce` and `UpdateCluster`: `implicitDeny` everywhere;
+  - `CreateDomain`: `implicitDeny` in Sandbox, `explicitDeny` by the SCP in the targets;
+  - `CreateNotebookInstance`: `explicitDeny` by the SCP everywhere.
+- **[Claude] The objects**: `list-inference-components`, `list-inference-recommendations-jobs`,
+  `list-endpoint-configs` and `list-endpoints` in `us-west-2` at 07:11 UTC read none in any of the three
+  accounts. A `grep` over the stages, the runbooks and `examples/` finds no plan that uses a component or
+  the recommender.
+- **[Claude] The finding**: a project role may run a container whose image it chooses, through an inference
+  component on an endpoint configuration without a `VpcConfig`. That path never calls `CreateModel`, the
+  only create where the statement requires subnets. Inference Recommender provisions endpoints of its own,
+  under an entry with no key a condition could test. Unmeasured: whether SageMaker accepts a component with
+  an image and no model, where its container runs, which credentials it holds, and whether a component that
+  names a model takes the model's `VpcConfig`. The twelve `implicitDeny` creates are held off by AWS's
+  managed policies alone (Lesson 72). `TM-39` is open; decision 15 is the user's, recommended (b).
+- **[Claude] Records**: 7.7 and the `Status` row; decision 15; `TM-39`, its channel row, `TM-38`'s trigger and
+  the threat model's waits; the AI/ML runbook's §C; CLAUDE.md; the waiting list; the references; this log's
+  index row.
+
+## 2026-11-24 — Decision 15: the inference paths outside `DenySageMakerJobsOffVpc` accepted
+
+- **[The user] The decision**: *"(d)"*, against the recommendation of (b). The channel is accepted
+  unmeasured, and nothing is applied.
+- **[Claude] Records**: decision 15, 7.7 and the `Status` row; `TM-39`'s state and triggers, its channel row
+  and the threat model's waits; the AI/ML runbook's §C; `POLICIES.md`'s row for `DenySageMakerJobsOffVpc`;
+  CLAUDE.md; the waiting list, whose row is removed. `TM-39`'s trigger *"an endpoint configuration without a
+  `VpcConfig` in any account"* became a component or a recommender job in any account, or a plan that builds
+  on either: Stage 17's plan gives its endpoint configuration no `VpcConfig` and its model one, so the old
+  trigger would fire at pass 4's endpoint. The module's comment waits for the module's next tag.

@@ -377,9 +377,9 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   `DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging and Production, applied 2026-11-17 (the
   persona sets 16:01, the `Workloads` SCP 16:02, Sandbox's boundary 16:07, the targets' 16:08 and 16:09
   UTC). [Stage 11](../stages/stage-11-dlp.md) decision 14, taken 2026-11-24, removes the statement for
-  the training, tuning and AutoML jobs and the model in the same accounts, as `sagemaker-denies-v0.4.0`;
-  until that stage's step 7.4 applies it, the persona sets, the `Workloads` SCP and the boundaries still
-  refuse those requests without isolation. A container without isolation runs in the project's subnets
+  the training, tuning and AutoML jobs and the model in the same accounts, as `sagemaker-denies-v0.4.0`,
+  applied 2026-11-24 (the persona sets and the `Workloads` SCP 04:46, Sandbox's boundary 04:46, the
+  targets' 04:47 UTC). A container without isolation runs in the project's subnets
   with its execution role's credentials and reaches what a worker task reaches: a processing job
   (`TM-35`), a training, tuning or AutoML job, and a model's serving container, for every caller of its
   endpoint (`TM-38`). Isolation is the application's choice, job by job: `app-ml`'s two `prepare` tasks,
@@ -387,10 +387,18 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   alone. The lint's rule `job` leaves it to the task from `awsds-workflows` `1a50ceb` (Stage 20 step
   6.4), in `4401f91`, the pin of `app-dbt`, `app-ml` and `app-genai`; at `app-etl`'s `196acee` it still
   refuses a processing request without it. The rules `treino` and `modelo` refuse a training or model
-  request without it at every pin; `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), unmerged, leaves it to the task (Stage 11
-  step 7.5).
+  request without it at every pin; `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), merged 2026-11-24 as `8b14f6d`, leaves it to the
+  task from an application's next pin (Stage 11 step 7.5).
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on `DenySageMakerJobsOffVpc`'s list.
+- **An inference component and an Inference Recommender job are outside every statement** ([Stage
+  11](../stages/stage-11-dlp.md) step 7.7, read 2026-11-24, `TM-39`). A project role may create an
+  endpoint configuration without a `VpcConfig`, an endpoint on it, an inference component and a
+  recommender job (simulated in Sandbox, Staging and Production). A component's specification takes an
+  image of its own beside an optional model name, so its container need not come from a `CreateModel`. The
+  recommender's Service Reference entry has no VPC key. Where such a container runs and what it reaches is
+  unmeasured, and the user accepted the channel on 2026-11-24 (Stage 11 decision 15 (d)). An application
+  that uses either reopens `TM-39`.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
   training job and takes no network, isolation or key parameter (`SUP-265`, measured 2026-08-27 and
   2026-09-10).
@@ -763,8 +771,8 @@ model while `check_if_model_exists` keeps its default; and `action_if_model_exis
 `timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, in
 `4401f91`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4), and the
 rule `operador` refuses the native notebook operator by name since `4401f91` (Stage 8 5.6). The rules
-`treino` and `modelo` ask for `EnableNetworkIsolation: true` at every pin, until an application pins the
-merge of `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) (Stage 11 step 7.5). The
+`treino` and `modelo` ask for `EnableNetworkIsolation: true` at every pin, until an application pins
+`8b14f6d`, the merge of `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) (Stage 11 step 7.5). The
 endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
 that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
 (verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.

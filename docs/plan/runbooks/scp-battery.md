@@ -439,9 +439,10 @@ error, never as the deny.
 | `create-endpoint-config` with a `ServerlessConfig` variant | `AccessDenied` | `DenySageMakerServerlessInference` |
 | `create-endpoint-config` with an `ml.m5.large` variant | `ValidationException` (authorized) | none: the contrast for the serverless row |
 
-**The training row without isolation reads `FAIL` until `identity/org-policies/` applies
-`sagemaker-denies-v0.4.0`'s document** (Stage 11 step 7.4): the attached document denies the call until
-then. The processing row without isolation reads authorized before that apply and after it.
+**The training row without isolation reads authorized since `identity/org-policies/` applied
+`sagemaker-denies-v0.4.0`'s document** (Stage 11 step 7.4, 2026-11-24 at 04:46 UTC, read by the
+`--phase ou` of 04:47); before that apply it read `FAIL`. The processing row without isolation reads
+authorized before that apply and after it.
 
 **A `ValidationException` on a deny row records it untested, not passed** (the box above), and here no
 retry is safe: a role that exists would let an authorized call create a job, which makes the row

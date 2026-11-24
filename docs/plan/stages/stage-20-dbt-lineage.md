@@ -2308,7 +2308,8 @@ endpoint leaves both slices' lists by a commit, taken by the next `make up`.
 - **Every stage whose jobs or checks carry the isolation statement** (pass 4):
   [9](stage-09-deployment-targets.md) step 3.1's design note and 3.5's document,
   [10](stage-10-orchestration-promotion.md)'s rules for a processing task,
-  [6i](stage-06i-sandbox-orchestration.md)'s `SO-5`, and 17's training jobs, which keep the statement.
+  [6i](stage-06i-sandbox-orchestration.md)'s `SO-5`, and 17's training jobs, which kept the statement
+  until [Stage 11](stage-11-dlp.md) step 7.4 removed it on 2026-11-24.
   Pass 4 edits `identity/sso/`, `identity/org-policies/`, `sandbox/sagemaker/`, `staging/studio/` and
   `production/studio/`: a session that holds one of those slices is told first.
 - **6f's follow-up**: `GOVERNANCE.md` §Data lineage and the feature table's Lineage cell, rewritten at
