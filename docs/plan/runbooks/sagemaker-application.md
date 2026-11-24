@@ -503,9 +503,10 @@ settles, so the down runs again.
 
 **What the project gives, and what it does not.** The project role runs every task, inside the project's
 network and under the project key, with the D13 boundary on every job: `NetworkConfig` with the two
-private subnets and the project's group, `EnableNetworkIsolation` on every job but a processing job
-(Stage 20 decision 13, applied 2026-11-17), inter-container encryption, the project key on the volume
-and the output, an instance type inside the ceiling. These are the same
+private subnets and the project's group, inter-container encryption, the project key on the volume and
+the output, an instance type inside the ceiling. Network isolation is the job's own choice: a processing
+job's since Stage 20 decision 13 (applied 2026-11-17), a training job's and a model's once Stage 11 step
+7.4 applies that stage's decision 14. These are the same
 settings a job needs in Production, which is why a workflow written here runs there unchanged. The
 operator's first describe of a job name needs the grant `sandbox/workflows/` holds for the project role,
 once per project and planned after the project exists, since the slice reads its role (§S; §G of
@@ -893,9 +894,11 @@ reason beside it:
   its own.
 - A SageMaker job's `config` is written whole, with the D13 settings the portal's forms cannot express:
   `NetworkConfig` with `{env.SUBNET_AZ1}`, `{env.SUBNET_AZ2}` and `{env.PROJECT_SG}`,
-  `EnableNetworkIsolation: true` (the boundary asks it of every job but a processing job; the lint's `job`
-  rule at the template's pin `196acee` asks it of a processing task too, and from `1a50ceb`, Stage 20
-  step 6.4, leaves it to the task),
+  `EnableNetworkIsolation: true` (the template's choice, which no statement asks of a processing job since
+  Stage 20 decision 13, nor of a training job or a model from Stage 11 step 7.4; the lint's `job` rule at
+  the template's pin `196acee` asks it of a processing task, and from `1a50ceb`, Stage 20 step 6.4, leaves
+  it to the task, while `treino` and `modelo` ask it at every pin until `awsds-workflows` PR #30's merge,
+  Stage 11 step 7.5),
   `EnableInterContainerTrafficEncryption: true`, `VolumeKmsKeyId` and the output's `KmsKeyId`
   `{env.PROJECT_KEY_ARN}` (an output without it lands under the S3-managed key, `EXC-22`), an `InstanceType` of the ceiling the lint receives (`ml.t3.medium` to `ml.c5.xlarge`
   today), `ImageUri` `{env.JOB_IMAGE_URI}` or a `TrainingImage` of an algorithm repository the lint
@@ -1301,7 +1304,7 @@ for each kind of task in each stage; where one term is missing, the reach is abs
 | From | In `dev` (Sandbox) | In Staging and Production |
 |---|---|---|
 | a Glue task | the project role on the project's two Glue network connections, under the project key; reads and writes the project's `shared/<app>/` and the product table in its database; the lake's tables only through a subscription fulfilled for the project, through their resource links in the project's `DataLake` database (`curated.trades` in `eighth-experimentation` since 6f 11.9, 2026-10-26), and `app-etl-dev` holds none | the project role on the project's two Glue network connections, under the project key, every other bucket of the account fenced off; reads and writes the project's `shared/<app>/` and `app_etl`; no lake grant until item 32 (Stage 19 decision 22 (a)); in Production, `app-etl-load-<project id>` connects to the warehouse over JDBC through the `redshift-serverless` endpoint as `IAMR:user-project@d7qcazihvr3s7k` |
-| a training job or a model | the project role, the project's subnets and group, network isolation; the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the project role, the project's subnets and group (`SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`), network isolation, the project key; the image by the release's digest; inputs and outputs staged from the project prefix; no lake bucket, ever (D13) |
+| a training job or a model | the project role, the project's subnets and group, network isolation when the request sets it, as `app-ml`'s do; without it (Stage 11 decision 14), what a processing job without it reaches, and a model's container holds the role's credentials for every caller of its endpoint (`TM-38`); the image pulled by SageMaker's side from Production's registry by digest; inputs and outputs staged by the platform from the project prefix | the project role, the project's subnets and group (`SUBNET_AZ1`, `SUBNET_AZ2`, `PROJECT_SG`), network isolation when the request sets it, the project key; without it, what a processing job without it reaches (`TM-38`); the image by the release's digest; inputs and outputs staged from the project prefix; no lake bucket, ever (D13) |
 | a processing job | as a training job when it sets `EnableNetworkIsolation: true`, as the template's jobs do; without it (Stage 20 decision 13, applied 2026-11-17) the container holds the project role's credentials and reaches what a worker task reaches: the VPC's endpoints and the proxy's allow-list (`TM-35`) | as a training job when isolated; without it, the project role's credentials, the VPC's interface endpoints and gateways, and a proxy that refuses the `Workloads` ranges every name (read 2026-11-11); no lake bucket, ever (D13) |
 | a Python or Bash task on the worker | the project role in the project's network: AWS through the VPC endpoints (DataZone among them, the template's `publish`), S3 through the gateway endpoint, no internet, no proxy | the project role in the project's network, the subnets, group and key `workflow.create` reads from the project (`SUP-285`): the interface endpoints of `workloads-egress/` (`egress/` in Staging), `datazone` among them, the S3 gateway; no internet, no proxy |
 | Athena | a person in the project's query editor, as the project role on the project's enforced workgroup: the project's tables; the lake's tables the project subscribed to, through their resource links (6f 11.10, 2026-10-26) | the persona through `awsds-prod-athena` on the lake's `public` and `internal` tables, from any network; Staging's persona set holds no Athena action; the product table's Athena read is unwritten (Stage 19 decision 24 (a)); no task in the template calls Athena |

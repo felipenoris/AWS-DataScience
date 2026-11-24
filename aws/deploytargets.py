@@ -118,7 +118,6 @@ WORKLOADS_DOC = "awsds-org-scp-ou-workloads"
 JOB_DENY_SIDS = (
     "DenySageMakerJobsOffVpc",
     "DenySageMakerInstanceCeiling",
-    "DenySageMakerJobsWithoutNetworkIsolation",
     "DenySageMakerJobsWithoutInterContainerEncryption",
     "DenySageMakerJobsWithoutVolumeEncryption",
     "DenySageMakerServerlessInference",

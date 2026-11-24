@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | **Pass 0's readings are taken and pass 1 is written, not applied** (2026-10-18). [`threat-model.md`](../threat-model.md) drafts 3.1 to 3.7 and 2.1.2's resource types as `TM-01`..`TM-21`, and `TM-22`..`TM-24` carry the channels the upstream readings of 2026-10-18 opened: an ODBC driver reading project data to a laptop, the SageMaker Data Agent, a project connection to an Iceberg REST catalog outside the organization (PR #189). AWS's pages answered their mechanisms on 2026-10-20: the driver queries as the project role, the agent's calls are the project role's and AWS names a deny and a domain switch that stop it, and no IAM key reaches a connection's type; decision 12 gained Lake Formation's RLS policies the same day, which narrow an all-rows `SELECT` where a data cells filter does not. The outside column is the user's Audit snapshot of 2026-10-17 (2.1.1), whose one active finding beyond `INV-16`'s shape, the Sandbox project key, is `TM-21` and `EXC-18`: `sagemaker-prereqs-v0.6.0` narrows it, applied on `sandbox/sagemaker/` on 2026-10-19 with Stage 17's 1.3, and a snapshot in Audit reading the finding `RESOLVED` closes it. Read on 2026-10-18 ([log](../../log/log-stage-11-dlp.md)): the lake CMK's decrypt list (2.1.5's key half), RAM refusing outside principals on the lake shares (`allowExternalPrincipals: false`), and `TM-17`'s identity half, where the project role's managed policy admits `sqs:SendMessage` to any other account's `airflow-celery-*` queue; `./aws/dlp.py` took its before-run and gained `DP-8` for 5.6. Pass 1's filters and filtered grants create nothing until the user names the filtered principal in Sandbox (step 2's choice, same log). The inside column and the residuals of steps 4 to 6 are pending. 3.1's re-reading opened `TM-01` (a `dstdomain` without `-n` matching an address by its reverse name) and `TM-03` (hosts third parties control under the compute plane's `.amazonaws.com` entry). **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch, `/awsds/prod/proxy` in Production, as the evidence its threat model reasons over; it has no export until step 5.1 settles the mechanism (6c decision due 4). **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half. **`TM-01` was measured on 2026-11-21** with the probe the user chose on 2026-11-17 over the `-n` flag ([log](../../log/log-stage-11-dlp.md)): from a Sandbox space the proxy admitted `CONNECT 54.213.164.60:443`, whose reverse record ends in `.amazonaws.com`, with `200 TCP_TUNNEL`, and refused a CloudFront address with `403 TCP_DENIED`. The user decided `-n` on the allow-list planes the same day, and it is written in `render-squid.sh.tftpl`, read apart from the names by `./aws/proxy.py`, and planned against the live hub, `1 to add, 2 to change, 1 to destroy` (PR #351). **`TM-01` is controlled since 2026-11-22**: the hub sitting applied `-n` with the proxy's replacement at 23:51 UTC on 2026-11-21, `./aws/proxy.py --on-host` reads it under FLAGS, and at 00:20:41 UTC the user's re-probe read `54.213.164.60` `403 TCP_DENIED` with its reverse record unchanged, beside `pypi.org`'s `200` from the same space. **`TM-28` is controlled since 2026-11-23**: the `Interactive` OU's SCP carries `DenyAgentCoreBuiltInTools`, the layer the user chose, and both targets' fence `agent-registry` (6d decision 17), each applied on the user's word at 00:46 UTC and re-planned `No changes`; the battery's `--phase ou` read 62 as expected, 0 unexpected, 5 not measured, and the simulation the six tool actions `explicitDeny` by the organization ([log](../../log/log-stage-11-dlp.md)). |
+| **Status** | **Pass 0's readings are taken and pass 1 is written, not applied** (2026-10-18). [`threat-model.md`](../threat-model.md) drafts 3.1 to 3.7 and 2.1.2's resource types as `TM-01`..`TM-21`, and `TM-22`..`TM-24` carry the channels the upstream readings of 2026-10-18 opened: an ODBC driver reading project data to a laptop, the SageMaker Data Agent, a project connection to an Iceberg REST catalog outside the organization (PR #189). AWS's pages answered their mechanisms on 2026-10-20: the driver queries as the project role, the agent's calls are the project role's and AWS names a deny and a domain switch that stop it, and no IAM key reaches a connection's type; decision 12 gained Lake Formation's RLS policies the same day, which narrow an all-rows `SELECT` where a data cells filter does not. The outside column is the user's Audit snapshot of 2026-10-17 (2.1.1), whose one active finding beyond `INV-16`'s shape, the Sandbox project key, is `TM-21` and `EXC-18`: `sagemaker-prereqs-v0.6.0` narrows it, applied on `sandbox/sagemaker/` on 2026-10-19 with Stage 17's 1.3, and a snapshot in Audit reading the finding `RESOLVED` closes it. Read on 2026-10-18 ([log](../../log/log-stage-11-dlp.md)): the lake CMK's decrypt list (2.1.5's key half), RAM refusing outside principals on the lake shares (`allowExternalPrincipals: false`), and `TM-17`'s identity half, where the project role's managed policy admits `sqs:SendMessage` to any other account's `airflow-celery-*` queue; `./aws/dlp.py` took its before-run and gained `DP-8` for 5.6. Pass 1's filters and filtered grants create nothing until the user names the filtered principal in Sandbox (step 2's choice, same log). The inside column and the residuals of steps 4 to 6 are pending. 3.1's re-reading opened `TM-01` (a `dstdomain` without `-n` matching an address by its reverse name) and `TM-03` (hosts third parties control under the compute plane's `.amazonaws.com` entry). **The egress-control leg is monitoring, not building** — [D38](../decisions/D38-single-egress-hub.md) and [6c](stage-06c-networking-hub.md) build the single proxied egress, and this stage inherits a **Squid access log** in CloudWatch, `/awsds/prod/proxy` in Production, as the evidence its threat model reasons over; it has no export until step 5.1 settles the mechanism (6c decision due 4). **3.1's answer is retaken for the third egress shape**, *no default route plus an explicit proxy*, in which the raw-address row flips from **accepted** to **closed by route**. **The proxy sees destination and volume, never content** (CONNECT without interception): domain fronting through an allowed CDN host is an accepted residual, and the client plane's DNS-tunnelling residual is accepted under the endpoint-DLP premise; both belong in the threat model rather than in a control. **The per-VPC DNS firewall no longer filters the internet** — an explicit-proxy client never resolves one — and now closes the recursive resolver as an exfiltration channel, a detection feed this stage reads. **There is one Interactive account**: Macie's member set, the data-event trails on `awsds-<env>-smus-projects` and the exfiltration alarm's writer list all lose their Development half. **`TM-01` was measured on 2026-11-21** with the probe the user chose on 2026-11-17 over the `-n` flag ([log](../../log/log-stage-11-dlp.md)): from a Sandbox space the proxy admitted `CONNECT 54.213.164.60:443`, whose reverse record ends in `.amazonaws.com`, with `200 TCP_TUNNEL`, and refused a CloudFront address with `403 TCP_DENIED`. The user decided `-n` on the allow-list planes the same day, and it is written in `render-squid.sh.tftpl`, read apart from the names by `./aws/proxy.py`, and planned against the live hub, `1 to add, 2 to change, 1 to destroy` (PR #351). **`TM-01` is controlled since 2026-11-22**: the hub sitting applied `-n` with the proxy's replacement at 23:51 UTC on 2026-11-21, `./aws/proxy.py --on-host` reads it under FLAGS, and at 00:20:41 UTC the user's re-probe read `54.213.164.60` `403 TCP_DENIED` with its reverse record unchanged, beside `pypi.org`'s `200` from the same space. **`TM-28` is controlled since 2026-11-23**: the `Interactive` OU's SCP carries `DenyAgentCoreBuiltInTools`, the layer the user chose, and both targets' fence `agent-registry` (6d decision 17), each applied on the user's word at 00:46 UTC and re-planned `No changes`; the battery's `--phase ou` read 62 as expected, 0 unexpected, 5 not measured, and the simulation the six tool actions `explicitDeny` by the organization ([log](../../log/log-stage-11-dlp.md)). **Decision 14 is taken since 2026-11-24** ([log](../../log/log-stage-11-dlp.md)): the user removed the network-isolation statement for the training, tuning and AutoML jobs and the model in Sandbox, Staging and Production (`TM-38`, accepted); `sagemaker-denies-v0.4.0` and `sagemaker-prereqs-v0.16.0` are tagged, the callers moved and every slice planned read-only (7.1 to 7.3, 7.6). The applies (7.4) wait on the merge and the user's word, the lint (7.5) on the user's merge of `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), and 7.7 is a reading. |
 | **Prerequisites** | Stages 5a, 6, 9 — by named input: Stage 5a's classification scheme (its step 2), the LF-Tags, the derived zones (its 9.2) and **decision 4's Athena outcome**; **`sample_trades` holds 12 synthetic rows since 2026-08-20** (Stage 5a's in-account load, user decision; step 2.3's callout carries the shape-and-volume caveat that survives); Stage 6's **D5 verdict** (its step 6), the grain (Stage 5a decision 6 / TIP), and the **remote-access residual its step 3.2 records**; Stage 9's producer path, outputs and results zones. **Stage 15 (GuardDuty base on org-wide) plus about a month of billing behind it; read its log for the exercised decision-1 path**, which is this stage's step 4 unblock (its step 5 settled that no administration role exists to carve out). Decision D6 is the strategy this stage executes |
 | **Consumes** | [D5](../decisions/D05-sagemaker-egress.md), [D6](../decisions/D06-dlp-approach.md), [D13](../decisions/D13-lake-formation-enforcement.md), [D19](../decisions/D19-derived-zone.md), [D22](../decisions/D22-data-governance-account.md), [D27](../decisions/D27-catalog-maintenance.md), [D31](../decisions/D31-approver-read.md) |
 | **Proves** | — |
@@ -82,6 +82,7 @@ passes**:
 | **2** | 5 | the record and the alarms: trails, rules, SNS, thresholds — and decision 6's SCP amendment | the `data/` slices `[P]`; `identity/org-policies/` | `awsds-infra-data`, `awsds-infra-sandbox-1`; `awsds-infra-identity` |
 | **3** | 1, 2.1 (second half) | Macie delegated, members added, the job run and mapped; the internal analyzer created, read and retired | by hand in Management + Audit | **user**, `AWS Control Tower Admin` |
 | **4** | 4, 6, 3 (close) | GuardDuty's two features against the real bill; the third-party question; the threat model finished | by hand in Audit; `docs/` | **user**; Claude writes |
+| apart | 7 | decision 14: the network-isolation statement removed, its applies, the lint, the other creates that carry a network configuration | `terraform-modules/sagemaker-denies`; `identity/sso/`, `identity/org-policies/`, `sandbox/sagemaker/`, `staging/studio/`, `production/studio/` `[P]` | `awsds-infra-identity`, `awsds-infra-sandbox-1`, `awsds-infra-staging`, `awsds-infra-prod`, each apply named by the **user** |
 
 Pass 2 before pass 3, deliberately: the trail is the forensic record, and Macie's first job plus the
 simulated-exfiltration proofs should happen **on the record**. Pass 4 sits last because step 4 is decided
@@ -571,6 +572,72 @@ residuals, not against fear. **Explanation:** a reading, recorded in the threat 
   `docs/plan/threat-model.md` and `docs/plan/institutional-delta.md` (an institution buys the catalog with
   lineage first, D19 practice v).
 
+### 7. Network isolation of a training, tuning or AutoML job and a model (decision 14)
+
+**Action:** remove `DenySageMakerJobsWithoutNetworkIsolation` from `sagemaker-denies`, so no statement asks
+for network isolation, and carry the change to the persona sets, the `Workloads` SCP and the three project
+boundaries. **Why:** decision 14 gives every SageMaker job and model what [Stage 20](stage-20-dbt-lineage.md)
+decision 13 gave a processing job: a container that runs as its execution role in the project's subnets and
+reaches what a space reaches (`TM-38`). **Explanation:** the statement was the only control that required
+isolation. `DenySageMakerJobsOffVpc` stays, and is what keeps a container holding its role's credentials
+inside the project's network. Stage 20's 4.1 to 4.6 are the template.
+
+- **7.1 — [Claude] The module.** `terraform-modules/sagemaker-denies` loses the statement and its action
+  list. A plan of `identity/org-policies/`, `identity/sso/` and `staging/studio/` against the local module
+  read the statement's removal and nothing else (2026-11-24). Commit 1 alone carries it, tagged
+  `sagemaker-denies-v0.4.0` and `sagemaker-prereqs-v0.16.0`, the second because `sagemaker-prereqs` reads
+  `../sagemaker-denies` by path (Recipe B). **Done 2026-11-24**: `65fb2e82`, both tags read on origin.
+- **7.2 — [Claude] The callers.** `identity/sso/` and `identity/org-policies/` move to
+  `sagemaker-denies-v0.4.0`; the `Workloads` document loses the statement, which the precondition
+  `sagemaker_denies_drift` compares with the module, and its description says isolation is the caller's.
+  `sandbox/sagemaker/`, `staging/studio/` and `production/studio/` move to `sagemaker-prereqs-v0.16.0`;
+  `data-governance/publishing/` keeps `v0.8.0`, as decision 13 left it. `POLICIES.md` loses the row.
+  **Done 2026-11-24** in `2fed5359`; the read-only plans with the tags are 7.4's table.
+- **7.3 — [Claude] The battery and the instruments.** The battery's training row without isolation
+  becomes an allow contrast ([`scp-battery.md`](../runbooks/scp-battery.md) Phase 4b). `DT-11`'s list and
+  `sandbox-ml.py`'s boundary list drop the Sid, each a subset check that passes before and after the
+  applies. `ML-3` reads isolation off as a note naming `TM-38`; `ML-10` still fails on an `app-ml` job
+  without it, since it reads the application's own settings. **Done 2026-11-24** in `2fed5359`.
+- **7.4 — [user authorizes, Claude runs] The applies**, after the merge and from `main` (Lesson 79), each
+  named by the user in chat, the other sessions told before the first. The order is Stage 20's: the persona
+  sets, the SCP, then the boundaries.
+
+  | Order | Slice | Account | Profile | Plan, read-only, 2026-11-24 |
+  |---|---|---|---|---|
+  | 1 | `identity/sso/` | Identity | `awsds-infra-identity` | 6 to change, the six persona sets |
+  | 2 | `identity/org-policies/` | Identity | `awsds-infra-identity` | 1 to change, the `Workloads` SCP and its description |
+  | 3 | `sandbox/sagemaker/` | Sandbox Account 1 | `awsds-infra-sandbox-1` | 1 to change, the boundary |
+  | 4 | `staging/studio/` | Staging | `awsds-infra-staging` | 2 to change, the boundary and `person_session`'s deferred document (`SUP-356`) |
+  | 5 | `production/studio/` | Production | `awsds-infra-prod` | 2 to change, as Staging |
+
+  A minute or more after the SCP, `./aws/probes/scp-battery.py --phase ou` reads the training row without
+  isolation authorized (verification xi); then `make check`. The same sitting updates the sentence of
+  [Stage 20](stage-20-dbt-lineage.md)'s list of the stages its pass 4 touches that says Stage 17's
+  training jobs keep the statement, which the Stage 20 session left for the applies (2026-11-24).
+- **7.5 — [user authorizes, Claude writes] The lint.** `awsds-workflows`' rules `treino` and `modelo` still
+  ask for `EnableNetworkIsolation: true` (`lint.py` at `4401f91`, read 2026-11-24). A pull request there
+  leaves it to the task, as `1a50ceb` did for the rule `job`, and a push in that repository is the user's to
+  authorize. Until an application pins its merge, the lint refuses that application's training or model
+  request without isolation, which AWS admits after 7.4. **Written 2026-11-24** on the user's *"Autorizo push
+  e PR"* (03:32 UTC): `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), `79a59b0` to `6bbab3c` on `4401f91`, unmerged. An
+  application takes the rules with its next pin of `awsds-workflows` (Stage 8 5.6's rule).
+- **7.6 — [Claude] The documents.** [`sagemaker-ai-ml.md`](../runbooks/sagemaker-ai-ml.md) §C and its
+  endpoint section, [`sagemaker-application.md`](../runbooks/sagemaker-application.md)'s project paragraph,
+  job settings and §N matrix, Stage 9's 3.1 and 3.5, and [`threat-model.md`](../threat-model.md): `TM-38`,
+  and the holds of `TM-33` and `TM-35`. **Done 2026-11-24.** Stage 17's and Stage 20's own texts are their
+  sessions', told rather than edited: `examples/sandbox-ml/train.py`'s `no-isolation` variant, which 2.3
+  expects refused, is admitted after 7.4.
+- **7.7 — [Claude reads] The creates that carry a network configuration outside `DenySageMakerJobsOffVpc`.**
+  The SDK's model (botocore 1.44.10, read 2026-11-24) gives a `VpcConfig` to `CreateAIBenchmarkJob`,
+  `CreateCluster`, `CreateCompilationJob`, `CreateDataQualityJobDefinition`, `CreateEndpointConfig`,
+  `CreateInferenceRecommendationsJob`, `CreateLabelingJob`, `CreateModelBiasJobDefinition`,
+  `CreateModelExplainabilityJobDefinition`, `CreateModelQualityJobDefinition`, `CreateMonitoringSchedule`,
+  `CreateOptimizationJob`, `CreateTrainingSession` and `UpdateMonitoringSchedule`, none on the statement's
+  list. For each: whether the Service Authorization Reference gives it `sagemaker:VpcSubnets`, and a
+  simulation as a project role without a `VpcConfig`. A create a project role may call that runs a
+  container outside the project's network is a finding whatever decision 14 says, since none of them was
+  ever under the isolation statement. Nothing is claimed until read.
+
 ---
 
 ## Deliverables
@@ -600,7 +667,7 @@ the tampering `Sid`. The behavioural proofs are the stage's own (Lesson 20):
    counts may change).
 2. Run `./aws/datalake.py` after every `data-governance/data/` apply — `DL-5` green (the INT-11
    parameters, as always).
-3. Re-run `./aws/org-policies.py` and the battery phases after the step 4 and 5.4 amendments — never a
+3. Re-run `./aws/org-policies.py` and the battery phases after the step 4, 5.4 and 7.4 amendments — never a
    direct edit; `POLICIES.md` reviewed in the same sittings.
 4. Run `./aws/egress.py` §6 at session end — this stage adds nothing metered by the hour, and the reading
    proves it.
@@ -757,6 +824,24 @@ during the stage and written into `docs/log/log-stage-11-dlp.md` (Lesson 16), wi
     a re-plan of `sandbox/warehouse/`, since the groups have never recorded a session and a decision on
     their behaviour is a decision on nothing (Lesson 13). Taken, the feed joins decision 3's map and 5.1's
     delivery question for the bucket it writes.
+14. **Network isolation of a training, tuning or AutoML job and a model** (7, `TM-38`) — **taken
+    2026-11-24 by the user: (b), the statement removed in Sandbox, Staging and Production**, *"Retirar em
+    tudo"*. The user asked of every SageMaker job and model what [Stage 20](stage-20-dbt-lineage.md)
+    decision 13 gave a processing job: a container that runs as the project role, with boto3 reaching the
+    project's bucket and connections as a space does. Removing `DenySageMakerJobsWithoutNetworkIsolation`
+    is the only change that allows it, and it changes no request: the applications' requests and the lint
+    still ask for `true`. The options put: (a) remove it for the training, tuning and AutoML jobs in
+    Sandbox, Staging and Production and for `CreateModel` in Sandbox alone, the `Workloads` SCP and the
+    targets' boundaries keeping the model; (b) remove it everywhere. Recommended: (a). No target trains (Stage 17 decision 21
+    (b)), so the training half binds Sandbox alone, while a target serves an archive a Sandbox project
+    wrote, and `TM-33` was accepted with network isolation among its holds. Without it, whoever writes
+    `app-ml-dev`'s `app-ml/models/latest/` runs code in Production as the deployment project's role, which
+    can rewrite the application's code (`TM-32`), and a model's code acts as that role for every
+    `InvokeEndpoint` caller. The user chose (b) with that consequence named. Isolation becomes the
+    request's choice, and `app-ml` keeps it on its training job and its model. A side effect, inferred from
+    the SDK's model (botocore 1.44.10, read 2026-11-24) and unmeasured: `CreateAutoMLJob` and
+    `CreateAutoMLJobV2` carry no isolation field, so the `BoolIfExists` deny refused every AutoML create,
+    and after 7.4 an AutoML job meets the other statements alone.
 
 ## Verifications to answer while executing
 
@@ -774,6 +859,7 @@ Record every answer, including the ones that come out fine.
 | viii | Does presigned **use** arrive as `AuthenticationMethod=QueryString` and drive its rule — while creation, as predicted, appears nowhere? | 5.5 |
 | ix | Do the trails read back data-event-only (`get-event-selectors`: no management events) with validation on, delivering cross-account into `awsds-data-logs`? | 5.3 |
 | x | Does the Athena rule match Stage 5a decision 4's outcome — closed hole alarming on any occurrence, open hole alarming on non-maintenance principals only? | 5.2 |
+| xi | After 7.4, does the battery read a training job without isolation authorized in Production, the processing row unchanged and every other job row as before, and does `make check` pass? | 7.4 |
 
 ## Risks
 

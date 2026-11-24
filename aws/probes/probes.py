@@ -365,15 +365,15 @@ probe("ou", "staging", "deny", "ValidationException|ResourceNotFound|does not ex
       ["sagemaker", "create-space", "--domain-id", "d-0000000000000",
        "--space-name", "awsds-canary-probe", "--region", "us-west-2"])
 
-# --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' five statements and
+# --- The Stage 9 step 3.5 and 3.7 amendment - sagemaker-denies' statements and
 #     DenySageMakerServerlessInference in the Workloads document. Each deny row breaks one
-#     statement and keeps the other four, so a refusal names the statement it was written for
+#     statement and keeps the others, so a refusal names the statement it was written for
 #     (AWS names the policy, never the Sid - Lesson 20); the allow rows are the same calls with
 #     nothing broken, which is what proves the document leaves a compliant job and an
-#     instance-backed endpoint configuration alone. The processing job without isolation is an
-#     allow row: DenySageMakerJobsWithoutNetworkIsolation leaves CreateProcessingJob out (Stage 20
-#     decision 13), and the training job without isolation below is the row that exercises the
-#     statement. The compliant job is also the reading of
+#     instance-backed endpoint configuration alone. A job without network isolation is an allow
+#     row: no statement asks for it (Stage 20 decision 13 for a processing job, Stage 11 decision
+#     14 for a training job), and both rows are contrasts that have to stay authorized. The
+#     compliant job is also the reading of
 #     sagemaker:VolumeKmsKey, the key's name in the module, where AWS's reference lists
 #     sagemaker:VolumeKmsKeyArn (read 2026-10-16): a name that stopped populating would turn that
 #     row into a deny.
@@ -489,8 +489,8 @@ probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
 probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
       "workloads: compliant sagemaker:CreateTrainingJob listing ml.m5.large still authorized (3.5 contrast)",
       _training_job(["ml.m5.large"]))
-probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
-      "workloads: CreateTrainingJob not isolated (DenySageMakerJobsWithoutNetworkIsolation)",
+probe("ou", "prod", "allow", _JOB_AUTHORIZED, "blocked",
+      "workloads: CreateTrainingJob not isolated still authorized (Stage 11 decision 14 contrast)",
       _training_job(["ml.m5.large"], isolation=False))
 probe("ou", "prod", "deny", _JOB_AUTHORIZED, "blocked",
       "workloads: CreateTrainingJob on ml.m5.2xlarge (DenySageMakerInstanceCeiling, the training control)",

@@ -1,6 +1,6 @@
 # Stage 9 step 3.5 - the job settings in the Workloads OU document (decision 9, shape (a)).
 #
-# The five statements are sagemaker-denies' document, the one source the persona sets and the D13
+# The statements are sagemaker-denies' document, the one source the persona sets and the D13
 # boundary compose (Lesson 33). They bind whoever calls Create*Job, never the role the job runs as
 # (Lesson 66), so in Staging and Production they belong on the OU: the callers there are Stage 10's
 # execution roles, the deploy roles and any role a pipeline creates.
@@ -15,7 +15,7 @@
 
 module "sagemaker_denies" {
   # checkov:skip=CKV_TF_1:pinned by git TAG by convention (conventions §6, Stage 3 step 1.1a) - a repository-internal tag only the repo owner can move
-  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-denies?ref=sagemaker-denies-v0.3.0"
+  source = "git::git@github.com:felipenoris/AWS-DataScience.git//terraform-modules/sagemaker-denies?ref=sagemaker-denies-v0.4.0"
 }
 
 locals {

@@ -261,9 +261,11 @@ target holds an app (decision 17). This estate builds no tracking server (decisi
 An endpoint is three objects: a SageMaker model, an endpoint configuration (the instance type and count)
 and the endpoint itself. *"Endpoint are locations where you send inference requests to your deployed
 machine learning models."* It bills each hour it exists, whether or not it answers, and its invocations
-travel through `sagemaker.runtime`. In this estate the model's request carries a `VpcConfig` and network
-isolation, the configuration's instance type is on the ceiling's list, which holds no GPU type, and
-serverless inference is refused (§C). An endpoint in Sandbox stays up after its sitting, as AWS's
+travel through `sagemaker.runtime`. In this estate the model's request carries a `VpcConfig`, the
+configuration's instance type is on the ceiling's list, which holds no GPU type, and serverless
+inference is refused (§C). Network isolation is the model's own setting (Stage 11 decision 14): a model
+created without it answers every `InvokeEndpoint` caller from a container that holds its execution
+role's credentials (`TM-38`). An endpoint in Sandbox stays up after its sitting, as AWS's
 `ml/deployment` example leaves its own, and its lifetime is the member's, who deletes it and recreates it
 from the model and the configuration as needed (decision 6, taken 2026-11-17). It bills 2.76 USD a day
 while it stands, and `make down` does not reach it. No endpoint stands in a target, and
@@ -355,7 +357,6 @@ A create passes four layers, and the wording of a refusal names the layer that r
 | Statement | Refuses a request that | On |
 |---|---|---|
 | `DenySageMakerJobsOffVpc` | names no subnets | `CreateTrainingJob`, `CreateProcessingJob`, `CreateHyperParameterTuningJob`, `CreateAutoMLJob`, `CreateAutoMLJobV2`, `CreateModel` |
-| `DenySageMakerJobsWithoutNetworkIsolation` | omits network isolation or sets it false | the same actions but `CreateProcessingJob`, out since 2026-11-17 (Stage 20 decision 13) |
 | `DenySageMakerJobsWithoutInterContainerEncryption` | omits inter-container encryption or sets it false | the job actions, without `CreateModel` |
 | `DenySageMakerJobsWithoutVolumeEncryption` | names no key for the volume | the job actions and `CreateTransformJob` |
 | `DenySageMakerInstanceCeiling` | names an instance type off the list | every action that names one, except a space's `CreateApp`, `CreateSpace` and `UpdateSpace` |
@@ -364,27 +365,32 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
 `ml.c5.large` and `ml.c5.xlarge`. What follows from the statements:
 
 - **A request states each setting itself**: a `VpcConfig` with the project's private subnets and
-  security group, `EnableNetworkIsolation: true` on every job but a processing job,
-  `EnableInterContainerTrafficEncryption: true` on a job, the project key on the volume, a listed instance type. An omitted field is refused, since each
-  deny fires on an absent key.
+  security group, `EnableInterContainerTrafficEncryption: true` on a job, the project key on the
+  volume, a listed instance type. An omitted field is refused, since each deny fires on an absent key.
+  Network isolation is the request's own choice (below).
 - **Code inside an isolated job reaches nothing.** A network-isolated container has no network: it calls no
   MLflow App, no registry, no Bedrock model and no S3 API, and it sees its input and output mounts
-  alone. Tracking, registration and any model invocation therefore happen around the job, from the
-  notebook in a space or from a worker task in a workflow.
-- **A processing job is out of the isolation statement since Stage 20's pass 4**, applied 2026-11-17
-  (the persona sets 16:01, the `Workloads` SCP 16:02, Sandbox's boundary 16:07, the targets' 16:08 and
-  16:09 UTC). [Stage 20](../stages/stage-20-dbt-lineage.md) decision 13, taken 2026-11-16, takes
-  `sagemaker:CreateProcessingJob` out of `DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging
-  and Production. A processing job that sets `EnableNetworkIsolation: false` then runs in the project's
-  subnets with the project role's credentials and reaches what a worker task reaches (`TM-35`). A training, tuning
-  or AutoML job and a model stay under the statement, and the table's other rows stay as they are.
-  Isolation becomes the application's choice, job by job: `app-ml`'s two `prepare` tasks keep
-  `EnableNetworkIsolation: true`, since each reads its input mounts alone. The lint's rule `job` leaves
-  it to the task from `awsds-workflows` `1a50ceb` (that stage's step 6.4), in `4401f91`, the pin of
-  `app-dbt`, `app-ml` and `app-genai`; at `app-etl`'s `196acee` it still refuses a processing request
-  without it.
+  alone. Tracking, registration and any model invocation therefore happen around an isolated job, from
+  the notebook in a space or from a worker task in a workflow.
+- **No statement asks for network isolation.** [Stage 20](../stages/stage-20-dbt-lineage.md) decision
+  13, taken 2026-11-16, took `sagemaker:CreateProcessingJob` out of
+  `DenySageMakerJobsWithoutNetworkIsolation` in Sandbox, Staging and Production, applied 2026-11-17 (the
+  persona sets 16:01, the `Workloads` SCP 16:02, Sandbox's boundary 16:07, the targets' 16:08 and 16:09
+  UTC). [Stage 11](../stages/stage-11-dlp.md) decision 14, taken 2026-11-24, removes the statement for
+  the training, tuning and AutoML jobs and the model in the same accounts, as `sagemaker-denies-v0.4.0`;
+  until that stage's step 7.4 applies it, the persona sets, the `Workloads` SCP and the boundaries still
+  refuse those requests without isolation. A container without isolation runs in the project's subnets
+  with its execution role's credentials and reaches what a worker task reaches: a processing job
+  (`TM-35`), a training, tuning or AutoML job, and a model's serving container, for every caller of its
+  endpoint (`TM-38`). Isolation is the application's choice, job by job: `app-ml`'s two `prepare` tasks,
+  its training job and its model keep `EnableNetworkIsolation: true`, since each reads its input mounts
+  alone. The lint's rule `job` leaves it to the task from `awsds-workflows` `1a50ceb` (Stage 20 step
+  6.4), in `4401f91`, the pin of `app-dbt`, `app-ml` and `app-genai`; at `app-etl`'s `196acee` it still
+  refuses a processing request without it. The rules `treino` and `modelo` refuse a training or model
+  request without it at every pin; `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30), unmerged, leaves it to the task (Stage 11
+  step 7.5).
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
-  `CreateModel` is on the first two lists.
+  `CreateModel` is on `DenySageMakerJobsOffVpc`'s list.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
   training job and takes no network, isolation or key parameter (`SUP-265`, measured 2026-08-27 and
   2026-09-10).
@@ -665,7 +671,8 @@ crosses accounts asks:
   project. Four things hold it: the bundle's SHA-256, which pins the bytes from `bundle` on; Staging,
   which serves and scores the archive before Production holds an approved version of it; a person's
   approval in Production, given over the version's hash, training job and metrics; and network isolation
-  on every model. What is left is a model that answers wrongly on purpose, which `check`'s AUC bounds
+  on the model, which `app-ml`'s request sets and no statement requires since Stage 11 decision 14
+  (`TM-38`). What is left is a model that answers wrongly on purpose, which `check`'s AUC bounds
   and does not exclude. The threat-model entry is accepted before the first tag (9.5).
 - **The task that tracks is a Bash task**, so the archive's MLflow client is imported before the
   worker's own packages (`SUP-274`). It runs where a run trains, in `dev`: a target's record of a model
@@ -755,7 +762,9 @@ a `Model` and no `Transform`, on which the operator 9.32.0 fails with a `KeyErro
 model while `check_if_model_exists` keeps its default; and `action_if_model_exists` at its default,
 `timestamp`, with which a retry creates a second model. No application writes one. From `1a50ceb`, in
 `4401f91`, the rule `job` leaves a processing task's isolation to the task (Stage 20 step 6.4), and the
-rule `operador` refuses the native notebook operator by name since `4401f91` (Stage 8 5.6). The
+rule `operador` refuses the native notebook operator by name since `4401f91` (Stage 8 5.6). The rules
+`treino` and `modelo` ask for `EnableNetworkIsolation: true` at every pin, until an application pins the
+merge of `awsds-workflows` [PR #30](https://github.com/felipenoris/awsds-workflows/pull/30) (Stage 11 step 7.5). The
 endpoint increment replaces the endpoint operator's refusal with a rule that reads its request, and a rule
 that reads a pipeline's definition file is a pull request of its own before the pipeline increment's tag
 (verification lxi); until then, the boundary and the OU are the only refusal for a pipeline's request.
