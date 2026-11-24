@@ -391,6 +391,13 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   task from an application's next pin (Stage 11 step 7.5).
 - **A batch transform has no `VpcConfig` of its own.** It inherits the model's, which is why
   `CreateModel` is on `DenySageMakerJobsOffVpc`'s list.
+- **An inference component and an Inference Recommender job are outside every statement** ([Stage
+  11](../stages/stage-11-dlp.md) step 7.7, read 2026-11-24, `TM-39`). A project role may create an
+  endpoint configuration without a `VpcConfig`, an endpoint on it, an inference component and a
+  recommender job (simulated in Sandbox, Staging and Production). A component's specification takes an
+  image of its own beside an optional model name, so its container need not come from a `CreateModel`. The
+  recommender's Service Reference entry has no VPC key. Where such a container runs and what it reaches is
+  unmeasured, and Stage 11 decision 15 is the user's.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
   training job and takes no network, isolation or key parameter (`SUP-265`, measured 2026-08-27 and
   2026-09-10).

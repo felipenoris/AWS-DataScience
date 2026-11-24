@@ -719,3 +719,74 @@ UTC.*
   UTC, dates these applies in its guide, lab notes, memory and `CLAUDE.md`, which said the change was written
   and not applied. `uv run pytest` read 423 passed, 2 skipped and the 7 `prepare-offline` failures of 7.5's
   entry; `ruff` and the `pdoc` site clean. Its merge is the user's.
+
+## 2026-11-24 — Step 7.7: the creates that carry a network configuration outside `DenySageMakerJobsOffVpc`
+
+- **[The user] The request**: *"Sim, fazer a 7.7"*.
+- **[Claude] The SDK's model**, botocore 1.44.10 (API `2017-07-24`, 438 operations), was walked offline for
+  every member that names a network. 20 operations carry a `VpcConfig`: the statement's six and the step's
+  fourteen, and no other. Six carry a network in other members: `CreateDomain`, `CreateNotebookInstance`,
+  `CreateWorkforce`, `UpdateWorkforce`, `UpdateDomain` and `UpdateCluster` (`OverrideVpcConfig`). Of the
+  fourteen:
+  - the four job definitions and both monitoring-schedule calls take an `ImageUri`;
+  - `CreateOptimizationJob` takes an image per optimization;
+  - `CreateEndpointConfig` takes a `VpcConfig`, an `ExecutionRoleArn` and `EnableNetworkIsolation`.
+
+  `CreateInferenceComponent`, which is not on the list, takes `Specification.Container.Image` beside an
+  optional `ModelName`, and no network member.
+- **[Claude] The Service Reference**, v1.5:
+  - `sagemaker:VpcSubnets` and `sagemaker:VpcSecurityGroupIds` are on `CreateCluster`,
+    `CreateEndpointConfig`, the four job definitions, both monitoring-schedule calls, `CreateTrainingSession`
+    and `UpdateCluster`.
+  - `sagemaker:NetworkIsolation` is on the job definitions, the schedule calls and `CreateEndpointConfig`.
+  - No VPC key is on `CreateAIBenchmarkJob`, `CreateCompilationJob`, `CreateInferenceRecommendationsJob`,
+    `CreateOptimizationJob` or `CreateLabelingJob`. The last carries `sagemaker:WorkteamArn`,
+    `sagemaker:WorkteamType` and the two key ARNs.
+  - `CreateInferenceComponent` carries `sagemaker:ModelArn`.
+
+  The reading of 2026-10-16 in `REFERENCES.md` found no VPC key on `CreateEndpointConfig`.
+- **[Claude] AWS's pages**: six, read through a page-reading agent, every one loaded.
+  - `CreateEndpointConfig`'s reference ties `VpcConfig`, `ExecutionRoleArn` and `EnableNetworkIsolation` to
+    no kind of endpoint, and never names an inference component.
+  - The component's specification marks `Container` and `ModelName` optional, and names neither the
+    container's role nor its network.
+  - Hosting in a VPC covers `CreateModel` alone.
+  - Network isolation: a container is internet-enabled by default. An isolated one makes no outbound call
+    and receives no credentials, and SageMaker moves its data with the execution role.
+  - The recommender's input configuration says nothing of the network its endpoints take without a
+    `VpcConfig` or with a model name.
+- **[Claude] The token**: the `awsds` session's token expired at 05:19:24 UTC. Sandbox's simulation ran on
+  the CLI's cached role credentials (`SUP-465`); Staging's and Production's profiles failed until **[the
+  user]** signed in again: *"Login feito"*.
+- **[Claude] The simulation**: `iam simulate-principal-policy` as every `datazone_usr_role_*`, resource `*`
+  (`SUP-008`, `SUP-009`). The context held the Region, the organization, the project tag as request and
+  resource tag, `ml.m5.large` and every role tag as a principal tag, and no VPC key. Sandbox Account 1's six
+  roles ran 05:39:14 to 05:39:23 UTC; Staging's and Production's one each ran 07:07:26 to 07:07:32. The
+  results were identical in the three accounts:
+
+  | Action | Decision | By |
+  |---|---|---|
+  | `CreateEndpointConfig`, `CreateInferenceRecommendationsJob`, `CreateInferenceComponent`, `CreateEndpoint` | `allowed` | `SageMakerStudioProjectRoleMachineLearningPolicy` v48's `SageMakerCreatePermissions`, conditioned |
+  | the other twelve of 7.7's list, and `UpdateCluster` | `implicitDeny` | no statement; the organization and the boundary allow |
+  | `CreateProcessingJob`, `CreateModel` (controls) | `explicitDeny` | the boundary in Sandbox, the `Workloads` SCP in the targets |
+
+  With `sagemaker:VpcSubnets` and `sagemaker:VpcSecurityGroupIds` in the context, `CreateModel` read
+  `allowed` in the three accounts (07:08:15 to 07:08:23), so its deny comes from the key's absence. The
+  operations with a network in other members ran 07:14:54 to 07:15:02:
+  - `UpdateDomain`, `CreateWorkforce`, `UpdateWorkforce` and `UpdateCluster`: `implicitDeny` everywhere;
+  - `CreateDomain`: `implicitDeny` in Sandbox, `explicitDeny` by the SCP in the targets;
+  - `CreateNotebookInstance`: `explicitDeny` by the SCP everywhere.
+- **[Claude] The objects**: `list-inference-components`, `list-inference-recommendations-jobs`,
+  `list-endpoint-configs` and `list-endpoints` in `us-west-2` at 07:11 UTC read none in any of the three
+  accounts. A `grep` over the stages, the runbooks and `examples/` finds no plan that uses a component or
+  the recommender.
+- **[Claude] The finding**: a project role may run a container whose image it chooses, through an inference
+  component on an endpoint configuration without a `VpcConfig`. That path never calls `CreateModel`, the
+  only create where the statement requires subnets. Inference Recommender provisions endpoints of its own,
+  under an entry with no key a condition could test. Unmeasured: whether SageMaker accepts a component with
+  an image and no model, where its container runs, which credentials it holds, and whether a component that
+  names a model takes the model's `VpcConfig`. The twelve `implicitDeny` creates are held off by AWS's
+  managed policies alone (Lesson 72). `TM-39` is open; decision 15 is the user's, recommended (b).
+- **[Claude] Records**: 7.7 and the `Status` row; decision 15; `TM-39`, its channel row, `TM-38`'s trigger and
+  the threat model's waits; the AI/ML runbook's §C; CLAUDE.md; the waiting list; the references; this log's
+  index row.
