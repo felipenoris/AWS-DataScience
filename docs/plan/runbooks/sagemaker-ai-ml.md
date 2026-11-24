@@ -397,7 +397,8 @@ The list is `ml.t3.medium`, `ml.t3.large`, `ml.t3.xlarge`, `ml.m5.large`, `ml.m5
   recommender job (simulated in Sandbox, Staging and Production). A component's specification takes an
   image of its own beside an optional model name, so its container need not come from a `CreateModel`. The
   recommender's Service Reference entry has no VPC key. Where such a container runs and what it reaches is
-  unmeasured, and Stage 11 decision 15 is the user's.
+  unmeasured, and the user accepted the channel on 2026-11-24 (Stage 11 decision 15 (d)). An application
+  that uses either reopens `TM-39`.
 - **A workflow's notebook task is refused.** `SageMakerNotebookOperator` runs the notebook as a
   training job and takes no network, isolation or key parameter (`SUP-265`, measured 2026-08-27 and
   2026-09-10).

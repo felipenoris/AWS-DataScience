@@ -790,3 +790,14 @@ UTC.*
 - **[Claude] Records**: 7.7 and the `Status` row; decision 15; `TM-39`, its channel row, `TM-38`'s trigger and
   the threat model's waits; the AI/ML runbook's §C; CLAUDE.md; the waiting list; the references; this log's
   index row.
+
+## 2026-11-24 — Decision 15: the inference paths outside `DenySageMakerJobsOffVpc` accepted
+
+- **[The user] The decision**: *"(d)"*, against the recommendation of (b). The channel is accepted
+  unmeasured, and nothing is applied.
+- **[Claude] Records**: decision 15, 7.7 and the `Status` row; `TM-39`'s state and triggers, its channel row
+  and the threat model's waits; the AI/ML runbook's §C; `POLICIES.md`'s row for `DenySageMakerJobsOffVpc`;
+  CLAUDE.md; the waiting list, whose row is removed. `TM-39`'s trigger *"an endpoint configuration without a
+  `VpcConfig` in any account"* became a component or a recommender job in any account, or a plan that builds
+  on either: Stage 17's plan gives its endpoint configuration no `VpcConfig` and its model one, so the old
+  trigger would fire at pass 4's endpoint. The module's comment waits for the module's next tag.
