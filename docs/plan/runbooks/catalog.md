@@ -929,12 +929,16 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-18` | every product listing carries the `classification` form, the same tables as `CT-17`: the table's own form, or for a table with none reachable through its data products alone, every carrying product's (Stage 19 decision 4 extended 2026-11-23); any other table with no form fails, its products' forms named |
 | `CT-19` | no listing publishes a resource link |
 | `CT-20` | every S3 Access Grant a project role holds on another project's folder explained by an approved subscription to an S3 Object Collection at that prefix |
+| `CT-21` | the lineage events of the last seven days by `processingStatus` and job namespace: a `FAILED` event fails, an empty window is a note |
+| `CT-22` | each Glue table asset hangs from the node of its own table, the one its `externalIdentifier` names, fed by a job's run or, for a table a subscription created, by the listing's node; in a deployment project a node nothing fed, or no node, fails (`SUP-097`), and another account's node is a note (`SUP-483`), the import's window when the forms name that table (`SUP-454`) |
+| `CT-23` | every Glue table node the registry's trail created is carried by an asset; a node carried by none is a note |
+| `CT-24` | a deployment project's asset carries the description, README and `classification` of its table's asset in a chain application's `dev` project, and its forms name its own account's table; a difference, or the import's window, is a note (Stage 20 xxi) |
 
-The last run: 2026-11-23 from 19:27 to 19:34 UTC, every check passed, 14 `pass` and 7 `note`, 12 listings
-and none of `deploy-staging`; `CT-20` a note, *"no fulfilment among 5 grant(s); 0 S3 Object Collection
-listing(s)"*, after pass 5's rollback; the two data product listings' items all returned by
-`search-listings`, so no table read through a product alone (Stage 21's log). `--self-check` read 62 of 62
-on 2026-11-23, fifteen cases on Stage 21 5.3's product.
+The last run: 2026-11-24 from 00:54 to 00:55 UTC, every check passed, 15 `pass` and 10 `note`, 12 listings
+and none of `deploy-staging`. `CT-21` passed on 279 events in seven days, each `SUCCESS`; `CT-22` to `CT-24`
+are notes on the import's window, the four target `app-dbt` assets and Staging's `trades_notional` naming and
+hanging from Sandbox's tables until the targets' sources run again (Stage 20's log). `--self-check` read 62 of
+62 on 2026-11-24, and `aws/tests/test_catalog_lineage.py` holds the lineage rows' cases.
 
 ### The CLI's reads, object by object
 

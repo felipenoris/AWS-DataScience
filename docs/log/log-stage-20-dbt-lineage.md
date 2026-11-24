@@ -2697,3 +2697,96 @@ nodes of both targets* was written at 18:52:57, before the histories ran. Times 
   two, at 17:24:05 and 17:25:40; each of the four has one upstream, `6w7hp2vvi8kscw`.
 - **[Claude] Unread**: the `createdBy` of Staging's node and of the three other versions, and the history of the
   `trades` asset nodes, whose current versions alone the call at 18:48:20 read (`SUP-483`).
+
+## 2026-11-24 — xxi read and 6.1's lineage rows written, nothing up
+
+*Claude's hand, a session started by the orchestrating session for `promotion.md` §N.12.1's row of 2026-11-24;
+reads only, as the infrastructure user, `InfrastructureAccess`, through `awsds-infra-sandbox-1`,
+`awsds-infra-staging`, `awsds-infra-prod` and `awsds-infra-data`, with nothing up. The `awsds` token read
+`expiresAt` 00:36:36, and the later reads ran on the CLI's cached role credentials (`SUP-465`). An account id is
+written as the account's name: `<Sandbox>`, `<Staging>`, `<Production>`. Times UTC; an asset's or a node's time
+is of 2026-11-23 unless dated.*
+
+- **[Claude] The target assets' revisions**, `list-asset-revisions` and `get-asset` per revision at 00:22 to
+  00:27. In Staging, `trades` (`agse8rgfcfz5w0`) and `notional_by_desk` (`at5whqovhlcia8`): revision 1 by
+  `SYSTEM` at 17:23:59, revision 2 at 17:25:25 and 17:25:27 by the user profile `30d6546b-…`. In Production,
+  `trades` (`5ebvfidjbbztlc`) and `notional_by_desk` (`c96p9n24zdtr4g`): revision 1 by `SYSTEM` at 18:18:53,
+  revision 2 at 18:20:19 and 18:20:21 by `548dcb5e-…`. Revision 1 is each `*-catalog` job's source run and
+  revision 2 its second import, by their content below. The entry *R2: 8.7's release `v0.1.1`, the fix merged*
+  has Staging's two assets created by the source's run at 17:25:25 and 17:25:27: those are revision 2's times,
+  and the assets were created at 17:23:59.
+- **[Claude] The curation** (xxi): revision 2 of each target asset carries `app-dbt-dev`'s revision 7 (`SYSTEM`'s
+  at 02:54:42, after 8.6's curation of 2026-11-21) unchanged: the description (176 characters for `trades`, 180
+  for `notional_by_desk`), the README in `AssetCommonDetailsForm` `readMe` (1,282 and 1,484) and the form
+  `classification` at type revision 2, `{"classification":"internal"}`. Neither side has a glossary term.
+  Revision 1 carries none of the three.
+- **[Claude] The import's other forms**: revision 2's `GlueTableForm` equals Sandbox's key for key, the catalog id
+  `<Sandbox>`, the table ARN `arn:aws:glue:us-west-2:<Sandbox>:table/app_dbt/<table>` and Sandbox's `updateTime`
+  (2026-11-22T19:57:30Z for `trades`, 19:59:07Z for `notional_by_desk`), and `AssetCommonDetailsForm`'s
+  `sourceIdentifier` names Sandbox's table, where revision 1 named the target's. `DataSourceReferenceForm` alone
+  keeps the target's own source and the run that wrote revision 1: `495urkkg5c7fyo` and `b7ho2wwegm32q8` in
+  Staging, `bjfmkla36ed3ps` and `56m98bv19awrkg` in Production. `SUP-454`, as on `app-etl`, with the README.
+- **[Claude] `app-etl`'s `trades_notional` over seven days**, read the same way: each import names Sandbox's
+  table and each `SYSTEM` revision the target's. In Staging (`as6m73yp8shr80`) revisions 2, 4 and 6 are imports,
+  the last at 18:39:28. In Production (`da1fycta6l71n4`) revisions 2, 5 and 7 are, the last at 19:07:08, and
+  revision 8 at 19:22:26 is the `publish` task's source run `6d5lycntokbfkg` (Stage 17's log, 2026-11-23). So
+  Production's asset names its own table, and Staging's names Sandbox's until its source runs again, scheduled
+  15:28 UTC.
+- **[Claude] x in Production**, `get-table` at 00:25, `get-table-versions` and `list-permissions` at 00:54, as
+  `awsds-infra-prod`: `notional_by_desk` created at 18:25:37 by the second run's swap and updated at 18:25:43,
+  `VersionId` 1 and one version, under `…/app_dbt/notional_by_desk/a4f449ef-2e8e-496d-8c26-405ec6b98bdb`;
+  `notional_by_desk__ha` and `notional_by_desk__bkp` `EntityNotFoundException`; on the table the project role's
+  two rows, `ALL`, `ALTER`, `DELETE`, `DESCRIBE`, `DROP`, `INSERT` and `SELECT`, each grantable. As 2.5 read it
+  in Sandbox. The asset is unchanged since revision 2 at 18:20:21: the run five minutes later revised nothing,
+  and the next revision is the source's next run, scheduled 02:27 UTC.
+- **[Claude] x in the graph**, each version by `get-lineage-node --event-timestamp` at 00:24 to 00:28.
+  Production's `notional_by_desk` node `dc5kf0jitjz91s` has four versions: the first run's at 18:15:53 (upstream
+  the model's run `arfa6hzm3j921c`) and 18:15:57 (downstream its test's run `5jn53itv2dhn68`), and the second
+  run's at 18:25:43 (upstream `dedsup14xfgqkw`) and 18:25:48 (downstream `3ideaexrsvw1ao`). `trades`'
+  `c35d04bqelikuo` has six: upstream runs at 18:14:19 and 18:14:20 and at 18:23:56 and 18:23:57, the Glue job's
+  two runs (the table created at 18:14:19 and updated at 18:23:57), and the model's reads at 18:15:53 and
+  18:25:43. The swap kept the node, as 2.5 read in Sandbox. The asset node `6bsflg1a3jt0r4` hangs from
+  Sandbox's `6w7hp2vvi8kscw` alone, so the second run reached Production's table node and not the asset's graph
+  (`SUP-483`).
+- **[Claude] Which node an asset node hangs from**, the asset nodes' versions read the same way. Production's
+  `trades_notional` node `b2eaaney9hlus0` reads upstream `6i4aaj4f895ixc`,
+  `arn:aws:glue:us-west-2:<Production>:table/app_etl/trades_notional`, in each of its 13 versions (2026-11-16
+  02:46:20 to 19:22:30), those of the imports included. Staging's `cltnmsd8kfnn68` reads `d0m1zl6r8q3uvk`,
+  Sandbox's `app_etl.trades_notional`, in each of its 6, those of `SYSTEM`'s revisions 1, 3 and 5, which named
+  Staging's table, included. A version read shows the asset node's current edge, and each current edge goes to
+  the node of the table the asset's current revision names: Production's revision 8 its own, Staging's
+  revision 6 Sandbox's. `app-dbt`'s target asset nodes were created with revision 1, which named the target's
+  table, after the target's table node (17:24:05 against 17:18:50 in Staging, 18:18:57 against 18:16:02 in
+  Production), and hang from Sandbox's, which revision 2 names: the link is not fixed when the node is created.
+  The edge moving with a new revision is the reading of the targets' source runs of 2026-11-24, scheduled 02:23
+  and 02:27 UTC for `app_dbt` and 15:28 for Staging's `app_etl`. Recorded in `SUP-483`.
+- **[Claude] A subscription's table**, read at 00:47 as `awsds-infra-sandbox-1`: `test-experimentation`'s
+  `trades` asset node (`6uwkw1ir5nigpc`, the asset `5m3bai7dt2mqs0`) hangs from the link's node `3juvtmem73n1g0`,
+  and the link's three versions (the newest 2026-11-22 02:20:49) from two listing nodes, `5vrx7y3x3blg5s`
+  (`amazon.datazone.listing/b3bagfgnvev3tc`) and `bizi87t09ns8b4` (`amazon.datazone.listing/bx8v3rafykv3ww`), as
+  6f's log read on 2026-11-22. A listing feeds such a table, not a job's run. The first live run of the new rows
+  labelled those listings as jobs; CT-22 names a listing as one since the second run.
+- **[Claude] 6.1, `./aws/catalog.py`'s CT-21 to CT-24**, on this session's branch with
+  `aws/tests/test_catalog_lineage.py`: 46 cases, the empty ones and this day's shapes included (Lesson 87);
+  `aws/tests` 228 passed and `--self-check` 62 of 62. Run live at 00:41:27 to 00:45:25 and, after the listing
+  fix, at 00:54:28 to 00:55:31, every call successful and every check passed, 15 `pass` and 10 `note`:
+  - `CT-21` pass, 279 events since 2026-11-17T00:54:28Z, each `SUCCESS`: `default` 218, `app-dbt-dev` 22, the
+    Sandbox warehouse's Redshift namespace 16, `app-dbt-prod` 12, `app-dbt-staging` 6, `app-dbt-by-hand` 4 and
+    `stage-20-foreign` 1.
+  - `CT-22` note, over 16 assets in 7 projects: 4 hang from their own table's node written by a job's run and
+    5 subscription tables from their listing; the four target `app-dbt` assets and Staging's `trades_notional`
+    from Sandbox's nodes, their forms naming Sandbox's tables (`SUP-483`, `SUP-454`); `eighth-experimentation`'s
+    `house-price` and `governed-lake`'s `trades` from no node, tables no instrumented engine wrote.
+  - `CT-23` note, 9 of 18 Glue table nodes carried by no asset: the four target `app_dbt` nodes and Staging's
+    `app_etl.trades_notional` (`d4u98zmb2bfndc`), which the import's window leaves; `app_dbt.notional_by_desk_prod`
+    (`aha80rzgv86gpc`), whose asset 8.6 deleted; the link `app_dbt.trades_notional` (`degibg9msuotn4`), revoked on
+    2026-11-23; Stage 21's `stage21_images` (`d4tkdvwcjmfjbk`); and Staging's `glue_db_d6ogysnx78dguo.trades`
+    (`5v8yfhu8noyw40`), the database of the deployment project Stage 18 removed on 2026-10-22.
+  - `CT-24` note: each of the six deployment-project assets carries its dev asset's description, README and
+    `classification`; five name Sandbox's table, the import's window, and Production's `trades_notional` its own.
+- **[Claude] xxi reads yes.** After the `*-catalog` job's source run and second import, each target's `trades`
+  and `notional_by_desk` carry `app-dbt-dev`'s description, README and `classification` `internal`. The import
+  also writes Sandbox's table into the technical forms, which the target's source writes back at its next run
+  (`SUP-454`). Production's second run re-created `notional_by_desk` by the swap with its grants and wrote two
+  versions on Production's table node; it changed neither the asset nor its graph, which hangs from Sandbox's
+  node while the asset names Sandbox's table (`SUP-483`).
