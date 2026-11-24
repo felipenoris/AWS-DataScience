@@ -611,7 +611,9 @@ inside the project's network. Stage 20's 4.1 to 4.6 are the template.
   | 5 | `production/studio/` | Production | `awsds-infra-prod` | 2 to change, as Staging |
 
   A minute or more after the SCP, `./aws/probes/scp-battery.py --phase ou` reads the training row without
-  isolation authorized (verification xi); then `make check`.
+  isolation authorized (verification xi); then `make check`. The same sitting updates the sentence of
+  [Stage 20](stage-20-dbt-lineage.md)'s list of the stages its pass 4 touches that says Stage 17's
+  training jobs keep the statement, which the Stage 20 session left for the applies (2026-11-24).
 - **7.5 — [user authorizes, Claude writes] The lint.** `awsds-workflows`' rules `treino` and `modelo` still
   ask for `EnableNetworkIsolation: true` (`lint.py` at `4401f91`, read 2026-11-24). A pull request there
   leaves it to the task, as `1a50ceb` did for the rule `job`, and a push in that repository is the user's to
