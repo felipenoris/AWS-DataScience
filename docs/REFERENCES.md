@@ -2133,6 +2133,113 @@
   filters alone), `standardize-metadata-forms.html`, `create-new-data-product.html`,
   `publish-data-product.html`, the subscription and approval pages, and the lineage page's three node types;
   `create-data-asset-manually.html` returned its title alone.
+- **Stage 17's readings that create nothing for 9.8, 10.7 and 10.11 (read 2026-11-24, for
+  [Stage 17](plan/stages/stage-17-sandbox-machine-learning.md) steps 9.8, 10.7 and 10.11 and verifications li,
+  liii, liv, lvii and lxi).** AWS's pages in their Markdown form, through two subagents of the session.
+  - AgentCore's code archive: the common-issues page has the role that calls `CreateAgentRuntime` or
+    `UpdateAgentRuntime` hold `s3:GetObject` on the object and `kms:Decrypt` on its customer managed key, while the
+    same section's *"When this occurs"* line names the execution role, the Python guide's console section asks the
+    execution role for S3 access, and the permissions page's direct-deploy example holds no `s3:` or `kms:`
+    statement; the service stores the code in a service-owned bucket, `acr-code-*-<region>-an` in the example
+    endpoint policy, under AWS owned keys, and reads it at each agent startup, through the runtime's VPC for a
+    runtime created after the rollout that began on 2026-05-05; `requireServiceS3Endpoint` is refused on create:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-code-deploy-common-issues.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-troubleshooting.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-python.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-code-deploy-node.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-security-best-practices.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-how-it-works.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agent-runtime-versioning.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-vpc.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_VpcConfig.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_S3Location.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_Code.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CodeConfiguration.html>.
+  - AgentCore's VPC condition keys: `EnforceVPCRuntime` denies `CreateAgentRuntime`, `UpdateAgentRuntime`,
+    `CreateCodeInterpreter` and `CreateBrowser` when `bedrock-agentcore:subnets` and
+    `bedrock-agentcore:securityGroups` are both null; `UpdateAgentRuntime`'s `networkConfiguration` is not
+    required:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/security-vpc-condition.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateAgentRuntime.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_UpdateAgentRuntime.html>.
+  - AgentCore's logs and traces: the service creates `/aws/bedrock-agentcore/runtimes/<agent_id>-<endpoint_name>`,
+    no page names the writer of stdout, the execution role's examples carry the log, X-Ray and metric
+    statements, and traces need CloudWatch Transaction Search:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-configure.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-get-started.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-telemetry.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-view.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-runtime-metrics.html>,
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-permissions.html>.
+  - AgentCore's service-linked roles: `AWSServiceRoleForBedrockAgentCoreNetwork`
+    (`BedrockAgentCoreNetworkServiceRolePolicy` v1), created with a runtime in VPC mode, and
+    `AWSServiceRoleForBedrockAgentCoreRuntimeIdentity`, created with any runtime created or updated since
+    2025-10-13:
+    <https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/service-linked-roles.html>,
+    <https://docs.aws.amazon.com/aws-managed-policy/latest/reference/BedrockAgentCoreNetworkServiceRolePolicy.html>.
+  - The service authorization reference, with an operations table in place of its *Dependent actions* column:
+    `CreateAgentRuntime` also authorizes `CreateAgentRuntimeEndpoint`, `PassCapacityProvider`, `TagResource`
+    and `iam:PassRole` to `bedrock-agentcore.amazonaws.com`; `CreateKnowledgeBase` has no resource type and
+    authorizes `CreateKnowledgeBase`, `TagResource`, `AssociateThirdPartyKnowledgeBase` and `iam:PassRole` to
+    `bedrock.amazonaws.com`, and `StartIngestionJob` `AssociateThirdPartyKnowledgeBase`; S3 Vectors' page has
+    no operations table. `list_amazonbedrockagentcore.html`, `list_amazonbedrock.html` and
+    `list_amazons3vectors.html` redirect to:
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock-agentcore.html>,
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock.html>,
+    <https://docs.aws.amazon.com/service-authorization/latest/reference/list_s3vectors.html>.
+  - A knowledge base on S3 Vectors: the service role's trust, model, S3 and `s3vectors` statements, with no
+    statement for a vector key; `CreateDataSource`, `UpdateDataSource` and `StartIngestionJob` pass no role;
+    `indexArn` alone, or `vectorBucketArn` with `indexName`; float32 alone, cosine or euclidean; a store created
+    for the caller is the console's alone; Titan Text Embeddings V2 at 1,024, 512 or 256 dimensions; the
+    guardrail's key enforced on the four invokes alone:
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/kb-permissions.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/encryption-kb.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-setup.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-create.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-supported.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-prereq-permissions-general.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-titan-embed-text.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions-id.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateKnowledgeBase.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_StorageConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_S3VectorsConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_BedrockEmbeddingModelConfiguration.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateDataSource.html>,
+    <https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_StartIngestionJob.html>.
+  - S3 Vectors: `kms:Decrypt` required for every vector-level operation; the condition keys
+    `s3vectors:kmsKeyArn` and `s3vectors:sseType` on the creates; `s3-vectors-setting-up.html` and
+    `s3-vectors-bucket-encryption.html`, linked from Bedrock's pages, redirect to the guide's root:
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-data-encryption.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-create-index.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-index-create.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-bedrock-kb.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-limitations.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-access-management.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-iam-policies.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/API/API_S3VectorBuckets_PutVectors.html>,
+    <https://docs.aws.amazon.com/AmazonS3/latest/API/API_S3VectorBuckets_CreateIndex.html>.
+  - The providers: the aws provider's `aws_s3vectors_vector_bucket`, `aws_s3vectors_index` and
+    `aws_s3vectors_vector_bucket_policy` since 6.24.0, the index's `encryption_configuration` and
+    `metadata_configuration` since 6.26.0, a knowledge base's `s3_vectors_configuration` since 6.27.0; awscc's
+    `awscc_s3vectors_*` since 1.62.0, the index's `encryption_configuration` since 1.67.0. Each provider's
+    resource pages were read on `main` and at the release tags named:
+    <https://github.com/hashicorp/terraform-provider-aws/blob/main/CHANGELOG.md>,
+    <https://github.com/hashicorp/terraform-provider-awscc/blob/main/CHANGELOG.md>.
+  - SageMaker Pipelines: the definition's JSON schema admits a parameter for each item of
+    `VpcConfig.Subnets` and `SecurityGroupIds` or for the whole list; the SDK v2 types each item
+    `Union[str, PipelineVariable]`; an update that changes the definition creates a version, one that changes
+    nothing while passing aliases fails, and one that changes nothing without aliases is not described:
+    <https://aws-sagemaker-mlops.github.io/sagemaker-model-building-pipeline-definition-JSON-schema/>,
+    <https://github.com/aws-sagemaker-mlops/sagemaker-model-building-pipeline-definition-JSON-schema>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/build-and-manage-parameters.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/dg/pipelines-version-aliases.html>,
+    <https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_UpdatePipeline.html>,
+    <https://github.com/aws/sagemaker-python-sdk/blob/master-v2/src/sagemaker/network.py>,
+    <https://sagemaker.readthedocs.io/en/v2.256.0/amazon_sagemaker_model_building_pipeline.html>,
+    <https://sagemaker.readthedocs.io/en/v2.256.0/api/utility/network.html>,
+    <https://pypi.org/pypi/sagemaker/json>.
 - **SageMaker Unified Studio's forms of a data product beyond a Glue table (read 2026-11-17, for
   [Stage 21](plan/stages/stage-21-redshift-s3-data-products.md) questions 2, 3, 5, 7 and 8).** The managed asset
   types, *"Lake Formation-managed AWS Glue Data Catalog tables, AWS Glue Data Catalog views (Multi Dialect

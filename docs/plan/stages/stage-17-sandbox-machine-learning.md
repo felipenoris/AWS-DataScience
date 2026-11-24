@@ -2122,7 +2122,7 @@ each run (decision 24 (b)).
     both.
   - The targets' boundaries leave every knowledge base action outside their ceiling today. Sandbox's
     `app-genai-dev` holds every call on a tagged knowledge base. `CreateKnowledgeBase` has no resource type,
-    and its simulation reads `implicitDeny` in the three accounts under AWS's statement on
+    and its simulation reads `implicitDeny` in Sandbox, Staging and Production under AWS's statement on
     `arn:aws:bedrock:*:*:*`, a reading the simulator cannot make (`SUP-008`, `SUP-346`): `dev`'s first run
     reads it from the call, and a refusal there is answered by a grant on `*`.
   - The Region offers `bedrock-agent` in `usw2-az1` to `usw2-az4` and `bedrock-agent-runtime` in `usw2-az1`

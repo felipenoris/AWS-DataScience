@@ -6740,7 +6740,10 @@ Times UTC.*
   seven from 2026-11-14 at 02:07:51 name both: `app-etl-dev`'s, 47 s after its role's creation;
   `test-experimentation`'s at 2026-11-18 19:15:39; `throwaway-6d`'s (`b94v2p77d11oy8`) at 21:45:07;
   `app-dbt-dev`'s, `app-ml-dev`'s and `app-genai-dev`'s at 2026-11-19 00:18:32, 00:18:58 and 00:19:17; and
-  `eighth-experimentation`'s again at 2026-11-22 05:21:04. `SUP-168` holds the reading.
+  `eighth-experimentation`'s again at 2026-11-22 05:21:04. Read again at 02:36:49, after the user's five
+  *Update project* of 01:47 to 01:49 (6d's log): no write since 2026-11-22, while the deployer session's 63 IAM
+  calls from 01:48:28 to 01:49:53 were `GetRole`, `ListRolePolicies`, `ListAttachedRolePolicies`, `GetPolicy`
+  and two `TagRole`, on roles that already held the list. `SUP-168` holds the reading.
 - **[Claude] The boundaries and the organization's policies**, 01:56:42 to 01:57:20. Staging's v6 (19
   statements) and Production's v6 (20) allow everything but `bedrock:*` (`CeilingIsEverythingTheIdentityPolicyGrants`,
   a `NotAction`), and of Bedrock the guardrail statements and the one model's invoke alone, so every knowledge
@@ -6823,8 +6826,8 @@ Times UTC.*
     No page names `s3:GetObjectVersion`, a bucket policy or a forward access session. The service stores the
     code in a service-owned bucket, `acr-code-*-<region>-an` in the example endpoint policy under
     `aws:PrincipalServiceName` `bedrock-agentcore.amazonaws.com`, encrypted with AWS owned keys, and reads it
-    at each agent startup; for a runtime created after the rollout begun 2026-05-05, *"all network access,
-    including to Amazon S3, is governed exclusively by your VPC configuration"*, and
+    at each agent startup; for a runtime created after the rollout that began on 2026-05-05, *"all network
+    access, including to Amazon S3, is governed exclusively by your VPC configuration"*, and
     `requireServiceS3Endpoint` is refused on create. A microVM session runs the artifact deployed when it was
     created.
   - The VPC keys: `security-vpc-condition.html`'s `EnforceVPCRuntime` denies `CreateAgentRuntime`,
