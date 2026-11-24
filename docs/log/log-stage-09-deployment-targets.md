@@ -3265,3 +3265,17 @@ of this stage was proposed moot, so no card was asked for it. No AWS call. Times
   `glue:UpdateTable`. xv's execution role is the deployment project's since Stage 19 item 31, which left no
   `awsds-<env>-wf-*` role in any slice. Each moved row points at its new home, and the stage file's Status
   row opens with *Done 2026-11-23*.
+
+## 2026-11-24 — the free trial's Production balance, unchanged since R1
+
+*The user's hand in the Redshift Serverless console, pasted in the orchestrating session's chat at about 01:05 UTC
+with Sandbox's (5b's log); Claude read AWS as the infrastructure user with `InfrastructureAccess` in
+`Production Account` (`awsds-infra-prod`) at about 01:08, reads alone.*
+
+- **[user]** *"Production"*, *"Free trial credits remaining"*, *"$299.16 out of $300.00"*, *"Free trial
+  expiration"*, *"January 21, 2027"*.
+- **[Claude] The compute since the reading of 15:05 on 2026-11-23**: `list-workgroups` and
+  `list-managed-workgroups` empty; `ChargedSeconds` of `awsds-prod-warehouse` and `default` holds no datapoint from
+  15:00 on 2026-11-23 to 01:10 on 2026-11-24. R2 left `production-warehouse-ddl` unplayed (`promotion.md` §N.11.2).
+- **[Claude] The reading**: unchanged since 17:41 on 2026-11-22, so R1's 0.02 USD stays the last charge. No
+  Production warehouse sitting is in the calendar of 2026-11-23 (`promotion.md` §N.12.1).

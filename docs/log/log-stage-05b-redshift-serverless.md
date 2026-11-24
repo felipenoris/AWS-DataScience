@@ -1530,3 +1530,21 @@ sessão"*). The reads as the infrastructure user, permission set `Infrastructure
   05:48:01 on 2026-11-22 in Production and 02:17:17 to 02:17:34 on 2026-11-23 in Sandbox.
 - **[Claude] What it changes**: the zeros of `default` in this day's earlier entry and in Stage 9's are this
   dimension, and its silence holds no workgroup (`SUP-478`).
+
+## 2026-11-24 — The trial's balance the day after day 2, unchanged
+
+*The user's reading in the Redshift Serverless console, pasted in the orchestrating session's chat at about 01:05
+with Production's (Stage 9's log); Claude read the meters as the infrastructure user, permission set
+`InfrastructureAccess`, through `awsds-infra-sandbox-1` (account Sandbox Account 1), at about 01:08, reads alone.
+Times are UTC.*
+
+- **[user] The trial's balance**, verbatim: *"Sandbox"*, *"Free trial credits remaining"*, *"$282.94 out of
+  $300.00"*, *"Free trial expiration"*, *"December 19, 2026"*.
+- **[Claude] The compute since the reading of 15:05 on 2026-11-23**: `list-workgroups` and
+  `list-managed-workgroups` empty. `ChargedSeconds` holds no datapoint from 15:00 on 2026-11-23 to 01:10 on
+  2026-11-24 in any of its four `Workgroup` dimensions: `default`, `awsds-sandbox-warehouse`, and Stage 21's
+  consumer workgroup `redshift-serverless-workgroup-dahsfn6j8lqec0` and managed workgroup `fe7eb678-…`.
+- **[Claude] The reading**: unchanged since 15:05 on 2026-11-23, about 23 hours after day 2's lowering (02:15:48 to
+  02:26:52 on 2026-11-23), so nothing landed late and both days cost 4.16 USD of credit. 0.3a's next-day reading is
+  done; the next pair is the next warehouse sitting's, SB2 if Stage 19 xiv keeps its place, else the raise of
+  2026-12-21 (`promotion.md` §N.12.1).
