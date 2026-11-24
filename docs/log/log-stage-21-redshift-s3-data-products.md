@@ -1770,3 +1770,33 @@ read in the repository at `676800d`. Times UTC.*
   and both indexes.
 - **[Claude] What waits**: decision 5, the user's; then 8.1 to 8.3 on the laptop, which holds the
   credentials, with nothing up; the sitting in SB2, before the free trial ends on 2026-12-19.
+
+## 2026-11-24 — Decision 5 taken: (b), the reads without the write
+
+*The user's hand, on a decision card in this project's cloud session thread at 15:53:23 UTC; recorded by
+Claude in the same thread, with no AWS call. The card was posted in Portuguese and is quoted as posted.
+Times UTC.*
+
+- **[Claude] The question**, on the card posted after the entry above: *"Escolher o escopo do passo 8 do
+  Stage 21 (Athena e Spark)"*, (a) recommended:
+  1. *"Leitura e escrita no SB2"*: *"8.1 a 8.3 sem nada no ar; no SB2: assento do SLR, grants, data lake
+     access; Redshift, Athena e Spark leem e Athena e Spark gravam 1 linha; tudo removido na sessão."*
+  2. *"Só leitura no SB2"*: *"Igual à primeira, sem o INSERT: a verificação xxv (escrita) fica só com o
+     que as páginas da AWS dizem."*
+  3. *"Só leituras, sem sessão"*: *"Só 8.1 e 8.2 no laptop (trilha e estado), sem SB2: Athena e Spark
+     seguem sem medição neste ambiente."*
+
+  The card's reason for (a): *"Caminho documentado pela AWS (regra de 2026-11-17), mede a terceira
+  afirmação, cabe no free trial até 2026-12-19 e tudo é removido na mesma sessão."*
+- **[user] The answer**: *"Só leitura no SB2"*, decision 5 (b).
+- **[Claude] The reading**: (b) drops (a)'s granted write, so 8.13 does not run and verification xxv rests
+  on AWS's pages. The `INSERT` that 8.11 and 8.12 try under `SELECT` alone, expected refused, stays as the
+  read-only grant's measurement for verifications xxiii and xxiv, and 8.12 reads the table's rows as the
+  admin after it. The card did not name those attempts; the reply in the thread names this reading.
+- **[Claude] The text that follows**: in the stage file, the `Status` row, the prerequisites, pass 8's
+  opening, the third statement, 8.11 to 8.13, the sitting's length (1 hour 50 minutes), the commands,
+  verification xxv, decision 5, what the stage does not do and Stage 11's line; the waiting list's
+  decision row removed, and its warehouse and 2026-12-19 rows; [`promotion.md`](../plan/runbooks/promotion.md)
+  §N.12.1; `CLAUDE.md`'s row; the log index's row.
+- **[Claude] What waits**: 8.1 to 8.3 on the laptop, with nothing up; then the sitting in SB2, before the
+  free trial ends on 2026-12-19.
