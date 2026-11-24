@@ -714,3 +714,8 @@ UTC.*
   sentence on Stage 17's training jobs; CLAUDE.md and the references. The waiting list's row leaves, and a
   decision joins it: a PUBLIC AgentCore runtime in Sandbox, passed on by the orchestrating session from
   Stage 17's reading of 2026-11-24.
+- **[Claude] The package's texts**: on the user's *"Autorizo push e PR"*, `awsds-workflows`
+  [PR #31](https://github.com/felipenoris/awsds-workflows/pull/31), `71ee437` on `8b14f6d`, opened at 05:12:05
+  UTC, dates these applies in its guide, lab notes, memory and `CLAUDE.md`, which said the change was written
+  and not applied. `uv run pytest` read 423 passed, 2 skipped and the 7 `prepare-offline` failures of 7.5's
+  entry; `ruff` and the `pdoc` site clean. Its merge is the user's.
