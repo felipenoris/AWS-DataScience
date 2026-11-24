@@ -4993,3 +4993,70 @@ SageMaker in Sandbox. Times UTC.*
 - **[Claude] `./aws/studio.py awsds-infra-data awsds-infra-sandbox-1`**, generated at 02:00:47, exit 0: `US-7`
   passes on all nine Sandbox domains at `ceiling=525600min`, the six blueprint domains and `EXC-26`'s three
   `Tooling` domains, each `US-13` a note naming its project; 0 checks failed. The waiting list's row is removed.
+
+## 2026-11-24 — The native notebook's image, read from a cell and the trail with nothing up
+
+*Claude, in a session answering the user's question about the portal's Notebooks page. The cell is the user's,
+in the native notebook `d9o0gdrdgyla8g` of `eighth-experimentation`, its output pasted in the chat and kept
+below as pasted, the registry's account id written `<an AWS service account>`. Claude's reads are read-only, as
+the infrastructure user with `InfrastructureAccess`: DataZone and CloudTrail through `awsds-infra-sandbox-1`
+(account Sandbox Account 1), Organizations through `awsds-infra-identity` (account Identity Account), and the
+user guide's pages. Times UTC.*
+
+- **[Claude] The vendor pages**, the user guide's notebooks and compute environment pages: a *"managed compute
+  environment"*, DuckDB 2.0 in the kernel, the instance type, the storage, the idle shutdown (1 hour by default)
+  and a *Packages* panel; no image, no Python version, no custom image.
+- **[Claude] DataZone's model**, `aws-cli/2.37.12`: a notebook and a run carry `environmentConfiguration`,
+  holding `imageVersion` and `packageConfig` (`packageManager` `UV`, the default and only value); a run's
+  `computeConfiguration` carries `instanceType` and `environmentVersion`; `start-notebook-run` takes the
+  compute and no environment. `get-notebook` on `d9o0gdrdgyla8g` read `type` `DATA`, `computeId`
+  `ce-91ce9508-…` and `environmentConfiguration` null; `get-notebook-run` on `60uo7lmz36vzm8` and
+  `dcy58is3e94y6o` (2026-11-21) read it null too, the second with `instanceType` `sc.t3.medium`.
+- **[Claude] The trail, 2026-11-21**: the project role's ECR calls (`GetAuthorizationToken`, `BatchGetImage`,
+  `GetDownloadUrlForLayer` on `awsds-prod-ecr-dev-env`, digest `sha256:658c05d1…`, `invokedBy`
+  `global.compute-capacity.looseleaf.im.amazonaws.com`) at 06:55:37 to 06:56:09 and 07:11:26 to 07:11:55,
+  after the `CreateApp` of `jup-ai` (06:53:49) and `vscode` (07:09:41), both on `awsds-sandbox-dev-env`. None
+  from 03:20 to 06:50, the window holding the computes of 03:32, 03:45, 03:48, 03:54 and 04:02, the `vscode`
+  app of 05:27:00 on the house image, and another project role's pull at 06:47:21 to 06:48:06; none from
+  06:56:09 to 07:11:26, around the compute of 07:04:51.
+- **[Claude] The trail, 2026-11-24**: `StartNotebookCompute` on `d9o0gdrdgyla8g` at 06:09:58, 06:25:31,
+  06:29:37 and 06:34:06 as the project role, `sc.t3.medium`, each answering `ce-91ce9508-…`; no ECR call from
+  06:00 to 07:00 except AWS Config's `DescribePullThroughCacheRules` at 06:06:46. The kernel's `CreateCellRun` at
+  06:34:17 from 10.20.49.139 through `vpce-03eb5bca920fd6ad0`, `Boto3/1.40.61 md/Botocore#1.40.61`.
+- **[user] The cell**, pasted:
+
+  ```
+  3.11.18 (main, Nov 11 2026, 00:16:37) [Clang 23.1.3 ]
+  PRETTY_NAME="Ubuntu 24.04.5 LTS"
+  NAME="Ubuntu"
+  VERSION_ID="24.04"
+  VERSION="24.04.5 LTS (Noble Numbat)"
+  VERSION_CODENAME=noble
+  ID=ubuntu
+  ID_LIKE=debian
+  HOME_URL="https://www.ubuntu.com/"
+  SUPPORT_URL="https://help.ubuntu.com/"
+  BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+  PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+  UBUNTU_CODENAME=noble
+  LOGO=ubuntu-logo
+
+  {'SAGEMAKER_LOG_FILE': '/var/log/studio', 'SAGEMAKER_UV_ENV': '/sagemaker_packages/.venv', 'SAGEMAKER_APP_PORT': '8888', 'SAGEMAKER_APP_TYPE': 'DataNotebook', 'SAGEMAKER_LOGGING_DIR': '/var/log/apps', 'SAGEMAKER_INTERNAL_IMAGE_URI': '<an AWS service account>.dkr.ecr.us-west-2.amazonaws.com/smus-data-notebook-image-prod@sha256:e09c5f320dae6e74fbe6121cd1d4682ebeec4775b38a5fed19bda546cf7b6fd8', 'IMAGE_VERSION': 'py311-0.5.1-cpu', 'IMAGE_TYPE': 'cpu'}
+  boto3 1.41.5
+  pandas 2.3.3
+  numpy 1.26.4
+  pyarrow 21.0.0
+  duckdb 2.0.0
+  polars 1.44.2
+  sagemaker 2.254.1
+  pyspark 3.5.9
+  ```
+
+  The cell printed `sys.version`, `/etc/os-release`, the environment variables whose names hold `IMAGE`,
+  `DISTRIBUTION`, `SAGEMAKER` or `CONDA` and none of `TOKEN`, `SECRET` or `KEY`, and eight packages' versions.
+- **[Claude] The registry's account**: `organizations list-accounts` read nine accounts, none of them the
+  registry's.
+- **[Claude] What the readings answer**: the native notebook runs AWS's `smus-data-notebook-image-prod`,
+  `py311-0.5.1-cpu`, pulled from outside the organization; its cell runner is another Python environment than
+  the one a cell imports (boto3 1.40.61 against 1.41.5); no record the API returns names the image, and the
+  house image never reaches it (`SUP-490`). Unmeasured: whether the *Packages* panel reaches PyPI.
