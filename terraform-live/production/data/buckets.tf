@@ -2,7 +2,7 @@
 #
 #   awsds-<env>-outputs   application outputs: the release's tree under applications/<app>/<tag>/
 #                         (Stage 10 decision 1), the inbox under inbox/<app>/, each application's
-#                         work/ and outbox/ under <app>/, model archives under models/<app>/
+#                         work/ and outbox/ under <app>/
 #   awsds-<env>-derived   query results, results/ expiring after var.results_expiration_days
 #                         (decision 11); its policy is the module's alone, since Athena writes it as the
 #                         caller through the service and the persona reads it through Athena

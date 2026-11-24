@@ -2731,7 +2731,7 @@ entry is still true is the reading.
   `log-stage-17-sandbox-machine-learning.md`, 2026-11-22.
 
 - `SUP-168` **A project update in the portal reconciles the environment's stack, and the stack writes only
-  what its template changed** (measured 2026-10-18, 6d step 2.4). An `UpdateProject` with
+  what its template changed, the project role's trust policy among it** (measured 2026-10-18, 6d step 2.4). An `UpdateProject` with
   `projectProfileVersion: latest` and the parameters unchanged, made by a person in the portal, was followed
   28 s later by an `UpdateStack` by the provisioning role. The new template added
   `elasticmapreduce.amazonaws.com` to the project role's trust policy, the one IAM write besides a `TagRole`
@@ -2750,6 +2750,20 @@ entry is still true is the reading.
   unchanged (`SUP-212`). Where: [pull request #380](https://github.com/felipenoris/AWS-DataScience/pull/380) (`df632a3b`), whose
   commit message carries the readings; `log-stage-06d-unified-studio-remainder.md`, 2026-11-23, records
   them from it.
+  **Read again 2026-11-24** (Stage 17 10.11's liv, Sandbox's trail and IAM): the template's trust list gained
+  `bedrock-agentcore.amazonaws.com` and `agent-registry.amazonaws.com` between 2026-10-11 and 2026-11-14, and an
+  environment's deploy, at its creation or at an update that changes the list, writes it to the project role
+  with `UpdateAssumeRolePolicy` from the session `AmazonDataZoneEnvironmentDeployer-<account>`. Sandbox's eight
+  such events since 2026-10-01: on 2026-10-11 at 22:05:59Z `eighth-experimentation`'s role received a trust
+  naming neither service; from 2026-11-14 at 02:07:51Z, 47 s after `app-etl-dev`'s role was created, seven
+  writes on seven roles named both, the last on `eighth-experimentation`'s at 2026-11-22 05:21:04Z. The five
+  *Update project* of 2026-11-24, on roles that already held the list, wrote none: the deployer session's 63
+  IAM calls from 01:48:28 to 01:49:53Z were `GetRole`, `ListRolePolicies`, `ListAttachedRolePolicies`,
+  `GetPolicy` and two `TagRole`, read at 02:36Z. Staging's and Production's deployment project roles, created
+  2026-11-11 at 15:26 and 15:30Z, trust neither service. A project role that trusts
+  `bedrock-agentcore.amazonaws.com` may also pass itself to it (`AllowPassRoleOnProjectRoles`), so it can be
+  the execution role of a runtime its project creates. Where: `log-stage-17-sandbox-machine-learning.md`,
+  2026-11-24.
 
 - `SUP-169` **The `AmazonBedrockKnowledgeBase` blueprint's template creates its OpenSearch Serverless
   collection, Lambdas and roles only for an OpenSearch Serverless store, behind a network policy with

@@ -18,7 +18,7 @@ output "resource_link_names" {
 }
 
 output "outputs_bucket_name" {
-  description = "awsds-<env>-outputs, the applications' outputs: the release's tree under applications/, the inbox, each application's work/ and outbox/, model archives under models/."
+  description = "awsds-<env>-outputs, the applications' outputs: the release's tree under applications/, the inbox, each application's work/ and outbox/."
   value       = module.outputs_bucket.bucket_name
 }
 
