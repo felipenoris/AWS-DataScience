@@ -6681,3 +6681,216 @@ Times UTC, from 00:49.*
 - Pass 6 is read, 6.1 to 6.4. Verification xxxiii's page half: the form writes the offline store as the
   project role, under the project's prefix and key, into a project database; how its Glue table meets Lake
   Formation stays unread while no group exists.
+
+## 2026-11-24 — The readings that create nothing: 9.8's increments, 10.7, 10.11's liii, liv and lvii, and 9.11's loose ends
+
+*Claude's hand, as the infrastructure user with `InfrastructureAccess` in Staging, Production and `Sandbox
+Account 1` (`awsds-infra-staging`, `awsds-infra-prod`, `awsds-infra-sandbox-1`), reads alone: quotas, the
+Region's endpoint services, roles and policies, the policy simulator with the Region and the project tag in
+the context (`SUP-008`), CloudTrail's event history, S3 and MWAA Serverless listings, CloudFormation's
+registry, the providers' schemas, and two plans saved outside the repository. Two subagents of this session
+read the vendor pages, most in their Markdown form. Nothing was created or applied. No account id is written.
+Times UTC.*
+
+- **[Claude] The token**, 01:47:23: the `awsds` session's `expiresAt` read 01:54:48, and the role credentials
+  vended at 01:47:34 carried the CLI's reads past it (`SUP-012`). At 02:17:07 it read 02:47:36, ahead of the
+  clock, and the two plans below ran under it.
+- **[Claude] The endpoint quota** (9.8), 01:51:51: `ml.m5.large for endpoint usage` (`L-614B09FD`) reads 30.0
+  in Sandbox, Staging and Production. Neither target has a request open, and Sandbox's one request, for 1.0 on
+  2026-10-28 at 01:19, reads `CASE_CLOSED`. No support case is needed.
+- **[Claude] The Region's endpoint services**, 01:51:51 and 01:52:16, the same in the three accounts, where
+  `us-west-2a` is `usw2-az2` and `us-west-2b` is `usw2-az1`: `sagemaker.runtime` and its `-fips` twin,
+  `bedrock-agent`, `bedrock-agentcore-control`, `bedrock-agentcore.gateway` and `s3vectors` in `usw2-az1` to
+  `usw2-az4`; `bedrock-agent-runtime` and `bedrock-agentcore` in `usw2-az1` to `usw2-az3`. Each is an
+  `Interface` service owned by `amazon` that takes an endpoint policy. Private DNS:
+  `runtime.sagemaker.us-west-2.amazonaws.com` and `runtime.sagemaker.us-west-2.api.aws`,
+  `bedrock-agent.us-west-2.amazonaws.com`, `bedrock-agent-runtime.us-west-2.amazonaws.com`,
+  `bedrock-agentcore.us-west-2.amazonaws.com`, `bedrock-agentcore-control.us-west-2.amazonaws.com`,
+  `*.gateway.bedrock-agentcore.us-west-2.amazonaws.com` and `s3vectors.us-west-2.api.aws`. In the code: the
+  targets' interface endpoints sit in the subnet of `zone_ids[0]`, `usw2-az1`, a job's `VpcConfig` names the
+  subnets of `usw2-az1` and `usw2-az2`, neither target's set names `sagemaker.runtime` (it left on
+  2026-10-19, `staging/egress/main.tf`), and `vpc-egress` has no AgentCore group, its comment excluding
+  `bedrock-agentcore*` by name.
+- **[Claude] The project roles**, 01:52:59 to 01:54:10. Staging's and Production's deployment project roles,
+  created 2026-11-11 at 15:26 and 15:30, carry `awsds-<env>-project-boundary` v6, AWS's
+  `SageMakerStudioProjectUserRolePolicy` v77, `SageMakerStudioProjectRoleMachineLearningPolicy` v48 and
+  `service-role/SageMakerStudioBedrockKnowledgeBaseServiceRolePolicy` v9, and the account's `awsds-<env>-*`
+  policies. Their trust names `bedrock.amazonaws.com` and neither `bedrock-agentcore.amazonaws.com` nor
+  `agent-registry.amazonaws.com`; Sandbox's six project roles trust both. AWS's statements:
+  - `AllowPassRoleOnProjectRoles` lets a role pass itself (`${aws:PrincipalTag/RoleName}`) in its own account
+    to a list of services that holds `bedrock-agentcore.amazonaws.com`, `agent-registry.amazonaws.com` and
+    `bedrock.amazonaws.com`.
+  - `ACProjectResources` (the ML policy) allows `bedrock-agentcore:*AgentRuntime`, `*AgentRuntimeEndpoint`,
+    `StopRuntimeSession` and the harness, memory, gateway, workload identity and API key families on `*`
+    where `aws:ResourceTag/AmazonDataZoneProject` is the caller's; `ACTagOwnResources` allows `TagResource`
+    under the request's and the resource's tag; `CreateSLR` allows seven service-linked roles, AgentCore's
+    `RuntimeIdentity`, `Network`, `GatewayNetwork` and `Identity` among them.
+  - `DataConnectionLambdaLogs` (the user-role policy) allows `logs:CreateLogGroup`, `CreateLogStream`,
+    `PutLogEvents` and `DescribeLogStreams` on `/aws/bedrock-agentcore/runtimes/*`, and `CWPutMetrics`
+    `cloudwatch:PutMetricData` in the namespace `bedrock-agentcore`.
+  - `BedrockResourceAccessPermissions` names `bedrock:CreateKnowledgeBase` among 47 actions on
+    `arn:aws:bedrock:*:*:*`, under `EnableAmazonBedrockPermissions` and the resource's project tag;
+    `BedrockNoResourcePermissions` names `ListKnowledgeBases` and `RetrieveAndGenerate` on `*`.
+  - Neither `AWSServiceRoleForBedrockAgentCoreNetwork` nor `AWSServiceRoleForBedrockAgentCoreRuntimeIdentity`
+    exists in the three accounts (`NoSuchEntity`, 01:52:59 and 02:05:01).
+- **[Claude] When Sandbox's project roles came to trust AgentCore**, 01:55:56 and 01:56:05: CloudTrail holds
+  eight `UpdateAssumeRolePolicy` events since 2026-10-01, every one by the session
+  `AmazonDataZoneEnvironmentDeployer-<Sandbox Account 1>`. The first, 2026-10-11 at 22:05:59 on
+  `eighth-experimentation`'s role, writes a trust naming neither `bedrock-agentcore` nor `agent-registry`. The
+  seven from 2026-11-14 at 02:07:51 name both: `app-etl-dev`'s, 47 s after its role's creation;
+  `test-experimentation`'s at 2026-11-18 19:15:39; `throwaway-6d`'s (`b94v2p77d11oy8`) at 21:45:07;
+  `app-dbt-dev`'s, `app-ml-dev`'s and `app-genai-dev`'s at 2026-11-19 00:18:32, 00:18:58 and 00:19:17; and
+  `eighth-experimentation`'s again at 2026-11-22 05:21:04. `SUP-168` holds the reading.
+- **[Claude] The boundaries and the organization's policies**, 01:56:42 to 01:57:20. Staging's v6 (19
+  statements) and Production's v6 (20) allow everything but `bedrock:*` (`CeilingIsEverythingTheIdentityPolicyGrants`,
+  a `NotAction`), and of Bedrock the guardrail statements and the one model's invoke alone, so every knowledge
+  base action is outside their ceiling; `DenyServicesNoProjectUsesHere` denies `bedrock-agentcore:*` and
+  `agent-registry:*`. Sandbox's v3 (9 statements) allows `*`. The five SageMaker statements are the same in
+  the three boundaries; `DenySageMakerInstanceCeiling` names `ml.m5.large` among its seven types, and no
+  boundary or SCP statement asks a volume key of `CreateEndpointConfig`
+  (`DenySageMakerJobsWithoutVolumeEncryption` names the five job creates and `CreateTransformJob`). The
+  `Workloads` SCP holds the same five and `DenySageMakerServerlessInference`. No organization policy names
+  `s3vectors` or a knowledge base; the one AgentCore statement, `DenyAgentCoreBuiltInTools`, is the
+  interactive OU's.
+- **[Claude] 9.8's endpoint, simulated**, 01:58:31 to 02:00:56 as each deployment project role and 02:22:08 as
+  `app-ml-dev`'s. AWS's SageMaker creates condition on `aws:ResourceTag/AmazonDataZoneProject`, so a create
+  is simulated with the request's and the resource's tag.
+  - `allowed` in the three accounts by `SageMakerStudioProjectRoleMachineLearningPolicy`:
+    `CreateEndpointConfig` on `ml.m5.large`, with the volume key and without; `CreateEndpoint`;
+    `DescribeEndpoint`, `DescribeEndpointConfig`, `InvokeEndpoint`, `UpdateEndpoint`, `DeleteEndpoint` and
+    `DeleteEndpointConfig` on tagged objects; `ListEndpoints` and `ListEndpointConfigs`; `CreateModel` in a
+    VPC with network isolation; `DeleteModel`. `iam:PassRole` of the role to itself for
+    `sagemaker.amazonaws.com` `allowed` by `SageMakerStudioProjectUserRolePolicy`.
+  - `sagemaker:AddTags` with the project's key on the endpoint configuration and on the endpoint:
+    `implicitDeny` in both targets; `allowed` in Sandbox by `awsds-sandbox-ml`'s
+    `TagAnEndpointConfigWithTheCallersProject` and `TagAnEndpointWithTheCallersProject`; `implicitDeny` as
+    `app-genai-dev`'s role, which no `sandbox/ml/` statement names (`SUP-267`).
+  - A describe of a free name: `implicitDeny` for an endpoint, a configuration and a model in the three.
+  - The negatives: `ml.g5.xlarge` `explicitDeny`, by the `Workloads` SCP in the targets and by
+    `awsds-sandbox-project-boundary` in Sandbox; a serverless configuration (`sagemaker:ServerlessMemorySize`
+    2048) `explicitDeny` by the `Workloads` SCP in the targets and `implicitDeny` in Sandbox.
+- **[Claude] 9.8's pipeline, simulated**, 01:59:23 as `app-ml-dev`'s role: `CreatePipeline` with the
+  project's tags, `AddTags` with the project's key (by `awsds-sandbox-ml`), `UpdatePipeline`,
+  `DescribePipeline`, `ListPipelines`, `StartPipelineExecution`, `DescribePipelineExecution`,
+  `ListPipelineExecutionSteps`, `DescribePipelineDefinitionForExecution`, `ListPipelineExecutions`,
+  `DescribeTrainingJob`, `DeletePipeline` and `iam:PassRole` of the role to itself for
+  `sagemaker.amazonaws.com` read `allowed`; `CreatePipeline` with no tag and a describe of a free name
+  `implicitDeny`.
+- **[Claude] 10.7's knowledge base, simulated**, 01:59:23 to 02:03:33 as the deployment project roles and
+  `app-genai-dev`'s.
+  - In the targets every knowledge base action, the Titan invoke and `s3vectors:QueryVectors` read
+    `implicitDeny`, the boundary's ceiling refusing (`AllowedByPermissionsBoundary` false for the Bedrock
+    ones); `iam:PassRole` of the role to itself for `bedrock.amazonaws.com` `allowed`.
+  - In Sandbox `GetKnowledgeBase`, `CreateDataSource`, `GetDataSource`, `ListDataSources`,
+    `StartIngestionJob`, `GetIngestionJob`, `Retrieve` and `DeleteKnowledgeBase` on a tagged knowledge base,
+    `ListKnowledgeBases`, `RetrieveAndGenerate` and the Titan invoke read `allowed` by
+    `SageMakerStudioProjectUserRolePolicy`; `Retrieve` on an untagged one `implicitDeny`.
+  - `CreateKnowledgeBase` reads `implicitDeny` in the three accounts, on `*` with the request's and the
+    resource's tag, and on a knowledge base's ARN with no organization or boundary detail. The Service
+    Reference gives it no resource type, and the simulator never applies a statement naming a resource to such
+    an action while the service may (`SUP-008`, `SUP-346`): whether AWS's statement on `arn:aws:bedrock:*:*:*`
+    admits the create is read from the call.
+  - `iam:PassRole` of a role named `awsds-x-app-genai-kb` to `bedrock.amazonaws.com` and
+    `s3vectors:QueryVectors` read `implicitDeny` in the three: no statement grants either.
+- **[Claude] 10.11's runtime, simulated**, 01:59:23 to 02:03:33.
+  - In the targets every runtime action, `CreateAgentRuntimeEndpoint` and `TagResource` read `explicitDeny`
+    by the boundary's `DenyServicesNoProjectUsesHere`.
+  - In Sandbox `UpdateAgentRuntime`, `GetAgentRuntime`, `InvokeAgentRuntime`, `StopRuntimeSession` and
+    `DeleteAgentRuntime` on a tagged runtime and `ListAgentRuntimes` read `allowed` by `ACProjectResources`.
+    `CreateAgentRuntime` on `*` reads `allowed` with the request's and the resource's tag and `implicitDeny`
+    with the request's tag and the two VPC keys alone, so a create goes through only if the service puts the
+    request's tag in `aws:ResourceTag` at create, as SageMaker's creates do; `CreateAgentRuntimeEndpoint`
+    and `TagResource` on `*` `allowed`.
+  - In the three, `iam:PassRole` of the role to itself for `bedrock-agentcore.amazonaws.com` reads `allowed`,
+    of an execution role named `awsds-x-app-genai-agent` `implicitDeny`, and `iam:CreateServiceLinkedRole`
+    of the network and runtime-identity roles `allowed` by `CreateSLR`.
+- **[Claude] The registry and the providers** (10.7, Lesson 8), 02:05:01 to 02:06:37: CloudFormation's
+  `AWS::S3Vectors::VectorBucket`, `AWS::S3Vectors::Index`, `AWS::S3Vectors::VectorBucketPolicy` and
+  `AWS::BedrockAgentCore::Runtime` read `PUBLIC`, `LIVE`, `FULLY_MUTABLE`, the index's `DataType`,
+  `Dimension`, `DistanceMetric` and `EncryptionConfiguration` among its create-only properties. The studio
+  slices' pins, aws 6.69.1 and awscc 1.106.0, hold `aws_s3vectors_vector_bucket`, `aws_s3vectors_index`
+  (`encryption_configuration` with `kms_key_arn` and `sse_type`; `metadata_configuration` with
+  `non_filterable_metadata_keys`, required), `aws_s3vectors_vector_bucket_policy`,
+  `aws_bedrockagent_knowledge_base` with `storage_configuration.s3_vectors_configuration`, and
+  `aws_bedrockagentcore_agent_runtime`; awscc holds `awscc_s3vectors_vector_bucket`, `awscc_s3vectors_index`,
+  `awscc_s3vectors_vector_bucket_policy` and `awscc_bedrock_knowledge_base`. The S3 gateway endpoint's
+  allow-list (`terraform-modules/vpc`, `vpc-v0.4.0` in both targets) names no `acr-code-*` bucket.
+- **[Claude, a subagent] AgentCore's pages** (liii, liv, lvii), the report at 02:00:27:
+  - The archive: the common-issues page has the role that calls `CreateAgentRuntime` or `UpdateAgentRuntime`
+    hold `s3:GetObject` on the object and `kms:Decrypt` on its customer managed key, while the same section's
+    *"When this occurs"* line names the execution role, the Python guide's console section asks the execution
+    role for S3 access, and the permissions page's direct-deploy example holds no `s3:` or `kms:` statement.
+    No page names `s3:GetObjectVersion`, a bucket policy or a forward access session. The service stores the
+    code in a service-owned bucket, `acr-code-*-<region>-an` in the example endpoint policy under
+    `aws:PrincipalServiceName` `bedrock-agentcore.amazonaws.com`, encrypted with AWS owned keys, and reads it
+    at each agent startup; for a runtime created after the rollout begun 2026-05-05, *"all network access,
+    including to Amazon S3, is governed exclusively by your VPC configuration"*, and
+    `requireServiceS3Endpoint` is refused on create. A microVM session runs the artifact deployed when it was
+    created.
+  - The VPC keys: `security-vpc-condition.html`'s `EnforceVPCRuntime` denies `CreateAgentRuntime`,
+    `UpdateAgentRuntime`, `CreateCodeInterpreter` and `CreateBrowser` when `bedrock-agentcore:subnets` and
+    `bedrock-agentcore:securityGroups` are both null (`Null` `true`, one block). `UpdateAgentRuntime`'s
+    `networkConfiguration` is not required, so an update that omits it would meet the deny (the subagent's
+    inference). No key names the network mode. The authorization reference's operations table: a
+    `CreateAgentRuntime` also authorizes `CreateAgentRuntimeEndpoint`, `PassCapacityProvider`, `TagResource`
+    and `iam:PassRole` to `bedrock-agentcore.amazonaws.com`; `UpdateAgentRuntime` `PassCapacityProvider` and
+    the pass; `DeleteAgentRuntime` `DeleteAgentRuntimeEndpoint` and `DeleteWorkloadIdentity`;
+    `InvokeAgentRuntime` `InvokeAgentRuntimeForUser`.
+  - The logs: the service creates `/aws/bedrock-agentcore/runtimes/<agent_id>-<endpoint_name>`, stdout and
+    stderr in `[runtime-logs] <UUID>` streams and the ADOT logs in `otel-rt-logs`. No page names who writes
+    stdout. The execution role's examples hold `logs:CreateLogGroup` and `DescribeLogStreams` on the prefix,
+    `CreateLogStream` and `PutLogEvents` on its streams, `PutResourcePolicy` (*"to allow AWS X-Ray to deliver
+    spans to the log group"*), X-Ray's four actions and `cloudwatch:PutMetricData` in `bedrock-agentcore`.
+    Traces need CloudWatch Transaction Search, a one-time account setup. VPC mode lists `ecr.dkr`, `ecr.api`,
+    the S3 gateway and `logs` as required without internet access.
+  - The service-linked roles: `AWSServiceRoleForBedrockAgentCoreNetwork` (`network.bedrock-agentcore.amazonaws.com`,
+    `BedrockAgentCoreNetworkServiceRolePolicy` v1), created with a runtime in VPC mode, and
+    `AWSServiceRoleForBedrockAgentCoreRuntimeIdentity`, created with any runtime since 2025-10-13; the
+    operations table lists neither creation. The supported zones in `us-west-2` are `usw2-az1` to `usw2-az3`.
+- **[Claude, a subagent] The knowledge base's, S3 Vectors' and Pipelines' pages** (10.7, li, lxi), the report
+  at 02:03:33:
+  - The service role (`kb-permissions.html`): trusted by `bedrock.amazonaws.com` under `aws:SourceAccount` and
+    `ArnLike` `aws:SourceArn` `knowledge-base/*`; `bedrock:InvokeModel` on the embeddings model; `s3:ListBucket`
+    and `s3:GetObject` under `aws:ResourceAccount`, the bucket's key by `kms:Decrypt` under `kms:ViaService`
+    S3; `s3vectors:PutVectors`, `GetVectors`, `DeleteVectors`, `QueryVectors` and `GetIndex` on the index.
+    No statement for a vector key; S3 Vectors' encryption page requires `kms:Decrypt` for every vector-level
+    operation. `CreateDataSource`, `UpdateDataSource` and `StartIngestionJob` pass no role.
+  - The create: `indexArn` alone, or `vectorBucketArn` with `indexName`; float32 alone; cosine or euclidean;
+    Titan Text Embeddings V2 at 1,024, 512 or 256 dimensions; a store created for the caller is the console's
+    alone. The operations table: `CreateKnowledgeBase` has no resource type and authorizes
+    `CreateKnowledgeBase`, `TagResource`, `AssociateThirdPartyKnowledgeBase` and `iam:PassRole` to
+    `bedrock.amazonaws.com`; `StartIngestionJob` authorizes `AssociateThirdPartyKnowledgeBase` too. No page
+    asks the caller for an `s3vectors` action.
+  - The providers' history: the aws provider's S3 Vectors resources since 6.24.0, the index's encryption and
+    metadata blocks since 6.26.0, a knowledge base's `s3_vectors_configuration` since 6.27.0; awscc's since
+    1.62.0, the index's encryption since 1.67.0.
+  - Pipelines: the definition's JSON schema admits a parameter (`ArgumentFunction`, `{"Get": "Parameters.X"}`)
+    for each item of `VpcConfig.Subnets` and `SecurityGroupIds` or for the whole list, in a processing and in
+    a training step; the SDK v2 types each item `Union[str, PipelineVariable]`. An update that changes the
+    definition creates a version, one that changes nothing while passing aliases fails, and one that changes
+    nothing without aliases is not described.
+  - The authorization reference has an operations table in place of its *Dependent actions* column, and
+    `list_amazonbedrockagentcore.html`, `list_amazonbedrock.html` and `list_amazons3vectors.html` redirect to
+    `list_bedrock-agentcore.html`, `list_bedrock.html` and `list_s3vectors.html`.
+- **[Claude] 9.11's loose ends**, 02:06:37 to 02:09:39. By `grep` over `examples/`, `scripts/` and `aws/`,
+  nothing writes or lists the outputs bucket's top-level `models/`: `app-ml`'s model lives under its project
+  bucket's `shared/app-ml/models/`. `list-objects-v2` at 02:08:48: 13 objects under
+  `awsds-staging-outputs/models/app-etl/` and 5 under `awsds-prod-outputs/models/app-etl/`, written
+  2026-10-24 and 25 by the retired model chain. Sandbox's workflows at 02:09:22:
+  `app_etl_test_experimentation_app_etl_train` is gone, deleted 2026-11-15 at 22:36:48 (Stage 19's log), and
+  `app-etl-dev` holds `app_etl_app_etl_dev_app_etl_train`, `READY`, last modified 2026-11-15 22:24:39,
+  beside `app_etl_app_etl_dev_app_etl` (22:24:24): `v0.7.0` left it in place.
+- **[Claude] The edits and the plans**: D28's amendment and its one line, the decisions index, the approval
+  rule's comment in `production/sagemaker/registry.tf`, `sagemaker-application.md` §S's deploy-role grant and
+  Stage 19's note on `targets.py`, brought to the retirement; `deploy_prefixes` without `models/` in
+  `staging/data/` and `production/data/`, with Production's outputs-bucket descriptions. Planned from the
+  branch with `-input=false`, each plan saved outside the repository: `staging/data` 02:18:26 to 02:18:43 and
+  `production/data` 02:19:36 to 02:19:55, each *"Plan: 0 to add, 1 to change, 0 to destroy."*,
+  `module.outputs_bucket.aws_s3_bucket_policy.this` updated in place, `DenyTheReleaseRoleObjectsOutsideItsPrefixes`
+  losing `arn:aws:s3:::awsds-<env>-outputs/models/*` from `NotResource` and
+  `DenyTheReleaseRoleListingsOutsideItsPrefixes` `models/*` from `s3:prefix`, and nothing else. Nothing
+  applied: both slices carry the change until it is applied from `main` after R3, on the user's word naming
+  it (Lessons 69, 79).
+- The measured halves stay with the sittings (`promotion.md` §N.12.1): li's reads in `dev`,
+  `CreateKnowledgeBase`'s authorization among them, xxxv's operator calls and Stage 9 xvii's cross-zone reach
+  in SB2 and R4; liv's `Null` refusal, lvii's writer and door, and lxi's unchanged update in SB3 and R5.
