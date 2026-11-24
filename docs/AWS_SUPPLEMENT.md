@@ -68,7 +68,7 @@ entry is still true is the reading.
 | [Lake Formation](#lake-formation) | Data lake settings and who writes them; listings that omit grants; cross-account shares, vends and their flags; the creator's permissions; Athena writes through vended sessions; RAM |
 | [Athena](#athena) | Workgroup deletion; SCP refusals that name no policy; Athena Spark's network; an Iceberg table's rename |
 | [Redshift Serverless](#redshift-serverless) | Namespace, workgroup and usage limits; SQL, users and privileges; the Data API; datashares through Lake Formation; billing, metrics, the free trial and the audit export |
-| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections; the Bedrock IDE's knowledge bases, guardrails, evaluations, chat agents and flows |
+| [DataZone and SageMaker Unified Studio](#datazone-and-sagemaker-unified-studio) | The domain and its account association; blueprints, profiles and policy grants; environments, and what a project creates and leaves; the project role's managed policies; the portal; catalog, data sources and subscriptions; connections; the native notebook's network and image; the Bedrock IDE's knowledge bases, guardrails, evaluations, chat agents and flows |
 | [SageMaker AI spaces and images](#sagemaker-ai-spaces-and-images) | Custom images and their versions; spaces, apps and their network identity; the Code Editor, the remote IDE, its clients and Amazon Q |
 | [SageMaker AI jobs and models](#sagemaker-ai-jobs-and-models) | Processing jobs: status, mounts, keys and image pulls; condition keys on the job creates; models and model packages |
 | [MWAA](#mwaa) | MWAA Serverless workflows, their API and KMS use; workers, templates, tasks and the Airflow operators; provisioned MWAA |
@@ -4247,6 +4247,32 @@ entry is still true is the reading.
   project states a run's default network or that the domain's VPC overrides the request, so a run's record
   is no evidence of where it ran; its interface is. Where: `log-stage-06d-unified-studio-remainder.md`,
   2026-11-21 (two entries); `threat-model.md`, `TM-34`.
+
+- `SUP-490` **A native notebook's compute runs AWS's image `smus-data-notebook-image-prod`, which no record the
+  API returns names and which the domain's custom images never replace** (measured 2026-11-24 in Sandbox,
+  Stage 6d). The portal's compute form offers the instance type and the storage, never an image. A cell of
+  the `DATA` notebook `d9o0gdrdgyla8g` in `eighth-experimentation`, on its compute `ce-91ce9508-…`
+  (`sc.t3.medium`, started four times from 06:09:58 to 06:34:06 UTC), read Ubuntu 24.04.5 LTS, Python 3.11.18
+  and the variables `IMAGE_VERSION` `py311-0.5.1-cpu`, `IMAGE_TYPE` `cpu`, `SAGEMAKER_APP_TYPE` `DataNotebook`,
+  `SAGEMAKER_UV_ENV` `/sagemaker_packages/.venv` and `SAGEMAKER_INTERNAL_IMAGE_URI`
+  `<an AWS service account>.dkr.ecr.us-west-2.amazonaws.com/smus-data-notebook-image-prod@sha256:e09c5f32…`,
+  an account outside the organization. Its environment imports boto3 1.41.5, pandas 2.3.3, numpy 1.26.4,
+  pyarrow 21.0.0, duckdb 2.0.0, polars 1.44.2, sagemaker 2.254.1 and pyspark 3.5.9. The kernel's own
+  `CreateCellRun` carried `Boto3/1.40.61` that day and on 2026-11-21, so the cell runner is a Python
+  environment other than the one a cell imports. DataZone's model carries `environmentConfiguration.imageVersion`
+  on a notebook and a run, and `computeConfiguration.environmentVersion` on a run's request; the portal fills
+  neither: `GetNotebook` on `d9o0gdrdgyla8g` and `GetNotebookRun` on runs `60uo7lmz36vzm8` and `dcy58is3e94y6o`
+  read `environmentConfiguration` null. Sandbox's trail holds no ECR call by the project role during the
+  compute's four starts, nor during the six computes of 2026-11-21, while the two space apps started on
+  `awsds-sandbox-dev-env` from 06:50 to 07:20 that day were each followed within two minutes by the project
+  role's `GetAuthorizationToken`, `BatchGetImage` and `GetDownloadUrlForLayer` on `awsds-prod-ecr-dev-env`,
+  `invokedBy` `global.compute-capacity.looseleaf.im.amazonaws.com`. A space app does not always leave a pull
+  (the `vscode` app created at 05:27:00 that day left none), so the cell's URI is the reading that decides. The
+  user guide's notebook and compute environment pages, read 2026-11-24, name no image, no Python version and no
+  custom image. Consequence: the house image, its packages and its `NO_PROXY` literal reach spaces alone, and a
+  native notebook's packages are its *Packages* panel's, installed by `uv` (`packageConfig.packageManager`
+  `UV`); whether that panel reaches PyPI, with the proxy the VPC's one way out and no proxy variable in the
+  image, is unmeasured. Where: `log-stage-06d-unified-studio-remainder.md`, 2026-11-24.
 
 ### The Bedrock IDE
 

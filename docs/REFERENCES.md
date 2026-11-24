@@ -2110,6 +2110,14 @@
   <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks.html>. Read again the same
   night, each listed above: DataZone's service reference (version 1.5, `StartNotebookRun` with no condition
   key and no resource type), `API_StartNotebookRun.html` and the admin guide's `network-isolation.html`.
+- The native notebook's image (read 2026-11-24, for `SUP-490`). The compute environment page, with the
+  instance type, the storage, the 1-hour idle shutdown and the *Packages* panel, naming no image:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/manage-compute-environments.html>. The
+  Spark Connect runtimes, Athena for Apache Spark the default:
+  <https://docs.aws.amazon.com/sagemaker-unified-studio/latest/userguide/notebooks-spark-connect.html>. The
+  product page, which calls the notebook serverless:
+  <https://aws.amazon.com/sagemaker/unified-studio/notebooks/>. Read again the same day: the notebooks page,
+  listed above, naming DuckDB 2.0 and no image.
 - The `RedshiftServerless` blueprint and the consumer's workgroup (read 2026-11-18, for Stage 21 1.3 and 1.5).
   The workgroup's CloudFormation resource, `BaseCapacity`, `MaxCapacity` and `PricePerformanceTarget`:
   <https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-redshiftserverless-workgroup.html>.

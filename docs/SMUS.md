@@ -1421,6 +1421,14 @@ stay in compatibility mode. Remote space connections remain unsupported in such 
 decision 2 holds. The SageMaker Data Agent these notebooks and the Query Editor offer stores prompts in the
 domain's Region and may infer in another.
 
+The native notebook is not a space. Its compute is a DataZone compute environment (`ce-…`), started by
+`datazone:StartNotebookCompute` on an `sc.*` instance and billed by the hour while it runs, with an interface
+in the project's private subnet. Its image is AWS's `smus-data-notebook-image-prod`, read `py311-0.5.1-cpu`
+on 2026-11-24: Ubuntu 24.04, Python 3.11 in a `uv` environment, DuckDB, Polars, pandas, PySpark and the
+SageMaker SDK (`SUP-490`). The portal offers the instance type and the storage, never the image, and the
+domain's custom images (§Custom images below) reach spaces alone, so the house image's packages and its
+`NO_PROXY` literal are absent from a native notebook.
+
 ### Custom images (BYOI) — and how they are named
 
 A project's spaces run the **SageMaker Distribution** unless a custom image is attached to the
