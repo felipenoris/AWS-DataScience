@@ -2790,3 +2790,65 @@ is of 2026-11-23 unless dated.*
   (`SUP-454`). Production's second run re-created `notional_by_desk` by the swap with its grants and wrote two
   versions on Production's table node; it changed neither the asset nor its graph, which hangs from Sandbox's
   node while the asset names Sandbox's table (`SUP-483`).
+
+## 2026-11-24 — The targets' `app_dbt` source runs read against `SUP-483`, nothing up
+
+*Claude's hand, the session of `promotion.md` §N.12.1's Stage 20 item of 2026-11-24, after PR #404's merge;
+reads only, as the infrastructure user, `InfrastructureAccess`, through `awsds-infra-data`,
+`awsds-infra-staging`, `awsds-infra-prod` and `awsds-infra-sandbox-1`, with nothing up. The `awsds` token read
+`expiresAt` 03:58:11. An account id is written as the account's name. Times UTC, of 2026-11-24 unless dated.*
+
+- **[Claude] The source runs**, `get-data-source-run` and `list-data-source-run-activities` at 03:07:21 to
+  03:07:26. Staging's `495urkkg5c7fyo` (`cron(23 2 * * ? *)`) ran `5zqxjpukyrezgw`, `SCHEDULED`, 02:25:56 to
+  02:25:58, and Production's `bjfmkla36ed3ps` (`cron(27 2 * * ? *)`) ran `dmt3e2r3p715sg`, 02:36:55 to 02:37:00,
+  each `SUCCESS` with `trades` and `notional_by_desk` `SUCCEEDED_UPDATED`. Sandbox's `3uof8bs4x693f4`
+  (`cron(43 2 * * ? *)`) ran `agyxlloccrbrtc`, 02:54:41 to 02:54:42: `trades` and `notional_by_desk`
+  `UNCHANGED`, `notional_by_desk_prod` `SUCCEEDED_CREATED`. Data Governance's trail holds two
+  `CreateAssetRevision` at 02:25:57 and two at 02:36:58, each by `datazone.amazonaws.com` and naming its source
+  and run.
+- **[Claude] Each source starts at a fixed offset after its cron**, `list-data-source-runs` at 00:26:24 to
+  00:26:27 and 03:10:24: Staging's `app_dbt` source at 02:25:56 on each of 2026-11-20 to 2026-11-24, 2 min 56 s
+  after its cron; Production's at 02:36:55 on the same days, 9 min 55 s; Sandbox's at 02:54:41 on 2026-11-22 to
+  2026-11-24, 11 min 41 s; Staging's `app_etl` source `52f18khk7kdi4w` (`cron(28 15 * * ? *)`) at 15:37:23 on
+  2026-11-16 to 2026-11-23, 9 min 23 s. Each start falls within 0.2 s of its second, and no schedule carries a
+  timezone. The four vendor pages on the schedule state no offset (`SUP-489`).
+- **[Claude] Revision 3** of each target asset, `get-asset` at 02:59:19 to 02:59:36: by `SYSTEM` at 02:25:58 in
+  Staging and 02:36:59 in Production. It names the target's table in `GlueTableForm`, the catalog id, the ARN
+  and the `updateTime` (17:17:08 and 17:18:41 on 2026-11-23 in Staging, as in revision 1; 18:23:57 and 18:25:43
+  in Production, the second run's), and in `AssetCommonDetailsForm`'s `sourceIdentifier`.
+  `DataSourceReferenceForm` names the night's run. It keeps revision 2's description (176 and 180 characters),
+  README (1,282 and 1,484) and `classification` `internal` at type revision 2, equal to `app-dbt-dev`'s revision
+  7. Sandbox's forms lasted from the import to the source's run, about 9 h 00 min in Staging and 8 h 17 min in
+  Production (`SUP-454`). xxi's yes holds past that run.
+- **[Claude] The edge moved** (`SUP-483`), `get-lineage-node` and `list-lineage-node-history` at 02:55:49 to
+  02:56:08 and each version by `--event-timestamp` at 02:58:20 to 02:58:39, as `awsds-infra-data`. Each target
+  asset node gained a third version, its event the revision's time, and hangs from its own table's node:
+  Staging's `53i9ncbhao12ts` (`notional_by_desk`) from `4epfbzmhyf6p74` and `6209f9enfefp8w` (`trades`) from
+  `akfm2ggbaumjo0`; Production's `6bsflg1a3jt0r4` from `dc5kf0jitjz91s` and `angvx93e2w3ksw` from
+  `c35d04bqelikuo`. Each of the twelve versions reads the new upstream, the eight of revisions 1 and 2 included,
+  which read Sandbox's `6w7hp2vvi8kscw` and `3s0gk0eg2o68pc` at 00:24:53 to 00:25:00. The trail holds, per
+  asset, a `CreateLineageNodeVersion` on its node (02:26:00 and 02:26:08, 02:37:10 and 02:37:12) and
+  `UpdateLineageNode` on its node, on the target's table node and on Sandbox's, each by
+  `datazone.amazonaws.com`; neither table node gained a version. So each revision re-points the asset node's
+  edge to the node of the table its `sourceIdentifier` names, and no version keeps the edge it had when written.
+- **[Claude] `notional_by_desk_prod` imported again**: Sandbox's run created it at 02:54:42 as a new asset,
+  `53a3ed7nxyk1sg`, revision 1 by `SYSTEM`, owned by `app-dbt-dev`, with no description, README or
+  `classification` and no listing; its node `c3n1fvh079gknk` hangs from the table's node `aha80rzgv86gpc`. The
+  trail's `CreateAsset` at 02:54:42, by `datazone.amazonaws.com`, names the source and the run. 8.6's entry
+  expected the run at 02:43; it started at 02:54:41. Each later tag of `app-dbt` deletes this asset first, as
+  8.6 did before R2's.
+- **[Claude] `./aws/catalog.py` again**, on `origin/main` `20345474`, at 03:01:09 to 03:05:36: every call
+  successful and every check passed, 15 `pass` and 10 `note`.
+  - `CT-21` pass, 279 events since 2026-11-17T03:04:20Z, with the same counts by namespace as at 00:54: the
+    source runs posted no lineage event.
+  - `CT-22` note: 9 assets hang from their own table's node written by a job's run and 5 subscription tables
+    from their listing. Staging's `trades_notional` alone hangs from Sandbox's node, its forms in the import's
+    window; `eighth-experimentation`'s `house-price` and `governed-lake`'s `trades` hang from no node.
+  - `CT-23` note, 4 of 18 Glue table nodes carried by no asset: `degibg9msuotn4`, `d4tkdvwcjmfjbk`,
+    `d4u98zmb2bfndc` and `5v8yfhu8noyw40`. The four target `app_dbt` nodes are carried by their assets again,
+    and `aha80rzgv86gpc` by the new `notional_by_desk_prod`.
+  - `CT-24` note: five deployment-project assets carry their dev asset's curation and name their own table;
+    Staging's `trades_notional` names Sandbox's.
+- **[Claude] Left**: Staging's `trades_notional` names Sandbox's table until its source's run at about 15:37:23.
+  By `SUP-483`, that run re-points `cltnmsd8kfnn68` to Staging's `d4u98zmb2bfndc`; any later `catalog.py` reads
+  whether it did.

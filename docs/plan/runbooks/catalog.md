@@ -934,10 +934,10 @@ no write, and exits 0 when every check passed, 1 when a call failed and 2 when a
 | `CT-23` | every Glue table node the registry's trail created is carried by an asset; a node carried by none is a note |
 | `CT-24` | a deployment project's asset carries the description, README and `classification` of its table's asset in a chain application's `dev` project, and its forms name its own account's table; a difference, or the import's window, is a note (Stage 20 xxi) |
 
-The last run: 2026-11-24 from 00:54 to 00:55 UTC, every check passed, 15 `pass` and 10 `note`, 12 listings
-and none of `deploy-staging`. `CT-21` passed on 279 events in seven days, each `SUCCESS`; `CT-22` to `CT-24`
-are notes on the import's window, the four target `app-dbt` assets and Staging's `trades_notional` naming and
-hanging from Sandbox's tables until the targets' sources run again (Stage 20's log). `--self-check` read 62 of
+The last run: 2026-11-24 from 03:01 to 03:05 UTC, every check passed, 15 `pass` and 10 `note`, 12 listings
+and none of `deploy-staging`. `CT-21` passed on 279 events in seven days, each `SUCCESS`. `CT-22` to `CT-24`
+are notes: Staging's `trades_notional` names and hangs from Sandbox's table until its source's run at about
+15:37 UTC, and four Glue table nodes are carried by no asset (Stage 20's log). `--self-check` read 62 of
 62 on 2026-11-24, and `aws/tests/test_catalog_lineage.py` holds the lineage rows' cases.
 
 ### The CLI's reads, object by object
