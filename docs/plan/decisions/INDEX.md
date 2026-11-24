@@ -33,7 +33,7 @@ reasoning, its consequences or its revision trigger.
 | [D25](D25-drop-box-consumer.md) | Who consumes the ingestion drop-box | The Production job role consumes the ingestion drop-box, and the `Data` OU SCP is tightened to deny Glue jobs. | S1a, S1b, S5a, S9 |
 | [D26](D26-unified-studio.md) | The development experience: SageMaker Unified Studio, and where its… | One SageMaker unified domain (DataZone V2) in Data Governance, associated to the Sandboxes and, since 2026-11-11, to Staging and Production for a deployment project each; a registry, never a runtime. | S1a, S4, S5a, S6, S7, S8, S10, S18, S19 |
 | [D27](D27-catalog-maintenance.md) | Catalog-maintenance compute in the Data OU: crawlers and optimizers | Crawlers and table optimizers may run in Data Governance under a named catalog-maintenance exception; never on Iceberg tables. | S1a, S5a |
-| [D28](D28-workflow-contract.md) | The production workflow contract: what must exist for a scientist-a… | What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A chain's state machine and schedule start the workflows (D41). A trained model is the one class the repository does not carry (amended 2026-11-17, planned). | S6, S8, S9, S10 |
+| [D28](D28-workflow-contract.md) | The production workflow contract: what must exist for a scientist-a… | What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A chain's state machine and schedule start the workflows (D41). A trained model is the one class the repository does not carry (amended 2026-11-17, first run 2026-11-23). | S6, S8, S9, S10 |
 | [D29](D29-policy-canary.md) | Where a Service Control Policy is tested before it reaches anything… | A tenth account, `Policy Canary`, alone in a fifth OU, `Policy Test` — because an empty OU tests nothing. | S1a, S1b |
 | [D30](D30-scp-recovery.md) | The SCP recovery principal — a named role exempt from every custom … | **Reverted.** No standing SCP exemption: the Management root (D16) is the only recovery path. The SCPs stay in code regardless. | — |
 | [D31](D31-approver-read.md) | What a release approver may read | A bespoke `DeploymentManagerAccess` replaces `ReadOnlyAccess`; the who-may-read key policy lives on the project CMK since 2026-08-26 (D19 revised). | S1b, S5a |
@@ -63,7 +63,7 @@ join the artifact classes.
 **Stage 17 decisions 16 (b) and 21 (b), with Stage 10 decision 22 as revised (2026-11-17), amend D17,
 D20 and D28 in place**: a model is trained in the application's `dev` project and the trained model is
 promoted in the release's bundle, each target holding a registry group for such an application; applied
-2026-11-17 and first run 2026-11-23. `app-etl`'s model, trained in each target, retires (Stage 17 step 9.11).
+2026-11-17 and first run 2026-11-23. `app-etl`'s model, which trained in each target, retired on 2026-11-23 (Stage 17 step 9.11).
 **Stage 19 (2026-10-31 to 2026-11-17) amends D7, D13, D17, D20, D26, D28 and D41 in place**: Staging and
 Production are associated, each holding a deployment project into which the CI/CD CLI deploys every
 release, and release T's Terraform path is retired (item 31, applied 2026-11-17).

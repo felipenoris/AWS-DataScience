@@ -1026,17 +1026,18 @@ decision 22 (a)). The release in Production is `v0.6.0`, release G's, since 2026
 ## S. The infrastructure a new application needs
 
 Every permission in this estate names its resource: the deploy role may read the product tables of the
-databases `deploy-project.tf` lists and serve the models named `app-etl-*`, the persona may read one
-image repository and one output prefix. A second application therefore needs its own names written into
-the same grants. It needs no slice of its own: the CLI deploys it into the deployment projects, and
-`<env>/chains/` holds every application's chains. Every slice below is `[P]`, applied by hand by the
-infrastructure user from a fresh plan (Recipe A of [`terraform-changes.md`](terraform-changes.md)),
-re-planned `No changes`. Every item below names `app-etl` today. Each is read from the code; no second
-application has been built, so the list is complete as far as the code says and unmeasured as a
-procedure. Stage 17's tables "What pass 9 builds" and "What pass 10 builds" apply it to an application
-with a model and to one that calls Bedrock, written and not built, and its step 9.5 orders `app-ml`'s
-applies by its own table. Release T's checklist, an application slice and an orchestration entry per
-application, retired at Stage 19 item 31. The order is the dependency order.
+databases `deploy-project.tf` lists and approve the versions of `app-ml`'s model package group, the
+persona may read one image repository and one output prefix. A second application therefore needs its own
+names written into the same grants. It needs no slice of its own: the CLI deploys it into the deployment
+projects, and `<env>/chains/` holds every application's chains. Every slice below is `[P]`, applied by
+hand by the infrastructure user from a fresh plan (Recipe A of
+[`terraform-changes.md`](terraform-changes.md)), re-planned `No changes`. Every item below names
+`app-etl` today. Each is read from the code; no second application has been built, so the list is
+complete as far as the code says and unmeasured as a procedure. Stage 17's tables "What pass 9 builds"
+and "What pass 10 builds" apply it to an application with a model and to one that calls Bedrock, written
+and not built, and its step 9.5 orders `app-ml`'s applies by its own table. Release T's checklist, an
+application slice and an orchestration entry per application, retired at Stage 19 item 31. The order is
+the dependency order.
 
 | Where | What changes for `<app>` | Applied as |
 |---|---|---|

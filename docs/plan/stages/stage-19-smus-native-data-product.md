@@ -653,8 +653,9 @@ inventory's rows with these corrections, each read in the code or in the plans:
 - **`production/data/`'s key and bucket statements** naming `awsds-deploy-prod` stay: the account root is
   their principal (D31), the deploy role holds no identity grant on either since this item, and removing a
   principal from a key policy is the riskier edit. Its `README.md` says so.
-- **`check-sg-descriptions.py`** holds no row of the four slices. `scripts/tfhygiene/targets.py` keeps the
-  model chain's values alone, read from `sagemaker/` and Staging's `foundation/`.
+- **`check-sg-descriptions.py`** holds no row of the four slices. `scripts/tfhygiene/targets.py` kept the
+  model chain's values alone, read from `sagemaker/` and Staging's `foundation/`, until #397 removed it with
+  that chain on 2026-11-23 (Stage 17 step 9.11).
 - **The `orchestration` module's comment** on the ceiling is deleted at HEAD, untagged: both `chains/`
   slices pin `orchestration-v0.3.1`, and a comment changes no plan.
 

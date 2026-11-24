@@ -23,9 +23,9 @@ training code and sample, and the archive's SHA-256 names it in every stage. Cla
 for such an application: each target holds a group, a task of the workflow proposes the release's
 version there and the account's deploy role approves it, and Staging reads nothing of Production's
 registry. Its training code runs in a workflow of the `dev` project alone, so the sentence below on a
-model's training in Production describes `app-etl`, whose model keeps that shape until it retires in a
-release of its own after `app-ml`'s first release (Stage 17 decision 28, taken by the user as (a) on
-2026-11-17; Stage 17 step 9.11). Planned by Stage 17 pass 9, nothing applied.
+model's training in Production describes `app-etl`'s model, which retired in `app-etl` `v0.7.0` on
+2026-11-23 with its estate in both targets, the day `app-ml` `v0.1.0` ran this shape through both (Stage
+17 decision 28, taken by the user as (a) on 2026-11-17; Stage 17 steps 9.7 and 9.11).
 
 **Amended 2026-11-17 ([Stage 19](../stages/stage-19-smus-native-data-product.md) decision 6 (b) and item
 31, [D26](D26-unified-studio.md)'s association):** the targets are no longer headless. Each is associated
@@ -39,7 +39,7 @@ their write-once prefix with release T: the CLI copies the code into the project
 the project role can rewrite (decision 28, `TM-32`). The text below keeps release T's shape where it says
 *the pipeline creates* and *no domain*, until Stage 19 step 6.2 rewrites it.
 
-**In one line:** What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, planned).
+**In one line:** What crosses the gate into a deployment target, a deployment project of the domain since 2026-11-11: a closed list of artifact classes, carried by the repository; a workflow starts whatever runs there. A trained model is the one class the repository does not carry (amended 2026-11-17, first run 2026-11-23).
 
 **Related decisions:** [D7](D07-orchestration.md), [D14](D14-supply-chain-account.md), [D17](D17-interactive-vs-runtime.md), [D22](D22-data-governance-account.md), [D25](D25-drop-box-consumer.md), [D26](D26-unified-studio.md), [D41](D41-sagemaker-application.md)
 
